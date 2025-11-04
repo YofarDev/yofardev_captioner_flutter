@@ -1,0 +1,97 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../logic/images_cubit.dart';
+import '../widgets/app_button.dart';
+
+class SearchAndReplaceWidget extends StatefulWidget {
+  const SearchAndReplaceWidget({super.key});
+
+  @override
+  State<SearchAndReplaceWidget> createState() => _SearchAndReplaceWidgetState();
+}
+
+class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _replaceController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      text: "Search and Replace",
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return BlocProvider<ImagesCubit>.value(
+              value: BlocProvider.of<ImagesCubit>(this.context),
+              child: StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  return AlertDialog(
+                    title: const Text('Search and Replace'),
+                    content: BlocBuilder<ImagesCubit, ImagesState>(
+                      builder: (BuildContext context, ImagesState state) {
+                        return Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            TextField(
+                              controller: _searchController,
+                              decoration: const InputDecoration(
+                                hintText: 'Search',
+                              ),
+                            ),
+                            TextField(
+                              controller: _replaceController,
+                              decoration: const InputDecoration(
+                                hintText: 'Replace',
+                              ),
+                            ),
+                            if (state.occurrencesCount > 0)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Text(
+                                  '${state.occurrencesCount} occurrences found',
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          context.read<ImagesCubit>().countOccurrences('');
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Preview'),
+                        onPressed: () {
+                          context.read<ImagesCubit>().countOccurrences(
+                            _searchController.text,
+                          );
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Replace'),
+                        onPressed: () {
+                          context.read<ImagesCubit>().searchAndReplace(
+                            _searchController.text,
+                            _replaceController.text,
+                          );
+                          context.read<ImagesCubit>().countOccurrences('');
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

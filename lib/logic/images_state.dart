@@ -9,6 +9,7 @@ class ImagesState extends Equatable {
   final SortBy sortBy;
   final bool sortAscending;
   final int occurrencesCount;
+  final LlmConfigs llmConfigs;
 
   const ImagesState({
     this.images = const <AppImage>[],
@@ -17,17 +18,23 @@ class ImagesState extends Equatable {
     this.sortBy = SortBy.name,
     this.sortAscending = true,
     this.occurrencesCount = 0,
+    this.llmConfigs = const LlmConfigs(
+      configs: <LlmConfig>[],
+      prompt:
+          'Describe this image as one paragraph. Do not describe the atmosphere.',
+    ),
   });
 
   @override
   List<Object?> get props => <Object?>[
-        images,
-        currentIndex,
-        folderPath,
-        sortBy,
-        sortAscending,
-        occurrencesCount,
-      ];
+    images,
+    currentIndex,
+    folderPath,
+    sortBy,
+    sortAscending,
+    occurrencesCount,
+    llmConfigs,
+  ];
 
   ImagesState copyWith({
     List<AppImage>? images,
@@ -36,6 +43,7 @@ class ImagesState extends Equatable {
     SortBy? sortBy,
     bool? sortAscending,
     int? occurrencesCount,
+    LlmConfigs? llmConfigs,
   }) {
     return ImagesState(
       images: images ?? this.images,
@@ -44,6 +52,7 @@ class ImagesState extends Equatable {
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
+      llmConfigs: llmConfigs ?? this.llmConfigs,
     );
   }
 

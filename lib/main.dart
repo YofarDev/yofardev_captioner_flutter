@@ -6,6 +6,7 @@ import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'logic/images_cubit.dart';
+import 'res/app_colors.dart';
 import 'screens/home_page.dart';
 
 void main() async {
@@ -14,7 +15,7 @@ void main() async {
     await windowManager.ensureInitialized();
     final Display primaryDisplay = await screenRetriever.getPrimaryDisplay();
     final double displayHeight = primaryDisplay.size.height * 0.8;
-    final double displayWidth = primaryDisplay.size.width * 0.5;
+    final double displayWidth = primaryDisplay.size.width * 0.6;
     final WindowOptions windowOptions = WindowOptions(
       title: 'Yofardev Captioner',
       size: Size(displayWidth, displayHeight),
@@ -42,7 +43,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.deepPurple,
+            seedColor: lightPink,
             brightness: Brightness.dark,
           ).copyWith(onSurface: Colors.white),
           textTheme: const TextTheme(

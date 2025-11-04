@@ -8,7 +8,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialButton(
+    return ElevatedButton(
       onPressed: onTap,
       child: Text(text, style: const TextStyle(color: Colors.white)),
     );

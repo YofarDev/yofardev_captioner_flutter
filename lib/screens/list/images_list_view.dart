@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images_cubit.dart';
 import '../../models/app_image.dart';
+import '../../res/app_colors.dart';
 import '../../utils/extensions.dart';
 import 'header_widget.dart';
 
@@ -30,7 +31,9 @@ class ImagesListView extends StatelessWidget {
                         context.read<ImagesCubit>().onImageSelected(index),
                     child: ColoredBox(
                       color: index == state.currentIndex
-                          ? Colors.white.withAlpha(20)
+                          ? Colors.white.withAlpha(50)
+                          : image.caption.isEmpty
+                          ? lightPink.withAlpha(20)
                           : Colors.transparent,
                       child: Row(
                         children: <Widget>[
@@ -46,31 +49,33 @@ class ImagesListView extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: <Widget>[
-                              Text(
-                                image.image.path.split('/').last,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: index == state.currentIndex
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  image.image.path.split('/').last,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: index == state.currentIndex
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                "(${image.image.lengthSync().readableFileSize})",
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: index == state.currentIndex
-                                      ? FontWeight.bold
-                                      : FontWeight.normal,
+                                Text(
+                                  "(${image.image.lengthSync().readableFileSize})",
+                                  style: TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: index == state.currentIndex
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          // if (image.width != -1 && image.height != -1)
-                          //   _buildAspectRatioBadge(image),
                         ],
                       ),
                     ),
@@ -83,5 +88,4 @@ class ImagesListView extends StatelessWidget {
       },
     );
   }
-
 }

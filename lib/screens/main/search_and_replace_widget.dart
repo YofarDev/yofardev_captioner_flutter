@@ -18,7 +18,7 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      text: "Search and Replace",
+      text: "🔎  Search and Replace",
       onTap: () {
         showDialog(
           context: context,
@@ -28,7 +28,7 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
               child: StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   return AlertDialog(
-                    title: const Text('Search and Replace'),
+                    title: const Text('🔎  Search and Replace'),
                     content: BlocBuilder<ImagesCubit, ImagesState>(
                       builder: (BuildContext context, ImagesState state) {
                         return Column(

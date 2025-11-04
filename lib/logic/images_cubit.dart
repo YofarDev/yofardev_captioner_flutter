@@ -8,7 +8,11 @@ import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import '../models/app_image.dart';
+import '../models/llm_config.dart';
+import '../models/llm_configs.dart';
+import '../repositories/caption_repository.dart';
 import '../services/cache_service.dart';
+import '../services/llm_config_service.dart';
 import '../utils/files_utils.dart';
 import '../utils/image_utils.dart';
 
@@ -17,6 +21,8 @@ part 'images_state.dart';
 class ImagesCubit extends Cubit<ImagesState> {
   ImagesCubit() : super(const ImagesState());
 
+  final CaptionRepository _captionRepository = CaptionRepository();
+
   void onInit() async {
     await CacheService.loadFolderPath().then((String? path) {
       if (path != null) {
@@ -24,6 +30,77 @@ class ImagesCubit extends Cubit<ImagesState> {
         emit(state.copyWith(folderPath: path));
       }
     });
+    await _loadLlmConfigs();
+  }
+
+  Future<void> _loadLlmConfigs() async {
+    final LlmConfigs? configs = await LlmConfigService.loadLlmConfigs();
+    if (configs != null) {
+      emit(state.copyWith(llmConfigs: configs));
+    }
+  }
+
+  void addLlmConfig(LlmConfig config) {
+    final List<LlmConfig> newConfigs = <LlmConfig>[
+      ...state.llmConfigs.configs,
+      config,
+    ];
+    final String? newSelectedConfigId = state.llmConfigs.selectedConfigId;
+    if (newSelectedConfigId == null) {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(
+            configs: newConfigs,
+            selectedConfigId: config.id,
+          ),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+        ),
+      );
+    }
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void updateLlmConfig(LlmConfig config) {
+    final List<LlmConfig> newConfigs = state.llmConfigs.configs
+        .map((LlmConfig c) => c.id == config.id ? config : c)
+        .toList();
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void deleteLlmConfig(String id) {
+    final List<LlmConfig> newConfigs = state.llmConfigs.configs
+        .where((LlmConfig c) => c.id != id)
+        .toList();
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void selectLlmConfig(String id) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(selectedConfigId: id),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void updatePrompt(String prompt) {
+    emit(state.copyWith(llmConfigs: state.llmConfigs.copyWith(prompt: prompt)));
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   void onFolderPicked(String folderPath) {
@@ -136,5 +213,54 @@ class ImagesCubit extends Cubit<ImagesState> {
       count += search.allMatches(image.caption).length;
     }
     emit(state.copyWith(occurrencesCount: count));
+  }
+
+  Future<void> captionCurrentImage() async {
+    final LlmConfig? config = state.llmConfigs.selectedConfig;
+    if (config == null) {
+      return;
+    }
+
+    final AppImage image = state.images[state.currentIndex];
+    final String caption = await _captionRepository.getCaption(
+      config,
+      image,
+      state.llmConfigs.prompt,
+    );
+    final String captionPath = p.setExtension(image.image.path, '.txt');
+    await File(captionPath).writeAsString(caption);
+
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    updatedImages[state.currentIndex] = image.copyWith(caption: caption);
+
+    emit(state.copyWith(images: updatedImages));
+  }
+
+  Future<void> captionAllEmpty() async {
+    final LlmConfig? config = state.llmConfigs.selectedConfig;
+    if (config == null) {
+      return;
+    }
+
+    final List<AppImage> imagesToCaption = state.images
+        .where((AppImage image) => image.caption.isEmpty)
+        .toList();
+
+    for (final AppImage image in imagesToCaption) {
+      final String caption = await _captionRepository.getCaption(
+        config,
+        image,
+        state.llmConfigs.prompt,
+      );
+      final String captionPath = p.setExtension(image.image.path, '.txt');
+      await File(captionPath).writeAsString(caption);
+
+      final int index = state.images.indexOf(image);
+      final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+      updatedImages[index] = image.copyWith(caption: caption);
+      emit(state.copyWith(images: updatedImages));
+
+      await Future<void>.delayed(Duration(milliseconds: config.delay));
+    }
   }
 }

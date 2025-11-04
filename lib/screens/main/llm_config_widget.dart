@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_cubit.dart';
+import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/llm_config.dart';
 
 class LlmConfigWidget extends StatelessWidget {
@@ -9,8 +9,8 @@ class LlmConfigWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImagesCubit, ImagesState>(
-      builder: (BuildContext context, ImagesState state) {
+    return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+      builder: (BuildContext context, LlmConfigsState state) {
         return Row(
           children: <Widget>[
             const Text('Model: '),
@@ -26,7 +26,7 @@ class LlmConfigWidget extends StatelessWidget {
                 ),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
-                    context.read<ImagesCubit>().selectLlmConfig(newValue);
+                    context.read<LlmConfigsCubit>().selectLlmConfig(newValue);
                   }
                 },
                 items: state.llmConfigs.configs.map<DropdownMenuItem<String>>((

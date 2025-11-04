@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nested/nested.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'logic/images_cubit.dart';
+import 'logic/images/images_cubit.dart';
+import 'logic/llm_config/llm_configs_cubit.dart';
 import 'res/app_colors.dart';
 import 'screens/home_page.dart';
 
@@ -36,8 +38,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider<ImagesCubit>(
-      create: (BuildContext context) => ImagesCubit()..onInit(),
+    return MultiBlocProvider(
+      providers: <SingleChildWidget>[
+        BlocProvider<ImagesCubit>(
+          create: (BuildContext context) => ImagesCubit()..onInit(),
+        ),
+        BlocProvider<LlmConfigsCubit>(
+          create: (BuildContext context) => LlmConfigsCubit()..onInit(),
+        ),
+      ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(

@@ -1,0 +1,118 @@
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../models/llm_config.dart';
+import '../../models/llm_configs.dart';
+import '../../services/llm_config_service.dart';
+
+part 'llm_configs_state.dart';
+
+/// A Cubit that manages the state of LLM (Large Language Model) configurations.
+///
+/// This includes loading, adding, updating, deleting, and selecting LLM configurations.
+class LlmConfigsCubit extends Cubit<LlmConfigsState> {
+  /// Creates an [LlmConfigsCubit] with an initial [LlmConfigsState].
+  LlmConfigsCubit() : super(const LlmConfigsState());
+
+  /// Initializes the cubit by loading saved LLM configurations.
+  ///
+  /// If configurations are found, it emits a new state with the loaded configurations.
+  void onInit() async {
+    final LlmConfigs? configs = await LlmConfigService.loadLlmConfigs();
+    if (configs != null) {
+      emit(state.copyWith(llmConfigs: configs));
+    }
+  }
+
+  /// Adds a new [LlmConfig] to the list of configurations.
+  ///
+  /// If no configuration is currently selected, the newly added config becomes the selected one.
+  /// The updated configurations are then saved.
+  void addLlmConfig(LlmConfig config) {
+    final List<LlmConfig> newConfigs = <LlmConfig>[
+      ...state.llmConfigs.configs,
+      config,
+    ];
+    final String? newSelectedConfigId = state.llmConfigs.selectedConfigId;
+    if (newSelectedConfigId == null) {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(
+            configs: newConfigs,
+            selectedConfigId: config.id,
+          ),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+        ),
+      );
+    }
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Updates an existing [LlmConfig] in the list of configurations.
+  ///
+  /// The configuration is identified by its ID. The updated configurations are then saved.
+  void updateLlmConfig(LlmConfig config) {
+    final List<LlmConfig> newConfigs = state.llmConfigs.configs
+        .map((LlmConfig c) => c.id == config.id ? config : c)
+        .toList();
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Deletes an [LlmConfig] with the given [id] from the list of configurations.
+  ///
+  /// If the deleted configuration was the selected one, the selected configuration is reset.
+  /// The updated configurations are then saved.
+  void deleteLlmConfig(String id) {
+    final List<LlmConfig> newConfigs = state.llmConfigs.configs
+        .where((LlmConfig c) => c.id != id)
+        .toList();
+
+    if (state.llmConfigs.selectedConfigId == id) {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(
+            configs: newConfigs,
+            forceSelectedConfigId: true,
+          ),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+        ),
+      );
+    }
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Selects an [LlmConfig] with the given [id] as the active configuration.
+  ///
+  /// The updated configurations are then saved.
+  void selectLlmConfig(String id) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(selectedConfigId: id),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Updates the prompt string for the currently selected LLM configuration.
+  ///
+  /// The updated configurations are then saved.
+  void updatePrompt(String prompt) {
+    emit(state.copyWith(llmConfigs: state.llmConfigs.copyWith(prompt: prompt)));
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+}

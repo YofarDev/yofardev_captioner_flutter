@@ -1,6 +1,6 @@
 part of 'images_cubit.dart';
 
-enum SortBy { name, size }
+enum SortBy { name, size, caption }
 
 class ImagesState extends Equatable {
   final List<AppImage> images;
@@ -9,7 +9,8 @@ class ImagesState extends Equatable {
   final SortBy sortBy;
   final bool sortAscending;
   final int occurrencesCount;
-  final LlmConfigs llmConfigs;
+  final String? captioningProgress;
+  final bool isCaptioning;
 
   const ImagesState({
     this.images = const <AppImage>[],
@@ -18,11 +19,8 @@ class ImagesState extends Equatable {
     this.sortBy = SortBy.name,
     this.sortAscending = true,
     this.occurrencesCount = 0,
-    this.llmConfigs = const LlmConfigs(
-      configs: <LlmConfig>[],
-      prompt:
-          'Describe this image as one paragraph. Do not describe the atmosphere.',
-    ),
+    this.captioningProgress,
+    this.isCaptioning = false,
   });
 
   @override
@@ -33,7 +31,8 @@ class ImagesState extends Equatable {
     sortBy,
     sortAscending,
     occurrencesCount,
-    llmConfigs,
+    captioningProgress,
+    isCaptioning,
   ];
 
   ImagesState copyWith({
@@ -43,7 +42,8 @@ class ImagesState extends Equatable {
     SortBy? sortBy,
     bool? sortAscending,
     int? occurrencesCount,
-    LlmConfigs? llmConfigs,
+    String? captioningProgress,
+    bool? isCaptioning,
   }) {
     return ImagesState(
       images: images ?? this.images,
@@ -52,7 +52,8 @@ class ImagesState extends Equatable {
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
-      llmConfigs: llmConfigs ?? this.llmConfigs,
+      captioningProgress: captioningProgress ?? this.captioningProgress,
+      isCaptioning: isCaptioning ?? this.isCaptioning,
     );
   }
 

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_cubit.dart';
+import '../../logic/images/images_cubit.dart';
 
-class CaptionWidget extends StatelessWidget {
-  const CaptionWidget({super.key});
+class CaptionTextArea extends StatelessWidget {
+  const CaptionTextArea({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,9 +27,9 @@ class CaptionWidget extends StatelessWidget {
         }
 
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.black.withAlpha(50),
               borderRadius: BorderRadius.circular(8),
@@ -39,7 +39,7 @@ class CaptionWidget extends StatelessWidget {
               onChanged: (String value) {
                 cubit.updateCaption(caption: value.trim());
               },
-              maxLines: 8,
+              maxLines: 10,
               decoration: const InputDecoration(border: InputBorder.none),
             ),
           ),

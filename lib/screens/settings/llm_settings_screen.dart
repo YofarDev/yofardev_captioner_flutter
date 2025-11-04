@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_cubit.dart';
+import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/llm_config.dart';
 import '../../res/app_colors.dart';
 
@@ -80,9 +80,9 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                   delay: int.tryParse(delayController.text) ?? 0,
                 );
                 if (isEditing) {
-                  context.read<ImagesCubit>().updateLlmConfig(newConfig);
+                  context.read<LlmConfigsCubit>().updateLlmConfig(newConfig);
                 } else {
-                  context.read<ImagesCubit>().addLlmConfig(newConfig);
+                  context.read<LlmConfigsCubit>().addLlmConfig(newConfig);
                 }
                 Navigator.of(context).pop();
               },
@@ -128,7 +128,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
             ElevatedButton(
               onPressed: () {
                 final String newPrompt = promptController.text;
-                context.read<ImagesCubit>().updatePrompt(newPrompt);
+                context.read<LlmConfigsCubit>().updatePrompt(newPrompt);
                 Navigator.of(context).pop();
               },
               child: const Text('Save'),
@@ -158,8 +158,8 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
         title: const Text('LLM Settings'),
         backgroundColor: darkGrey,
       ),
-      body: BlocBuilder<ImagesCubit, ImagesState>(
-        builder: (BuildContext context, ImagesState state) {
+      body: BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+        builder: (BuildContext context, LlmConfigsState state) {
           return Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -194,7 +194,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                             IconButton(
                               icon: const Icon(Icons.delete),
                               onPressed: () {
-                                context.read<ImagesCubit>().deleteLlmConfig(
+                                context.read<LlmConfigsCubit>().deleteLlmConfig(
                                   config.id,
                                 );
                               },

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_cubit.dart';
+import '../../logic/images/images_cubit.dart';
 import 'sort_by_widget.dart';
 
 class HeaderWidget extends StatelessWidget {

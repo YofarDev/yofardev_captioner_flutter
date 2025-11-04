@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_cubit.dart';
+import '../../logic/images/images_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
   const SortByWidget({super.key});
@@ -26,6 +26,10 @@ class SortByWidget extends StatelessWidget {
                 DropdownMenuItem<SortBy>(
                   value: SortBy.size,
                   child: Text('Size'),
+                ),
+                DropdownMenuItem<SortBy>(
+                  value: SortBy.caption,
+                  child: Text('Caption'),
                 ),
               ],
               onChanged: (SortBy? value) {

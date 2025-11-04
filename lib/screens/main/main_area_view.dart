@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'caption_widget.dart';
+import 'caption_text_area.dart';
 import 'controls_view.dart';
 import 'current_image_view.dart';
 
@@ -12,7 +12,7 @@ class MainAreaView extends StatelessWidget {
     return const Column(
       children: <Widget>[
         CurrentImageView(),
-        CaptionWidget(),
+        CaptionTextArea(),
         Spacer(),
         ControlsView(),
       ],

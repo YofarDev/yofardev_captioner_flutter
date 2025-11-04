@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'caption_controls.dart';
 import 'controls_widgets.dart';
+import 'export_button.dart';
 import 'llm_config_widget.dart';
 import 'search_and_replace_widget.dart';
 
@@ -10,11 +12,10 @@ class ControlsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
       child: SizedBox(
         width: double.infinity,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             _buildFirstRow(),
             const SizedBox(height: 8),
@@ -33,6 +34,8 @@ class ControlsView extends StatelessWidget {
       RenameAllFilesButton(),
       SizedBox(width: 16),
       SearchAndReplaceWidget(),
+      SizedBox(width: 16),
+      ExportButton(),
     ],
   );
 

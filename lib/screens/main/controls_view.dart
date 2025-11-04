@@ -35,6 +35,8 @@ class ControlsView extends StatelessWidget {
       SizedBox(width: 16),
       SearchAndReplaceWidget(),
       SizedBox(width: 16),
+      ConvertAllImagesButton(),
+      SizedBox(width: 16),
       ExportButton(),
     ],
   );

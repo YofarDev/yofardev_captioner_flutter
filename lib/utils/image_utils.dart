@@ -4,6 +4,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as p;
+
 import '../models/app_image.dart';
 
 /// A utility class for image-related operations.
@@ -68,5 +71,34 @@ class ImageUtils {
       );
     }
     return updated;
+  }
+
+  static Future<void> convertAllImages({
+    required List<AppImage> images,
+    required String format,
+    required int quality,
+  }) async {
+    for (final AppImage appImage in images) {
+      final Uint8List imageBytes = await appImage.image.readAsBytes();
+      final img.Image? image = img.decodeImage(imageBytes);
+      if (image == null) {
+        continue;
+      }
+
+      List<int> encodedImage;
+      if (format == 'jpg') {
+        encodedImage = img.encodeJpg(image, quality: quality);
+      } else if (format == 'png') {
+        encodedImage = img.encodePng(image);
+      } else {
+        continue;
+      }
+
+      final String newPath = p.setExtension(appImage.image.path, '.$format');
+      final File newFile = File(newPath);
+      await newFile.writeAsBytes(encodedImage);
+
+      await appImage.image.delete();
+    }
   }
 }

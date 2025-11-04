@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images/images_cubit.dart';
 import '../../services/cache_service.dart';
+import '../main/convert_images_dialog.dart';
 import '../settings/llm_settings_screen.dart';
 import '../widgets/app_button.dart';
 
@@ -58,6 +59,26 @@ class RenameAllFilesButton extends StatelessWidget {
       text: "📘  Rename all files",
       onTap: () {
         context.read<ImagesCubit>().renameAllFiles();
+      },
+    );
+  }
+}
+
+class ConvertAllImagesButton extends StatelessWidget {
+  const ConvertAllImagesButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppButton(
+      text: '📸  Convert all images',
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => BlocProvider<ImagesCubit>.value(
+            value: context.read<ImagesCubit>(),
+            child: const ConvertImagesDialog(),
+          ),
+        );
       },
     );
   }

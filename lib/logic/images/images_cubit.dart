@@ -297,4 +297,19 @@ class ImagesCubit extends Cubit<ImagesState> {
 
     emit(state.copyWith(images: updatedImages, currentIndex: newCurrentIndex));
   }
+
+  void convertAllImages({
+    required String format,
+    required int quality,
+  }) async {
+    if (state.folderPath == null) {
+      return;
+    }
+    await ImageUtils.convertAllImages(
+      images: state.images,
+      format: format,
+      quality: quality,
+    );
+    onFolderPicked(state.folderPath!);
+  }
 }

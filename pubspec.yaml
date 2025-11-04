@@ -25,6 +25,7 @@ dependencies:
   nested: ^1.0.0
   macos_secure_bookmarks: ^0.2.1
   flutter_launcher_icons: ^0.14.4
+  image: ^4.3.0
 
 
 dev_dependencies:

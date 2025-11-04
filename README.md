@@ -7,16 +7,11 @@ A desktop application for managing and captioning image files.
 
 ![Screenshot of Yofardev Captioner](assets/screenshot.png)
 
-## Features
+## Run on Desktop
 
-- Browse image folders.
-- View images and their captions.
-- Generate captions using LLM (Large Language Model) configurations.
-- Edit and save captions.
-- Search and replace text within captions.
-- Rename all files in a folder to a numerical sequence.
-- Export images and captions as a ZIP archive.
-- Remove images and their associated caption files.
+For MacOS, directly download the latest version of the app in [Releases](https://github.com/YofarDev/yofardev_captioner_flutter/releases/).
+
+For Windows & Linux :
 
 ## Build & Run with Flutter
 

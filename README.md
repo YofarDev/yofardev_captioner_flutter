@@ -1,7 +1,7 @@
 <img src="assets/logo.png" alt="Yofardev Captioner Logo" width="20%">
 
 
-# Yofardev Captioner
+# Yofardev Captioner (MacOS/Linux/Windows)
 
 A desktop application for managing and captioning image files.
 
@@ -9,9 +9,9 @@ A desktop application for managing and captioning image files.
 
 ## Run on Desktop
 
-For MacOS, directly download the latest version of the app in [Releases](https://github.com/YofarDev/yofardev_captioner_flutter/releases/).
+For MacOS & Linux, directly download the latest version of the app in [Releases](https://github.com/YofarDev/yofardev_captioner_flutter/releases/).
 
-For Windows & Linux :
+For Windows :
 
 ## Build & Run with Flutter
 

@@ -24,6 +24,7 @@ dependencies:
   desktop_drop: ^0.7.0
   nested: ^1.0.0
   macos_secure_bookmarks: ^0.2.1
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -34,3 +35,14 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  windows:
+    generate: true
+    image_path: "assets/logo.png"
+  macos:
+    generate: true
+    image_path: "assets/logo.png"
+  linux:
+    generate: true
+    image_path: "assets/logo.png"

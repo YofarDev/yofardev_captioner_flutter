@@ -20,11 +20,14 @@ class LlmConfigs extends Equatable {
     List<LlmConfig>? configs,
     String? prompt,
     String? selectedConfigId,
+    bool forceSelectedConfigId = false,
   }) {
     return LlmConfigs(
       configs: configs ?? this.configs,
       prompt: prompt ?? this.prompt,
-      selectedConfigId: selectedConfigId ?? this.selectedConfigId,
+      selectedConfigId: forceSelectedConfigId
+          ? selectedConfigId
+          : selectedConfigId ?? this.selectedConfigId,
     );
   }
 

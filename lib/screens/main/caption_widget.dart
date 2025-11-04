@@ -13,6 +13,19 @@ class CaptionWidget extends StatelessWidget {
         if (state.images.isEmpty) {
           return const SizedBox.shrink();
         }
+
+        // Get or create controller for current image
+        final ImagesCubit cubit = context.read<ImagesCubit>();
+        final TextEditingController controller = cubit.getCaptionController(
+          state.currentIndex,
+        );
+
+        // Update text only if it differs (avoids cursor reset)
+        final String currentCaption = state.images[state.currentIndex].caption;
+        if (controller.text != currentCaption) {
+          controller.text = currentCaption;
+        }
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Container(
@@ -22,9 +35,10 @@ class CaptionWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: TextField(
-              controller: TextEditingController(
-                text: state.images[state.currentIndex].caption,
-              ),
+              controller: controller,
+              onChanged: (String value) {
+                cubit.updateCaption(caption: value.trim());
+              },
               maxLines: 8,
               decoration: const InputDecoration(border: InputBorder.none),
             ),

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
@@ -24,13 +24,13 @@ class ImagesCubit extends Cubit<ImagesState> {
   final CaptionRepository _captionRepository = CaptionRepository();
 
   void onInit() async {
+    await _loadLlmConfigs();
     await CacheService.loadFolderPath().then((String? path) {
       if (path != null) {
         onFolderPicked(path);
         emit(state.copyWith(folderPath: path));
       }
     });
-    await _loadLlmConfigs();
   }
 
   Future<void> _loadLlmConfigs() async {
@@ -81,11 +81,23 @@ class ImagesCubit extends Cubit<ImagesState> {
     final List<LlmConfig> newConfigs = state.llmConfigs.configs
         .where((LlmConfig c) => c.id != id)
         .toList();
-    emit(
-      state.copyWith(
-        llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
-      ),
-    );
+
+    if (state.llmConfigs.selectedConfigId == id) {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(
+            configs: newConfigs,
+            forceSelectedConfigId: true,
+          ),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
+        ),
+      );
+    }
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
@@ -262,5 +274,34 @@ class ImagesCubit extends Cubit<ImagesState> {
 
       await Future<void>.delayed(Duration(milliseconds: config.delay));
     }
+  }
+
+  final Map<int, TextEditingController> _controllers =
+      <int, TextEditingController>{};
+
+  TextEditingController getCaptionController(int index) {
+    return _controllers.putIfAbsent(
+      index,
+      () => TextEditingController(text: state.images[index].caption),
+    );
+  }
+
+  void updateCaption({required String caption}) async {
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    updatedImages[state.currentIndex] = state.images[state.currentIndex]
+        .copyWith(caption: caption);
+    emit(state.copyWith(images: updatedImages));
+    await File(
+      p.setExtension(state.images[state.currentIndex].image.path, '.txt'),
+    ).writeAsString(caption);
+  }
+
+  @override
+  Future<void> close() {
+    // Dispose all controllers
+    for (final TextEditingController controller in _controllers.values) {
+      controller.dispose();
+    }
+    return super.close();
   }
 }

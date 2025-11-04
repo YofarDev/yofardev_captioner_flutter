@@ -45,14 +45,3 @@ class LlmConfigWidget extends StatelessWidget {
     );
   }
 }
-
-
-          // TextField(
-          //       controller: TextEditingController(
-          //         text: state.llmConfigs.prompt,
-          //       ),
-          //       decoration: const InputDecoration(labelText: 'Prompt'),
-          //       onChanged: (String value) {
-          //         context.read<ImagesCubit>().updatePrompt(value);
-          //       },
-          //     ),

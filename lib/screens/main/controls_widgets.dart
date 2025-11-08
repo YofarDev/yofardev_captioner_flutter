@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images/images_cubit.dart';
-import '../../services/cache_service.dart';
 import '../main/convert_images_dialog.dart';
 import '../settings/llm_settings_screen.dart';
 import '../widgets/app_button.dart';
@@ -22,7 +21,6 @@ class PickFolderButton extends StatelessWidget {
             );
         if (selectedDirectory != null) {
           context.read<ImagesCubit>().onFolderPicked(selectedDirectory);
-          CacheService.saveFolderPath(selectedDirectory);
         }
       },
     );

@@ -1,13 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-
-import 'package:image/image.dart' as img;
-import 'package:path/path.dart' as p;
+import 'package:flutter/services.dart';
 
 import '../models/app_image.dart';
+import 'bash_scripts_runner.dart';
 
 /// A utility class for image-related operations.
 ///
@@ -73,32 +73,30 @@ class ImageUtils {
     return updated;
   }
 
-  static Future<void> convertAllImages({
-    required List<AppImage> images,
+  static Stream<Map<String, String>> convertAllImages({
+    required String folderPath,
     required String format,
     required int quality,
-  }) async {
-    for (final AppImage appImage in images) {
-      final Uint8List imageBytes = await appImage.image.readAsBytes();
-      final img.Image? image = img.decodeImage(imageBytes);
-      if (image == null) {
-        continue;
+  }) async* {
+    const String scriptAssetPath = 'assets/scripts/convert_images.sh';
+    final String scriptContent = await rootBundle.loadString(scriptAssetPath);
+
+    final Process process = await BashScriptsRunnner.run(
+      scriptContent,
+      <String>[folderPath, format, quality.toString()],
+    );
+
+    final Stream<String> stdoutStream = process.stdout.transform(utf8.decoder);
+
+    await for (final String line in stdoutStream) {
+      if (line.contains('→')) {
+        final List<String> parts = line.split('→');
+        final String filename = parts[0]
+            .split('Converting ')[1]
+            .trim()
+            .split('.')[0];
+        yield <String, String>{'filename': filename};
       }
-
-      List<int> encodedImage;
-      if (format == 'jpg') {
-        encodedImage = img.encodeJpg(image, quality: quality);
-      } else if (format == 'png') {
-        encodedImage = img.encodePng(image);
-      } else {
-        continue;
-      }
-
-      final String newPath = p.setExtension(appImage.image.path, '.$format');
-      final File newFile = File(newPath);
-      await newFile.writeAsBytes(encodedImage);
-
-      await appImage.image.delete();
     }
   }
 }

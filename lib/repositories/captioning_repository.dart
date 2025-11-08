@@ -35,10 +35,16 @@ class CaptioningRepository {
         .toList();
 
     for (final AppImage image in imagesToCaption) {
-      final AppImage updatedImage = await captionImage(config, image, prompt);
-      final int index = images.indexOf(image);
-      images[index] = updatedImage;
-      yield images;
+      try {
+        final AppImage updatedImage = await captionImage(config, image, prompt);
+        final int index = images.indexOf(image);
+        images[index] = updatedImage;
+        yield images;
+      } catch (e) {
+        final int index = images.indexOf(image);
+        images[index] = image.copyWith(error: e.toString());
+        yield images;
+      }
       await Future<void>.delayed(Duration(milliseconds: config.delay));
     }
   }
@@ -49,10 +55,16 @@ class CaptioningRepository {
     String prompt,
   ) async* {
     for (final AppImage image in images) {
-      final AppImage updatedImage = await captionImage(config, image, prompt);
-      final int index = images.indexOf(image);
-      images[index] = updatedImage;
-      yield images;
+      try {
+        final AppImage updatedImage = await captionImage(config, image, prompt);
+        final int index = images.indexOf(image);
+        images[index] = updatedImage;
+        yield images;
+      } catch (e) {
+        final int index = images.indexOf(image);
+        images[index] = image.copyWith(error: e.toString());
+        yield images;
+      }
       await Future<void>.delayed(Duration(milliseconds: config.delay));
     }
   }

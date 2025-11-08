@@ -11,6 +11,11 @@ class ImagesState extends Equatable {
   final int occurrencesCount;
   final String? captioningProgress;
   final bool isCaptioning;
+  final String? captioningError;
+  final int totalImagesToCaption;
+
+  final bool isConverting;
+  final String? conversionLog;
 
   const ImagesState({
     this.images = const <AppImage>[],
@@ -21,19 +26,27 @@ class ImagesState extends Equatable {
     this.occurrencesCount = 0,
     this.captioningProgress,
     this.isCaptioning = false,
+    this.captioningError,
+    this.totalImagesToCaption = 0,
+    this.isConverting = false,
+    this.conversionLog,
   });
 
   @override
   List<Object?> get props => <Object?>[
-    images,
-    currentIndex,
-    folderPath,
-    sortBy,
-    sortAscending,
-    occurrencesCount,
-    captioningProgress,
-    isCaptioning,
-  ];
+        images,
+        currentIndex,
+        folderPath,
+        sortBy,
+        sortAscending,
+        occurrencesCount,
+        captioningProgress,
+        isCaptioning,
+        captioningError,
+        totalImagesToCaption,
+        isConverting,
+        conversionLog,
+      ];
 
   ImagesState copyWith({
     List<AppImage>? images,
@@ -44,6 +57,10 @@ class ImagesState extends Equatable {
     int? occurrencesCount,
     String? captioningProgress,
     bool? isCaptioning,
+    String? captioningError,
+    int? totalImagesToCaption,
+    bool? isConverting,
+    String? conversionLog,
   }) {
     return ImagesState(
       images: images ?? this.images,
@@ -54,9 +71,16 @@ class ImagesState extends Equatable {
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
       captioningProgress: captioningProgress ?? this.captioningProgress,
       isCaptioning: isCaptioning ?? this.isCaptioning,
+      captioningError: captioningError ?? this.captioningError,
+      totalImagesToCaption: totalImagesToCaption ?? this.totalImagesToCaption,
+      isConverting: isConverting ?? this.isConverting,
+      conversionLog: conversionLog ?? this.conversionLog,
     );
   }
 
   int get emptyCaptions =>
       images.where((AppImage image) => image.caption.isEmpty).length;
+
+  bool get hasErrors =>
+      images.any((AppImage image) => image.error != null);
 }

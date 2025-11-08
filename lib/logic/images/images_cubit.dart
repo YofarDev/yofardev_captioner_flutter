@@ -14,6 +14,7 @@ import '../../repositories/captioning_repository.dart';
 import '../../services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
 import '../../utils/caption_utils.dart';
+import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
 
 part 'images_state.dart';
@@ -67,6 +68,7 @@ class ImagesCubit extends Cubit<ImagesState> {
   /// and emits a new state with the loaded images, sorted by name in ascending order.
   void onFolderPicked(String folderPath) async {
     windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
+    CacheService.saveFolderPath(folderPath);
     final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
     emit(
       state.copyWith(
@@ -187,7 +189,7 @@ class ImagesCubit extends Cubit<ImagesState> {
             state.images,
           );
           updatedImages[state.currentIndex] = updatedImage;
-          emit(state.copyWith(images: updatedImages));
+          emit(state.copyWith(images: updatedImages, isCaptioning: false));
         case CaptionOptions.missing:
           final List<AppImage> imagesToCaption = state.images
               .where((AppImage image) => image.caption.isEmpty)
@@ -196,6 +198,7 @@ class ImagesCubit extends Cubit<ImagesState> {
           emit(
             state.copyWith(
               captioningProgress: '$captionedCount/${imagesToCaption.length}',
+              totalImagesToCaption: imagesToCaption.length,
             ),
           );
           try {
@@ -224,6 +227,7 @@ class ImagesCubit extends Cubit<ImagesState> {
             state.copyWith(
               isCaptioning: true,
               captioningProgress: '$captionedCount/${allImages.length}',
+              totalImagesToCaption: allImages.length,
             ),
           );
           try {
@@ -246,7 +250,7 @@ class ImagesCubit extends Cubit<ImagesState> {
           }
       }
     } catch (e) {
-      emit(state.copyWith(isCaptioning: false));
+      emit(state.copyWith(isCaptioning: false, captioningError: e.toString()));
       debugPrint(e.toString());
     }
   }
@@ -298,18 +302,68 @@ class ImagesCubit extends Cubit<ImagesState> {
     emit(state.copyWith(images: updatedImages, currentIndex: newCurrentIndex));
   }
 
-  void convertAllImages({
-    required String format,
-    required int quality,
-  }) async {
+  void clearErrors({int? index}) {
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    if (index != null) {
+      updatedImages[index] = updatedImages[index].copyWith();
+    } else {
+      for (int i = 0; i < updatedImages.length; i++) {
+        if (updatedImages[i].error != null) {
+          updatedImages[i] = updatedImages[i].copyWith();
+        }
+      }
+    }
+    emit(state.copyWith(images: updatedImages));
+  }
+
+  void convertAllImages({required String format, required int quality}) async {
     if (state.folderPath == null) {
       return;
     }
-    await ImageUtils.convertAllImages(
-      images: state.images,
-      format: format,
-      quality: quality,
-    );
-    onFolderPicked(state.folderPath!);
+    emit(state.copyWith(isConverting: true, conversionLog: ''));
+    try {
+      await for (final Map<String, String> update
+          in ImageUtils.convertAllImages(
+            folderPath: state.folderPath!,
+            format: format,
+            quality: quality,
+          )) {
+        final String filename = update['filename']!;
+        final int index = state.images.indexWhere(
+          (AppImage image) =>
+              p.basename(image.image.path).split('.')[0] == filename,
+        );
+        if (index != -1) {
+          final List<AppImage> updatedImages = List<AppImage>.from(
+            state.images,
+          );
+          final String newFullPath = p.join(
+            state.folderPath!,
+            "$filename.$format",
+          );
+          print("New path: $newFullPath");
+          updatedImages[index] = updatedImages[index].copyWith(
+            image: File(newFullPath),
+          );
+          emit(state.copyWith(images: updatedImages));
+        }
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+      emit(state.copyWith(conversionLog: e.toString()));
+    } finally {
+      emit(state.copyWith(isConverting: false));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+      onFolderPicked(state.folderPath!);
+    }
+  }
+
+  Map<String, int> getAspectRatioCounts() {
+    final Map<String, int> counts = <String, int>{};
+    for (final AppImage image in state.images) {
+      final String aspectRatio = image.aspectRatio;
+      counts[aspectRatio] = (counts[aspectRatio] ?? 0) + 1;
+    }
+    return counts;
   }
 }

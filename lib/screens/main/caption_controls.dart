@@ -79,23 +79,31 @@ class _CaptionControlsState extends State<CaptionControls> {
                         !state.isCaptioning
                     ? () {
                         context.read<ImagesCubit>().runCaptioner(
-                          llm: configState.llmConfigs.configs.firstWhere(
-                            (LlmConfig c) =>
-                                c.id == configState.llmConfigs.selectedConfigId,
-                          ),
-                          prompt: configState.llmConfigs.prompt,
-                          option: _selectedOption,
-                        );
+                              llm: configState.llmConfigs.configs.firstWhere(
+                                (LlmConfig c) =>
+                                    c.id ==
+                                    configState.llmConfigs.selectedConfigId,
+                              ),
+                              prompt: configState.llmConfigs.prompt,
+                              option: _selectedOption,
+                            );
                       }
                     : null,
               ),
-
               if (state.isCaptioning)
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
                   child: Text(
                     state.captioningProgress ?? '',
                     style: const TextStyle(color: Colors.green, fontSize: 12),
+                  ),
+                ),
+              if (state.captioningError != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Text(
+                    state.captioningError!,
+                    style: const TextStyle(color: Colors.red, fontSize: 12),
                   ),
                 ),
             ],

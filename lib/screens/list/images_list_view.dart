@@ -53,16 +53,41 @@ class ImagesListView extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: <Widget>[
-                                Text(
-                                  image.image.path.split('/').last,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: index == state.currentIndex
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
+                                Row(
+                                  children: <Widget>[
+                                    Flexible(
+                                      child: Text(
+                                        image.image.path.split('/').last,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight:
+                                              index == state.currentIndex
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
+                                        ),
+                                      ),
+                                    ),
+                                    if (image.error != null)
+                                      Row(
+                                        children: <Widget>[
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              left: 8.0,
+                                            ),
+                                            child: Tooltip(
+                                              message: image.error,
+                                              child: const Icon(
+                                                Icons.error,
+                                                color: Colors.red,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                  ],
                                 ),
                                 Text(
                                   "(${image.image.lengthSync().readableFileSize})",

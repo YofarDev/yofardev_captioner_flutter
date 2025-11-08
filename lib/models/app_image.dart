@@ -8,6 +8,7 @@ class AppImage extends Equatable {
   final int width;
   final int height;
   final int size;
+  final String? error;
 
   const AppImage({
     required this.image,
@@ -15,10 +16,12 @@ class AppImage extends Equatable {
     this.width = -1,
     this.height = -1,
     this.size = -1,
+    this.error,
   });
 
   @override
-  List<Object?> get props => <Object?>[image, caption, width, height, size];
+  List<Object?> get props =>
+      <Object?>[image, caption, width, height, size, error];
 
   AppImage copyWith({
     File? image,
@@ -26,6 +29,7 @@ class AppImage extends Equatable {
     int? width,
     int? height,
     int? size,
+    String? error,
   }) {
     return AppImage(
       image: image ?? this.image,
@@ -33,6 +37,7 @@ class AppImage extends Equatable {
       width: width ?? this.width,
       height: height ?? this.height,
       size: size ?? this.size,
+      error: error ?? this.error,
     );
   }
 }

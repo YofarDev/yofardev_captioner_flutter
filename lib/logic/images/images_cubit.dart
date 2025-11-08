@@ -118,8 +118,21 @@ class ImagesCubit extends Cubit<ImagesState> {
   /// Selects an image at the given [index].
   ///
   /// Emits a new state with the [currentIndex] updated.
-  void onImageSelected(int index) {
+  void onImageSelected(int index) async {
     emit(state.copyWith(currentIndex: index));
+    if (!(await _checkAllFiles())) {
+      onFolderPicked(state.folderPath!);
+    }
+  }
+
+  Future<bool> _checkAllFiles() async {
+    for (final AppImage image in state.images) {
+      final bool exists = await image.image.exists();
+      if (!exists) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Asynchronously retrieves the sizes of all images in the current state.
@@ -199,26 +212,45 @@ class ImagesCubit extends Cubit<ImagesState> {
             state.copyWith(
               captioningProgress: '$captionedCount/${imagesToCaption.length}',
               totalImagesToCaption: imagesToCaption.length,
+              imagesBeingProcessed: imagesToCaption
+                  .map((AppImage e) => e.image.path)
+                  .toList(),
             ),
           );
           try {
-            await for (final List<AppImage> images
+            await for (final AppImage image
                 in _captioningRepository.captionMissing(
                   List<AppImage>.from(state.images),
                   llm,
                   prompt,
                 )) {
               captionedCount++;
+              final int index = state.images.indexWhere(
+                (AppImage element) => element.image.path == image.image.path,
+              );
+              final List<AppImage> updatedImages = List<AppImage>.from(
+                state.images,
+              );
+              updatedImages[index] = image;
+              final List<String> imagesBeingProcessed = List<String>.from(
+                state.imagesBeingProcessed,
+              )..remove(image.image.path);
               emit(
                 state.copyWith(
-                  images: images,
+                  images: updatedImages,
                   captioningProgress:
                       '$captionedCount/${imagesToCaption.length}',
+                  imagesBeingProcessed: imagesBeingProcessed,
                 ),
               );
             }
           } finally {
-            emit(state.copyWith(isCaptioning: false));
+            emit(
+              state.copyWith(
+                isCaptioning: false,
+                imagesBeingProcessed: <String>[],
+              ),
+            );
           }
         case CaptionOptions.all:
           final List<AppImage> allImages = List<AppImage>.from(state.images);
@@ -228,25 +260,43 @@ class ImagesCubit extends Cubit<ImagesState> {
               isCaptioning: true,
               captioningProgress: '$captionedCount/${allImages.length}',
               totalImagesToCaption: allImages.length,
+              imagesBeingProcessed: allImages
+                  .map((AppImage e) => e.image.path)
+                  .toList(),
             ),
           );
           try {
-            await for (final List<AppImage> images
-                in _captioningRepository.captionAll(
-                  List<AppImage>.from(state.images),
-                  llm,
-                  prompt,
-                )) {
+            await for (final AppImage image in _captioningRepository.captionAll(
+              List<AppImage>.from(state.images),
+              llm,
+              prompt,
+            )) {
               captionedCount++;
+              final int index = state.images.indexWhere(
+                (AppImage element) => element.image.path == image.image.path,
+              );
+              final List<AppImage> updatedImages = List<AppImage>.from(
+                state.images,
+              );
+              updatedImages[index] = image;
+              final List<String> imagesBeingProcessed = List<String>.from(
+                state.imagesBeingProcessed,
+              )..remove(image.image.path);
               emit(
                 state.copyWith(
-                  images: images,
+                  images: updatedImages,
                   captioningProgress: '$captionedCount/${allImages.length}',
+                  imagesBeingProcessed: imagesBeingProcessed,
                 ),
               );
             }
           } finally {
-            emit(state.copyWith(isCaptioning: false));
+            emit(
+              state.copyWith(
+                isCaptioning: false,
+                imagesBeingProcessed: <String>[],
+              ),
+            );
           }
       }
     } catch (e) {
@@ -341,7 +391,7 @@ class ImagesCubit extends Cubit<ImagesState> {
             state.folderPath!,
             "$filename.$format",
           );
-          print("New path: $newFullPath");
+
           updatedImages[index] = updatedImages[index].copyWith(
             image: File(newFullPath),
           );

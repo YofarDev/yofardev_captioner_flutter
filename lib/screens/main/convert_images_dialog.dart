@@ -17,8 +17,7 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ImagesCubit, ImagesState>(
-      listener: (BuildContext context, ImagesState state) {
-      },
+      listener: (BuildContext context, ImagesState state) {},
       builder: (BuildContext context, ImagesState state) {
         return AlertDialog(
           title: const Text('Convert All Images'),
@@ -31,7 +30,10 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
                   items: const <DropdownMenuItem<String>>[
                     DropdownMenuItem<String>(value: 'jpg', child: Text('JPG')),
                     DropdownMenuItem<String>(value: 'png', child: Text('PNG')),
-                    DropdownMenuItem<String>(value: 'webp', child: Text('WebP')),
+                    DropdownMenuItem<String>(
+                      value: 'webp',
+                      child: Text('WebP'),
+                    ),
                   ],
                   onChanged: (String? value) {
                     if (value != null) {
@@ -42,7 +44,8 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
                   },
                   decoration: const InputDecoration(labelText: 'Format'),
                 ),
-              if (!state.isConverting && (_format == 'jpg' || _format == 'webp'))
+              if (!state.isConverting &&
+                  (_format == 'jpg' || _format == 'webp'))
                 Column(
                   children: <Widget>[
                     const SizedBox(height: 16),
@@ -81,9 +84,9 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
               ElevatedButton(
                 onPressed: () {
                   context.read<ImagesCubit>().convertAllImages(
-                        format: _format,
-                        quality: _quality.round(),
-                      );
+                    format: _format,
+                    quality: _quality.round(),
+                  );
                 },
                 child: const Text('Convert'),
               ),

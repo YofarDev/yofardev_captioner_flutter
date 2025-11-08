@@ -13,7 +13,10 @@ class CacheService {
     return prefs.getString(_folderPathKey);
   }
 
-  static Future<void> saveMacosBookmark({required String bookmark, required String folderPath}) async {
+  static Future<void> saveMacosBookmark({
+    required String bookmark,
+    required String folderPath,
+  }) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(folderPath, bookmark);
   }

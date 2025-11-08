@@ -17,7 +17,9 @@ class LlmConfigService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? jsonString = prefs.getString(_llmConfigsKey);
     if (jsonString != null) {
-      return LlmConfigs.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
+      return LlmConfigs.fromJson(
+        jsonDecode(jsonString) as Map<String, dynamic>,
+      );
     }
     return null;
   }

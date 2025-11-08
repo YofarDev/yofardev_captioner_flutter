@@ -26,15 +26,22 @@ class CaptionTextArea extends StatelessWidget {
           controller.text = currentCaption;
         }
 
+        final bool isProcessing = state.imagesBeingProcessed.contains(
+          state.images[state.currentIndex].image.path,
+        );
+
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withAlpha(50),
+              color: isProcessing
+                  ? Colors.black.withAlpha(20)
+                  : Colors.black.withAlpha(50),
               borderRadius: BorderRadius.circular(8),
             ),
             child: TextField(
+              readOnly: isProcessing,
               controller: controller,
               onChanged: (String value) {
                 cubit.updateCaption(caption: value.trim());

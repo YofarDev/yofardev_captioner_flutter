@@ -4,6 +4,7 @@ import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/app_image.dart';
 import '../services/cache_service.dart';
@@ -196,10 +197,17 @@ class AppFileUtils {
   /// Exports all [images] and their associated caption files from [folderPath] into a zip archive.
   ///
   /// The user is prompted to select an output file location for the archive.
+  /// Defaults to the Downloads folder.
   Future<void> exportAsArchive(String folderPath, List<AppImage> images) async {
+    // Get the Downloads directory path
+    final String? downloadsPath = await getDownloadsDirectory().then(
+      (Directory? dir) => dir?.path,
+    );
+
     final String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file',
       fileName: 'archive.zip',
+      initialDirectory: downloadsPath,
     );
 
     if (outputFile == null) {
@@ -208,6 +216,7 @@ class AppFileUtils {
 
     final ZipFileEncoder encoder = ZipFileEncoder();
     encoder.create(outputFile);
+
     for (final AppImage image in images) {
       await encoder.addFile(image.image);
       final File captionFile = File(p.setExtension(image.image.path, '.txt'));
@@ -215,6 +224,7 @@ class AppFileUtils {
         await encoder.addFile(captionFile);
       }
     }
+
     encoder.close();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images/images_cubit.dart';
@@ -101,6 +102,25 @@ class ImagesListView extends StatelessWidget {
                               ],
                             ),
                           ),
+                          if (image.caption.isNotEmpty)
+                            Tooltip(
+                              message: 'Copy caption',
+                              child: IconButton(
+                                icon: const Icon(Icons.copy, size: 16),
+                                onPressed: () {
+                                  Clipboard.setData(
+                                    ClipboardData(text: image.caption),
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Caption copied to clipboard',
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
                           IconButton(
                             icon: const Icon(Icons.delete, size: 16),
                             onPressed: () {

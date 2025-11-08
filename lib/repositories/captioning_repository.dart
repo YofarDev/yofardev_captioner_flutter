@@ -25,7 +25,7 @@ class CaptioningRepository {
     return image.copyWith(caption: caption);
   }
 
-  Stream<List<AppImage>> captionMissing(
+  Stream<AppImage> captionMissing(
     List<AppImage> images,
     LlmConfig config,
     String prompt,
@@ -37,19 +37,15 @@ class CaptioningRepository {
     for (final AppImage image in imagesToCaption) {
       try {
         final AppImage updatedImage = await captionImage(config, image, prompt);
-        final int index = images.indexOf(image);
-        images[index] = updatedImage;
-        yield images;
+        yield updatedImage;
       } catch (e) {
-        final int index = images.indexOf(image);
-        images[index] = image.copyWith(error: e.toString());
-        yield images;
+        yield image.copyWith(error: e.toString());
       }
       await Future<void>.delayed(Duration(milliseconds: config.delay));
     }
   }
 
-  Stream<List<AppImage>> captionAll(
+  Stream<AppImage> captionAll(
     List<AppImage> images,
     LlmConfig config,
     String prompt,
@@ -57,13 +53,9 @@ class CaptioningRepository {
     for (final AppImage image in images) {
       try {
         final AppImage updatedImage = await captionImage(config, image, prompt);
-        final int index = images.indexOf(image);
-        images[index] = updatedImage;
-        yield images;
+        yield updatedImage;
       } catch (e) {
-        final int index = images.indexOf(image);
-        images[index] = image.copyWith(error: e.toString());
-        yield images;
+        yield image.copyWith(error: e.toString());
       }
       await Future<void>.delayed(Duration(milliseconds: config.delay));
     }

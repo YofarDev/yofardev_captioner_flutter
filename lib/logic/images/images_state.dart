@@ -13,6 +13,7 @@ class ImagesState extends Equatable {
   final bool isCaptioning;
   final String? captioningError;
   final int totalImagesToCaption;
+  final List<String> imagesBeingProcessed;
 
   final bool isConverting;
   final String? conversionLog;
@@ -28,25 +29,27 @@ class ImagesState extends Equatable {
     this.isCaptioning = false,
     this.captioningError,
     this.totalImagesToCaption = 0,
+    this.imagesBeingProcessed = const <String>[],
     this.isConverting = false,
     this.conversionLog,
   });
 
   @override
   List<Object?> get props => <Object?>[
-        images,
-        currentIndex,
-        folderPath,
-        sortBy,
-        sortAscending,
-        occurrencesCount,
-        captioningProgress,
-        isCaptioning,
-        captioningError,
-        totalImagesToCaption,
-        isConverting,
-        conversionLog,
-      ];
+    images,
+    currentIndex,
+    folderPath,
+    sortBy,
+    sortAscending,
+    occurrencesCount,
+    captioningProgress,
+    isCaptioning,
+    captioningError,
+    totalImagesToCaption,
+    imagesBeingProcessed,
+    isConverting,
+    conversionLog,
+  ];
 
   ImagesState copyWith({
     List<AppImage>? images,
@@ -59,6 +62,7 @@ class ImagesState extends Equatable {
     bool? isCaptioning,
     String? captioningError,
     int? totalImagesToCaption,
+    List<String>? imagesBeingProcessed,
     bool? isConverting,
     String? conversionLog,
   }) {
@@ -73,6 +77,7 @@ class ImagesState extends Equatable {
       isCaptioning: isCaptioning ?? this.isCaptioning,
       captioningError: captioningError ?? this.captioningError,
       totalImagesToCaption: totalImagesToCaption ?? this.totalImagesToCaption,
+      imagesBeingProcessed: imagesBeingProcessed ?? this.imagesBeingProcessed,
       isConverting: isConverting ?? this.isConverting,
       conversionLog: conversionLog ?? this.conversionLog,
     );
@@ -81,6 +86,5 @@ class ImagesState extends Equatable {
   int get emptyCaptions =>
       images.where((AppImage image) => image.caption.isEmpty).length;
 
-  bool get hasErrors =>
-      images.any((AppImage image) => image.error != null);
+  bool get hasErrors => images.any((AppImage image) => image.error != null);
 }

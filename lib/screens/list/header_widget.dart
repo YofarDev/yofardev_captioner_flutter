@@ -21,8 +21,9 @@ class HeaderWidget extends StatelessWidget {
                 return const AspectRatioDialog();
               },
             );
-            context.read<ImagesCubit>().state.images.forEach((AppImage image) {
-            });
+            context.read<ImagesCubit>().state.images.forEach(
+              (AppImage image) {},
+            );
           },
           child: ColoredBox(
             color: Colors.black.withAlpha(50),
@@ -33,9 +34,23 @@ class HeaderWidget extends StatelessWidget {
                 children: <Widget>[
                   // Text(state.folderPath!, style: const TextStyle(fontSize: 9)),
                   const SizedBox(height: 8),
-                  Text(
-                    "${state.images.length} images / ${state.images.length - state.emptyCaptions} captions",
-                    style: const TextStyle(fontSize: 9),
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        "${state.images.length} images / ${state.images.length - state.emptyCaptions} captions",
+                        style: const TextStyle(fontSize: 9),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, size: 16),
+                        onPressed: state.folderPath == null
+                            ? null
+                            : () {
+                                context.read<ImagesCubit>().onFolderPicked(
+                                  state.folderPath!,
+                                );
+                              },
+                      ),
+                    ],
                   ),
                   const SortByWidget(),
                 ],

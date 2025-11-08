@@ -79,14 +79,13 @@ class _CaptionControlsState extends State<CaptionControls> {
                         !state.isCaptioning
                     ? () {
                         context.read<ImagesCubit>().runCaptioner(
-                              llm: configState.llmConfigs.configs.firstWhere(
-                                (LlmConfig c) =>
-                                    c.id ==
-                                    configState.llmConfigs.selectedConfigId,
-                              ),
-                              prompt: configState.llmConfigs.prompt,
-                              option: _selectedOption,
-                            );
+                          llm: configState.llmConfigs.configs.firstWhere(
+                            (LlmConfig c) =>
+                                c.id == configState.llmConfigs.selectedConfigId,
+                          ),
+                          prompt: configState.llmConfigs.prompt,
+                          option: _selectedOption,
+                        );
                       }
                     : null,
               ),
@@ -101,9 +100,9 @@ class _CaptionControlsState extends State<CaptionControls> {
               if (state.captioningError != null)
                 Padding(
                   padding: const EdgeInsets.only(left: 8.0),
-                  child: Text(
-                    state.captioningError!,
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
+                  child: Tooltip(
+                    message: state.captioningError,
+                    child: const Icon(Icons.error, color: Colors.red, size: 16),
                   ),
                 ),
             ],

@@ -14,7 +14,11 @@ class CaptionUtils {
   /// [replace]: The string to replace [search] with.
   /// [images]: The list of [AppImage]s whose captions will be modified.
   /// Returns a new list of [AppImage]s with updated captions.
-  List<AppImage> searchAndReplace(String search, String replace, List<AppImage> images) {
+  List<AppImage> searchAndReplace(
+    String search,
+    String replace,
+    List<AppImage> images,
+  ) {
     final List<AppImage> updatedImages = <AppImage>[];
     for (final AppImage image in images) {
       final String captionPath = p.setExtension(image.image.path, '.txt');

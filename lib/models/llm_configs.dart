@@ -1,21 +1,17 @@
 import 'package:equatable/equatable.dart';
-
 import 'llm_config.dart';
 
 class LlmConfigs extends Equatable {
   final List<LlmConfig> configs;
   final String prompt;
   final String? selectedConfigId;
-
   const LlmConfigs({
     required this.configs,
     required this.prompt,
     this.selectedConfigId,
   });
-
   @override
   List<Object?> get props => <Object?>[configs, prompt, selectedConfigId];
-
   LlmConfigs copyWith({
     List<LlmConfig>? configs,
     String? prompt,
@@ -40,7 +36,6 @@ class LlmConfigs extends Equatable {
       selectedConfigId: json['selectedConfigId'] as String?,
     );
   }
-
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'configs': configs.map((LlmConfig e) => e.toJson()).toList(),

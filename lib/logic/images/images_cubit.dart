@@ -14,6 +14,7 @@ import '../../repositories/captioning_repository.dart';
 import '../../services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
 import '../../utils/caption_utils.dart';
+import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
 import 'helpers/captioning_helper.dart';
 import 'helpers/image_operations_helper.dart';
@@ -32,13 +33,11 @@ class ImagesCubit extends Cubit<ImagesState> {
     _captioningHelper = CaptioningHelper(_captioningRepository);
     _imageOperationsHelper = ImageOperationsHelper();
   }
-
   final AppFileUtils _fileUtils = AppFileUtils();
   final CaptionUtils _captionUtils = CaptionUtils();
   final CaptioningRepository _captioningRepository = CaptioningRepository();
   late final CaptioningHelper _captioningHelper;
   late final ImageOperationsHelper _imageOperationsHelper;
-
   final Map<int, TextEditingController> _controllers =
       <int, TextEditingController>{};
 
@@ -228,8 +227,10 @@ class ImagesCubit extends Cubit<ImagesState> {
     onFolderPicked(state.folderPath!);
   }
 
-  Future<void> cropCurrentImage() async {
-    final ImagesState? newState = await _imageOperationsHelper.cropCurrentImage(
+  Future<void> cropCurrentImage(BuildContext context) async {
+    final ImagesState? newState =
+        await _imageOperationsHelper.cropCurrentImage(
+      context,
       state,
     );
     if (newState != null) {

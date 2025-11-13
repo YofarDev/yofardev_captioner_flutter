@@ -8,7 +8,6 @@ class LlmConfig extends Equatable {
   final String model;
   final String apiKey;
   final int delay;
-
   LlmConfig({
     String? id,
     required this.name,
@@ -17,10 +16,8 @@ class LlmConfig extends Equatable {
     required this.apiKey,
     required this.delay,
   }) : id = id ?? const Uuid().v4();
-
   @override
   List<Object?> get props => <Object?>[id, name, url, model, apiKey, delay];
-
   LlmConfig copyWith({
     String? id,
     String? name,
@@ -49,7 +46,6 @@ class LlmConfig extends Equatable {
       delay: json['delay'] as int,
     );
   }
-
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
       'id': id,

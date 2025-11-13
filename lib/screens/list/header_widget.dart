@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 import '../../models/app_image.dart';
 import '../main/aspect_ratio_dialog.dart';
@@ -8,7 +7,6 @@ import 'sort_by_widget.dart';
 
 class HeaderWidget extends StatelessWidget {
   const HeaderWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImagesCubit, ImagesState>(

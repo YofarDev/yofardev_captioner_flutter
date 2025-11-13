@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/caption_options.dart';
@@ -9,14 +8,12 @@ import '../widgets/app_button.dart';
 
 class CaptionControls extends StatefulWidget {
   const CaptionControls({super.key});
-
   @override
   State<CaptionControls> createState() => _CaptionControlsState();
 }
 
 class _CaptionControlsState extends State<CaptionControls> {
   CaptionOptions _selectedOption = CaptionOptions.values.first;
-
   @override
   Widget build(BuildContext context) {
     return RadioGroup<CaptionOptions>(

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 
 class CaptionTextArea extends StatelessWidget {
   const CaptionTextArea({super.key});
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImagesCubit, ImagesState>(
@@ -13,23 +11,19 @@ class CaptionTextArea extends StatelessWidget {
         if (state.images.isEmpty) {
           return const SizedBox.shrink();
         }
-
         // Get or create controller for current image
         final ImagesCubit cubit = context.read<ImagesCubit>();
         final TextEditingController controller = cubit.getCaptionController(
           state.currentIndex,
         );
-
         // Update text only if it differs (avoids cursor reset)
         final String currentCaption = state.images[state.currentIndex].caption;
         if (controller.text != currentCaption) {
           controller.text = currentCaption;
         }
-
         final bool isProcessing = state.imagesBeingProcessed.contains(
           state.images[state.currentIndex].image.path,
         );
-
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Container(

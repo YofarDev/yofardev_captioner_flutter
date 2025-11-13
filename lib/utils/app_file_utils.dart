@@ -1,11 +1,9 @@
 import 'dart:io';
-
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-
 import '../models/app_image.dart';
 import '../services/cache_service.dart';
 
@@ -28,51 +26,39 @@ class AppFileUtils {
       '.PNG',
       '.WEBP',
     ];
-
     final Directory directory = Directory(folderPath);
     final List<File> allFiles = directory.listSync().whereType<File>().toList();
-
     final List<File> imageFiles = allFiles.where((File file) {
       final String ext = p.extension(file.path);
       return imageExtensions.contains(ext);
     }).toList();
-
     final List<File> sortedImageFiles = _sortFiles(imageFiles);
-
     final int padding = sortedImageFiles.length.toString().length;
-
     final List<Map<String, dynamic>> renamingPlan = <Map<String, dynamic>>[];
     for (int i = 0; i < sortedImageFiles.length; i++) {
       final File originalFile = sortedImageFiles[i];
       final String suffix = p.extension(originalFile.path);
       final String newNumberStr = (i + 1).toString().padLeft(padding, '0');
-
       renamingPlan.add(<String, dynamic>{
         'originalPath': originalFile.path,
         'newNumber': newNumberStr,
         'suffix': suffix,
       });
     }
-
     final Map<String, Map<String, String>> tempRenames =
         <String, Map<String, String>>{};
-
     for (final Map<String, dynamic> plan in renamingPlan) {
       final String originalPath = plan['originalPath'] as String;
       final String newNumberStr = plan['newNumber'] as String;
       final String suffix = plan['suffix'] as String;
-
       final String tempFilename = 'temp_$newNumberStr$suffix';
       final String tempFullPath = p.join(folderPath, tempFilename);
-
       await File(originalPath).rename(tempFullPath);
-
       tempRenames[tempFullPath] = <String, String>{
         'original': p.basename(originalPath),
         'newNumber': newNumberStr,
         'suffix': suffix,
       };
-
       final String originalTextPath = '${p.withoutExtension(originalPath)}.txt';
       if (await File(originalTextPath).exists()) {
         final String tempTextFilename = 'temp_$newNumberStr.txt';
@@ -80,18 +66,14 @@ class AppFileUtils {
         await File(originalTextPath).rename(tempTextFullPath);
       }
     }
-
     for (final MapEntry<String, Map<String, String>> entry
         in tempRenames.entries) {
       final String tempFullPath = entry.key;
       final String newNumberStr = entry.value['newNumber']!;
       final String suffix = entry.value['suffix']!;
-
       final String finalFilename = '$newNumberStr$suffix';
       final String finalFullPath = p.join(folderPath, finalFilename);
-
       await File(tempFullPath).rename(finalFullPath);
-
       final String tempTextPath = '${p.withoutExtension(tempFullPath)}.txt';
       if (await File(tempTextPath).exists()) {
         final String finalTextFilename = '$newNumberStr.txt';
@@ -122,11 +104,9 @@ class AppFileUtils {
         .allMatches(b)
         .map((RegExpMatch m) => m.group(0)!)
         .toList();
-
     for (int i = 0; i < aParts.length && i < bParts.length; i++) {
       final int? aNum = int.tryParse(aParts[i]);
       final int? bNum = int.tryParse(bParts[i]);
-
       if (aNum != null && bNum != null) {
         if (aNum != bNum) return aNum.compareTo(bNum);
       } else {
@@ -134,7 +114,6 @@ class AppFileUtils {
         if (cmp != 0) return cmp;
       }
     }
-
     return aParts.length.compareTo(bParts.length);
   }
 
@@ -145,7 +124,6 @@ class AppFileUtils {
     final Directory dir = await _managePersistentPermission(folderPath);
     final List<FileSystemEntity> files = dir.listSync();
     final List<AppImage> images = <AppImage>[];
-
     for (final FileSystemEntity file in files) {
       if (file is File) {
         final String extension = p.extension(file.path).toLowerCase();
@@ -203,20 +181,16 @@ class AppFileUtils {
     final String? downloadsPath = await getDownloadsDirectory().then(
       (Directory? dir) => dir?.path,
     );
-
     final String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file',
       fileName: 'archive.zip',
       initialDirectory: downloadsPath,
     );
-
     if (outputFile == null) {
       return;
     }
-
     final ZipFileEncoder encoder = ZipFileEncoder();
     encoder.create(outputFile);
-
     for (final AppImage image in images) {
       await encoder.addFile(image.image);
       final File captionFile = File(p.setExtension(image.image.path, '.txt'));
@@ -224,7 +198,6 @@ class AppFileUtils {
         await encoder.addFile(captionFile);
       }
     }
-
     encoder.close();
   }
 

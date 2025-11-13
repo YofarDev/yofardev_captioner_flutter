@@ -1,15 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:path/path.dart' as p;
-
 import '../models/app_image.dart';
 import '../models/llm_config.dart';
 import '../repositories/caption_repository.dart';
 
 class CaptioningRepository {
   final CaptionRepository _captionRepository = CaptionRepository();
-
   Future<AppImage> captionImage(
     LlmConfig config,
     AppImage image,
@@ -33,7 +30,6 @@ class CaptioningRepository {
     final List<AppImage> imagesToCaption = images
         .where((AppImage image) => image.caption.isEmpty)
         .toList();
-
     for (final AppImage image in imagesToCaption) {
       try {
         final AppImage updatedImage = await captionImage(config, image, prompt);

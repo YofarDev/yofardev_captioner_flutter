@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'caption_controls.dart';
 import 'controls_widgets.dart';
 import 'export_button.dart';
@@ -8,7 +7,6 @@ import 'search_and_replace_widget.dart';
 
 class ControlsView extends StatelessWidget {
   const ControlsView({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -37,7 +35,6 @@ class ControlsView extends StatelessWidget {
       ExportButton(),
     ],
   );
-
   Widget _buildSecondRow() => const Row(
     mainAxisSize: MainAxisSize.min,
     children: <Widget>[

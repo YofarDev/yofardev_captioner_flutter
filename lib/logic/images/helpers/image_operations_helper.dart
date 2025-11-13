@@ -4,17 +4,16 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
-import 'package:image_cropper/image_cropper.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../models/app_image.dart';
+import '../../../screens/main/crop_image_screen.dart';
 import '../../../utils/app_file_utils.dart';
 import '../../../utils/image_utils.dart';
 import '../images_cubit.dart';
 
 class ImageOperationsHelper {
   final AppFileUtils _fileUtils = AppFileUtils();
-
   Future<void> renameAllFiles(String folderPath) async {
     await _fileUtils.renameFilesToNumbers(folderPath);
   }
@@ -26,10 +25,8 @@ class ImageOperationsHelper {
   ImagesState removeImage(int index, ImagesState state) {
     final AppImage image = state.images[index];
     _fileUtils.removeImage(image);
-
     final List<AppImage> updatedImages = List<AppImage>.from(state.images)
       ..removeAt(index);
-
     int newCurrentIndex = state.currentIndex;
     if (index == newCurrentIndex) {
       if (updatedImages.isEmpty) {
@@ -38,7 +35,6 @@ class ImageOperationsHelper {
         newCurrentIndex = updatedImages.length - 1;
       }
     }
-
     return state.copyWith(images: updatedImages, currentIndex: newCurrentIndex);
   }
 
@@ -81,7 +77,6 @@ class ImageOperationsHelper {
     if (index != -1) {
       final List<AppImage> updatedImages = List<AppImage>.from(state.images);
       final String newFullPath = p.join(state.folderPath!, "$filename.$format");
-
       updatedImages[index] = updatedImages[index].copyWith(
         image: File(newFullPath),
       );
@@ -89,53 +84,39 @@ class ImageOperationsHelper {
     }
   }
 
-  Future<ImagesState?> cropCurrentImage(ImagesState state) async {
+  Future<ImagesState?> cropCurrentImage(
+    BuildContext context,
+    ImagesState state,
+  ) async {
     final AppImage currentImage = state.images[state.currentIndex];
-    final CroppedFile? croppedFile = await ImageCropper().cropImage(
-      sourcePath: currentImage.image.path,
-      uiSettings: <PlatformUiSettings>[
-        AndroidUiSettings(
-          toolbarTitle: 'Crop Image',
-          toolbarColor: Colors.deepOrange,
-          toolbarWidgetColor: Colors.white,
-          initAspectRatio: CropAspectRatioPreset.original,
-          lockAspectRatio: false,
-          aspectRatioPresets: <CropAspectRatioPreset>[
-            CropAspectRatioPreset.original,
-            CropAspectRatioPreset.square,
-            CropAspectRatioPreset.ratio3x2,
-            CropAspectRatioPreset.ratio4x3,
-            CropAspectRatioPreset.ratio16x9,
-          ],
-        ),
-        IOSUiSettings(title: 'Crop Image'),
-      ],
+    final Uint8List? croppedData = await Navigator.push(
+      context,
+      MaterialPageRoute<Uint8List>(
+        builder: (BuildContext context) =>
+            CropImageScreen(image: currentImage.image.readAsBytesSync()),
+      ),
     );
 
-    if (croppedFile != null) {
-      return _processCroppedImage(croppedFile, state);
+    if (croppedData != null) {
+      return _processCroppedImage(croppedData, state);
     }
     return null;
   }
 
   Future<ImagesState> _processCroppedImage(
-    CroppedFile croppedFile,
+    Uint8List croppedData,
     ImagesState state,
   ) async {
     final AppImage currentImage = state.images[state.currentIndex];
-    final Uint8List bytes = await croppedFile.readAsBytes();
-    final img.Image? image = img.decodeImage(bytes);
-
+    final img.Image? image = img.decodeImage(croppedData);
     if (image != null) {
       final int newWidth = (image.width / 8).round() * 8;
       final int newHeight = (image.height / 8).round() * 8;
-
       final img.Image resizedImage = img.copyResize(
         image,
         width: newWidth,
         height: newHeight,
       );
-
       final List<int> resizedBytes;
       final String extension = p
           .extension(currentImage.image.path)
@@ -145,9 +126,7 @@ class ImageOperationsHelper {
       } else {
         resizedBytes = img.encodePng(resizedImage);
       }
-
       await currentImage.image.writeAsBytes(resizedBytes);
-
       // Reload the image to update UI
       final List<AppImage> updatedImages = List<AppImage>.from(state.images);
       final AppImage updatedImage = await ImageUtils.getImagesSize(<AppImage>[

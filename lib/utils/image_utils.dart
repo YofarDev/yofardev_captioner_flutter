@@ -2,10 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
 import '../models/app_image.dart';
 import 'bash_scripts_runner.dart';
 
@@ -21,18 +19,13 @@ class ImageUtils {
   static Future<Size> getImageDimensions(String imagePath) async {
     final File imageFile = File(imagePath);
     final Uint8List bytes = await imageFile.readAsBytes();
-
     final ui.Codec codec = await ui.instantiateImageCodec(bytes);
-
     final ui.FrameInfo frameInfo = await codec.getNextFrame();
     final ui.Image image = frameInfo.image;
-
     final int width = image.width;
     final int height = image.height;
-
     image.dispose();
     codec.dispose();
-
     return Size(width.toDouble(), height.toDouble());
   }
 
@@ -80,14 +73,11 @@ class ImageUtils {
   }) async* {
     const String scriptAssetPath = 'assets/scripts/convert_images.sh';
     final String scriptContent = await rootBundle.loadString(scriptAssetPath);
-
     final Process process = await BashScriptsRunnner.run(
       scriptContent,
       <String>[folderPath, format, quality.toString()],
     );
-
     final Stream<String> stdoutStream = process.stdout.transform(utf8.decoder);
-
     await for (final String line in stdoutStream) {
       if (line.contains('→')) {
         final List<String> parts = line.split('→');
@@ -104,7 +94,6 @@ class ImageUtils {
     if (width <= 0 || height <= 0) {
       return '...';
     }
-
     final int gcd = _gcd(width, height);
     return '${width ~/ gcd}:${height ~/ gcd}';
   }

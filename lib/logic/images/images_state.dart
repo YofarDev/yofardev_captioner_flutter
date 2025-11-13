@@ -14,10 +14,8 @@ class ImagesState extends Equatable {
   final String? captioningError;
   final int totalImagesToCaption;
   final List<String> imagesBeingProcessed;
-
   final bool isConverting;
   final String? conversionLog;
-
   const ImagesState({
     this.images = const <AppImage>[],
     this.currentIndex = 0,
@@ -33,7 +31,6 @@ class ImagesState extends Equatable {
     this.isConverting = false,
     this.conversionLog,
   });
-
   @override
   List<Object?> get props => <Object?>[
     images,
@@ -50,7 +47,6 @@ class ImagesState extends Equatable {
     isConverting,
     conversionLog,
   ];
-
   ImagesState copyWith({
     List<AppImage>? images,
     int? currentIndex,
@@ -85,6 +81,5 @@ class ImagesState extends Equatable {
 
   int get emptyCaptions =>
       images.where((AppImage image) => image.caption.isEmpty).length;
-
   bool get hasErrors => images.any((AppImage image) => image.error != null);
 }

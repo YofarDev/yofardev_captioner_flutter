@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 import '../widgets/app_button.dart';
 
 class SearchAndReplaceWidget extends StatefulWidget {
   const SearchAndReplaceWidget({super.key});
-
   @override
   State<SearchAndReplaceWidget> createState() => _SearchAndReplaceWidgetState();
 }
@@ -14,7 +12,6 @@ class SearchAndReplaceWidget extends StatefulWidget {
 class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _replaceController = TextEditingController();
-
   @override
   Widget build(BuildContext context) {
     return AppButton(

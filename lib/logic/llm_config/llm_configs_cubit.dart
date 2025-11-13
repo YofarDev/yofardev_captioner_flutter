@@ -1,10 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../models/llm_config.dart';
 import '../../models/llm_configs.dart';
 import '../../services/llm_config_service.dart';
-
 part 'llm_configs_state.dart';
 
 /// A Cubit that manages the state of LLM (Large Language Model) configurations.
@@ -76,7 +74,6 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     final List<LlmConfig> newConfigs = state.llmConfigs.configs
         .where((LlmConfig c) => c.id != id)
         .toList();
-
     if (state.llmConfigs.selectedConfigId == id) {
       emit(
         state.copyWith(

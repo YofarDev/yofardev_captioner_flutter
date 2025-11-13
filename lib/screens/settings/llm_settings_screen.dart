@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/llm_config.dart';
 import '../../res/app_colors.dart';
 
 class LlmSettingsScreen extends StatefulWidget {
   const LlmSettingsScreen({super.key});
-
   @override
   State<LlmSettingsScreen> createState() => _LlmSettingsScreenState();
 }
@@ -30,7 +28,6 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     final TextEditingController delayController = TextEditingController(
       text: config?.delay.toString(),
     );
-
     await showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -98,7 +95,6 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     final TextEditingController promptController = TextEditingController(
       text: currentPrompt,
     );
-
     await showDialog(
       context: context,
       builder: (BuildContext context) {

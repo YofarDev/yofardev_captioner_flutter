@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:equatable/equatable.dart';
 
 class AppImage extends Equatable {
@@ -9,7 +8,6 @@ class AppImage extends Equatable {
   final int height;
   final int size;
   final String? error;
-
   const AppImage({
     required this.image,
     required this.caption,
@@ -18,13 +16,6 @@ class AppImage extends Equatable {
     this.size = -1,
     this.error,
   });
-
-  String get aspectRatio {
-    if (width == -1 || height == -1 || height == 0) {
-      return '...';
-    }
-    return (width / height).toStringAsFixed(2);
-  }
 
   double get aspectRatioAsDouble {
     if (width <= 0 || height <= 0) {
@@ -42,7 +33,6 @@ class AppImage extends Equatable {
     size,
     error,
   ];
-
   AppImage copyWith({
     File? image,
     String? caption,

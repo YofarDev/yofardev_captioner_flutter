@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 
 class ConvertImagesDialog extends StatefulWidget {
   const ConvertImagesDialog({super.key});
-
   @override
   State<ConvertImagesDialog> createState() => _ConvertImagesDialogState();
 }
@@ -13,7 +11,6 @@ class ConvertImagesDialog extends StatefulWidget {
 class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
   String _format = 'jpg';
   double _quality = 100;
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ImagesCubit, ImagesState>(

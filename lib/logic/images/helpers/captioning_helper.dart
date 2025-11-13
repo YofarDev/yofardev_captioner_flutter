@@ -1,7 +1,5 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-
 import '../../../models/app_image.dart';
 import '../../../models/caption_options.dart';
 import '../../../models/llm_config.dart';
@@ -10,9 +8,7 @@ import '../images_cubit.dart';
 
 class CaptioningHelper {
   final CaptioningRepository _captioningRepository;
-
   CaptioningHelper(this._captioningRepository);
-
   Stream<ImagesState> runCaptioner({
     required LlmConfig llm,
     required String prompt,
@@ -66,7 +62,6 @@ class CaptioningHelper {
           .map((AppImage e) => e.image.path)
           .toList(),
     );
-
     try {
       await for (final AppImage image in _captioningRepository.captionMissing(
         List<AppImage>.from(state.images),
@@ -111,7 +106,6 @@ class CaptioningHelper {
           .map((AppImage e) => e.image.path)
           .toList(),
     );
-
     try {
       await for (final AppImage image in _captioningRepository.captionAll(
         List<AppImage>.from(state.images),

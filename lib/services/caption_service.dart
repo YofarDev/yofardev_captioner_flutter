@@ -1,25 +1,20 @@
 // ignore_for_file: avoid_dynamic_calls
-
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
 import '../models/llm_config.dart';
 
 class CaptionService {
   Future<String> getCaption(LlmConfig config, File image, String prompt) async {
     final Uint8List bytes = await image.readAsBytes();
     final String base64Image = base64Encode(bytes);
-
     final String url = config.url.endsWith('chat/completions')
         ? config.url
         : config.url.endsWith('/')
         ? '${config.url}chat/completions'
         : '${config.url}/chat/completions';
-
     final http.Response response = await http.post(
       Uri.parse(url),
       headers: <String, String>{
@@ -46,11 +41,9 @@ class CaptionService {
         ],
       }),
     );
-
     if (response.statusCode == 200) {
       final Map<String, dynamic> decoded =
           jsonDecode(response.body) as Map<String, dynamic>;
-
       if (decoded['choices'] != null &&
           (decoded['choices'] as List<dynamic>).isNotEmpty) {
         final dynamic message = decoded['choices'][0]['message'];
@@ -58,7 +51,6 @@ class CaptionService {
           return message['content'] as String;
         }
       }
-
       throw Exception('Invalid response format: ${response.body}');
     } else {
       debugPrint('Error response: ${response.body}');

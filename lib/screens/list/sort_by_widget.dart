@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
   const SortByWidget({super.key});
-
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImagesCubit, ImagesState>(

@@ -1,7 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import '../../logic/images/images_cubit.dart';
 import '../main/convert_images_dialog.dart';
 import '../settings/llm_settings_screen.dart';
@@ -9,7 +8,6 @@ import '../widgets/app_button.dart';
 
 class PickFolderButton extends StatelessWidget {
   const PickFolderButton();
-
   @override
   Widget build(BuildContext context) {
     return AppButton(
@@ -29,7 +27,6 @@ class PickFolderButton extends StatelessWidget {
 
 class ApiSettingsButton extends StatelessWidget {
   const ApiSettingsButton();
-
   @override
   Widget build(BuildContext context) {
     return TextButton(
@@ -50,7 +47,6 @@ class ApiSettingsButton extends StatelessWidget {
 
 class RenameAllFilesButton extends StatelessWidget {
   const RenameAllFilesButton();
-
   @override
   Widget build(BuildContext context) {
     return AppButton(
@@ -64,7 +60,6 @@ class RenameAllFilesButton extends StatelessWidget {
 
 class ConvertAllImagesButton extends StatelessWidget {
   const ConvertAllImagesButton({super.key});
-
   @override
   Widget build(BuildContext context) {
     return AppButton(

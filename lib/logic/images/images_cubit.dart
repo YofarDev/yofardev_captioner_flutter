@@ -14,21 +14,31 @@ import '../../repositories/captioning_repository.dart';
 import '../../services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
 import '../../utils/caption_utils.dart';
-import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
+import 'helpers/captioning_helper.dart';
+import 'helpers/image_operations_helper.dart';
 
 part 'images_state.dart';
 
 /// A Cubit that manages the state of images within the application.
 ///
 /// This includes handling image loading, sorting, captioning, and file operations.
+/// The logic is split into helper classes for better organization:
+/// - [CaptioningHelper]: Handles all captioning-related logic.
+/// - [ImageOperationsHelper]: Manages image operations like cropping and conversion.
 class ImagesCubit extends Cubit<ImagesState> {
   /// Creates an [ImagesCubit] with an initial [ImagesState].
-  ImagesCubit() : super(const ImagesState());
+  ImagesCubit() : super(const ImagesState()) {
+    _captioningHelper = CaptioningHelper(_captioningRepository);
+    _imageOperationsHelper = ImageOperationsHelper();
+  }
 
   final AppFileUtils _fileUtils = AppFileUtils();
   final CaptionUtils _captionUtils = CaptionUtils();
   final CaptioningRepository _captioningRepository = CaptioningRepository();
+  late final CaptioningHelper _captioningHelper;
+  late final ImageOperationsHelper _imageOperationsHelper;
+
   final Map<int, TextEditingController> _controllers =
       <int, TextEditingController>{};
 
@@ -150,21 +160,6 @@ class ImagesCubit extends Cubit<ImagesState> {
     emit(state.copyWith(images: updatedImages));
   }
 
-  /// Renames all image files in the currently selected folder to sequential numbers.
-  ///
-  /// After renaming, it reloads the folder to update the image list.
-  void renameAllFiles() async {
-    if (state.folderPath == null) {
-      return;
-    }
-    await _fileUtils.renameFilesToNumbers(state.folderPath!);
-    onFolderPicked(state.folderPath!);
-  }
-
-  /// Performs a search and replace operation on all image captions.
-  ///
-  /// Replaces all occurrences of [search] text with [replace] text in captions.
-  /// Emits a new state with the updated image captions.
   void searchAndReplace(String search, String replace) {
     final List<AppImage> updatedImages = _captionUtils.searchAndReplace(
       search,
@@ -174,134 +169,71 @@ class ImagesCubit extends Cubit<ImagesState> {
     emit(state.copyWith(images: updatedImages));
   }
 
-  /// Counts the occurrences of a specific [search] string within all image captions.
-  ///
-  /// Emits a new state with the updated [occurrencesCount].
   void countOccurrences(String search) {
     final int count = _captionUtils.countOccurrences(search, state.images);
     emit(state.copyWith(occurrencesCount: count));
   }
 
-  /// Runs the captioning process for images using the specified LLM configuration.
-  ///
-  /// [llm]: The LLM configuration to use for captioning.
-  /// [prompt]: The prompt to use for generating captions.
-  /// [option]: Specifies which images to caption ('this', 'missing', or 'all').
   Future<void> runCaptioner({
     required LlmConfig llm,
     required String prompt,
     required CaptionOptions option,
   }) async {
-    emit(state.copyWith(isCaptioning: true));
-    try {
-      switch (option) {
-        case CaptionOptions.current:
-          final AppImage updatedImage = await _captioningRepository
-              .captionImage(llm, state.images[state.currentIndex], prompt);
-          final List<AppImage> updatedImages = List<AppImage>.from(
-            state.images,
-          );
-          updatedImages[state.currentIndex] = updatedImage;
-          emit(state.copyWith(images: updatedImages, isCaptioning: false));
-        case CaptionOptions.missing:
-          final List<AppImage> imagesToCaption = state.images
-              .where((AppImage image) => image.caption.isEmpty)
-              .toList();
-          int captionedCount = 0;
-          emit(
-            state.copyWith(
-              captioningProgress: '$captionedCount/${imagesToCaption.length}',
-              totalImagesToCaption: imagesToCaption.length,
-              imagesBeingProcessed: imagesToCaption
-                  .map((AppImage e) => e.image.path)
-                  .toList(),
-            ),
-          );
-          try {
-            await for (final AppImage image
-                in _captioningRepository.captionMissing(
-                  List<AppImage>.from(state.images),
-                  llm,
-                  prompt,
-                )) {
-              captionedCount++;
-              final int index = state.images.indexWhere(
-                (AppImage element) => element.image.path == image.image.path,
-              );
-              final List<AppImage> updatedImages = List<AppImage>.from(
-                state.images,
-              );
-              updatedImages[index] = image;
-              final List<String> imagesBeingProcessed = List<String>.from(
-                state.imagesBeingProcessed,
-              )..remove(image.image.path);
-              emit(
-                state.copyWith(
-                  images: updatedImages,
-                  captioningProgress:
-                      '$captionedCount/${imagesToCaption.length}',
-                  imagesBeingProcessed: imagesBeingProcessed,
-                ),
-              );
-            }
-          } finally {
-            emit(
-              state.copyWith(
-                isCaptioning: false,
-                imagesBeingProcessed: <String>[],
-              ),
-            );
-          }
-        case CaptionOptions.all:
-          final List<AppImage> allImages = List<AppImage>.from(state.images);
-          int captionedCount = 0;
-          emit(
-            state.copyWith(
-              isCaptioning: true,
-              captioningProgress: '$captionedCount/${allImages.length}',
-              totalImagesToCaption: allImages.length,
-              imagesBeingProcessed: allImages
-                  .map((AppImage e) => e.image.path)
-                  .toList(),
-            ),
-          );
-          try {
-            await for (final AppImage image in _captioningRepository.captionAll(
-              List<AppImage>.from(state.images),
-              llm,
-              prompt,
-            )) {
-              captionedCount++;
-              final int index = state.images.indexWhere(
-                (AppImage element) => element.image.path == image.image.path,
-              );
-              final List<AppImage> updatedImages = List<AppImage>.from(
-                state.images,
-              );
-              updatedImages[index] = image;
-              final List<String> imagesBeingProcessed = List<String>.from(
-                state.imagesBeingProcessed,
-              )..remove(image.image.path);
-              emit(
-                state.copyWith(
-                  images: updatedImages,
-                  captioningProgress: '$captionedCount/${allImages.length}',
-                  imagesBeingProcessed: imagesBeingProcessed,
-                ),
-              );
-            }
-          } finally {
-            emit(
-              state.copyWith(
-                isCaptioning: false,
-                imagesBeingProcessed: <String>[],
-              ),
-            );
-          }
-      }
-    } catch (e) {
-      emit(state.copyWith(isCaptioning: false, captioningError: e.toString()));
-      debugPrint(e.toString());
+    await for (final ImagesState newState in _captioningHelper.runCaptioner(
+      llm: llm,
+      prompt: prompt,
+      option: option,
+      state: state,
+    )) {
+      emit(newState);
+    }
+  }
+
+  void renameAllFiles() async {
+    if (state.folderPath == null) {
+      return;
+    }
+    await _imageOperationsHelper.renameAllFiles(state.folderPath!);
+    onFolderPicked(state.folderPath!);
+  }
+
+  Future<void> exportAsArchive() async {
+    if (state.folderPath == null) {
+      return;
+    }
+    await _imageOperationsHelper.exportAsArchive(
+      state.folderPath!,
+      state.images,
+    );
+  }
+
+  void removeImage(int index) {
+    final ImagesState newState = _imageOperationsHelper.removeImage(
+      index,
+      state,
+    );
+    emit(newState);
+  }
+
+  void convertAllImages({required String format, required int quality}) async {
+    await for (final ImagesState newState
+        in _imageOperationsHelper.convertAllImages(
+          format: format,
+          quality: quality,
+          state: state,
+        )) {
+      emit(newState);
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    onFolderPicked(state.folderPath!);
+  }
+
+  Future<void> cropCurrentImage() async {
+    final ImagesState? newState = await _imageOperationsHelper.cropCurrentImage(
+      state,
+    );
+    if (newState != null) {
+      emit(newState);
     }
   }
 
@@ -319,39 +251,6 @@ class ImagesCubit extends Cubit<ImagesState> {
     ).writeAsString(caption);
   }
 
-  /// Exports all images and their captions as an archive.
-  ///
-  /// Requires a [folderPath] to be set.
-  Future<void> exportAsArchive() async {
-    if (state.folderPath == null) {
-      return;
-    }
-    await _fileUtils.exportAsArchive(state.folderPath!, state.images);
-  }
-
-  /// Removes an image from the list and deletes its associated files.
-  ///
-  /// [index]: The index of the image to remove.
-  /// Emits a new state with the image removed and updates the [currentIndex] if necessary.
-  void removeImage(int index) {
-    final AppImage image = state.images[index];
-    _fileUtils.removeImage(image);
-
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images)
-      ..removeAt(index);
-
-    int newCurrentIndex = state.currentIndex;
-    if (index == newCurrentIndex) {
-      if (updatedImages.isEmpty) {
-        newCurrentIndex = 0;
-      } else if (index >= updatedImages.length) {
-        newCurrentIndex = updatedImages.length - 1;
-      }
-    }
-
-    emit(state.copyWith(images: updatedImages, currentIndex: newCurrentIndex));
-  }
-
   void clearErrors({int? index}) {
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     if (index != null) {
@@ -364,48 +263,6 @@ class ImagesCubit extends Cubit<ImagesState> {
       }
     }
     emit(state.copyWith(images: updatedImages));
-  }
-
-  void convertAllImages({required String format, required int quality}) async {
-    if (state.folderPath == null) {
-      return;
-    }
-    emit(state.copyWith(isConverting: true, conversionLog: ''));
-    try {
-      await for (final Map<String, String> update
-          in ImageUtils.convertAllImages(
-            folderPath: state.folderPath!,
-            format: format,
-            quality: quality,
-          )) {
-        final String filename = update['filename']!;
-        final int index = state.images.indexWhere(
-          (AppImage image) =>
-              p.basename(image.image.path).split('.')[0] == filename,
-        );
-        if (index != -1) {
-          final List<AppImage> updatedImages = List<AppImage>.from(
-            state.images,
-          );
-          final String newFullPath = p.join(
-            state.folderPath!,
-            "$filename.$format",
-          );
-
-          updatedImages[index] = updatedImages[index].copyWith(
-            image: File(newFullPath),
-          );
-          emit(state.copyWith(images: updatedImages));
-        }
-      }
-    } catch (e) {
-      debugPrint(e.toString());
-      emit(state.copyWith(conversionLog: e.toString()));
-    } finally {
-      emit(state.copyWith(isConverting: false));
-      await Future<void>.delayed(const Duration(milliseconds: 500));
-      onFolderPicked(state.folderPath!);
-    }
   }
 
   Map<String, int> getAspectRatioCounts() {

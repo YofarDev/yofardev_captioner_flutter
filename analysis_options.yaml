@@ -47,3 +47,5 @@ linter:
     use_rethrow_when_possible: true
 
     use_build_context_synchronously: false
+
+    unnecessary_new: true

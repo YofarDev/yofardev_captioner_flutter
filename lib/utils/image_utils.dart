@@ -99,4 +99,20 @@ class ImageUtils {
       }
     }
   }
+
+  static String getSimplifiedAspectRatio(int width, int height) {
+    if (width <= 0 || height <= 0) {
+      return '...';
+    }
+
+    final int gcd = _gcd(width, height);
+    return '${width ~/ gcd}:${height ~/ gcd}';
+  }
+
+  static int _gcd(int a, int b) {
+    if (b == 0) {
+      return a;
+    }
+    return _gcd(b, a % b);
+  }
 }

@@ -19,6 +19,20 @@ class AppImage extends Equatable {
     this.error,
   });
 
+  String get aspectRatio {
+    if (width == -1 || height == -1 || height == 0) {
+      return '...';
+    }
+    return (width / height).toStringAsFixed(2);
+  }
+
+  double get aspectRatioAsDouble {
+    if (width <= 0 || height <= 0) {
+      return 0.0;
+    }
+    return width / height;
+  }
+
   @override
   List<Object?> get props => <Object?>[
     image,

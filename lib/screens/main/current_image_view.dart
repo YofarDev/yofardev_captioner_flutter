@@ -6,7 +6,6 @@ import 'package:shimmer/shimmer.dart';
 
 import '../../logic/images/images_cubit.dart';
 import '../../models/app_image.dart';
-import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
 
 class CurrentImageView extends StatelessWidget {
@@ -64,8 +63,20 @@ class CurrentImageView extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(0, 4, 16, 32),
-              child: _buildSizeInfos(state.images[state.currentIndex]),
+              padding: const EdgeInsets.fromLTRB(0, 4, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: <Widget>[
+                  _buildSizeInfos(state.images[state.currentIndex]),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      context.read<ImagesCubit>().cropCurrentImage();
+                    },
+                    icon: const Icon(Icons.crop),
+                  ),
+                ],
+              ),
             ),
           ],
         );
@@ -82,7 +93,7 @@ class CurrentImageView extends StatelessWidget {
       );
     }
     return Text(
-      "${image.width}x${image.height} (${image.aspectRatio})",
+      "${image.width}x${image.height} (${ImageUtils.getSimplifiedAspectRatio(image.width, image.height)})",
       style: const TextStyle(fontSize: 11),
     );
   }

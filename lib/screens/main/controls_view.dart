@@ -26,17 +26,14 @@ class ControlsView extends StatelessWidget {
     );
   }
 
-  Widget _buildFirstRow() => const Row(
-    mainAxisSize: MainAxisSize.min,
+  Widget _buildFirstRow() => const Wrap(
+    spacing: 16.0,
+    runSpacing: 8.0,
     children: <Widget>[
       PickFolderButton(),
-      SizedBox(width: 16),
       RenameAllFilesButton(),
-      SizedBox(width: 16),
       SearchAndReplaceWidget(),
-      // SizedBox(width: 16),
       // ConvertAllImagesButton(),
-      SizedBox(width: 16),
       ExportButton(),
     ],
   );

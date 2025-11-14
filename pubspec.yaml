@@ -32,7 +32,6 @@ dependencies:
   logging: ^1.2.0
   json_annotation: ^4.9.0
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -40,13 +39,16 @@ dev_dependencies:
   json_serializable: ^6.8.0
   lint:
 
-
-
 flutter:
   uses-material-design: true
   assets:
-  - assets/
-  - assets/scripts/
+    - assets/
+    - assets/scripts/
+  
+  fonts:
+    - family: Orbitron
+      fonts:
+        - asset: assets/fonts/Orbitron/Orbitron-VariableFont_wght.ttf
 
 flutter_launcher_icons:
   windows:
@@ -58,3 +60,4 @@ flutter_launcher_icons:
   linux:
     generate: true
     image_path: "assets/logo.png"
+

@@ -91,6 +91,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     final List<AppImage> updatedImages = await ImageUtils.getImagesSize(
       state.images,
     );
+    if (updatedImages.isEmpty) {
+      return;
+    }
     if (state.folderPath != p.dirname(updatedImages[0].image.path)) {
       return;
     }

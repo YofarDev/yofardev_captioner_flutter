@@ -7,7 +7,7 @@ import '../../models/app_image.dart';
 import '../../models/caption_options.dart';
 import '../../models/llm_config.dart';
 import '../../repositories/captioning_repository.dart';
-import '../images/image_list_cubit.dart';
+import '../images_list/image_list_cubit.dart';
 
 part 'captioning_state.dart';
 

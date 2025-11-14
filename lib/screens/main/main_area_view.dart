@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../logic/images_list/image_list_cubit.dart';
 import 'caption_text_area.dart';
 import 'controls_view.dart';
 import 'current_image_view.dart';
@@ -7,13 +10,34 @@ class MainAreaView extends StatelessWidget {
   const MainAreaView({super.key});
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: <Widget>[
-        CurrentImageView(),
-        CaptionTextArea(),
-        Spacer(),
-        ControlsView(),
-      ],
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      builder: (BuildContext context, ImageListState state) {
+        return Column(
+          children: <Widget>[
+            const CurrentImageView(),
+            const CaptionTextArea(),
+            if (state.images.isEmpty) Expanded(child: _buildEmptyView()),
+            const SizedBox(height: 16),
+            const ControlsView(),
+          ],
+        );
+      },
     );
   }
+
+  Widget _buildEmptyView() => Opacity(
+    opacity: 0.5,
+    child: Column(
+      children: <Widget>[
+        const Spacer(),
+        const Text(
+          'Yofardev Captioner',
+          style: TextStyle(fontSize: 32, fontFamily: 'Orbitron'),
+        ),
+        const SizedBox(height: 16),
+        Image.asset('assets/logo.png', width: 400),
+        const Spacer(),
+      ],
+    ),
+  );
 }

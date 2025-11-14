@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../helpers/image_operations_helper.dart';
-import '../images/image_list_cubit.dart';
+import '../images_list/image_list_cubit.dart';
 
 part 'image_operations_state.dart';
 

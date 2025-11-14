@@ -7,7 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../logic/images/image_list_cubit.dart';
+import '../logic/images_list/image_list_cubit.dart';
 import '../models/app_image.dart';
 import '../utils/app_file_utils.dart';
 

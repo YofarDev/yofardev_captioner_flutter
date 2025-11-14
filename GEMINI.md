@@ -1,6 +1,6 @@
 # Project Overview
 
-This is a Flutter desktop application for MacOS and Linux that allows users to manage and caption image files. The application provides a user interface to select a folder of images, view them one by one, and add/edit captions for each image. The captions are saved as `.txt` files with the same name as the image.
+This is a Flutter desktop application for MacOS, Linux and Windows that allows users to manage and caption image files. The application provides a user interface to select a folder of images, view them one by one, and add/edit captions for each image. The captions are saved as `.txt` files with the same name as the image.
 
 The application uses a third-party API for generating captions automatically. The user can configure the API endpoint, model, and API key in the application settings.
 

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+import '../../logic/images/image_list_cubit.dart';
 
 class AspectRatioDialog extends StatelessWidget {
   const AspectRatioDialog({super.key});
   @override
   Widget build(BuildContext context) {
     final Map<String, int> aspectRatios = context
-        .read<ImagesCubit>()
+        .read<ImageListCubit>()
         .getAspectRatioCounts();
     return AlertDialog(
       title: const Text('Aspect Ratio Counts'),

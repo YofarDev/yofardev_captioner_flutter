@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+
+import '../../logic/image_operations/image_operations_cubit.dart';
 
 class ConvertImagesDialog extends StatefulWidget {
   const ConvertImagesDialog({super.key});
@@ -13,15 +14,21 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
   double _quality = 100;
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ImagesCubit, ImagesState>(
-      listener: (BuildContext context, ImagesState state) {},
-      builder: (BuildContext context, ImagesState state) {
+    return BlocConsumer<ImageOperationsCubit, ImageOperationsState>(
+      listener: (BuildContext context, ImageOperationsState state) {
+        if (state.status == ImageOperationsStatus.success) {
+          Navigator.of(context).pop();
+        }
+      },
+      builder: (BuildContext context, ImageOperationsState state) {
+        final bool isConverting =
+            state.status == ImageOperationsStatus.inProgress;
         return AlertDialog(
           title: const Text('Convert All Images'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
-              if (!state.isConverting)
+              if (!isConverting)
                 DropdownButtonFormField<String>(
                   initialValue: _format,
                   items: const <DropdownMenuItem<String>>[
@@ -41,8 +48,7 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
                   },
                   decoration: const InputDecoration(labelText: 'Format'),
                 ),
-              if (!state.isConverting &&
-                  (_format == 'jpg' || _format == 'webp'))
+              if (!isConverting && (_format == 'jpg' || _format == 'webp'))
                 Column(
                   children: <Widget>[
                     const SizedBox(height: 16),
@@ -61,26 +67,28 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
                     ),
                   ],
                 ),
-              if (state.isConverting)
-                const Column(
+              if (isConverting)
+                Column(
                   children: <Widget>[
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Converting...'),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Converting... ${(state.progress * 100).toStringAsFixed(0)}%',
+                    ),
                   ],
                 ),
             ],
           ),
           actions: <Widget>[
-            if (!state.isConverting)
+            if (!isConverting)
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('Cancel'),
               ),
-            if (!state.isConverting)
+            if (!isConverting)
               ElevatedButton(
                 onPressed: () {
-                  context.read<ImagesCubit>().convertAllImages(
+                  context.read<ImageOperationsCubit>().convertAllImages(
                     format: _format,
                     quality: _quality.round(),
                   );

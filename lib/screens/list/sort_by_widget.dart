@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+import '../../logic/images/image_list_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
   const SortByWidget({super.key});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImagesCubit, ImagesState>(
-      builder: (BuildContext context, ImagesState state) {
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      builder: (BuildContext context, ImageListState state) {
         return Row(
           children: <Widget>[
             const Text('Sort by:', style: TextStyle(fontSize: 12)),
@@ -32,7 +32,7 @@ class SortByWidget extends StatelessWidget {
               ],
               onChanged: (SortBy? value) {
                 if (value != null) {
-                  context.read<ImagesCubit>().onSortChanged(
+                  context.read<ImageListCubit>().onSortChanged(
                     value,
                     state.sortAscending,
                   );
@@ -46,7 +46,7 @@ class SortByWidget extends StatelessWidget {
                 state.sortAscending ? Icons.arrow_downward : Icons.arrow_upward,
               ),
               onPressed: () {
-                context.read<ImagesCubit>().onSortChanged(
+                context.read<ImageListCubit>().onSortChanged(
                   state.sortBy,
                   !state.sortAscending,
                 );

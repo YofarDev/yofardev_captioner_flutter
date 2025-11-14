@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+
+import '../../logic/image_operations/image_operations_cubit.dart';
 import '../widgets/app_button.dart';
 
 class ExportButton extends StatelessWidget {
@@ -9,7 +10,7 @@ class ExportButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppButton(
       onTap: () {
-        context.read<ImagesCubit>().exportAsArchive();
+        context.read<ImageOperationsCubit>().exportAsArchive();
       },
       text: '💾  Export as Archive',
     );

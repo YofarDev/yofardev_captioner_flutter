@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images/images_cubit.dart';
+import '../../logic/images/image_list_cubit.dart';
 import '../../models/app_image.dart';
 import '../../res/app_colors.dart';
 import '../../res/app_constants.dart';
@@ -32,8 +32,8 @@ class ImagesListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImagesCubit, ImagesState>(
-      builder: (BuildContext context, ImagesState state) {
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      builder: (BuildContext context, ImageListState state) {
         if (state.images.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -51,7 +51,7 @@ class ImagesListView extends StatelessWidget {
                       .contains(image.aspectRatio);
                   return InkWell(
                     onTap: () =>
-                        context.read<ImagesCubit>().onImageSelected(index),
+                        context.read<ImageListCubit>().onImageSelected(index),
                     child: ColoredBox(
                       color: index == state.currentIndex
                           ? Colors.white.withAlpha(50)
@@ -181,7 +181,7 @@ class ImagesListView extends StatelessWidget {
                                             child: const Text('Remove'),
                                             onPressed: () {
                                               context
-                                                  .read<ImagesCubit>()
+                                                  .read<ImageListCubit>()
                                                   .removeImage(index);
                                               Navigator.of(context).pop();
                                             },

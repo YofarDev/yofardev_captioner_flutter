@@ -4,7 +4,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as path;
-import '../logic/images/images_cubit.dart';
+import '../logic/images/image_list_cubit.dart';
 import '../res/app_colors.dart';
 import 'list/images_list_view.dart';
 import 'main/main_area_view.dart';
@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
             } else {
               folderPath = path.dirname(filePath);
             }
-            context.read<ImagesCubit>().onFolderPicked(folderPath);
+            context.read<ImageListCubit>().onFolderPicked(folderPath);
           }
         },
         child: Stack(

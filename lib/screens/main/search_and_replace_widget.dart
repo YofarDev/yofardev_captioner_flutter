@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+
+import '../../logic/images/image_list_cubit.dart';
 import '../widgets/app_button.dart';
 
 class SearchAndReplaceWidget extends StatefulWidget {
@@ -20,14 +21,14 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return BlocProvider<ImagesCubit>.value(
-              value: BlocProvider.of<ImagesCubit>(this.context),
+            return BlocProvider<ImageListCubit>.value(
+              value: BlocProvider.of<ImageListCubit>(this.context),
               child: StatefulBuilder(
                 builder: (BuildContext context, StateSetter setState) {
                   return AlertDialog(
                     title: const Text('🔎  Search and Replace'),
-                    content: BlocBuilder<ImagesCubit, ImagesState>(
-                      builder: (BuildContext context, ImagesState state) {
+                    content: BlocBuilder<ImageListCubit, ImageListState>(
+                      builder: (BuildContext context, ImageListState state) {
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           children: <Widget>[
@@ -58,14 +59,14 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
                       TextButton(
                         child: const Text('Cancel'),
                         onPressed: () {
-                          context.read<ImagesCubit>().countOccurrences('');
+                          context.read<ImageListCubit>().countOccurrences('');
                           Navigator.of(context).pop();
                         },
                       ),
                       TextButton(
                         child: const Text('Preview'),
                         onPressed: () {
-                          context.read<ImagesCubit>().countOccurrences(
+                          context.read<ImageListCubit>().countOccurrences(
                             _searchController.text,
                           );
                         },
@@ -73,11 +74,11 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
                       TextButton(
                         child: const Text('Replace'),
                         onPressed: () {
-                          context.read<ImagesCubit>().searchAndReplace(
+                          context.read<ImageListCubit>().searchAndReplace(
                             _searchController.text,
                             _replaceController.text,
                           );
-                          context.read<ImagesCubit>().countOccurrences('');
+                          context.read<ImageListCubit>().countOccurrences('');
                           Navigator.of(context).pop();
                         },
                       ),

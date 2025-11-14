@@ -1,20 +1,42 @@
-// ignore_for_file: avoid_dynamic_calls
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:flutter/material.dart';
+
 import 'package:http/http.dart' as http;
+import 'package:logging/logging.dart';
+
+import '../models/caption/caption_request.dart';
+import '../models/caption/caption_response.dart';
+import '../models/caption/content.dart';
+import '../models/caption/message.dart';
 import '../models/llm_config.dart';
+import 'service_locator.dart';
 
 class CaptionService {
+  final Logger _logger = locator<Logger>();
+
   Future<String> getCaption(LlmConfig config, File image, String prompt) async {
     final Uint8List bytes = await image.readAsBytes();
     final String base64Image = base64Encode(bytes);
-    final String url = config.url.endsWith('chat/completions')
-        ? config.url
-        : config.url.endsWith('/')
-        ? '${config.url}chat/completions'
-        : '${config.url}/chat/completions';
+
+    final String url = _buildUrl(config.url);
+
+    final CaptionRequest request = CaptionRequest(
+      model: config.model,
+      messages: <Message>[
+        Message(
+          role: 'user',
+          content: <Content>[
+            Content(type: 'text', text: prompt),
+            Content(
+              type: 'image_url',
+              imageUrl: ImageUrl(url: 'data:image/jpeg;base64,$base64Image'),
+            ),
+          ],
+        ),
+      ],
+    );
+
     final http.Response response = await http.post(
       Uri.parse(url),
       headers: <String, String>{
@@ -22,41 +44,47 @@ class CaptionService {
         'Authorization': 'Bearer ${config.apiKey}',
         'Accept': 'application/json',
       },
-      body: jsonEncode(<String, Object>{
-        'model': config.model,
-        'stream': false,
-        'messages': <Map<String, Object>>[
-          <String, Object>{
-            'role': 'user',
-            'content': <Map<String, Object>>[
-              <String, String>{'type': 'text', 'text': prompt},
-              <String, Object>{
-                'type': 'image_url',
-                'image_url': <String, String>{
-                  'url': 'data:image/jpeg;base64,$base64Image',
-                },
-              },
-            ],
-          },
-        ],
-      }),
+      body: jsonEncode(request.toJson()),
     );
+
     if (response.statusCode == 200) {
-      final Map<String, dynamic> decoded =
-          jsonDecode(response.body) as Map<String, dynamic>;
-      if (decoded['choices'] != null &&
-          (decoded['choices'] as List<dynamic>).isNotEmpty) {
-        final dynamic message = decoded['choices'][0]['message'];
-        if (message != null && message['content'] is String) {
-          return message['content'] as String;
+      try {
+        final CaptionResponse captionResponse = CaptionResponse.fromJson(
+          jsonDecode(response.body) as Map<String, dynamic>,
+        );
+        if (captionResponse.choices.isNotEmpty) {
+          return captionResponse.choices.first.message.content;
+        } else {
+          throw ApiException('Invalid response format: ${response.body}');
         }
+      } catch (e) {
+        _logger.severe('Error decoding response: $e');
+        throw ApiException('Failed to decode response: $e');
       }
-      throw Exception('Invalid response format: ${response.body}');
     } else {
-      debugPrint('Error response: ${response.body}');
-      throw Exception(
+      _logger.severe('Error response: ${response.body}');
+      throw ApiException(
         'Failed to load caption (${response.statusCode}): ${response.body}',
       );
     }
   }
+
+  String _buildUrl(String baseUrl) {
+    if (baseUrl.endsWith('chat/completions')) {
+      return baseUrl;
+    } else if (baseUrl.endsWith('/')) {
+      return '${baseUrl}chat/completions';
+    } else {
+      return '$baseUrl/chat/completions';
+    }
+  }
+}
+
+class ApiException implements Exception {
+  final String message;
+
+  ApiException(this.message);
+
+  @override
+  String toString() => 'ApiException: $message';
 }

@@ -1,8 +1,11 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../logic/images/images_cubit.dart';
+
+import '../../logic/image_operations/image_operations_cubit.dart';
+import '../../logic/images/image_list_cubit.dart';
 import '../../models/app_image.dart';
 import '../../utils/image_utils.dart';
 
@@ -10,8 +13,8 @@ class CurrentImageView extends StatelessWidget {
   const CurrentImageView({super.key});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImagesCubit, ImagesState>(
-      builder: (BuildContext context, ImagesState state) {
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      builder: (BuildContext context, ImageListState state) {
         if (state.images.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -68,7 +71,9 @@ class CurrentImageView extends StatelessWidget {
                   const SizedBox(width: 8),
                   IconButton(
                     onPressed: () {
-                      context.read<ImagesCubit>().cropCurrentImage(context);
+                      context.read<ImageOperationsCubit>().cropCurrentImage(
+                        context,
+                      );
                     },
                     icon: const Icon(Icons.crop),
                   ),

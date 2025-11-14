@@ -1,7 +1,10 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images/images_cubit.dart';
+import 'package:nested/nested.dart';
+
+import '../../logic/image_operations/image_operations_cubit.dart';
+import '../../logic/images/image_list_cubit.dart';
 import '../main/convert_images_dialog.dart';
 import '../settings/llm_settings_screen.dart';
 import '../widgets/app_button.dart';
@@ -15,10 +18,10 @@ class PickFolderButton extends StatelessWidget {
       onTap: () async {
         final String? selectedDirectory = await FilePicker.platform
             .getDirectoryPath(
-              initialDirectory: context.read<ImagesCubit>().state.folderPath,
+              initialDirectory: context.read<ImageListCubit>().state.folderPath,
             );
         if (selectedDirectory != null) {
-          context.read<ImagesCubit>().onFolderPicked(selectedDirectory);
+          context.read<ImageListCubit>().onFolderPicked(selectedDirectory);
         }
       },
     );
@@ -32,12 +35,7 @@ class ApiSettingsButton extends StatelessWidget {
     return TextButton(
       onPressed: () {
         Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => BlocProvider<ImagesCubit>.value(
-              value: context.read<ImagesCubit>(),
-              child: const LlmSettingsScreen(),
-            ),
-          ),
+          MaterialPageRoute<void>(builder: (_) => const LlmSettingsScreen()),
         );
       },
       child: const Text("⚙️"),
@@ -52,7 +50,7 @@ class RenameAllFilesButton extends StatelessWidget {
     return AppButton(
       text: "📘  Rename all files",
       onTap: () {
-        context.read<ImagesCubit>().renameAllFiles();
+        context.read<ImageOperationsCubit>().renameAllFiles();
       },
     );
   }
@@ -67,8 +65,15 @@ class ConvertAllImagesButton extends StatelessWidget {
       onTap: () {
         showDialog(
           context: context,
-          builder: (_) => BlocProvider<ImagesCubit>.value(
-            value: context.read<ImagesCubit>(),
+          builder: (_) => MultiBlocProvider(
+            providers: <SingleChildWidget>[
+              BlocProvider<ImageListCubit>.value(
+                value: context.read<ImageListCubit>(),
+              ),
+              BlocProvider<ImageOperationsCubit>.value(
+                value: context.read<ImageOperationsCubit>(),
+              ),
+            ],
             child: const ConvertImagesDialog(),
           ),
         );

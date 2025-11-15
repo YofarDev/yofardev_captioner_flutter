@@ -124,6 +124,21 @@ class ImageListCubit extends Cubit<ImageListState> {
     ).writeAsString(caption);
   }
 
+  void updateImageByPath({
+    required String imagePath,
+    required String caption,
+  }) async {
+    final int index =
+        state.images.indexWhere((AppImage image) => image.image.path == imagePath);
+    if (index == -1) {
+      return;
+    }
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    updatedImages[index] = state.images[index].copyWith(caption: caption);
+    emit(state.copyWith(images: updatedImages));
+    await File(p.setExtension(imagePath, '.txt')).writeAsString(caption);
+  }
+
   void removeImage(int index) {
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     updatedImages.removeAt(index);

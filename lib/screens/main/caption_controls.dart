@@ -100,7 +100,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Text(
-                        '${(captioningState.progress * 100).toStringAsFixed(0)}%',
+                        '${captioningState.processedImages}/${captioningState.totalImages}',
                         style: const TextStyle(
                           color: Colors.green,
                           fontSize: 12,

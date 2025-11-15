@@ -24,30 +24,64 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   }) async {
     emit(state.copyWith(status: CaptioningStatus.inProgress, progress: 0.0));
 
-    final List<AppImage> images = _imageListCubit.state.images;
-    final int totalImages = images.length;
-    int processedImages = 0;
+    List<AppImage> imagesToCaption = <AppImage>[];
+    final List<AppImage> allImages = _imageListCubit.state.images;
 
-    for (int i = 0; i < totalImages; i++) {
+    switch (option) {
+      case CaptionOptions.current:
+        imagesToCaption = <AppImage>[
+          _imageListCubit.state.images[_imageListCubit.state.currentIndex]
+        ];
+      case CaptionOptions.missing:
+        imagesToCaption =
+            allImages.where((AppImage image) => image.caption.isEmpty).toList();
+      case CaptionOptions.all:
+        imagesToCaption = List<AppImage>.from(allImages);
+    }
+
+    final int totalImagesCount = imagesToCaption.length;
+    if (totalImagesCount == 0) {
+      emit(state.copyWith(status: CaptioningStatus.success, totalImages: 0));
+      return;
+    }
+    int processedImagesCount = 0;
+    final List<String> errors = <String>[];
+
+    for (final AppImage image in imagesToCaption) {
       try {
-        final AppImage image = images[i];
         final AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,
           prompt,
         );
-        _imageListCubit.updateCaption(caption: updatedImage.caption);
-        processedImages++;
-        emit(state.copyWith(progress: processedImages / totalImages));
-      } catch (e) {
-        emit(
-          state.copyWith(status: CaptioningStatus.failure, error: e.toString()),
+        _imageListCubit.updateImageByPath(
+          imagePath: image.image.path,
+          caption: updatedImage.caption,
         );
-        return;
+      } catch (e) {
+        errors.add('Failed to caption ${image.image.path}: $e');
       }
+      processedImagesCount++;
+      emit(state.copyWith(
+        progress: processedImagesCount / totalImagesCount,
+        processedImages: processedImagesCount,
+        totalImages: totalImagesCount,
+      ));
     }
 
-    emit(state.copyWith(status: CaptioningStatus.success));
+    if (errors.isNotEmpty) {
+      emit(state.copyWith(
+        status: CaptioningStatus.failure,
+        error: errors.join('\n'),
+        processedImages: totalImagesCount - errors.length,
+      ));
+    } else {
+      emit(state.copyWith(
+        status: CaptioningStatus.success,
+        processedImages: totalImagesCount,
+        totalImages: totalImagesCount,
+      ));
+    }
   }
 
   void clearErrors() {

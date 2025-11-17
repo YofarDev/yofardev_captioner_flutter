@@ -63,28 +63,40 @@ class _HomePageState extends State<HomePage> {
                 ),
               ],
             ),
-            if (_isDragging)
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(color: Colors.black.withAlpha(150)),
+            IgnorePointer(
+              ignoring: !_isDragging,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isDragging ? 1.0 : 0.0,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(color: Colors.black.withAlpha(150)),
+                ),
               ),
-            if (_isDragging)
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 64,
-                    vertical: 128,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white),
-                  ),
-                  child: const Text(
-                    "Drag a file or folder here",
-                    style: TextStyle(color: Colors.white, fontSize: 15),
+            ),
+            IgnorePointer(
+              ignoring: !_isDragging,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: _isDragging ? 1.0 : 0.0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 64,
+                      vertical: 128,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.white),
+                    ),
+                    child: const Text(
+                      "Drag a file or folder here",
+                      style: TextStyle(color: Colors.white, fontSize: 15),
+                    ),
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),

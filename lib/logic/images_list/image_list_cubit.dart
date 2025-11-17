@@ -30,6 +30,7 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void onFolderPicked(String folderPath) async {
+    emit(state.copyWith(folderPath: "", images: <AppImage>[]));
     windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
     CacheService.saveFolderPath(folderPath);
     final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
@@ -128,8 +129,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     required String imagePath,
     required String caption,
   }) async {
-    final int index =
-        state.images.indexWhere((AppImage image) => image.image.path == imagePath);
+    final int index = state.images.indexWhere(
+      (AppImage image) => image.image.path == imagePath,
+    );
     if (index == -1) {
       return;
     }

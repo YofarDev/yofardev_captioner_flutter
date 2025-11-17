@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
@@ -12,15 +13,18 @@ import '../models/app_image.dart';
 import '../utils/app_file_utils.dart';
 
 class ImageOperationsHelper {
-  final AppFileUtils _fileUtils = AppFileUtils();
+  final AppFileUtils _fileUtils;
+
+  ImageOperationsHelper({AppFileUtils? fileUtils})
+      : _fileUtils = fileUtils ?? AppFileUtils();
 
   Future<void> renameAllFiles(String folderPath) async {
-    final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
+    List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
+    images = _fileUtils.sortAppImages(images);
     final int totalFiles = images.length;
-    final int padding = totalFiles.toString().length;
+    final int padding = max(2, totalFiles.toString().length);
     // First pass: rename to temporary names to avoid conflicts
     final List<File> tempFiles = <File>[];
-    final List<File> tempCaptionFiles = <File>[];
     for (int i = 0; i < images.length; i++) {
       final File file = images[i].image;
       final String tempName = 'temp_$i${p.extension(file.path)}';
@@ -33,10 +37,9 @@ class ImageOperationsHelper {
       );
       if (await captionFile.exists()) {
         final String tempCaptionName = 'temp_$i.txt';
-        final File renamedCaption = await captionFile.rename(
+        await captionFile.rename(
           p.join(p.dirname(captionFile.path), tempCaptionName),
         );
-        tempCaptionFiles.add(renamedCaption);
       }
     }
     // Second pass: rename from temporary to final names (starting from 1)
@@ -45,13 +48,14 @@ class ImageOperationsHelper {
       final File tempFile = tempFiles[i];
       final String newName = '$paddedIndex${p.extension(tempFile.path)}';
       await tempFile.rename(p.join(p.dirname(tempFile.path), newName));
-    }
-    for (int i = 0; i < tempCaptionFiles.length; i++) {
-      final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
-      final File tempCaption = tempCaptionFiles[i];
-      await tempCaption.rename(
-        p.join(p.dirname(tempCaption.path), '$paddedIndex.txt'),
-      );
+
+      final String tempCaptionPath = p.setExtension(tempFile.path, '.txt');
+      final File tempCaptionFile = File(tempCaptionPath);
+      if (await tempCaptionFile.exists()) {
+        await tempCaptionFile.rename(
+          p.join(p.dirname(tempCaptionFile.path), '$paddedIndex.txt'),
+        );
+      }
     }
   }
 

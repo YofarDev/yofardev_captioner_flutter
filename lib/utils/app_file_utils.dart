@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
@@ -33,7 +34,7 @@ class AppFileUtils {
       return imageExtensions.contains(ext);
     }).toList();
     final List<File> sortedImageFiles = _sortFiles(imageFiles);
-    final int padding = sortedImageFiles.length.toString().length;
+    final int padding = max(2, sortedImageFiles.length.toString().length);
     final List<Map<String, dynamic>> renamingPlan = <Map<String, dynamic>>[];
     for (int i = 0; i < sortedImageFiles.length; i++) {
       final File originalFile = sortedImageFiles[i];
@@ -89,6 +90,14 @@ class AppFileUtils {
       return compareNatural(p.basename(a.path), p.basename(b.path));
     });
     return files;
+  }
+
+  /// Sorts a list of [AppImage] objects naturally by their image file base names.
+  List<AppImage> sortAppImages(List<AppImage> images) {
+    images.sort((AppImage a, AppImage b) {
+      return compareNatural(p.basename(a.image.path), p.basename(b.image.path));
+    });
+    return images;
   }
 
   /// Compares two strings naturally, handling numerical parts correctly.
@@ -148,6 +157,9 @@ class AppFileUtils {
   }
 
   Future<Directory> _managePersistentPermission(String folderPath) async {
+    if (Platform.environment.containsKey('FLUTTER_TEST')) {
+      return Directory(folderPath);
+    }
     if (!Platform.isMacOS) return Directory(folderPath);
     String? bookmark = await CacheService.loadMacosBookmark(
       folderPath: folderPath,

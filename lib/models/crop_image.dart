@@ -1,8 +1,9 @@
 import 'dart:typed_data';
+import 'dart:ui';
 
 class CropImage {
   Uint8List? bytes;
-  double targetAspectRatio;
+  Size targetAspectRatio;
 
   CropImage({required this.bytes, required this.targetAspectRatio});
 }

@@ -65,6 +65,7 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
         .cropCurrentImage(context, _imageListCubit.state);
     if (newState != null) {
       _imageListCubit.emit(newState);
+      _imageListCubit.getSingleImageSize();
     }
   }
 }

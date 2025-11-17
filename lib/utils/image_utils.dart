@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -68,6 +69,15 @@ class ImageUtils {
     return updated;
   }
 
+  static Future<AppImage> getSingleImageSize(AppImage image) async {
+    final Size size = await getImageDimensions(image.image.path);
+    return image.copyWith(
+      width: size.width.toInt(),
+      height: size.height.toInt(),
+      size: image.image.lengthSync(),
+    );
+  }
+
   static Stream<Map<String, String>> convertAllImages({
     required String folderPath,
     required String format,
@@ -107,24 +117,27 @@ class ImageUtils {
     return _gcd(b, a % b);
   }
 
-  static Map<String, int> getClosestSmallerResolution({
-    required int width,
-    required int height,
-    required double aspectRatio,
+  static Size? getExactResolutionWithinBounds({
+    required Size original,
+    required Size aspect,
   }) {
-    // Calculate what the height should be if we keep the width
-    final int heightFromWidth = (width / aspectRatio).floor();
-    // Calculate what the width should be if we keep the height
-    final int widthFromHeight = (height * aspectRatio).floor();
-    // Choose the option that results in smaller dimensions (less area)
-    final int areaKeepWidth = width * heightFromWidth;
-    final int areaKeepHeight = widthFromHeight * height;
-    if (areaKeepWidth <= areaKeepHeight) {
-      // Keep width, adjust height
-      return <String, int>{'width': width, 'height': heightFromWidth};
-    } else {
-      // Keep height, adjust width
-      return <String, int>{'width': widthFromHeight, 'height': height};
-    }
+    // Convert to integers
+    final int maxW = original.width.floor();
+    final int maxH = original.height.floor();
+    final int aw = aspect.width.floor();
+    final int ah = aspect.height.floor();
+    if (aw <= 0 || ah <= 0) return null;
+    // Reduce aspect ratio
+    final int g = _gcd(aw, ah);
+    final int p = aw ~/ g; // reduced width unit
+    final int q = ah ~/ g; // reduced height unit
+    // Largest integer scale k such that p*k <= maxW AND q*k <= maxH
+    final int k = min(maxW ~/ p, maxH ~/ q);
+    if (k < 1) return null;
+    final int finalW = p * k;
+    final int finalH = q * k;
+    return Size(finalW.toDouble(), finalH.toDouble());
   }
+
+
 }

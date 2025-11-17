@@ -104,6 +104,14 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(images: updatedImages));
   }
 
+  Future<void> getSingleImageSize() async {
+    final AppImage updatedImage = await ImageUtils.getSingleImageSize(
+      state.images[state.currentIndex],);
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    updatedImages[state.currentIndex] = updatedImage;
+    emit(state.copyWith(images: updatedImages));
+  }
+
   void searchAndReplace(String search, String replace) {
     final List<AppImage> updatedImages = _captionUtils.searchAndReplace(
       search,

@@ -33,6 +33,18 @@ class _CropImageScreenState extends State<CropImageScreen> {
     return 1.0;
   }
 
+  Size _parseAspectRatioSize(String ratio) {
+    final List<String> parts = ratio.split(':');
+    if (parts.length == 2) {
+      final double? width = double.tryParse(parts[0]);
+      final double? height = double.tryParse(parts[1]);
+      if (width != null && height != null && height != 0) {
+        return Size(width, height);
+      }
+    }
+    return const Size(1, 1);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,65 +53,82 @@ class _CropImageScreenState extends State<CropImageScreen> {
         actions: <Widget>[
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: () {
-              setState(() {
-                _isCropping = true;
-              });
-              _cropController.crop();
-            },
+            onPressed: _isCropping
+                ? null
+                : () {
+                    setState(() {
+                      _isCropping = true;
+                    });
+                    _cropController.crop();
+                  },
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
+        fit: StackFit.expand,
         children: <Widget>[
-          Expanded(
-            child: Crop(
-              baseColor: Colors.black,
-              aspectRatio: _parseAspectRatio(_selectedAspectRatio),
-              image: widget.image,
-              controller: _cropController,
-              onCropped: (Uint8List croppedData) {
-                setState(() {
-                  _croppedData = croppedData;
-                  _isCropping = false;
-                });
-                Navigator.pop(
-                  context,
-                  CropImage(
-                    bytes: _croppedData,
-                    targetAspectRatio: _parseAspectRatio(_selectedAspectRatio),
-                  ),
-                );
-              },
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(8.0),
-
-            child: Wrap(
-              spacing: 8.0,
-              runSpacing: 4.0,
-              alignment: WrapAlignment.center,
-              children: AppConstants.aspectRatioStrings.map((String ratio) {
-                return ElevatedButton(
-                  onPressed: () {
+          Column(
+            children: <Widget>[
+              Expanded(
+                child: Crop(
+                  baseColor: Colors.black,
+                  aspectRatio: _parseAspectRatio(_selectedAspectRatio),
+                  image: widget.image,
+                  controller: _cropController,
+                  onCropped: (Uint8List croppedData) {
                     setState(() {
-                      _selectedAspectRatio = ratio;
-                      _cropController.aspectRatio = _parseAspectRatio(ratio);
+                      _croppedData = croppedData;
+                      _isCropping = false;
                     });
+                    Navigator.pop(
+                      context,
+                      CropImage(
+                        bytes: _croppedData,
+                        targetAspectRatio: _parseAspectRatioSize(
+                          _selectedAspectRatio,
+                        ),
+                      ),
+                    );
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _selectedAspectRatio == ratio
-                        ? Theme.of(context).colorScheme.primary
-                        : Colors.grey,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(ratio),
-                );
-              }).toList(),
-            ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(8.0),
+
+                child: Wrap(
+                  spacing: 8.0,
+                  runSpacing: 4.0,
+                  alignment: WrapAlignment.center,
+                  children: AppConstants.aspectRatioStrings.map((String ratio) {
+                    return ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedAspectRatio = ratio;
+                          _cropController.aspectRatio = _parseAspectRatio(
+                            ratio,
+                          );
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _selectedAspectRatio == ratio
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.grey,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(ratio),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
-          if (_isCropping) const Center(child: CircularProgressIndicator()),
+          if (_isCropping)
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Colors.black54,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            ),
         ],
       ),
     );

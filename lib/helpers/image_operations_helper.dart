@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 
 import '../logic/images_list/image_list_cubit.dart';
 import '../models/app_image.dart';
@@ -113,17 +114,44 @@ class ImageOperationsHelper {
       ),
     );
     if (result is CropImage && result.bytes != null) {
-      if (result.targetAspectRatio == currentImage.aspectRatioAsDouble) {
+      if (result.targetAspectRatio ==
+          Size(currentImage.width.toDouble(), currentImage.height.toDouble())) {
         return null;
       }
-      final String newPath = p.setExtension(currentImage.image.path, '.png');
-      // Write the bytes to the file
+      final File originalFile = currentImage.image;
+      final String originalExt = p.extension(originalFile.path).toLowerCase();
+      final bool originalWasPng = originalExt == '.png';
+      // newPath: if original already png keep same path, otherwise change extension to .png
+      final String newPath = originalWasPng
+          ? originalFile.path
+          : p.setExtension(originalFile.path, '.png');
+
       final File newFile = File(newPath);
       final Uint8List resizedBytes = await _resizeImage(currentImage, result);
-      await newFile.writeAsBytes(resizedBytes);
-      final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-      updatedImages[state.currentIndex] = currentImage.copyWith(image: newFile);
-      return state.copyWith(images: updatedImages);
+      try {
+        // Write the new PNG bytes (overwrites if same path)
+        await newFile.writeAsBytes(resizedBytes);
+        // Update state to point to the new file
+        final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+        updatedImages[state.currentIndex] = currentImage.copyWith(
+          id: const Uuid().v4(),
+          image: newFile,
+        );
+        final ImageListState newState = state.copyWith(images: updatedImages);
+        // If original wasn't a PNG and the paths differ, attempt to delete the original file
+        if (!originalWasPng && originalFile.path != newFile.path) {
+          try {
+            if (await originalFile.exists()) {
+              await originalFile.delete();
+            }
+          } catch (deleteErr) {
+            debugPrint('Failed to delete original file: $deleteErr');
+          }
+        }
+        return newState;
+      } catch (writeErr) {
+        rethrow;
+      }
     }
     return null;
   }
@@ -136,17 +164,20 @@ class ImageOperationsHelper {
     if (decodedCroppedImage == null) {
       throw Exception('Failed to decode image');
     }
-    final Map<String, int> newResolution =
-        ImageUtils.getClosestSmallerResolution(
-          width: decodedCroppedImage.width,
-          height: decodedCroppedImage.height,
-          aspectRatio: 16 / 9,
-        );
-    print(newResolution);
+    final Size? newResolution = ImageUtils.getExactResolutionWithinBounds(
+      original: Size(
+        originalImage.width.toDouble(),
+        originalImage.height.toDouble(),
+      ),
+      aspect: croppedImage.targetAspectRatio,
+    );
+    if (newResolution == null) {
+      throw Exception('Failed to calculate new resolution');
+    }
     final img.Image resizedImage = img.copyResize(
       decodedCroppedImage,
-      width: newResolution['width'],
-      height: newResolution['height'],
+      width: newResolution.width.toInt(),
+      height: newResolution.height.toInt(),
       interpolation: img.Interpolation.linear,
     );
     return Uint8List.fromList(img.encodePng(resizedImage));

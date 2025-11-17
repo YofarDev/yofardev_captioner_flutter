@@ -9,6 +9,7 @@ class ImageListState extends Equatable {
   final String? folderPath;
   final int currentIndex;
   final int occurrencesCount;
+  final List<String> occurrenceFileNames;
 
   const ImageListState({
     this.images = const <AppImage>[],
@@ -17,6 +18,7 @@ class ImageListState extends Equatable {
     this.folderPath,
     this.currentIndex = 0,
     this.occurrencesCount = 0,
+    this.occurrenceFileNames = const <String>[],
   });
 
   ImageListState copyWith({
@@ -26,6 +28,7 @@ class ImageListState extends Equatable {
     String? folderPath,
     int? currentIndex,
     int? occurrencesCount,
+    List<String>? occurrenceFileNames,
   }) {
     return ImageListState(
       images: images ?? this.images,
@@ -34,6 +37,7 @@ class ImageListState extends Equatable {
       folderPath: folderPath ?? this.folderPath,
       currentIndex: currentIndex ?? this.currentIndex,
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
+      occurrenceFileNames: occurrenceFileNames ?? this.occurrenceFileNames,
     );
   }
 
@@ -45,5 +49,6 @@ class ImageListState extends Equatable {
     folderPath,
     currentIndex,
     occurrencesCount,
+    occurrenceFileNames,
   ];
 }

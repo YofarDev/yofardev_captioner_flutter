@@ -50,6 +50,7 @@ class ImagesListView extends StatelessWidget {
                   final bool hasPresetRatio = AppConstants.aspectRatioStrings
                       .contains(image.aspectRatio);
                   return InkWell(
+                    key: ValueKey<String>(image.image.path),
                     onTap: () =>
                         context.read<ImageListCubit>().onImageSelected(index),
                     child: ColoredBox(
@@ -78,6 +79,7 @@ class ImagesListView extends StatelessWidget {
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: Image.file(
+                                      key: ValueKey<String>(image.id),
                                       image.image,
                                       width: 60,
                                       height: 60,

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../models/crop_image.dart';
 import '../../res/app_constants.dart';
 
 class CropImageScreen extends StatefulWidget {
@@ -53,7 +54,8 @@ class _CropImageScreenState extends State<CropImageScreen> {
         children: <Widget>[
           Expanded(
             child: Crop(
-              aspectRatio: 1.0,
+              baseColor: Colors.black,
+              aspectRatio: _parseAspectRatio(_selectedAspectRatio),
               image: widget.image,
               controller: _cropController,
               onCropped: (Uint8List croppedData) {
@@ -61,12 +63,19 @@ class _CropImageScreenState extends State<CropImageScreen> {
                   _croppedData = croppedData;
                   _isCropping = false;
                 });
-                Navigator.pop(context, _croppedData);
+                Navigator.pop(
+                  context,
+                  CropImage(
+                    bytes: _croppedData,
+                    targetAspectRatio: _parseAspectRatio(_selectedAspectRatio),
+                  ),
+                );
               },
             ),
           ),
           Container(
             padding: const EdgeInsets.all(8.0),
+
             child: Wrap(
               spacing: 8.0,
               runSpacing: 4.0,

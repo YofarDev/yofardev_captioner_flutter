@@ -107,7 +107,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                         ),
                       ),
                     ),
-                  if (captioningState.error != null)
+                  if (captioningState.error != null && captioningState.error!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Tooltip(

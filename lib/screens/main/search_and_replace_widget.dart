@@ -47,8 +47,19 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
                             if (state.occurrencesCount > 0)
                               Padding(
                                 padding: const EdgeInsets.only(top: 8.0),
-                                child: Text(
-                                  '${state.occurrencesCount} occurrences found',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      '${state.occurrencesCount} occurrences found in:',
+                                    ),
+                                    Text(
+                                      state.occurrenceFileNames.join(', '),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],

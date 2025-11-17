@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../models/app_image.dart';
 import 'bash_scripts_runner.dart';
 
@@ -103,5 +105,26 @@ class ImageUtils {
       return a;
     }
     return _gcd(b, a % b);
+  }
+
+  static Map<String, int> getClosestSmallerResolution({
+    required int width,
+    required int height,
+    required double aspectRatio,
+  }) {
+    // Calculate what the height should be if we keep the width
+    final int heightFromWidth = (width / aspectRatio).floor();
+    // Calculate what the width should be if we keep the height
+    final int widthFromHeight = (height * aspectRatio).floor();
+    // Choose the option that results in smaller dimensions (less area)
+    final int areaKeepWidth = width * heightFromWidth;
+    final int areaKeepHeight = widthFromHeight * height;
+    if (areaKeepWidth <= areaKeepHeight) {
+      // Keep width, adjust height
+      return <String, int>{'width': width, 'height': heightFromWidth};
+    } else {
+      // Keep height, adjust width
+      return <String, int>{'width': widthFromHeight, 'height': height};
+    }
   }
 }

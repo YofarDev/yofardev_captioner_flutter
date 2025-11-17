@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 
 class AppImage extends Equatable {
+  final String id;
   final File image;
   final String caption;
   final int width;
@@ -9,6 +10,7 @@ class AppImage extends Equatable {
   final int size;
   final String? error;
   const AppImage({
+    required this.id,
     required this.image,
     required this.caption,
     this.width = -1,
@@ -34,6 +36,7 @@ class AppImage extends Equatable {
     error,
   ];
   AppImage copyWith({
+    String? id,
     File? image,
     String? caption,
     int? width,
@@ -42,6 +45,7 @@ class AppImage extends Equatable {
     String? error,
   }) {
     return AppImage(
+      id: id ?? this.id,
       image: image ?? this.image,
       caption: caption ?? this.caption,
       width: width ?? this.width,

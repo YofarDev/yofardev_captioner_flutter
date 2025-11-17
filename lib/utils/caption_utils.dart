@@ -33,14 +33,26 @@ class CaptionUtils {
   /// [search]: The string to count occurrences of.
   /// [images]: The list of [AppImage]s whose captions will be searched.
   /// Returns the total count of occurrences. Returns 0 if [search] is empty.
-  int countOccurrences(String search, List<AppImage> images) {
+  OccurrenceResult countOccurrences(String search, List<AppImage> images) {
     if (search.isEmpty) {
-      return 0;
+      return const OccurrenceResult(count: 0, fileNames: <String>[]);
     }
     int count = 0;
+    final List<String> fileNames = <String>[];
     for (final AppImage image in images) {
-      count += search.allMatches(image.caption).length;
+      final int matches = search.allMatches(image.caption).length;
+      if (matches > 0) {
+        count += matches;
+        fileNames.add(p.basename(image.image.path));
+      }
     }
-    return count;
+    return OccurrenceResult(count: count, fileNames: fileNames);
   }
+}
+
+class OccurrenceResult {
+  const OccurrenceResult({required this.count, required this.fileNames});
+
+  final int count;
+  final List<String> fileNames;
 }

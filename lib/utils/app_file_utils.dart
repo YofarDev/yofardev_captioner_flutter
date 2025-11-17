@@ -1,10 +1,13 @@
 import 'dart:io';
 import 'dart:math';
+
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
+
 import '../models/app_image.dart';
 import '../services/cache_service.dart';
 
@@ -145,7 +148,12 @@ class AppFileUtils {
               ? File(captionPath).readAsStringSync()
               : '';
           images.add(
-            AppImage(image: file, caption: caption, size: file.lengthSync()),
+            AppImage(
+              id: const Uuid().v4(),
+              image: file,
+              caption: caption,
+              size: file.lengthSync(),
+            ),
           );
         }
       }
@@ -214,11 +222,11 @@ class AppFileUtils {
   }
 
   /// Removes an [image] file and its corresponding caption file from the file system.
-  void removeImage(AppImage image) {
-    image.image.deleteSync();
+  Future<void> removeImage(AppImage image) async {
+    await image.image.delete();
     final File captionFile = File(p.setExtension(image.image.path, '.txt'));
-    if (captionFile.existsSync()) {
-      captionFile.deleteSync();
+    if (await captionFile.exists()) {
+      await captionFile.delete();
     }
   }
 }

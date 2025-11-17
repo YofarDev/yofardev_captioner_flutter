@@ -10,14 +10,17 @@ import '../../models/app_image.dart';
 import '../../services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
 import '../../utils/caption_utils.dart';
+import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
 
 part 'image_list_state.dart';
 
 class ImageListCubit extends Cubit<ImageListState> {
-  ImageListCubit() : super(const ImageListState());
+  ImageListCubit({AppFileUtils? fileUtils})
+    : _fileUtils = fileUtils ?? AppFileUtils(),
+      super(const ImageListState());
 
-  final AppFileUtils _fileUtils = AppFileUtils();
+  final AppFileUtils _fileUtils;
   final CaptionUtils _captionUtils = CaptionUtils();
 
   void onInit() async {
@@ -29,7 +32,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     });
   }
 
-  void onFolderPicked(String folderPath) async {
+  Future<void> onFolderPicked(String folderPath) async {
     emit(state.copyWith(folderPath: "", images: <AppImage>[]));
     windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
     CacheService.saveFolderPath(folderPath);
@@ -111,8 +114,11 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void countOccurrences(String search) {
-    final int count = _captionUtils.countOccurrences(search, state.images);
-    emit(state.copyWith(occurrencesCount: count));
+    final OccurrenceResult result = _captionUtils.countOccurrences(search, state.images);
+    emit(state.copyWith(
+      occurrencesCount: result.count,
+      occurrenceFileNames: result.fileNames,
+    ));
   }
 
   void updateCaption({required String caption}) async {
@@ -141,7 +147,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     await File(p.setExtension(imagePath, '.txt')).writeAsString(caption);
   }
 
-  void removeImage(int index) {
+  void removeImage(int index) async {
+    final AppImage imageToRemove = state.images[index];
+    await _fileUtils.removeImage(imageToRemove);
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     updatedImages.removeAt(index);
     emit(state.copyWith(images: updatedImages, currentIndex: 0));
@@ -150,7 +158,7 @@ class ImageListCubit extends Cubit<ImageListState> {
   Map<String, int> getAspectRatioCounts() {
     final Map<String, int> counts = <String, int>{};
     for (final AppImage image in state.images) {
-      final String aspectRatio = image.aspectRatioAsDouble.toStringAsFixed(2);
+      final String aspectRatio = image.aspectRatio;
       counts[aspectRatio] = (counts[aspectRatio] ?? 0) + 1;
     }
     return counts;

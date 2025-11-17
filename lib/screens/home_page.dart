@@ -21,6 +21,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: DropTarget(
+        key: const Key("DropTarget"),
         onDragEntered: (DropEventDetails details) {
           setState(() => _isDragging = true);
         },

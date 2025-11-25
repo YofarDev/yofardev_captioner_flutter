@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'caption_controls.dart';
 import 'controls_widgets.dart';
 import 'export_button.dart';
@@ -38,7 +39,7 @@ class ControlsView extends StatelessWidget {
   Widget _buildSecondRow() => const Row(
     mainAxisSize: MainAxisSize.min,
     children: <Widget>[
-      ApiSettingsButton(),
+      SettingsButton(),
       LlmConfigWidget(),
       SizedBox(width: 32),
       Flexible(child: CaptionControls()),

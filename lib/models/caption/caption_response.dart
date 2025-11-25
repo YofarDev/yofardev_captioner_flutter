@@ -8,7 +8,8 @@ class CaptionResponse {
 
   CaptionResponse({required this.choices});
 
-  factory CaptionResponse.fromJson(Map<String, dynamic> json) => _$CaptionResponseFromJson(json);
+  factory CaptionResponse.fromJson(Map<String, dynamic> json) =>
+      _$CaptionResponseFromJson(json);
 
   Map<String, dynamic> toJson() => _$CaptionResponseToJson(this);
 }
@@ -30,7 +31,8 @@ class ResponseMessage {
 
   ResponseMessage({required this.content});
 
-  factory ResponseMessage.fromJson(Map<String, dynamic> json) => _$ResponseMessageFromJson(json);
+  factory ResponseMessage.fromJson(Map<String, dynamic> json) =>
+      _$ResponseMessageFromJson(json);
 
   Map<String, dynamic> toJson() => _$ResponseMessageToJson(this);
 }

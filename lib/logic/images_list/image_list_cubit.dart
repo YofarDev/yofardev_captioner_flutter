@@ -106,7 +106,8 @@ class ImageListCubit extends Cubit<ImageListState> {
 
   Future<void> getSingleImageSize() async {
     final AppImage updatedImage = await ImageUtils.getSingleImageSize(
-      state.images[state.currentIndex],);
+      state.images[state.currentIndex],
+    );
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     updatedImages[state.currentIndex] = updatedImage;
     emit(state.copyWith(images: updatedImages));
@@ -122,11 +123,16 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void countOccurrences(String search) {
-    final OccurrenceResult result = _captionUtils.countOccurrences(search, state.images);
-    emit(state.copyWith(
-      occurrencesCount: result.count,
-      occurrenceFileNames: result.fileNames,
-    ));
+    final OccurrenceResult result = _captionUtils.countOccurrences(
+      search,
+      state.images,
+    );
+    emit(
+      state.copyWith(
+        occurrencesCount: result.count,
+        occurrenceFileNames: result.fileNames,
+      ),
+    );
   }
 
   void updateCaption({required String caption}) async {

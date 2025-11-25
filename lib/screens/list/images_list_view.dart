@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images_list/image_list_cubit.dart';
 import '../../models/app_image.dart';
-import '../../res/app_colors.dart';
 import '../../res/app_constants.dart';
 import '../../utils/extensions.dart';
 import 'header_widget.dart';
@@ -57,7 +56,7 @@ class ImagesListView extends StatelessWidget {
                       color: index == state.currentIndex
                           ? Colors.white.withAlpha(50)
                           : image.caption.isEmpty
-                          ? lightPink.withAlpha(20)
+                          ? Colors.blue.withAlpha(20)
                           : Colors.transparent,
                       child: Stack(
                         alignment: Alignment.centerRight,

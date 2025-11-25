@@ -90,7 +90,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                                     c.id ==
                                     configState.llmConfigs.selectedConfigId,
                               ),
-                              prompt: configState.llmConfigs.prompt,
+                              prompt: configState.llmConfigs.selectedPrompt!,
                               option: _selectedOption,
                             );
                           }
@@ -107,7 +107,8 @@ class _CaptionControlsState extends State<CaptionControls> {
                         ),
                       ),
                     ),
-                  if (captioningState.error != null && captioningState.error!.isNotEmpty)
+                  if (captioningState.error != null &&
+                      captioningState.error!.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Tooltip(

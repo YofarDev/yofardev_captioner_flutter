@@ -32,6 +32,7 @@ void main() {
           }
         });
       }
+
       runTestForAspectRatio(const Size(16, 9), '16:9');
       runTestForAspectRatio(const Size(2, 3), '2:3');
       runTestForAspectRatio(const Size(3, 4), '3:4');

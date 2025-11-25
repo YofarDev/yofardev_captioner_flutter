@@ -138,6 +138,4 @@ class ImageUtils {
     final int finalH = q * k;
     return Size(finalW.toDouble(), finalH.toDouble());
   }
-
-
 }

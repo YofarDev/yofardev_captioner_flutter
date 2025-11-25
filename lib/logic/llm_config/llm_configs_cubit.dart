@@ -105,11 +105,62 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
-  /// Updates the prompt string for the currently selected LLM configuration.
-  ///
-  /// The updated configurations are then saved.
-  void updatePrompt(String prompt) {
-    emit(state.copyWith(llmConfigs: state.llmConfigs.copyWith(prompt: prompt)));
+  void addPrompt(String prompt) {
+    final List<String> newPrompts = <String>[
+      ...state.llmConfigs.prompts,
+      prompt,
+    ];
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(
+          prompts: newPrompts,
+          selectedPrompt: prompt,
+        ),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void updatePromptByIndex(String prompt, int index) {
+    final List<String> newPrompts = <String>[...state.llmConfigs.prompts];
+    newPrompts[index] = prompt;
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(prompts: newPrompts),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void deletePrompt(String prompt) {
+    final List<String> newPrompts = state.llmConfigs.prompts
+        .where((String p) => p != prompt)
+        .toList();
+    if (state.llmConfigs.selectedPrompt == prompt) {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(
+            prompts: newPrompts,
+            selectedPrompt: newPrompts.first,
+          ),
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          llmConfigs: state.llmConfigs.copyWith(prompts: newPrompts),
+        ),
+      );
+    }
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  void selectPrompt(String prompt) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(selectedPrompt: prompt),
+      ),
+    );
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 }

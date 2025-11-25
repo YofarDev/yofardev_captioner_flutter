@@ -11,7 +11,8 @@ class Content {
 
   Content({required this.type, this.text, this.imageUrl});
 
-  factory Content.fromJson(Map<String, dynamic> json) => _$ContentFromJson(json);
+  factory Content.fromJson(Map<String, dynamic> json) =>
+      _$ContentFromJson(json);
 
   Map<String, dynamic> toJson() => _$ContentToJson(this);
 }
@@ -22,7 +23,8 @@ class ImageUrl {
 
   ImageUrl({required this.url});
 
-  factory ImageUrl.fromJson(Map<String, dynamic> json) => _$ImageUrlFromJson(json);
+  factory ImageUrl.fromJson(Map<String, dynamic> json) =>
+      _$ImageUrlFromJson(json);
 
   Map<String, dynamic> toJson() => _$ImageUrlToJson(this);
 }

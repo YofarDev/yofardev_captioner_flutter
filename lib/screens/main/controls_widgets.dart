@@ -28,8 +28,8 @@ class PickFolderButton extends StatelessWidget {
   }
 }
 
-class ApiSettingsButton extends StatelessWidget {
-  const ApiSettingsButton();
+class SettingsButton extends StatelessWidget {
+  const SettingsButton();
   @override
   Widget build(BuildContext context) {
     return TextButton(

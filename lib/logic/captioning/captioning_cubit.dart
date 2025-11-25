@@ -30,11 +30,12 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     switch (option) {
       case CaptionOptions.current:
         imagesToCaption = <AppImage>[
-          _imageListCubit.state.images[_imageListCubit.state.currentIndex]
+          _imageListCubit.state.images[_imageListCubit.state.currentIndex],
         ];
       case CaptionOptions.missing:
-        imagesToCaption =
-            allImages.where((AppImage image) => image.caption.isEmpty).toList();
+        imagesToCaption = allImages
+            .where((AppImage image) => image.caption.isEmpty)
+            .toList();
       case CaptionOptions.all:
         imagesToCaption = List<AppImage>.from(allImages);
     }
@@ -62,26 +63,32 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         errors.add('Failed to caption ${image.image.path}: $e');
       }
       processedImagesCount++;
-      emit(state.copyWith(
-        progress: processedImagesCount / totalImagesCount,
-        processedImages: processedImagesCount,
-        totalImages: totalImagesCount,
-      ));
+      emit(
+        state.copyWith(
+          progress: processedImagesCount / totalImagesCount,
+          processedImages: processedImagesCount,
+          totalImages: totalImagesCount,
+        ),
+      );
     }
 
     if (errors.isNotEmpty) {
-      emit(state.copyWith(
-        status: CaptioningStatus.failure,
-        error: errors.join('\n'),
-        processedImages: totalImagesCount - errors.length,
-      ));
+      emit(
+        state.copyWith(
+          status: CaptioningStatus.failure,
+          error: errors.join('\n'),
+          processedImages: totalImagesCount - errors.length,
+        ),
+      );
     } else {
-      emit(state.copyWith(
-        status: CaptioningStatus.success,
-        processedImages: totalImagesCount,
-        totalImages: totalImagesCount,
-        error: ''
-      ));
+      emit(
+        state.copyWith(
+          status: CaptioningStatus.success,
+          processedImages: totalImagesCount,
+          totalImages: totalImagesCount,
+          error: '',
+        ),
+      );
     }
   }
 

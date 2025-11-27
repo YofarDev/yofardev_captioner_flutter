@@ -21,33 +21,35 @@ class HeaderWidget extends StatelessWidget {
               },
             );
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                // Text(state.folderPath!, style: const TextStyle(fontSize: 9)),
-                const SizedBox(height: 8),
-                Row(
-                  children: <Widget>[
-                    Text(
-                      "${state.images.length} images / ${state.images.where((AppImage image) => image.caption.isNotEmpty).length} captions",
-                      style: const TextStyle(fontSize: 11),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh, size: 16),
-                      onPressed: state.folderPath == null
-                          ? null
-                          : () {
-                              context.read<ImageListCubit>().onFolderPicked(
-                                state.folderPath!,
-                              );
-                            },
-                    ),
-                  ],
-                ),
-                const SortByWidget(),
-              ],
+          child: ColoredBox(
+            color: Colors.black.withAlpha(50),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  // Text(state.folderPath!, style: const TextStyle(fontSize: 9)),
+                  Row(
+                    children: <Widget>[
+                      Text(
+                        "${state.images.length} images / ${state.images.where((AppImage image) => image.caption.isNotEmpty).length} captions",
+                        style: const TextStyle(fontSize: 11),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.refresh, size: 16),
+                        onPressed: state.folderPath == null
+                            ? null
+                            : () {
+                                context.read<ImageListCubit>().onFolderPicked(
+                                  state.folderPath!,
+                                );
+                              },
+                      ),
+                    ],
+                  ),
+                  const SortByWidget(),
+                ],
+              ),
             ),
           ),
         );

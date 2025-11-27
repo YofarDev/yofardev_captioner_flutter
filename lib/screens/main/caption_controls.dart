@@ -6,6 +6,7 @@ import '../../logic/images_list/image_list_cubit.dart';
 import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/caption_options.dart';
 import '../../models/llm_config.dart';
+import '../../res/app_colors.dart';
 import '../widgets/app_button.dart';
 
 class CaptionControls extends StatefulWidget {
@@ -79,6 +80,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                   AppButton(
                     text: "▶️  Run",
                     isLoading: isCaptioning,
+                    backgroundColor: lightPink.withAlpha(200),
                     onTap:
                         imageListState.images.isNotEmpty &&
                             configState.llmConfigs.selectedConfigId != null &&

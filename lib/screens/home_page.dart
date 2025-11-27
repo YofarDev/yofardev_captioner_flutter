@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:ui';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as path;
+
 import '../logic/images_list/image_list_cubit.dart';
 import '../res/app_colors.dart';
 import 'list/images_list_view.dart';
@@ -51,14 +53,14 @@ class _HomePageState extends State<HomePage> {
             Row(
               children: <Widget>[
                 Container(
-                  color: darkGrey,
+                  color: lightGrey,
                   height: double.infinity,
                   width: 240,
                   child: const ImagesListView(),
                 ),
                 Expanded(
                   child: ColoredBox(
-                    color: lightGrey,
+                    color: darkGrey,
                     child: const MainAreaView(),
                   ),
                 ),

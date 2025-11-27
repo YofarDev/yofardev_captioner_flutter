@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/captioning/captioning_cubit.dart';
 import '../../logic/images_list/image_list_cubit.dart';
 import '../../models/app_image.dart';
+import '../../res/app_colors.dart';
 
 class CaptionTextArea extends StatefulWidget {
   const CaptionTextArea({super.key});
@@ -18,6 +19,27 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
   final TextEditingController _controller = TextEditingController();
   Timer? _debounce;
 
+  final FocusNode _focusNode = FocusNode();
+  bool _isFocused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() {
+      setState(() {
+        _isFocused = _focusNode.hasFocus;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _debounce?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<ImageListCubit, ImageListState>(
@@ -25,7 +47,6 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
         if (state.images.isNotEmpty) {
           final String currentCaption =
               state.images[state.currentIndex].caption;
-
           if (_controller.text != currentCaption) {
             _controller.text = currentCaption;
           }
@@ -49,20 +70,38 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: isThisImageBeingCaptioned
-                            ? Colors.black.withAlpha(20)
-                            : Colors.black.withAlpha(50),
-                        borderRadius: BorderRadius.circular(8),
+                        color: lightGrey,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isThisImageBeingCaptioned
+                              ? Colors.blueAccent.withAlpha(40)
+                              : Colors.white.withAlpha(40),
+                        ),
+                        boxShadow: _isFocused
+                            ? <BoxShadow>[
+                                BoxShadow(
+                                  color: Colors.white.withAlpha(30),
+                                  blurRadius: 15,
+                                  spreadRadius: 2,
+                                ),
+                              ]
+                            : <BoxShadow>[],
                       ),
                       child: TextField(
+                        focusNode: _focusNode,
                         readOnly: isThisImageBeingCaptioned,
                         controller: _controller,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Colors.white,
+                        ),
                         onChanged: (String value) {
                           if (_debounce?.isActive ?? false) _debounce!.cancel();
-
                           _debounce = Timer(
                             const Duration(milliseconds: 300),
                             () {
@@ -75,6 +114,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                         maxLines: 10,
                         decoration: const InputDecoration(
                           border: InputBorder.none,
+                          isDense: true,
                         ),
                       ),
                     ),
@@ -86,12 +126,5 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
         },
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    _controller.dispose();
-    super.dispose();
   }
 }

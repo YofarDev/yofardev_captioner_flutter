@@ -67,7 +67,9 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.dark,
           ).copyWith(onSurface: Colors.white),
           textTheme: const TextTheme(
-            bodyMedium: TextStyle(color: Colors.white),
+            bodySmall: TextStyle(color: Colors.white, fontFamily: 'Inter'),
+            bodyMedium: TextStyle(color: Colors.white, fontFamily: 'Inter'),
+            bodyLarge: TextStyle(color: Colors.white, fontFamily: 'Inter'),
           ),
         ),
         home: const HomePage(),

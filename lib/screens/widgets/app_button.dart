@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../res/app_colors.dart';
 
 class AppButton extends StatelessWidget {
@@ -14,6 +15,7 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(backgroundColor: lightGrey),
       onPressed: onTap,
       child: isLoading
           ? SizedBox(

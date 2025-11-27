@@ -106,7 +106,8 @@ class CurrentImageView extends StatelessWidget {
             Text(
               '${currentImage.captionModel} • ${timeago.format(currentImage.lastModified ?? currentImage.captionTimestamp!)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withAlpha(50),
+                color: Colors.white.withAlpha(100),
+                fontSize: 11,
               ),
             ),
           ],

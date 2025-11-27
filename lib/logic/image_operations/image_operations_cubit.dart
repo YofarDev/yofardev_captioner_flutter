@@ -10,11 +10,14 @@ import '../images_list/image_list_cubit.dart';
 part 'image_operations_state.dart';
 
 class ImageOperationsCubit extends Cubit<ImageOperationsState> {
+  late final ImageOperationsHelper _imageOperationsHelper;
+
   ImageOperationsCubit(this._imageListCubit)
-    : super(const ImageOperationsState());
+    : super(const ImageOperationsState()) {
+    _imageOperationsHelper = ImageOperationsHelper(imageListCubit: _imageListCubit);
+  }
 
   final ImageListCubit _imageListCubit;
-  final ImageOperationsHelper _imageOperationsHelper = ImageOperationsHelper();
 
   void renameAllFiles() async {
     if (_imageListCubit.state.folderPath == null) {

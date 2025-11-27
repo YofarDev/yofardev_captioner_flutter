@@ -9,7 +9,7 @@ part of 'caption_response.dart';
 CaptionResponse _$CaptionResponseFromJson(Map<String, dynamic> json) =>
     CaptionResponse(
       choices: (json['choices'] as List<dynamic>)
-          .map((dynamic e) => Choice.fromJson(e as Map<String, dynamic>))
+          .map((e) => Choice.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 

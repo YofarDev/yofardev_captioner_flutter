@@ -47,7 +47,7 @@ void main() {
         ),
       ],
       verify: (_) {
-        verify(mockAppFileUtils.removeImage(testImage)).called(1);
+        verify(mockAppFileUtils.removeImage(testImage.image)).called(1);
       },
     );
   });

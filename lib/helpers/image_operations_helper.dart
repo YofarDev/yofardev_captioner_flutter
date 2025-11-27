@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'dart:math';
+import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -16,60 +16,81 @@ import '../utils/image_utils.dart';
 
 class ImageOperationsHelper {
   final AppFileUtils _fileUtils;
+  final ImageListCubit _imageListCubit;
 
-  ImageOperationsHelper({AppFileUtils? fileUtils})
-    : _fileUtils = fileUtils ?? AppFileUtils();
+  ImageOperationsHelper({
+    AppFileUtils? fileUtils,
+    required ImageListCubit imageListCubit,
+  }) : _fileUtils = fileUtils ?? AppFileUtils(),
+       _imageListCubit = imageListCubit;
 
   Future<void> renameAllFiles(String folderPath) async {
-    List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
-    images = _fileUtils.sortAppImages(images);
-    final int totalFiles = images.length;
-    final int padding = max(2, totalFiles.toString().length);
-    // Create a temporary directory
-    final Directory tempDir = Directory(p.join(folderPath, 'temp_rename'));
-    await tempDir.create();
-    try {
-      // Copy all files to temp directory with new names
-      for (int i = 0; i < images.length; i++) {
-        final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
-        final File file = images[i].image;
-        final String extension = p.extension(file.path);
+    // Current images from the state (which reflect the DB)
+    final List<AppImage> images = List<AppImage>.from(
+      _imageListCubit.state.images,
+    );
+    final List<File> currentImageFiles = images
+        .map((AppImage e) => e.image)
+        .toList();
+    final List<File> sortedImageFiles = _sortFiles(currentImageFiles);
 
-        // Copy image with new name
-        final String newImageName = '$paddedIndex$extension';
-        await file.copy(p.join(tempDir.path, newImageName));
+    final int totalFiles = sortedImageFiles.length;
+    final int padding = math.max(2, totalFiles.toString().length); // No need for max(2, ...)
 
-        // Copy caption file if it exists
-        final File captionFile = File(p.setExtension(file.path, '.txt'));
-        if (await captionFile.exists()) {
-          await captionFile.copy(p.join(tempDir.path, '$paddedIndex.txt'));
-        }
-      }
-      // Delete all original files
-      for (final AppImage image in images) {
-        await image.image.delete();
-        final File captionFile = File(p.setExtension(image.image.path, '.txt'));
-        if (await captionFile.exists()) {
-          await captionFile.delete();
-        }
-      }
-      // Move files from temp directory back to original folder
-      final List<FileSystemEntity> tempFiles = tempDir.listSync();
-      for (final FileSystemEntity entity in tempFiles) {
-        if (entity is File) {
-          final String fileName = p.basename(entity.path);
-          await entity.rename(p.join(folderPath, fileName));
-        }
-      }
-      // Delete temp directory
-      await tempDir.delete();
-    } catch (e) {
-      // If something goes wrong, try to clean up the temp directory
-      if (await tempDir.exists()) {
-        await tempDir.delete(recursive: true);
-      }
-      rethrow;
+    // Create a mapping from old path to AppImage
+    final Map<String, AppImage> imageMap = <String, AppImage>{
+      for (final AppImage img in images) img.image.path: img,
+    };
+
+    final List<String> oldPaths = <String>[];
+    final List<String> newPaths = <String>[];
+    final List<String> newFilenames = <String>[];
+
+    // Plan renames
+    for (int i = 0; i < sortedImageFiles.length; i++) {
+      final File originalFile = sortedImageFiles[i];
+      final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
+      final String extension = p.extension(originalFile.path);
+
+      final String newImageName = '$paddedIndex$extension';
+      final String newPath = p.join(folderPath, newImageName);
+
+      oldPaths.add(originalFile.path);
+      newPaths.add(newPath);
+      newFilenames.add(newImageName);
     }
+
+    // Perform renames and update AppImage objects
+    final List<AppImage> updatedAppImages = <AppImage>[];
+    for (int i = 0; i < oldPaths.length; i++) {
+      final File originalFile = File(oldPaths[i]);
+      final File newFile = File(newPaths[i]);
+
+
+      await originalFile.rename(newFile.path);
+
+      // Update the AppImage object with the new path and filename
+      final AppImage? originalAppImage = imageMap[originalFile.path];
+      if (originalAppImage != null) {
+        updatedAppImages.add(
+          originalAppImage.copyWith(
+            image: newFile,
+            // filename will be updated when _imageListCubit.onFolderPicked is called
+          ),
+        );
+      }
+    }
+
+    // Refresh the image list and update the database
+    await _imageListCubit.onFolderPicked(folderPath);
+  }
+
+  /// Sorts a list of [files] naturally by their base names.
+  List<File> _sortFiles(List<File> files) {
+    files.sort((File a, File b) {
+      return _fileUtils.compareNatural(p.basename(a.path), p.basename(b.path));
+    });
+    return files;
   }
 
   Future<void> exportAsArchive(String folderPath, List<AppImage> images) async {

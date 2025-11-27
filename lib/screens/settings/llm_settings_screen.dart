@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/llm_config.dart';
+import '../../models/llm_provider_type.dart';
 import '../../res/app_colors.dart';
 
 class LlmSettingsScreen extends StatefulWidget {
@@ -27,8 +30,18 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
       text: config?.apiKey,
     );
     final TextEditingController delayController = TextEditingController(
-      text: config?.delay.toString(),
+      text: config?.delay.toString() ?? '0',
     );
+
+    LlmProviderType selectedProviderType =
+        config?.providerType ?? LlmProviderType.remote;
+
+    // Pre-fill model for macOS users when adding a new local config
+    if (!isEditing &&
+        Platform.isMacOS &&
+        selectedProviderType == LlmProviderType.localMlx) {
+      modelController.text = 'mlx-community/Qwen3-VL-4B-Instruct-5bit';
+    }
 
     await showDialog(
       context: context,
@@ -41,27 +54,75 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
               Text(isEditing ? 'Edit Configuration' : 'Add Configuration'),
             ],
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const SizedBox(height: 8),
-                _buildTextField(nameController, 'Name', Icons.label),
-                _buildTextField(urlController, 'URL', Icons.link),
-                _buildTextField(
-                  modelController,
-                  'Model Name',
-                  Icons.psychology,
-                ),
-                _buildTextField(apiKeyController, 'API Key', Icons.vpn_key),
-                _buildTextField(
-                  delayController,
-                  'Delay (ms)',
-                  Icons.timer,
-                  inputType: TextInputType.number,
-                ),
-              ],
-            ),
+          content: StatefulBuilder(
+            builder:
+                (
+                  BuildContext context,
+                  void Function(void Function()) setState,
+                ) {
+                  return SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<LlmProviderType>(
+                          initialValue: selectedProviderType,
+                          onChanged: (LlmProviderType? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                selectedProviderType = newValue;
+                                // Pre-fill model for macOS users when switching to local
+                                if (!isEditing &&
+                                    Platform.isMacOS &&
+                                    selectedProviderType ==
+                                        LlmProviderType.localMlx) {
+                                  modelController.text =
+                                      'mlx-community/Qwen3-VL-4B-Instruct-5bit';
+                                }
+                              });
+                            }
+                          },
+                          items: LlmProviderType.values.map((
+                            LlmProviderType provider,
+                          ) {
+                            return DropdownMenuItem<LlmProviderType>(
+                              value: provider,
+                              child: Text(provider.name),
+                            );
+                          }).toList(),
+                          decoration: const InputDecoration(
+                            labelText: 'Provider Type',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        if (selectedProviderType == LlmProviderType.remote)
+                          _buildTextField(nameController, 'Name', Icons.label),
+                        if (selectedProviderType ==
+                            LlmProviderType.remote) ...<Widget>[
+                          _buildTextField(urlController, 'URL', Icons.link),
+                          _buildTextField(
+                            apiKeyController,
+                            'API Key',
+                            Icons.vpn_key,
+                          ),
+                        ],
+                        _buildTextField(
+                          modelController,
+                          'Model',
+                          Icons.psychology,
+                        ),
+                        if (selectedProviderType == LlmProviderType.remote)
+                          _buildTextField(
+                            delayController,
+                            'Delay (ms)',
+                            Icons.timer,
+                            inputType: TextInputType.number,
+                          ),
+                      ],
+                    ),
+                  );
+                },
           ),
           actions: <Widget>[
             TextButton(
@@ -70,13 +131,18 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
             ),
             FilledButton(
               onPressed: () {
+                final bool isLocal =
+                    selectedProviderType == LlmProviderType.localMlx;
                 final LlmConfig newConfig = LlmConfig(
                   id: config?.id,
-                  name: nameController.text,
-                  url: urlController.text,
+                  name: isLocal
+                      ? modelController.text.split('/').last
+                      : nameController.text,
+                  url: isLocal ? null : urlController.text,
                   model: modelController.text,
-                  apiKey: apiKeyController.text,
-                  delay: int.tryParse(delayController.text) ?? 0,
+                  apiKey: isLocal ? null : apiKeyController.text,
+                  delay: isLocal ? 0 : int.tryParse(delayController.text) ?? 0,
+                  providerType: selectedProviderType,
                 );
                 if (isEditing) {
                   context.read<LlmConfigsCubit>().updateLlmConfig(newConfig);
@@ -118,7 +184,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                 TextField(
                   controller: promptController,
                   decoration: const InputDecoration(
-                    labelText: 'System Prompt',
+                    labelText: 'Prompt',
                     hintText: 'You are a helpful assistant...',
                     border: OutlineInputBorder(),
                     alignLabelWithHint: true,
@@ -200,7 +266,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
               children: <Widget>[
                 _buildSectionHeader(
                   context,
-                  title: "Models Configuration",
+                  title: "Vision Models",
                   icon: Icons.settings_input_component,
                   onAdd: () => _showConfigDialog(),
                 ),
@@ -250,7 +316,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                 const Divider(height: 1, thickness: 1),
                 _buildSectionHeader(
                   context,
-                  title: "System Prompts",
+                  title: "Prompts",
                   icon: Icons.chat_bubble_outline,
                   onAdd: () => _showPromptDialog(),
                 ),
@@ -390,7 +456,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "${config.model} • ${config.url}",
+                      "${config.model} • ${config.providerType.name}${config.providerType == LlmProviderType.remote ? " • ${config.url}" : ""}",
                       style: const TextStyle(
                         color: Colors.white70,
                         fontSize: 12,

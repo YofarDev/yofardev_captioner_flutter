@@ -2,7 +2,9 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import '../../logic/image_operations/image_operations_cubit.dart';
 import '../../logic/images_list/image_list_cubit.dart';
@@ -18,6 +20,7 @@ class CurrentImageView extends StatelessWidget {
         if (state.images.isEmpty) {
           return const SizedBox.shrink();
         }
+        final AppImage currentImage = state.images[state.currentIndex];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
@@ -67,6 +70,10 @@ class CurrentImageView extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: <Widget>[
+                  if (currentImage.captionModel != null &&
+                      currentImage.captionTimestamp != null)
+                    _buildTimestamp(context, currentImage),
+                  const Spacer(),
                   _buildSizeInfos(state.images[state.currentIndex]),
                   const SizedBox(width: 8),
                   IconButton(
@@ -83,6 +90,28 @@ class CurrentImageView extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildTimestamp(BuildContext context, AppImage currentImage) {
+    final DateFormat formatter = DateFormat('d/MM/y • h:mm');
+    return Padding(
+      padding: const EdgeInsets.only(left: 32),
+      child: Tooltip(
+        message:
+            '🤖 First caption ▶ ${formatter.format(currentImage.captionTimestamp!)}${currentImage.lastModified != null ? '\n✍ Last modified ▶ ${formatter.format(currentImage.lastModified!)}' : ''}',
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            Text(
+              '${currentImage.captionModel} • ${timeago.format(currentImage.lastModified ?? currentImage.captionTimestamp!)}',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white.withAlpha(50),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -6,6 +6,9 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../models/app_image.dart';
 import 'bash_scripts_runner.dart';
@@ -15,6 +18,8 @@ import 'bash_scripts_runner.dart';
 /// This includes getting image dimensions, opening images with default applications,
 /// and retrieving image file sizes.
 class ImageUtils {
+  static const int maxFileSize = 5 * 1024 * 1024;
+
   /// Asynchronously retrieves the dimensions (width and height) of an image.
   ///
   /// [imagePath]: The file path of the image.
@@ -137,5 +142,39 @@ class ImageUtils {
     final int finalW = p * k;
     final int finalH = q * k;
     return Size(finalW.toDouble(), finalH.toDouble());
+  }
+
+  static Future<File> resizeImageIfNecessary(File imageFile) async {
+    final int fileSize = await imageFile.length();
+    if (fileSize <= maxFileSize) {
+      return imageFile;
+    }
+
+    final Directory tempDir = await getTemporaryDirectory();
+    final String tempPath = p.join(
+      tempDir.path,
+      '${p.basename(imageFile.path)}_compressed.jpg',
+    );
+
+    int quality = 95;
+    File compressedImageFile = imageFile;
+
+    while (await compressedImageFile.length() > maxFileSize && quality > 10) {
+      final XFile? result = await FlutterImageCompress.compressAndGetFile(
+        imageFile.absolute.path,
+        tempPath,
+        quality: quality,
+      );
+
+      if (result != null) {
+        compressedImageFile = File(result.path);
+        quality -= 5;
+      } else {
+        // if compression fails, return original file
+        return imageFile;
+      }
+    }
+
+    return compressedImageFile;
   }
 }

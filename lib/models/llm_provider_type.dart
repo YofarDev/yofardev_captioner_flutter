@@ -1,0 +1,4 @@
+enum LlmProviderType {
+  remote,
+  localMlx,
+}

@@ -9,6 +9,11 @@ class AppImage extends Equatable {
   final int height;
   final int size;
   final String? error;
+  final bool isCaptionEdited;
+  final String? captionModel;
+  final DateTime? captionTimestamp;
+  final DateTime? lastModified;
+
   const AppImage({
     required this.id,
     required this.image,
@@ -17,6 +22,10 @@ class AppImage extends Equatable {
     this.height = -1,
     this.size = -1,
     this.error,
+    this.isCaptionEdited = false,
+    this.captionModel,
+    this.captionTimestamp,
+    this.lastModified,
   });
 
   double get aspectRatioAsDouble {
@@ -28,13 +37,17 @@ class AppImage extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-    image,
-    caption,
-    width,
-    height,
-    size,
-    error,
-  ];
+        image,
+        caption,
+        width,
+        height,
+        size,
+        error,
+        isCaptionEdited,
+        captionModel,
+        captionTimestamp,
+        lastModified,
+      ];
   AppImage copyWith({
     String? id,
     File? image,
@@ -43,6 +56,10 @@ class AppImage extends Equatable {
     int? height,
     int? size,
     String? error,
+    bool? isCaptionEdited,
+    String? captionModel,
+    DateTime? captionTimestamp,
+    DateTime? lastModified,
   }) {
     return AppImage(
       id: id ?? this.id,
@@ -52,6 +69,10 @@ class AppImage extends Equatable {
       height: height ?? this.height,
       size: size ?? this.size,
       error: error ?? this.error,
+      isCaptionEdited: isCaptionEdited ?? this.isCaptionEdited,
+      captionModel: captionModel ?? this.captionModel,
+      captionTimestamp: captionTimestamp ?? this.captionTimestamp,
+      lastModified: lastModified ?? this.lastModified,
     );
   }
 }

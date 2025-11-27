@@ -1,16 +1,42 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
+import 'package:uuid/uuid.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
+import 'package:yofardev_captioner/logic/images_list/image_list_cubit.dart';
+import 'package:yofardev_captioner/models/app_image.dart';
+import 'package:yofardev_captioner/utils/app_file_utils.dart';
 
+import 'image_operations_helper_test.mocks.dart';
+
+@GenerateMocks(<Type>[ImageListCubit, AppFileUtils])
 void main() {
   group('ImageOperationsHelper', () {
     late ImageOperationsHelper imageOperationsHelper;
+    late MockImageListCubit mockImageListCubit;
+    late MockAppFileUtils mockAppFileUtils;
     late Directory tempDir;
 
     setUp(() async {
-      imageOperationsHelper = ImageOperationsHelper();
+      mockImageListCubit = MockImageListCubit();
+      mockAppFileUtils = MockAppFileUtils();
+
+      when(mockAppFileUtils.compareNatural(any, any)).thenAnswer((
+        Invocation inv,
+      ) {
+        final String a = inv.positionalArguments[0] as String;
+        final String b = inv.positionalArguments[1] as String;
+        return a.compareTo(b);
+      });
+
+      imageOperationsHelper = ImageOperationsHelper(
+        imageListCubit: mockImageListCubit,
+        fileUtils: mockAppFileUtils,
+      );
+
       tempDir = await Directory.systemTemp.createTemp('image_ops_test');
     });
 
@@ -19,55 +45,46 @@ void main() {
     });
 
     test(
-      'renameAllFiles shuffles captions when some images lack captions',
+      'renameAllFiles renames image files and triggers folder pick',
       () async {
-        // 1. Create a scenario with a mix of images with and without captions
-        await File(p.join(tempDir.path, '01_image.jpg')).create();
-        await File(
-          p.join(tempDir.path, '01_image.txt'),
-        ).writeAsString('caption for 01');
-        await File(p.join(tempDir.path, '02_image.jpg')).create();
-        await File(p.join(tempDir.path, '03_image.jpg')).create();
-        await File(
-          p.join(tempDir.path, '03_image.txt'),
-        ).writeAsString('caption for 03');
+        // Setup mock state for ImageListCubit
+        final File image1 = File(p.join(tempDir.path, 'image_c.jpg'))
+          ..createSync();
+        final File image2 = File(p.join(tempDir.path, 'image_a.png'))
+          ..createSync();
+        final File image3 = File(p.join(tempDir.path, 'image_b.jpeg'))
+          ..createSync();
 
-        // 2. Call the rename function
+        final List<AppImage> initialImages = <AppImage>[
+          AppImage(id: const Uuid().v4(), image: image1, caption: 'Caption C'),
+          AppImage(id: const Uuid().v4(), image: image2, caption: 'Caption A'),
+          AppImage(id: const Uuid().v4(), image: image3, caption: 'Caption B'),
+        ];
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(folderPath: tempDir.path, images: initialImages),
+        );
+        when(
+          mockImageListCubit.onFolderPicked(tempDir.path),
+        ).thenAnswer((_) async {});
+
+        // Call the method under test
         await imageOperationsHelper.renameAllFiles(tempDir.path);
 
-        // 3. Verify the CORRECT behavior
-        final List<FileSystemEntity> files = tempDir.listSync();
-        final List<String> fileNames = files
-            .map((FileSystemEntity f) => p.basename(f.path))
+        // Verify that physical files are renamed
+        final List<String> renamedFileNames = tempDir
+            .listSync()
+            .whereType<File>()
+            .map((File f) => p.basename(f.path))
             .toList();
 
-        // Check that the images are renamed correctly
-        expect(fileNames, containsAll(<dynamic>['01.jpg', '02.jpg', '03.jpg']));
+        expect(renamedFileNames, contains('01.png'));
+        expect(renamedFileNames, contains('02.jpeg'));
+        expect(renamedFileNames, contains('03.jpg'));
+        expect(renamedFileNames, hasLength(3)); // Only image files
 
-        // Check that captions are correctly named
-        expect(fileNames, contains('01.txt'));
-        expect(
-          fileNames,
-          isNot(contains('02.txt')),
-          reason:
-              '02.txt should not be created as 02_image.jpg has no caption.',
-        );
-        expect(
-          fileNames,
-          contains('03.txt'),
-          reason: '03.txt should be created for 03_image.jpg with its caption.',
-        );
-
-        // Check the content of the captions
-        final String caption1Content = await File(
-          p.join(tempDir.path, '01.txt'),
-        ).readAsString();
-        expect(caption1Content, 'caption for 01');
-
-        final String caption3Content = await File(
-          p.join(tempDir.path, '03.txt'),
-        ).readAsString();
-        expect(caption3Content, 'caption for 03');
+        // Verify that onFolderPicked was called to refresh the state and DB
+        verify(mockImageListCubit.onFolderPicked(tempDir.path)).called(1);
       },
     );
   });

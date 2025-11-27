@@ -3,6 +3,8 @@ PODS:
     - FlutterMacOS
   - file_picker (0.0.1):
     - FlutterMacOS
+  - flutter_image_compress_macos (1.0.0):
+    - FlutterMacOS
   - FlutterMacOS (1.0.0)
   - macos_secure_bookmarks (0.0.3):
     - FlutterMacOS
@@ -20,6 +22,7 @@ PODS:
 DEPENDENCIES:
   - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
+  - flutter_image_compress_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - macos_secure_bookmarks (from `Flutter/ephemeral/.symlinks/plugins/macos_secure_bookmarks/macos`)
   - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
@@ -32,6 +35,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos
   file_picker:
     :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
+  flutter_image_compress_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
   macos_secure_bookmarks:
@@ -48,6 +53,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   desktop_drop: 1eeeb9484299585770b6461e4f3d60950e99efa2
   file_picker: e716a70a9fe5fd9e09ebc922d7541464289443af
+  flutter_image_compress_macos: c26c3c13ea0f28ae6dea4e139b3292e7729f99f1
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   macos_secure_bookmarks: cff041c4b377fa00941bb901aaec4d27fac5edf2
   path_provider_foundation: 0b743cbb62d8e47eab856f09262bb8c1ddcfe6ba

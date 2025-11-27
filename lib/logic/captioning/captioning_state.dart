@@ -8,6 +8,7 @@ class CaptioningState extends Equatable {
   final int processedImages;
   final int totalImages;
   final String? error;
+  final String? currentlyCaptioningImage;
 
   const CaptioningState({
     this.status = CaptioningStatus.initial,
@@ -15,6 +16,7 @@ class CaptioningState extends Equatable {
     this.processedImages = 0,
     this.totalImages = 0,
     this.error,
+    this.currentlyCaptioningImage,
   });
 
   CaptioningState copyWith({
@@ -23,6 +25,8 @@ class CaptioningState extends Equatable {
     int? processedImages,
     int? totalImages,
     String? error,
+    String? currentlyCaptioningImage,
+    bool? setCurrentlyCaptioningImage,
   }) {
     return CaptioningState(
       status: status ?? this.status,
@@ -30,6 +34,9 @@ class CaptioningState extends Equatable {
       processedImages: processedImages ?? this.processedImages,
       totalImages: totalImages ?? this.totalImages,
       error: error ?? this.error,
+      currentlyCaptioningImage: (setCurrentlyCaptioningImage ?? false)
+          ? currentlyCaptioningImage
+          : this.currentlyCaptioningImage,
     );
   }
 
@@ -40,5 +47,6 @@ class CaptioningState extends Equatable {
     processedImages,
     totalImages,
     error,
+    currentlyCaptioningImage,
   ];
 }

@@ -1,8 +1,13 @@
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../models/llm_config.dart';
 import '../../models/llm_configs.dart';
+import '../../models/llm_provider_type.dart';
 import '../../services/llm_config_service.dart';
+
 part 'llm_configs_state.dart';
 
 /// A Cubit that manages the state of LLM (Large Language Model) configurations.
@@ -19,6 +24,16 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     final LlmConfigs? configs = await LlmConfigService.loadLlmConfigs();
     if (configs != null) {
       emit(state.copyWith(llmConfigs: configs));
+    } else {
+      if (Platform.isMacOS) {
+        final LlmConfig config = LlmConfig(
+          id: 'Qwen3-VL-4B-Instruct-5bit',
+          name: 'Qwen3-VL-4B-Instruct-5bit',
+          providerType: LlmProviderType.localMlx,
+          model: 'mlx-community/Qwen3-VL-4B-Instruct-5bit',
+        );
+        addLlmConfig(config);
+      }
     }
   }
 

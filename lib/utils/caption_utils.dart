@@ -19,11 +19,17 @@ class CaptionUtils {
   ) {
     final List<AppImage> updatedImages = <AppImage>[];
     for (final AppImage image in images) {
-      final String captionPath = p.setExtension(image.image.path, '.txt');
-      final File captionFile = File(captionPath);
-      final String newCaption = image.caption.replaceAll(search, replace);
-      captionFile.writeAsStringSync(newCaption);
-      updatedImages.add(image.copyWith(caption: newCaption));
+      if (image.caption.contains(search)) {
+        final String captionPath = p.setExtension(image.image.path, '.txt');
+        final File captionFile = File(captionPath);
+        final String newCaption = image.caption.replaceAll(search, replace);
+        captionFile.writeAsStringSync(newCaption);
+        updatedImages.add(
+          image.copyWith(caption: newCaption, isCaptionEdited: true),
+        );
+      } else {
+        updatedImages.add(image);
+      }
     }
     return updatedImages;
   }

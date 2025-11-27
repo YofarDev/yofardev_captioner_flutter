@@ -37,10 +37,13 @@ class CaptioningCubit extends Cubit<CaptioningState> {
             .where((AppImage image) => image.caption.isEmpty)
             .toList();
       case CaptionOptions.all:
-        imagesToCaption = List<AppImage>.from(allImages);
+        imagesToCaption = allImages
+            .where((AppImage image) => !image.isCaptionEdited)
+            .toList();
     }
 
     final int totalImagesCount = imagesToCaption.length;
+    emit(state.copyWith(totalImages: totalImagesCount, processedImages: 0));
     if (totalImagesCount == 0) {
       emit(state.copyWith(status: CaptioningStatus.success, totalImages: 0));
       return;
@@ -49,16 +52,19 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     final List<String> errors = <String>[];
 
     for (final AppImage image in imagesToCaption) {
+      emit(
+        state.copyWith(
+          currentlyCaptioningImage: image.image.path,
+          setCurrentlyCaptioningImage: true,
+        ),
+      );
       try {
         final AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,
           prompt,
         );
-        _imageListCubit.updateImageByPath(
-          imagePath: image.image.path,
-          caption: updatedImage.caption,
-        );
+        _imageListCubit.updateImage(image: updatedImage);
       } catch (e) {
         errors.add('Failed to caption ${image.image.path}: $e');
       }
@@ -68,6 +74,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           progress: processedImagesCount / totalImagesCount,
           processedImages: processedImagesCount,
           totalImages: totalImagesCount,
+          setCurrentlyCaptioningImage: true,
         ),
       );
     }
@@ -78,6 +85,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           status: CaptioningStatus.failure,
           error: errors.join('\n'),
           processedImages: totalImagesCount - errors.length,
+          setCurrentlyCaptioningImage: true,
         ),
       );
     } else {
@@ -87,6 +95,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           processedImages: totalImagesCount,
           totalImages: totalImagesCount,
           error: '',
+          setCurrentlyCaptioningImage: true,
         ),
       );
     }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -7,9 +6,10 @@ import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import '../../models/app_image.dart';
+import '../../models/caption_data.dart';
+import '../../models/caption_database.dart';
 import '../../services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
-import '../../utils/caption_utils.dart';
 import '../../utils/extensions.dart';
 import '../../utils/image_utils.dart';
 
@@ -21,7 +21,6 @@ class ImageListCubit extends Cubit<ImageListState> {
       super(const ImageListState());
 
   final AppFileUtils _fileUtils;
-  final CaptionUtils _captionUtils = CaptionUtils();
 
   void onInit() async {
     await CacheService.loadFolderPath().then((String? path) {
@@ -114,59 +113,108 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void searchAndReplace(String search, String replace) {
-    final List<AppImage> updatedImages = _captionUtils.searchAndReplace(
-      search,
-      replace,
-      state.images,
-    );
-    emit(state.copyWith(images: updatedImages));
+    if (search.isEmpty) return;
+
+    final List<AppImage> updatedImages = <AppImage>[];
+    bool wasModified = false;
+    for (final AppImage image in state.images) {
+      if (image.caption.contains(search)) {
+        wasModified = true;
+        final String newCaption = image.caption.replaceAll(search, replace);
+        updatedImages.add(
+          image.copyWith(
+            caption: newCaption,
+            isCaptionEdited: true,
+            lastModified: DateTime.now(),
+          ),
+        );
+      } else {
+        updatedImages.add(image);
+      }
+    }
+
+    if (wasModified) {
+      emit(state.copyWith(images: updatedImages));
+      _saveDb();
+    }
   }
 
   void countOccurrences(String search) {
-    final OccurrenceResult result = _captionUtils.countOccurrences(
-      search,
-      state.images,
-    );
+    if (search.isEmpty) {
+      emit(
+        state.copyWith(occurrencesCount: 0, occurrenceFileNames: <String>[]),
+      );
+      return;
+    }
+    int count = 0;
+    final List<String> fileNames = <String>[];
+    for (final AppImage image in state.images) {
+      final int matches = search.allMatches(image.caption).length;
+      if (matches > 0) {
+        count += matches;
+        fileNames.add(p.basename(image.image.path));
+      }
+    }
     emit(
-      state.copyWith(
-        occurrencesCount: result.count,
-        occurrenceFileNames: result.fileNames,
-      ),
+      state.copyWith(occurrencesCount: count, occurrenceFileNames: fileNames),
     );
   }
 
   void updateCaption({required String caption}) async {
+    final AppImage originalImage = state.images[state.currentIndex];
+    final AppImage updated = originalImage.copyWith(
+      caption: caption,
+      isCaptionEdited: true,
+      lastModified: DateTime.now(),
+      captionModel: caption.isEmpty ? '' : originalImage.captionModel,
+      captionTimestamp: caption.isEmpty ? null : originalImage.captionTimestamp,
+    );
+
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages[state.currentIndex] = state.images[state.currentIndex]
-        .copyWith(caption: caption);
+    updatedImages[state.currentIndex] = updated;
+
     emit(state.copyWith(images: updatedImages));
-    await File(
-      p.setExtension(state.images[state.currentIndex].image.path, '.txt'),
-    ).writeAsString(caption);
+    await _saveDb();
   }
 
-  void updateImageByPath({
-    required String imagePath,
-    required String caption,
-  }) async {
-    final int index = state.images.indexWhere(
-      (AppImage image) => image.image.path == imagePath,
-    );
+  void updateImage({required AppImage image}) async {
+    final int index = state.images.indexWhere((AppImage i) => i.id == image.id);
     if (index == -1) {
       return;
     }
+
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages[index] = state.images[index].copyWith(caption: caption);
+    updatedImages[index] = image;
+
     emit(state.copyWith(images: updatedImages));
-    await File(p.setExtension(imagePath, '.txt')).writeAsString(caption);
+    await _saveDb();
+  }
+
+  Future<void> _saveDb() async {
+    if (state.folderPath == null || state.folderPath!.isEmpty) return;
+    final List<CaptionData> captionDataList = state.images
+        .map(
+          (AppImage img) => CaptionData(
+            id: img.id,
+            filename: p.basename(img.image.path),
+            caption: img.caption,
+            captionModel: img.captionModel,
+            captionTimestamp: img.captionTimestamp,
+            lastModified: img.lastModified,
+          ),
+        )
+        .toList();
+    final CaptionDatabase db = CaptionDatabase(images: captionDataList);
+    await _fileUtils.writeDb(state.folderPath!, db);
   }
 
   void removeImage(int index) async {
     final AppImage imageToRemove = state.images[index];
-    await _fileUtils.removeImage(imageToRemove);
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     updatedImages.removeAt(index);
     emit(state.copyWith(images: updatedImages, currentIndex: 0));
+    await _saveDb();
+    await _fileUtils.removeImage(imageToRemove.image);
   }
 
   Map<String, int> getAspectRatioCounts() {

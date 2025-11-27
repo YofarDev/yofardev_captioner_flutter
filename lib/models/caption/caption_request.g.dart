@@ -11,7 +11,7 @@ CaptionRequest _$CaptionRequestFromJson(Map<String, dynamic> json) =>
       model: json['model'] as String,
       stream: json['stream'] as bool? ?? false,
       messages: (json['messages'] as List<dynamic>)
-          .map((dynamic e) => Message.fromJson(e as Map<String, dynamic>))
+          .map((e) => Message.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
 

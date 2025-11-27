@@ -22,7 +22,7 @@ class CaptioningRepository {
       captionModel: config.name,
       captionTimestamp: timestamp,
       isCaptionEdited:
-          false, // A newly generated caption is not "edited" by the user
+          true, // A newly generated caption is not "edited" by the user
     );
   }
 }

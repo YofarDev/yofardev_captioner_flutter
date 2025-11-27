@@ -34,35 +34,28 @@ class AppFileUtils {
           final String filename = p.basename(file.path);
           foundFilenames.add(filename);
 
-          CaptionData captionData = db.images.firstWhere(
+          final CaptionData captionData = db.images.firstWhere(
             (CaptionData d) => d.filename == filename,
             orElse: () {
-              return CaptionData(id: '', filename: '');
+              dbWasModified = true;
+              return CaptionData(id: const Uuid().v4(), filename: filename);
             },
           );
-
-          if (captionData.id.isEmpty) {
-            // Image not in DB, perform one-time migration from .txt if it exists
-            final String txtPath = p.setExtension(file.path, '.txt');
-            String initialCaption = '';
-            if (await File(txtPath).exists()) {
-              initialCaption = await File(txtPath).readAsString();
-            }
-
-            captionData = CaptionData(
-              id: const Uuid().v4(),
-              filename: filename,
-              caption: initialCaption,
-            );
+          if (!db.images.contains(captionData)) {
             db.images.add(captionData);
-            dbWasModified = true;
+          }
+          // Always read caption from .txt file
+          final String txtPath = p.setExtension(file.path, '.txt');
+          String caption = '';
+          if (await File(txtPath).exists()) {
+            caption = await File(txtPath).readAsString();
           }
 
           images.add(
             AppImage(
               id: captionData.id,
               image: file,
-              caption: captionData.caption,
+              caption: caption,
               size: file.lengthSync(),
               captionModel: captionData.captionModel,
               captionTimestamp: captionData.captionTimestamp,
@@ -93,7 +86,7 @@ class AppFileUtils {
   }
 
   File _getDbPath(String folderPath) {
-    return File(p.join(folderPath, 'captions.json'));
+    return File(p.join(folderPath, 'db.json'));
   }
 
   Future<CaptionDatabase> readDb(String folderPath) async {
@@ -116,6 +109,28 @@ class AppFileUtils {
     final File dbFile = _getDbPath(folderPath);
     final String content = jsonEncode(db.toJson());
     await dbFile.writeAsString(content);
+  }
+
+  Future<void> updateDbForRename(
+    Map<String, String> oldNameToNewName,
+    String folderPath,
+  ) async {
+    final CaptionDatabase db = await readDb(folderPath);
+
+    for (final MapEntry<String, String> entry in oldNameToNewName.entries) {
+      final String oldName = entry.key;
+      final String newName = entry.value;
+      try {
+        final CaptionData data = db.images.firstWhere(
+          (CaptionData d) => d.filename == oldName,
+        );
+        data.filename = newName;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    await writeDb(folderPath, db);
   }
 
   Future<void> exportAsArchive(String folderPath, List<AppImage> images) async {
@@ -158,6 +173,11 @@ class AppFileUtils {
 
   Future<void> removeImage(File imageFile) async {
     await imageFile.delete();
+  }
+
+  Future<void> saveCaptionToFile(AppImage image) async {
+    final String txtPath = p.setExtension(image.image.path, '.txt');
+    await File(txtPath).writeAsString(image.caption);
   }
 
   Future<Directory> _managePersistentPermission(String folderPath) async {

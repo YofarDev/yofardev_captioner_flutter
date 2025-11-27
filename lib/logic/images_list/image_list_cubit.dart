@@ -112,7 +112,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(images: updatedImages));
   }
 
-  void searchAndReplace(String search, String replace) {
+  void searchAndReplace(String search, String replace) async {
     if (search.isEmpty) return;
 
     final List<AppImage> updatedImages = <AppImage>[];
@@ -135,7 +135,10 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     if (wasModified) {
       emit(state.copyWith(images: updatedImages));
-      _saveDb();
+      for (final AppImage image in updatedImages) {
+        await _saveCaptionToFile(image);
+      }
+      await _saveDb();
     }
   }
 
@@ -174,6 +177,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     updatedImages[state.currentIndex] = updated;
 
     emit(state.copyWith(images: updatedImages));
+    await _saveCaptionToFile(updated);
     await _saveDb();
   }
 
@@ -187,17 +191,22 @@ class ImageListCubit extends Cubit<ImageListState> {
     updatedImages[index] = image;
 
     emit(state.copyWith(images: updatedImages));
+    await _saveCaptionToFile(image);
     await _saveDb();
+  }
+
+  Future<void> _saveCaptionToFile(AppImage image) async {
+    if (!image.isCaptionEdited) return;
+    await _fileUtils.saveCaptionToFile(image);
   }
 
   Future<void> _saveDb() async {
     if (state.folderPath == null || state.folderPath!.isEmpty) return;
     final List<CaptionData> captionDataList = state.images
-        .map(
+        .map<CaptionData>(
           (AppImage img) => CaptionData(
             id: img.id,
             filename: p.basename(img.image.path),
-            caption: img.caption,
             captionModel: img.captionModel,
             captionTimestamp: img.captionTimestamp,
             lastModified: img.lastModified,

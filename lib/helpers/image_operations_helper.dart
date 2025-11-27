@@ -25,7 +25,6 @@ class ImageOperationsHelper {
        _imageListCubit = imageListCubit;
 
   Future<void> renameAllFiles(String folderPath) async {
-    // Current images from the state (which reflect the DB)
     final List<AppImage> images = List<AppImage>.from(
       _imageListCubit.state.images,
     );
@@ -35,18 +34,11 @@ class ImageOperationsHelper {
     final List<File> sortedImageFiles = _sortFiles(currentImageFiles);
 
     final int totalFiles = sortedImageFiles.length;
-    final int padding = math.max(2, totalFiles.toString().length); // No need for max(2, ...)
+    final int padding = math.max(2, totalFiles.toString().length);
 
-    // Create a mapping from old path to AppImage
-    final Map<String, AppImage> imageMap = <String, AppImage>{
-      for (final AppImage img in images) img.image.path: img,
-    };
+    final Map<String, String> oldNameToNewName = <String, String>{};
 
-    final List<String> oldPaths = <String>[];
-    final List<String> newPaths = <String>[];
-    final List<String> newFilenames = <String>[];
-
-    // Plan renames
+    // Perform renames and update AppImage objects
     for (int i = 0; i < sortedImageFiles.length; i++) {
       final File originalFile = sortedImageFiles[i];
       final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
@@ -55,31 +47,19 @@ class ImageOperationsHelper {
       final String newImageName = '$paddedIndex$extension';
       final String newPath = p.join(folderPath, newImageName);
 
-      oldPaths.add(originalFile.path);
-      newPaths.add(newPath);
-      newFilenames.add(newImageName);
-    }
+      oldNameToNewName[p.basename(originalFile.path)] = newImageName;
 
-    // Perform renames and update AppImage objects
-    final List<AppImage> updatedAppImages = <AppImage>[];
-    for (int i = 0; i < oldPaths.length; i++) {
-      final File originalFile = File(oldPaths[i]);
-      final File newFile = File(newPaths[i]);
+      await originalFile.rename(newPath);
 
-
-      await originalFile.rename(newFile.path);
-
-      // Update the AppImage object with the new path and filename
-      final AppImage? originalAppImage = imageMap[originalFile.path];
-      if (originalAppImage != null) {
-        updatedAppImages.add(
-          originalAppImage.copyWith(
-            image: newFile,
-            // filename will be updated when _imageListCubit.onFolderPicked is called
-          ),
-        );
+      // Also rename caption file if it exists
+      final String oldCaptionPath = p.setExtension(originalFile.path, '.txt');
+      if (await File(oldCaptionPath).exists()) {
+        final String newCaptionPath = p.setExtension(newPath, '.txt');
+        await File(oldCaptionPath).rename(newCaptionPath);
       }
     }
+
+    await _fileUtils.updateDbForRename(oldNameToNewName, folderPath);
 
     // Refresh the image list and update the database
     await _imageListCubit.onFolderPicked(folderPath);

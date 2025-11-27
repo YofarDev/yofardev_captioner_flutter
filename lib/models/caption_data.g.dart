@@ -9,7 +9,6 @@ part of 'caption_data.dart';
 CaptionData _$CaptionDataFromJson(Map<String, dynamic> json) => CaptionData(
   id: json['id'] as String,
   filename: json['filename'] as String,
-  caption: json['caption'] as String? ?? '',
   captionModel: json['captionModel'] as String?,
   captionTimestamp: json['captionTimestamp'] == null
       ? null
@@ -23,7 +22,6 @@ Map<String, dynamic> _$CaptionDataToJson(CaptionData instance) =>
     <String, dynamic>{
       'id': instance.id,
       'filename': instance.filename,
-      'caption': instance.caption,
       'captionModel': instance.captionModel,
       'captionTimestamp': instance.captionTimestamp?.toIso8601String(),
       'lastModified': instance.lastModified?.toIso8601String(),

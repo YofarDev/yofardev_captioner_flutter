@@ -218,6 +218,21 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> updateDbForRename(
+    Map<String, String>? oldNameToNewName,
+    String? folderPath,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateDbForRename, [
+              oldNameToNewName,
+              folderPath,
+            ]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   _i4.Future<void> exportAsArchive(
     String? folderPath,
     List<_i5.AppImage>? images,
@@ -233,6 +248,15 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
   _i4.Future<void> removeImage(_i8.File? imageFile) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageFile]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> saveCaptionToFile(_i5.AppImage? image) =>
+      (super.noSuchMethod(
+            Invocation.method(#saveCaptionToFile, [image]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )

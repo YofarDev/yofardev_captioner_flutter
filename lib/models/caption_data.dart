@@ -6,7 +6,6 @@ part 'caption_data.g.dart';
 class CaptionData {
   final String id;
   String filename;
-  String caption;
   String? captionModel;
   DateTime? captionTimestamp;
   DateTime? lastModified;
@@ -14,7 +13,6 @@ class CaptionData {
   CaptionData({
     required this.id,
     required this.filename,
-    this.caption = '',
     this.captionModel,
     this.captionTimestamp,
     this.lastModified,

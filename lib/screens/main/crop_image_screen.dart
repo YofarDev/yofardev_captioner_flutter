@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:math' as math;
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,7 @@ class _CropImageScreenState extends State<CropImageScreen> {
   Uint8List? _croppedData;
   bool _isCropping = false;
   String _selectedAspectRatio = "1:1";
+  Rect? _rect;
 
   double _parseAspectRatio(String ratio) {
     final List<String> parts = ratio.split(':');
@@ -56,6 +58,14 @@ class _CropImageScreenState extends State<CropImageScreen> {
             onPressed: _isCropping
                 ? null
                 : () {
+                    if (_rect != null) {
+                      _cropController.cropRect = Rect.fromLTRB(
+                        math.max(0, _rect!.left),
+                        math.max(0, _rect!.top),
+                        _rect!.right,
+                        _rect!.bottom,
+                      );
+                    }
                     setState(() {
                       _isCropping = true;
                     });
@@ -71,6 +81,9 @@ class _CropImageScreenState extends State<CropImageScreen> {
             children: <Widget>[
               Expanded(
                 child: Crop(
+                  onMoved: (Rect rect) {
+                    _rect = rect;
+                  },
                   baseColor: Colors.black,
                   aspectRatio: _parseAspectRatio(_selectedAspectRatio),
                   image: widget.image,

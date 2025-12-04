@@ -32,19 +32,52 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> onFolderPicked(String folderPath) async {
-    emit(state.copyWith(folderPath: "", images: <AppImage>[]));
+    if (folderPath == state.folderPath) {
+      return;
+    }
+
+    emit(state.copyWith(
+      images: <AppImage>[],
+      currentIndex: 0,
+      folderPath: folderPath,
+      occurrencesCount: 0,
+      occurrenceFileNames: <String>[],
+    ));
+
     windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
     CacheService.saveFolderPath(folderPath);
+
     final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
+
+    if (state.folderPath != folderPath) {
+      return;
+    }
+
     emit(
       state.copyWith(
         images: images,
-        sortBy: SortBy.name,
-        sortAscending: true,
-        folderPath: folderPath,
       ),
     );
     _getImagesSizeSync();
+  }
+
+  void nextImage() {
+    if (state.images.isEmpty) return;
+    final int nextIndex = (state.currentIndex + 1) % state.images.length;
+    onImageSelected(nextIndex);
+  }
+
+  void previousImage() {
+    if (state.images.isEmpty) return;
+    final int previousIndex =
+        (state.currentIndex - 1 + state.images.length) % state.images.length;
+    onImageSelected(previousIndex);
+  }
+
+  Future<void> saveChanges() async {
+    final AppImage image = state.images[state.currentIndex];
+    await _saveCaptionToFile(image);
+    await _saveDb();
   }
 
   void onSortChanged(SortBy sortBy, bool sortAscending) {

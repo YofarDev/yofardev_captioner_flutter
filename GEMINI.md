@@ -28,4 +28,13 @@ To build and run the project, you need to have Flutter installed.
 * **Dependency Injection:** The application uses `BlocProvider` to provide the Cubits to the widget tree.
 * **Code Style:** The code follows the standard Dart and Flutter style guidelines. The `analysis_options.yaml` file contains the linting rules.
 * **Testing:** There are no specific testing practices evident from the codebase. There is a default `widget_test.dart` file, but no other tests are present.
-* **File Structure:** The project follows the standard Flutter project structure. The `lib` folder contains the source code, which is organized into `logic`, `models`, `repositories`, `res`, `screens`, `services`, and `utils` folders.
+* **File Structure:** The project follows the standard Flutter project structure. The `lib` folder contains the source code, which is organized into the following folders:
+    * `logic`: Contains the business logic of the application, using `flutter_bloc` for state management.
+    * `models`: Defines the data structures and models used throughout the application.
+    * `repositories`: Manages data retrieval from various sources, such as APIs and local storage.
+    * `res`: Holds static resources like color schemes, constants, and other assets.
+    * `screens`: Contains the UI components for each screen in the application.
+    * `services`: Provides specific functionalities, including caching and API communication.
+    * `utils`: Includes general utility functions used across the application.
+    * `main.dart`: The entry point of the application.
+* **Testing:** The `test` folder contains the tests for the application. There are some unit and integration tests, but the coverage is not complete.

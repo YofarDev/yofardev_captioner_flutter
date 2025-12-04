@@ -35,8 +35,6 @@ class CaptionService {
       'mlx_vlm.generate',
       '--model',
       config.model,
-      '--max-tokens',
-      '100',
       '--temperature',
       '0.0',
       '--prompt',
@@ -50,6 +48,7 @@ class CaptionService {
 
       if (result.exitCode == 0) {
         final String output = result.stdout.toString();
+        _logger.info('MLX output: $output');
         final RegExp regex = RegExp(
           r'<\|im_start\|>assistant\n\n(.*?)\n==========',
           dotAll: true,

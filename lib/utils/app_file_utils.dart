@@ -139,7 +139,7 @@ class AppFileUtils {
     );
     final String? outputFile = await FilePicker.platform.saveFile(
       dialogTitle: 'Please select an output file',
-      fileName: 'archive.zip',
+      fileName: '${p.basename(folderPath)}.zip',
       initialDirectory: downloadsPath,
     );
     if (outputFile == null) {
@@ -153,10 +153,11 @@ class AppFileUtils {
     for (final AppImage image in images) {
       await encoder.addFile(image.image);
       if (image.caption.isNotEmpty) {
+        final List<int> captionBytes = utf8.encode(image.caption);
         final ArchiveFile archiveFile = ArchiveFile(
           p.setExtension(p.basename(image.image.path), '.txt'),
-          -1,
-          utf8.encode(image.caption),
+          captionBytes.length,
+          captionBytes,
         );
         encoder.addArchiveFile(archiveFile);
       }

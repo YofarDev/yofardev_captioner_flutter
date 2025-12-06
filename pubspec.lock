@@ -189,10 +189,10 @@ packages:
     dependency: "direct main"
     description:
       name: crop_your_image
-      sha256: "9ae3b33042de5bda5321fc48aad41054c196bf2cc28350cd30cb8a85c1a7b1bd"
+      sha256: "14c8977b11a009dc5e73e0f6522970f93363e38183f1b2ffefe1676dc9c3f49d"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "2.0.0"
   cross_file:
     dependency: transitive
     description:
@@ -404,10 +404,10 @@ packages:
     dependency: "direct main"
     description:
       name: get_it
-      sha256: d85128a5dae4ea777324730dc65edd9c9f43155c109d5cc0a69cab74139fbac1
+      sha256: "1d648d2dd2047d7f7450d5727ca24ee435f240385753d90b49650e3cdff32e56"
       url: "https://pub.dev"
     source: hosted
-    version: "7.7.0"
+    version: "9.2.0"
   glob:
     dependency: transitive
     description:

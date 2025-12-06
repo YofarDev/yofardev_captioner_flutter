@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
@@ -81,16 +81,22 @@ class _CropImageScreenState extends State<CropImageScreen> {
             children: <Widget>[
               Expanded(
                 child: Crop(
-                  onMoved: (Rect rect) {
+                  onMoved: (Rect rect, _) {
                     _rect = rect;
                   },
                   baseColor: Colors.black,
                   aspectRatio: _parseAspectRatio(_selectedAspectRatio),
                   image: widget.image,
                   controller: _cropController,
-                  onCropped: (Uint8List croppedData) {
+                  onCropped: (CropResult cropResult) {
+                    if (cropResult is CropFailure) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(cropResult.cause.toString())),
+                      );
+                      return;
+                    }
                     setState(() {
-                      _croppedData = croppedData;
+                      _croppedData = (cropResult as CropSuccess).croppedImage;
                       _isCropping = false;
                     });
                     Navigator.pop(

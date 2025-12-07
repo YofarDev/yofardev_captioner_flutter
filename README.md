@@ -4,7 +4,7 @@
 
 A desktop application for managing and captioning image files.
 
-![Screenshot of Yofardev Captioner](assets/screenshot.png)
+![Screenshot of Yofardev Captioner](assets/screenshot_.png)
 
 # Project Overview
 

@@ -10,20 +10,21 @@ class MainAreaView extends StatelessWidget {
   const MainAreaView({super.key});
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImageListCubit, ImageListState>(
-      builder: (BuildContext context, ImageListState state) {
-        return Column(
-          children: <Widget>[
-            const CurrentImageView(),
-            const CaptionTextArea(),
-            if (state.images.isEmpty) Expanded(child: _buildEmptyView()),
-            const SizedBox(height: 16),
-            const ControlsView(),
-          ],
-        );
-      },
-    );
-  }
+            return BlocBuilder<ImageListCubit, ImageListState>(
+              builder: (BuildContext context, ImageListState state) {
+                if (state.images.isEmpty) {
+                  return _buildEmptyView();
+                }
+                return ListView(
+                  children: const <Widget>[
+                    CurrentImageView(),
+                    CaptionTextArea(),
+                    SizedBox(height: 16),
+                    ControlsView(),
+                  ],
+                );
+              },
+            );  }
 
   Widget _buildEmptyView() => Opacity(
     opacity: 0.5,

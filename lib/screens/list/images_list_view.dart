@@ -144,7 +144,7 @@ class ImagesListView extends StatelessWidget {
                                         ],
                                       ),
                                       Text(
-                                        "(${image.image.lengthSync().readableFileSize})",
+                                        "(${image.size.readableFileSize})",
                                         style: TextStyle(
                                           fontSize: 10,
                                           color: isSelected

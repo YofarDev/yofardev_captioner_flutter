@@ -5,7 +5,6 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path/path.dart' as path;
 
 import '../logic/images_list/image_list_cubit.dart';
 import '../res/app_colors.dart';
@@ -21,6 +20,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   bool _isDragging = false;
   final FocusNode _focusNode = FocusNode();
+  static const MethodChannel _channel = MethodChannel(
+    'dev.yofardev.io/open_file',
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _channel.setMethodCallHandler((MethodCall call) async {
+      if (call.method == 'setFilePath') {
+        final String path = call.arguments as String;
+        context.read<ImageListCubit>().onFileOpened(path);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return KeyboardListener(
@@ -51,18 +65,15 @@ class _HomePageState extends State<HomePage> {
           onDragDone: (DropDoneDetails details) {
             setState(() => _isDragging = false);
             if (details.files.isNotEmpty) {
-              final DropItem file = details.files.first;
-              final String filePath = file.path;
+              final String filePath = details.files.first.path;
               final FileSystemEntityType entity = FileSystemEntity.typeSync(
                 filePath,
               );
-              String folderPath = "";
               if (entity == FileSystemEntityType.directory) {
-                folderPath = filePath;
+                context.read<ImageListCubit>().onFolderPicked(filePath);
               } else {
-                folderPath = path.dirname(filePath);
+                context.read<ImageListCubit>().onFileOpened(filePath);
               }
-              context.read<ImageListCubit>().onFolderPicked(folderPath);
             }
           },
           child: Stack(

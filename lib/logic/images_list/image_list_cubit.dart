@@ -61,6 +61,20 @@ class ImageListCubit extends Cubit<ImageListState> {
     _getImagesSizeSync();
   }
 
+  Future<void> onFileOpened(String filePath) async {
+    final String folderPath = p.dirname(filePath);
+    await onFolderPicked(folderPath);
+
+    // Wait for the state to be updated with the new images
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+
+    final int index =
+        state.images.indexWhere((AppImage img) => img.image.path == filePath);
+    if (index != -1) {
+      onImageSelected(index);
+    }
+  }
+
   void nextImage() {
     if (state.images.isEmpty) return;
     final int nextIndex = (state.currentIndex + 1) % state.images.length;

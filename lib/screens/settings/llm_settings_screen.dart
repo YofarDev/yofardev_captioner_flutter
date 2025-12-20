@@ -32,6 +32,9 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     final TextEditingController delayController = TextEditingController(
       text: config?.delay.toString() ?? '0',
     );
+    final TextEditingController mlxPathController = TextEditingController(
+      text: config?.mlxPath,
+    );
 
     LlmProviderType selectedProviderType =
         config?.providerType ?? LlmProviderType.remote;
@@ -112,6 +115,12 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                           'Model',
                           Icons.psychology,
                         ),
+                        if (selectedProviderType == LlmProviderType.localMlx)
+                          _buildTextField(
+                            mlxPathController,
+                            'Executable Path (optional)',
+                            Icons.terminal,
+                          ),
                         if (selectedProviderType == LlmProviderType.remote)
                           _buildTextField(
                             delayController,
@@ -143,6 +152,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                   apiKey: isLocal ? null : apiKeyController.text,
                   delay: isLocal ? 0 : int.tryParse(delayController.text) ?? 0,
                   providerType: selectedProviderType,
+                  mlxPath: isLocal ? mlxPathController.text : null,
                 );
                 if (isEditing) {
                   context.read<LlmConfigsCubit>().updateLlmConfig(newConfig);

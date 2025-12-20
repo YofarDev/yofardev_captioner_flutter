@@ -86,6 +86,36 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> onFileOpened(String? filePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#onFileOpened, [filePath]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  void nextImage() => super.noSuchMethod(
+    Invocation.method(#nextImage, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void previousImage() => super.noSuchMethod(
+    Invocation.method(#previousImage, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  _i4.Future<void> saveChanges() =>
+      (super.noSuchMethod(
+            Invocation.method(#saveChanges, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   void onSortChanged(_i2.SortBy? sortBy, bool? sortAscending) =>
       super.noSuchMethod(
         Invocation.method(#onSortChanged, [sortBy, sortAscending]),

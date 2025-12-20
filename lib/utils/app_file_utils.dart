@@ -174,6 +174,11 @@ class AppFileUtils {
 
   Future<void> removeImage(File imageFile) async {
     await imageFile.delete();
+    final String txtPath = p.setExtension(imageFile.path, '.txt');
+    final File txtFile = File(txtPath);
+    if (await txtFile.exists()) {
+      await txtFile.delete();
+    }
   }
 
   Future<void> saveCaptionToFile(AppImage image) async {

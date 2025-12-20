@@ -12,10 +12,14 @@ import '../images_list/image_list_cubit.dart';
 part 'captioning_state.dart';
 
 class CaptioningCubit extends Cubit<CaptioningState> {
-  CaptioningCubit(this._imageListCubit) : super(const CaptioningState());
+  CaptioningCubit(
+    this._imageListCubit, {
+    CaptioningRepository? captioningRepository,
+  }) : _captioningRepository = captioningRepository ?? CaptioningRepository(),
+       super(const CaptioningState());
 
   final ImageListCubit _imageListCubit;
-  final CaptioningRepository _captioningRepository = CaptioningRepository();
+  final CaptioningRepository _captioningRepository;
 
   Future<void> runCaptioner({
     required LlmConfig llm,
@@ -52,6 +56,10 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     final List<String> errors = <String>[];
 
     for (final AppImage image in imagesToCaption) {
+      if (processedImagesCount > 0 && llm.delay > 0) {
+        await Future<void>.delayed(Duration(milliseconds: llm.delay));
+      }
+
       emit(
         state.copyWith(
           currentlyCaptioningImage: image.image.path,

@@ -11,6 +11,7 @@ class LlmConfig extends Equatable {
   final String? apiKey;
   final int delay;
   final LlmProviderType providerType;
+  final String? mlxPath;
 
   LlmConfig({
     String? id,
@@ -20,11 +21,12 @@ class LlmConfig extends Equatable {
     this.apiKey,
     this.delay = 0,
     required this.providerType,
+    this.mlxPath,
   }) : id = id ?? const Uuid().v4();
 
   @override
   List<Object?> get props =>
-      <Object?>[id, name, url, model, apiKey, delay, providerType];
+      <Object?>[id, name, url, model, apiKey, delay, providerType, mlxPath];
 
   LlmConfig copyWith({
     String? id,
@@ -34,6 +36,7 @@ class LlmConfig extends Equatable {
     String? apiKey,
     int? delay,
     LlmProviderType? providerType,
+    String? mlxPath,
   }) {
     return LlmConfig(
       id: id ?? this.id,
@@ -43,6 +46,7 @@ class LlmConfig extends Equatable {
       apiKey: apiKey ?? this.apiKey,
       delay: delay ?? this.delay,
       providerType: providerType ?? this.providerType,
+      mlxPath: mlxPath ?? this.mlxPath,
     );
   }
 
@@ -58,6 +62,7 @@ class LlmConfig extends Equatable {
         (LlmProviderType e) => e.name == json['providerType'],
         orElse: () => LlmProviderType.remote,
       ),
+      mlxPath: json['mlxPath'] as String?,
     );
   }
   Map<String, dynamic> toJson() {
@@ -69,6 +74,7 @@ class LlmConfig extends Equatable {
       'apiKey': apiKey,
       'delay': delay,
       'providerType': providerType.name,
+      'mlxPath': mlxPath,
     };
   }
 }

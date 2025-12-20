@@ -31,8 +31,6 @@ class CaptionService {
     String prompt,
   ) async {
     final List<String> arguments = <String>[
-      '-m',
-      'mlx_vlm.generate',
       '--model',
       config.model,
       '--temperature',
@@ -44,7 +42,14 @@ class CaptionService {
     ];
 
     try {
-      final ProcessResult result = await Process.run('python3', arguments);
+      final String executable =
+          (config.mlxPath?.isNotEmpty ?? false)
+              ? config.mlxPath!
+              : 'mlx_vlm.generate';
+      final ProcessResult result = await Process.run(
+        executable,
+        arguments,
+      );
 
       if (result.exitCode == 0) {
         final String output = result.stdout.toString();
@@ -62,9 +67,7 @@ class CaptionService {
           throw ApiException('Failed to parse caption from MLX output.');
         }
       } else {
-        _logger.severe(
-          'Error getting local caption: ${result.stderr}',
-        );
+        _logger.severe('Error getting local caption: ${result.stderr}');
         throw ApiException(
           'Failed to generate caption with local model (exit code ${result.exitCode}): ${result.stderr}',
         );
@@ -72,7 +75,8 @@ class CaptionService {
     } on ProcessException catch (e) {
       _logger.severe('ProcessException while getting local caption: $e');
       throw ApiException(
-          'Failed to run local captioning script. Is Python with mlx_vlm installed and in your PATH? Details: $e');
+        'Failed to run local captioning script. Is Python with mlx_vlm installed and in your PATH? Details: $e',
+      );
     }
   }
 
@@ -85,7 +89,8 @@ class CaptionService {
     try {
       if (config.url == null || config.apiKey == null) {
         throw ApiException(
-            'URL and API Key are required for remote providers.');
+          'URL and API Key are required for remote providers.',
+        );
       }
       imageToSend = await ImageUtils.resizeImageIfNecessary(image);
       final Uint8List bytes = await imageToSend.readAsBytes();

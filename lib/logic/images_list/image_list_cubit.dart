@@ -31,8 +31,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     });
   }
 
-  Future<void> onFolderPicked(String folderPath) async {
-    if (folderPath == state.folderPath) {
+  Future<void> onFolderPicked(String folderPath, {bool force = false}) async {
+    if (folderPath == state.folderPath && !force) {
       return;
     }
 

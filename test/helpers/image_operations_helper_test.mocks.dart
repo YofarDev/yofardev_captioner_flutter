@@ -82,9 +82,9 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  _i4.Future<void> onFolderPicked(String? folderPath) =>
+  _i4.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
       (super.noSuchMethod(
-            Invocation.method(#onFolderPicked, [folderPath]),
+            Invocation.method(#onFolderPicked, [folderPath], {#force: force}),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )

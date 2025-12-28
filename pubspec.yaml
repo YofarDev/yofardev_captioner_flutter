@@ -2,7 +2,7 @@ name: yofardev_captioner
 description: "The captioner app."
 publish_to: "none"
 
-version: 1.3.7+8
+version: 1.3.8+9
 
 environment:
   sdk: ^3.9.2
@@ -44,6 +44,7 @@ dev_dependencies:
   lint:
   bloc_test: ^10.0.0
   mockito: ^5.5.1
+  fake_async: ^1.3.2
 
 
 flutter:

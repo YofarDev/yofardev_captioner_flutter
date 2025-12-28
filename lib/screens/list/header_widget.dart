@@ -42,6 +42,7 @@ class HeaderWidget extends StatelessWidget {
                             : () {
                                 context.read<ImageListCubit>().onFolderPicked(
                                   state.folderPath!,
+                                  force: true,
                                 );
                               },
                       ),

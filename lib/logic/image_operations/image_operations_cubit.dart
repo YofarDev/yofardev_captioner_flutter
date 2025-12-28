@@ -27,7 +27,7 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     await _imageOperationsHelper.renameAllFiles(
       _imageListCubit.state.folderPath!,
     );
-    _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
+    _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!, force: true);
   }
 
   Future<void> exportAsArchive() async {

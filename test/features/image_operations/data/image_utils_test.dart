@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/utils/image_utils.dart';
+import 'package:yofardev_captioner/features/image_operations/data/utils/image_utils.dart';
 
 void main() {
   group('ImageUtils', () {

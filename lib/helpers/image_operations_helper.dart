@@ -9,10 +9,10 @@ import 'package:uuid/uuid.dart';
 
 import '../features/image_list/logic/image_list_cubit.dart';
 import '../features/image_list/data/models/app_image.dart';
-import '../models/crop_image.dart';
-import '../screens/main/crop_image_screen.dart';
+import '../features/image_operations/data/models/crop_image.dart';
+import '../features/image_operations/presentation/pages/crop_image_screen.dart';
 import '../features/image_list/data/repositories/app_file_utils.dart';
-import '../utils/image_utils.dart';
+import '../features/image_operations/data/utils/image_utils.dart';
 
 class ImageOperationsHelper {
   final AppFileUtils _fileUtils;

@@ -11,7 +11,7 @@ import '../../../captioning/data/models/caption_database.dart';
 import '../../../core/services/cache_service.dart';
 import '../data/repositories/app_file_utils.dart';
 import '../../../core/utils/extensions.dart';
-import '../../../utils/image_utils.dart';
+import '../../../image_operations/data/utils/image_utils.dart';
 
 part 'image_list_state.dart';
 

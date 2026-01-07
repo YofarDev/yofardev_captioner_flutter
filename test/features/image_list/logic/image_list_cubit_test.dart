@@ -6,9 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:uuid/uuid.dart';
-import 'package:yofardev_captioner/logic/images_list/image_list_cubit.dart';
-import 'package:yofardev_captioner/models/app_image.dart';
-import 'package:yofardev_captioner/utils/app_file_utils.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 
 import 'image_list_cubit_test.mocks.dart';
 

@@ -6,7 +6,7 @@ import '../../logic/image_list_cubit.dart';
 import '../../data/models/app_image.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../../core/utils/extensions.dart';
+import '../../../core/utils/extensions.dart';
 import '../widgets/header_widget.dart';
 
 class ImagesListView extends StatelessWidget {

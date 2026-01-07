@@ -36,34 +36,51 @@ This app uses **BLoC (Business Logic Component) pattern** for state management w
 
 ### Key Directories
 
-- `lib/logic/` - BLoC/Cubit business logic layer
-  - `captioning/` - Caption generation management
-  - `image_operations/` - Image processing (crop/resize)
-  - `images_list/` - Image navigation and list management
+- `lib/features/` - Business features (self-contained modules)
+  - `image_list/` - Image loading, navigation, sorting
+    - `data/` - Repositories, models
+    - `logic/` - BLoC business logic (Cubits + states)
+    - `presentation/` - UI components (pages, widgets)
+  - `captioning/` - AI caption generation
+    - `data/` - Repositories, models, services
+    - `logic/` - BLoC business logic
+    - `presentation/` - UI widgets
+  - `image_operations/` - Crop, resize, convert
+    - `data/` - Models, utils
+    - `logic/` - BLoC business logic
+    - `presentation/` - UI pages and widgets
   - `llm_config/` - LLM API configuration
-- `lib/models/` - Data models (AppImage, CaptionData, LlmConfig)
-- `lib/repositories/` - Data access layer (API calls, file I/O)
-- `lib/services/` - Business services and DI setup
-- `lib/screens/` - UI components (home, main view, sidebar, settings)
-- `lib/utils/` - Utility functions
-- `lib/helpers/` - Test helpers
+    - `data/` - Repositories, models
+    - `logic/` - BLoC business logic
+    - `presentation/` - UI pages
+  - `main_area/` - Main content area
+    - `presentation/` - UI pages
+  - `export/` - Export functionality
+    - `presentation/` - UI widgets
+- `lib/core/` - Shared code
+  - `config/` - Dependency injection setup
+  - `constants/` - App-wide constants and colors
+  - `services/` - Infrastructure (cache, storage, logging)
+  - `utils/` - Shared utilities
+  - `widgets/` - Truly reusable widgets (used by 3+ features)
+  - `presentation/` - Core pages (home page)
 
 ### State Management Flow
 
-1. User actions trigger UI events
-2. BLoCs/Cubits handle business logic and emit state changes
+1. User actions trigger UI events in feature/presentation layer
+2. Feature BLoCs/Cubits in logic/ handle business logic and emit state changes
 3. UI rebuilds based on new state
-4. Repositories handle external API calls and file system operations
+4. Repositories in data/ handle external API calls and file system operations
 
-**Primary BLoCs:**
-- `ImageListCubit` - Image loading, navigation, sorting, filtering
-- `CaptioningCubit` - AI caption generation (current/missing/all images)
-- `ImageOperationsCubit` - Crop and resize operations
-- `LlmConfigsCubit` - Manages LLM API configurations
+**Primary Features:**
+- `ImageListCubit` - Image loading, navigation, sorting, filtering (in features/image_list/logic/)
+- `CaptioningCubit` - AI caption generation (in features/captioning/logic/)
+- `ImageOperationsCubit` - Crop and resize operations (in features/image_operations/logic/)
+- `LlmConfigsCubit` - Manages LLM API configurations (in features/llm_config/logic/)
 
 ### Dependency Injection
 
-Services and repositories are registered as singletons in `lib/services/service_locator.dart`. Access via `locator<Type>()`.
+Services and repositories are registered as singletons in `lib/core/config/service_locator.dart`. Access via `locator<Type>()`.
 
 ```dart
 // Example usage
@@ -72,9 +89,9 @@ final captionService = locator<CaptionService>();
 
 ### Data Models
 
-- `AppImage` - Core image data structure with file path, caption, and metadata
-- `CaptionData` - Caption persistence model
-- `LlmConfig` - LLM service configuration (API endpoint, model, key)
+- `AppImage` - Core image data structure with file path, caption, and metadata (features/image_list/data/models/)
+- `CaptionData` - Caption persistence model (features/captioning/data/models/)
+- `LlmConfig` - LLM service configuration (features/llm_config/data/models/)
 
 Models use JSON serialization with `json_annotation`. After modifying models, regenerate code with build_runner.
 

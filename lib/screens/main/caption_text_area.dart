@@ -106,7 +106,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                             const Duration(milliseconds: 300),
                             () {
                               context.read<ImageListCubit>().updateCaption(
-                                caption: value.trim(),
+                                caption: value,
                               );
                             },
                           );

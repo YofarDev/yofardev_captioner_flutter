@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../features/image_list/data/models/app_image.dart';
-import '../../models/caption_options.dart';
+import '../../image_list/data/models/app_image.dart';
+import '../data/models/caption_options.dart';
 import '../../models/llm_config.dart';
-import '../../repositories/captioning_repository.dart';
-import '../images_list/image_list_cubit.dart';
+import '../data/repositories/captioning_repository.dart';
+import '../../image_list/logic/image_list_cubit.dart';
 
 part 'captioning_state.dart';
 

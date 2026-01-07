@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'caption_controls.dart';
+import '../../features/captioning/presentation/widgets/caption_controls.dart';
 import 'controls_widgets.dart';
 import 'export_button.dart';
 import 'llm_config_widget.dart';

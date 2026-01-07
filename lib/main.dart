@@ -6,7 +6,7 @@ import 'package:nested/nested.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'logic/captioning/captioning_cubit.dart';
+import 'features/captioning/logic/captioning_cubit.dart';
 import 'logic/image_operations/image_operations_cubit.dart';
 import 'features/image_list/logic/image_list_cubit.dart';
 import 'logic/llm_config/llm_configs_cubit.dart';

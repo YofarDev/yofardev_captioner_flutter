@@ -1,8 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
-import '../../repositories/caption_repository.dart';
-import '../../repositories/captioning_repository.dart';
-import '../../services/caption_service.dart';
+import '../../features/captioning/data/repositories/caption_repository.dart';
+import '../../features/captioning/data/repositories/captioning_repository.dart';
+import '../../features/captioning/data/services/caption_service.dart';
 import '../../services/llm_config_service.dart';
 
 final GetIt locator = GetIt.instance;

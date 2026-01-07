@@ -6,8 +6,8 @@ import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
 import '../data/models/app_image.dart';
-import '../../../models/caption_data.dart';
-import '../../../models/caption_database.dart';
+import '../../../captioning/data/models/caption_data.dart';
+import '../../../captioning/data/models/caption_database.dart';
 import '../../../core/services/cache_service.dart';
 import '../data/repositories/app_file_utils.dart';
 import '../../../core/utils/extensions.dart';

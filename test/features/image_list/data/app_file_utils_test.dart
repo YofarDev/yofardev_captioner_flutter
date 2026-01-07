@@ -38,8 +38,16 @@ void main() {
       await appFileUtils.removeImage(imageFile);
 
       // 4. Verify both files are deleted
-      expect(await imageFile.exists(), isFalse, reason: 'Image file should be deleted');
-      expect(await captionFile.exists(), isFalse, reason: 'Caption file should be deleted');
+      expect(
+        await imageFile.exists(),
+        isFalse,
+        reason: 'Image file should be deleted',
+      );
+      expect(
+        await captionFile.exists(),
+        isFalse,
+        reason: 'Caption file should be deleted',
+      );
     });
   });
 }

@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/image_list_cubit.dart';
-import '../../data/models/app_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../data/models/app_image.dart';
+import '../../logic/image_list_cubit.dart';
 import '../widgets/header_widget.dart';
 
 class ImagesListView extends StatelessWidget {

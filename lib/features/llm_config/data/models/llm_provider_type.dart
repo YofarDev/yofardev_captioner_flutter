@@ -1,4 +1,1 @@
-enum LlmProviderType {
-  remote,
-  localMlx,
-}
+enum LlmProviderType { remote, localMlx }

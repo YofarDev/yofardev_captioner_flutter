@@ -37,17 +37,17 @@ class AppImage extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        image,
-        caption,
-        width,
-        height,
-        size,
-        error,
-        isCaptionEdited,
-        captionModel,
-        captionTimestamp,
-        lastModified,
-      ];
+    image,
+    caption,
+    width,
+    height,
+    size,
+    error,
+    isCaptionEdited,
+    captionModel,
+    captionTimestamp,
+    lastModified,
+  ];
   AppImage copyWith({
     String? id,
     File? image,

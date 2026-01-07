@@ -5,13 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
-import '../data/models/app_image.dart';
+import '../../../../core/utils/extensions.dart';
+import '../../../core/services/cache_service.dart';
+import '../../../features/image_operations/data/utils/image_utils.dart';
 import '../../captioning/data/models/caption_data.dart';
 import '../../captioning/data/models/caption_database.dart';
-import '../../../core/services/cache_service.dart';
+import '../data/models/app_image.dart';
 import '../data/repositories/app_file_utils.dart';
-import '../../../../core/utils/extensions.dart';
-import '../../../features/image_operations/data/utils/image_utils.dart';
 
 part 'image_list_state.dart';
 
@@ -36,13 +36,15 @@ class ImageListCubit extends Cubit<ImageListState> {
       return;
     }
 
-    emit(state.copyWith(
-      images: <AppImage>[],
-      currentIndex: 0,
-      folderPath: folderPath,
-      occurrencesCount: 0,
-      occurrenceFileNames: <String>[],
-    ));
+    emit(
+      state.copyWith(
+        images: <AppImage>[],
+        currentIndex: 0,
+        folderPath: folderPath,
+        occurrencesCount: 0,
+        occurrenceFileNames: <String>[],
+      ),
+    );
 
     windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
     CacheService.saveFolderPath(folderPath);
@@ -53,11 +55,7 @@ class ImageListCubit extends Cubit<ImageListState> {
       return;
     }
 
-    emit(
-      state.copyWith(
-        images: images,
-      ),
-    );
+    emit(state.copyWith(images: images));
     _getImagesSizeSync();
   }
 
@@ -68,8 +66,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     // Wait for the state to be updated with the new images
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    final int index =
-        state.images.indexWhere((AppImage img) => img.image.path == filePath);
+    final int index = state.images.indexWhere(
+      (AppImage img) => img.image.path == filePath,
+    );
     if (index != -1) {
       onImageSelected(index);
     }

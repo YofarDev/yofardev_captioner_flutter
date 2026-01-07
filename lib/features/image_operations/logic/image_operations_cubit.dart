@@ -14,7 +14,9 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
 
   ImageOperationsCubit(this._imageListCubit)
     : super(const ImageOperationsState()) {
-    _imageOperationsHelper = ImageOperationsHelper(imageListCubit: _imageListCubit);
+    _imageOperationsHelper = ImageOperationsHelper(
+      imageListCubit: _imageListCubit,
+    );
   }
 
   final ImageListCubit _imageListCubit;
@@ -27,7 +29,10 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     await _imageOperationsHelper.renameAllFiles(
       _imageListCubit.state.folderPath!,
     );
-    _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!, force: true);
+    _imageListCubit.onFolderPicked(
+      _imageListCubit.state.folderPath!,
+      force: true,
+    );
   }
 
   Future<void> exportAsArchive() async {

@@ -19,7 +19,9 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(backgroundColor: backgroundColor ?? lightGrey),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: backgroundColor ?? lightGrey,
+      ),
       onPressed: onTap,
       child: isLoading
           ? SizedBox(
@@ -27,7 +29,10 @@ class AppButton extends StatelessWidget {
               height: 16,
               child: CircularProgressIndicator(color: lightPink),
             )
-          : Text(text, style:  TextStyle(color: foregroundColor ?? Colors.white)),
+          : Text(
+              text,
+              style: TextStyle(color: foregroundColor ?? Colors.white),
+            ),
     );
   }
 }

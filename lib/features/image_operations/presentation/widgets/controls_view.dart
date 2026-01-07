@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../../captioning/presentation/widgets/caption_controls.dart';
-import 'controls_widgets.dart';
 import '../../../export/presentation/widgets/export_button.dart';
 import '../../../llm_config/presentation/pages/llm_config_widget.dart';
 import '../../../main_area/presentation/pages/search_and_replace_widget.dart';
+import 'controls_widgets.dart';
 
 class ControlsView extends StatelessWidget {
   const ControlsView({super.key});

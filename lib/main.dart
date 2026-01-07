@@ -6,13 +6,13 @@ import 'package:nested/nested.dart';
 import 'package:screen_retriever/screen_retriever.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'features/captioning/logic/captioning_cubit.dart';
-import 'features/image_operations/logic/image_operations_cubit.dart';
-import 'features/image_list/logic/image_list_cubit.dart';
-import 'features/llm_config/logic/llm_configs_cubit.dart';
+import 'core/config/service_locator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/presentation/pages/home_page.dart';
-import 'core/config/service_locator.dart';
+import 'features/captioning/logic/captioning_cubit.dart';
+import 'features/image_list/logic/image_list_cubit.dart';
+import 'features/image_operations/logic/image_operations_cubit.dart';
+import 'features/llm_config/logic/llm_configs_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

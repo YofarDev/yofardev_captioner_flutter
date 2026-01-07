@@ -25,8 +25,16 @@ class LlmConfig extends Equatable {
   }) : id = id ?? const Uuid().v4();
 
   @override
-  List<Object?> get props =>
-      <Object?>[id, name, url, model, apiKey, delay, providerType, mlxPath];
+  List<Object?> get props => <Object?>[
+    id,
+    name,
+    url,
+    model,
+    apiKey,
+    delay,
+    providerType,
+    mlxPath,
+  ];
 
   LlmConfig copyWith({
     String? id,

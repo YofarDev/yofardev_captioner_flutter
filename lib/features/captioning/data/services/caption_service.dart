@@ -5,14 +5,14 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
+import '../../../../core/config/service_locator.dart';
+import '../../../image_operations/data/utils/image_utils.dart';
+import '../../../llm_config/data/models/llm_config.dart';
+import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../models/caption/caption_request.dart';
 import '../models/caption/caption_response.dart';
 import '../models/caption/content.dart';
 import '../models/caption/message.dart';
-import '../../../llm_config/data/models/llm_config.dart';
-import '../../../llm_config/data/models/llm_provider_type.dart';
-import '../../../image_operations/data/utils/image_utils.dart';
-import '../../../../core/config/service_locator.dart';
 
 class CaptionService {
   final Logger _logger = locator<Logger>();
@@ -42,14 +42,10 @@ class CaptionService {
     ];
 
     try {
-      final String executable =
-          (config.mlxPath?.isNotEmpty ?? false)
-              ? config.mlxPath!
-              : 'mlx_vlm.generate';
-      final ProcessResult result = await Process.run(
-        executable,
-        arguments,
-      );
+      final String executable = (config.mlxPath?.isNotEmpty ?? false)
+          ? config.mlxPath!
+          : 'mlx_vlm.generate';
+      final ProcessResult result = await Process.run(executable, arguments);
 
       if (result.exitCode == 0) {
         final String output = result.stdout.toString();

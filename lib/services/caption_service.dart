@@ -12,7 +12,7 @@ import '../models/caption/message.dart';
 import '../models/llm_config.dart';
 import '../models/llm_provider_type.dart';
 import '../utils/image_utils.dart';
-import 'service_locator.dart';
+import '../core/config/service_locator.dart';
 
 class CaptionService {
   final Logger _logger = locator<Logger>();

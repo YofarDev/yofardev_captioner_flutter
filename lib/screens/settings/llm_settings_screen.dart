@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../logic/llm_config/llm_configs_cubit.dart';
 import '../../models/llm_config.dart';
 import '../../models/llm_provider_type.dart';
-import '../../res/app_colors.dart';
+import '../../../core/constants/app_colors.dart';
 
 class LlmSettingsScreen extends StatefulWidget {
   const LlmSettingsScreen({super.key});

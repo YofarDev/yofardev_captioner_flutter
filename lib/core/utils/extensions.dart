@@ -1,4 +1,4 @@
-import '../models/app_image.dart';
+import '../../models/app_image.dart';
 
 extension SizeAspectRatio on AppImage {
   String get aspectRatio {

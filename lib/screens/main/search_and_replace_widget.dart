@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/images_list/image_list_cubit.dart';
-import '../widgets/app_button.dart';
+import '../../core/widgets/app_button.dart';
 
 class SearchAndReplaceWidget extends StatefulWidget {
   const SearchAndReplaceWidget({super.key});

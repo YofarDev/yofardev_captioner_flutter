@@ -5,7 +5,7 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/crop_image.dart';
-import '../../res/app_constants.dart';
+import '../../../core/constants/app_constants.dart';
 
 class CropImageScreen extends StatefulWidget {
   final Uint8List image;

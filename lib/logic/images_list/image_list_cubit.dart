@@ -8,9 +8,9 @@ import 'package:window_manager/window_manager.dart';
 import '../../models/app_image.dart';
 import '../../models/caption_data.dart';
 import '../../models/caption_database.dart';
-import '../../services/cache_service.dart';
+import '../../core/services/cache_service.dart';
 import '../../utils/app_file_utils.dart';
-import '../../utils/extensions.dart';
+import '../../core/utils/extensions.dart';
 import '../../utils/image_utils.dart';
 
 part 'image_list_state.dart';

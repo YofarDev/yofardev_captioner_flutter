@@ -7,7 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../logic/images_list/image_list_cubit.dart';
-import '../res/app_colors.dart';
+import '../../core/constants/app_colors.dart';
 import 'list/images_list_view.dart';
 import 'main/main_area_view.dart';
 

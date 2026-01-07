@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/captioning/captioning_cubit.dart';
-import '../../logic/images_list/image_list_cubit.dart';
-import '../../models/app_image.dart';
+import '../../features/image_list/logic/image_list_cubit.dart';
+import '../../features/image_list/data/models/app_image.dart';
 import '../../../core/constants/app_colors.dart';
 
 class CaptionTextArea extends StatefulWidget {

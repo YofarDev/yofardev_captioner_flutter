@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/app_image.dart';
+import '../../features/image_list/data/models/app_image.dart';
 import '../../models/caption_options.dart';
 import '../../models/llm_config.dart';
 import '../../repositories/captioning_repository.dart';

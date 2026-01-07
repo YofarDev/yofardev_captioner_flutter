@@ -7,11 +7,11 @@ import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
-import '../logic/images_list/image_list_cubit.dart';
-import '../models/app_image.dart';
+import '../features/image_list/logic/image_list_cubit.dart';
+import '../features/image_list/data/models/app_image.dart';
 import '../models/crop_image.dart';
 import '../screens/main/crop_image_screen.dart';
-import '../utils/app_file_utils.dart';
+import '../features/image_list/data/repositories/app_file_utils.dart';
 import '../utils/image_utils.dart';
 
 class ImageOperationsHelper {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_list/image_list_cubit.dart';
-import '../../models/app_image.dart';
-import '../main/aspect_ratio_dialog.dart';
+import '../../logic/image_list_cubit.dart';
+import '../../data/models/app_image.dart';
+import '../../../../screens/main/aspect_ratio_dialog.dart';
 import 'sort_by_widget.dart';
 
 class HeaderWidget extends StatelessWidget {

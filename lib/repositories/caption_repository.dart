@@ -1,4 +1,4 @@
-import '../models/app_image.dart';
+import '../features/image_list/data/models/app_image.dart';
 import '../models/llm_config.dart';
 import '../services/caption_service.dart';
 

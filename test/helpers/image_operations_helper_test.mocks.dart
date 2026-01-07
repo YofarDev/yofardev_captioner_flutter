@@ -4,15 +4,14 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
-import 'dart:io' as _i8;
+import 'dart:io' as _i7;
 
-import 'package:flutter_bloc/flutter_bloc.dart' as _i6;
+import 'package:flutter_bloc/flutter_bloc.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:yofardev_captioner/logic/images_list/image_list_cubit.dart'
+import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
     as _i2;
-import 'package:yofardev_captioner/models/app_image.dart' as _i5;
 import 'package:yofardev_captioner/models/caption_database.dart' as _i3;
-import 'package:yofardev_captioner/utils/app_file_utils.dart' as _i7;
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -161,7 +160,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void updateImage({required _i5.AppImage? image}) => super.noSuchMethod(
+  void updateImage({required dynamic image}) => super.noSuchMethod(
     Invocation.method(#updateImage, [], {#image: image}),
     returnValueForMissingStub: null,
   );
@@ -188,7 +187,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void onChange(_i6.Change<_i2.ImageListState>? change) => super.noSuchMethod(
+  void onChange(_i5.Change<_i2.ImageListState>? change) => super.noSuchMethod(
     Invocation.method(#onChange, [change]),
     returnValueForMissingStub: null,
   );
@@ -218,17 +217,17 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
 /// A class which mocks [AppFileUtils].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
+class MockAppFileUtils extends _i1.Mock implements _i6.AppFileUtils {
   @override
-  _i4.Future<List<_i5.AppImage>> onFolderPicked(String? folderPath) =>
+  _i4.Future<List<dynamic>> onFolderPicked(String? folderPath) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath]),
-            returnValue: _i4.Future<List<_i5.AppImage>>.value(<_i5.AppImage>[]),
-            returnValueForMissingStub: _i4.Future<List<_i5.AppImage>>.value(
-              <_i5.AppImage>[],
+            returnValue: _i4.Future<List<dynamic>>.value(<dynamic>[]),
+            returnValueForMissingStub: _i4.Future<List<dynamic>>.value(
+              <dynamic>[],
             ),
           )
-          as _i4.Future<List<_i5.AppImage>>);
+          as _i4.Future<List<dynamic>>);
 
   @override
   _i4.Future<_i3.CaptionDatabase> readDb(String? folderPath) =>
@@ -274,10 +273,7 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> exportAsArchive(
-    String? folderPath,
-    List<_i5.AppImage>? images,
-  ) =>
+  _i4.Future<void> exportAsArchive(String? folderPath, List<dynamic>? images) =>
       (super.noSuchMethod(
             Invocation.method(#exportAsArchive, [folderPath, images]),
             returnValue: _i4.Future<void>.value(),
@@ -286,7 +282,7 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> removeImage(_i8.File? imageFile) =>
+  _i4.Future<void> removeImage(_i7.File? imageFile) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageFile]),
             returnValue: _i4.Future<void>.value(),
@@ -295,7 +291,7 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> saveCaptionToFile(_i5.AppImage? image) =>
+  _i4.Future<void> saveCaptionToFile(dynamic image) =>
       (super.noSuchMethod(
             Invocation.method(#saveCaptionToFile, [image]),
             returnValue: _i4.Future<void>.value(),

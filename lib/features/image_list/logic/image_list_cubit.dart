@@ -5,13 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
 
-import '../../models/app_image.dart';
-import '../../models/caption_data.dart';
-import '../../models/caption_database.dart';
-import '../../core/services/cache_service.dart';
-import '../../utils/app_file_utils.dart';
-import '../../core/utils/extensions.dart';
-import '../../utils/image_utils.dart';
+import '../data/models/app_image.dart';
+import '../../../models/caption_data.dart';
+import '../../../models/caption_database.dart';
+import '../../../core/services/cache_service.dart';
+import '../data/repositories/app_file_utils.dart';
+import '../../../core/utils/extensions.dart';
+import '../../../utils/image_utils.dart';
 
 part 'image_list_state.dart';
 

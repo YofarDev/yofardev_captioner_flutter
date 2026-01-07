@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import '../models/app_image.dart';
+import '../features/image_list/data/models/app_image.dart';
 
 /// A utility class for caption-related operations.
 ///

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/images_list/image_list_cubit.dart';
+import '../../features/image_list/logic/image_list_cubit.dart';
 import 'caption_text_area.dart';
 import 'controls_view.dart';
 import 'current_image_view.dart';

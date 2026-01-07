@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../logic/images_list/image_list_cubit.dart';
+import '../../logic/image_list_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
   const SortByWidget({super.key});

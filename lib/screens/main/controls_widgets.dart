@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 
 import '../../logic/image_operations/image_operations_cubit.dart';
-import '../../logic/images_list/image_list_cubit.dart';
+import '../../features/image_list/logic/image_list_cubit.dart';
 import '../main/convert_images_dialog.dart';
 import '../settings/llm_settings_screen.dart';
 import '../../core/widgets/app_button.dart';

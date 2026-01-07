@@ -9,8 +9,8 @@ import '../models/caption/caption_request.dart';
 import '../models/caption/caption_response.dart';
 import '../models/caption/content.dart';
 import '../models/caption/message.dart';
-import '../models/llm_config.dart';
-import '../models/llm_provider_type.dart';
+import '../../llm_config/data/models/llm_config.dart';
+import '../../llm_config/data/models/llm_provider_type.dart';
 import '../../../image_operations/data/utils/image_utils.dart';
 import '../core/config/service_locator.dart';
 

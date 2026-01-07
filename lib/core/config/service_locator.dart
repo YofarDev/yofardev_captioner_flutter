@@ -3,7 +3,7 @@ import 'package:logging/logging.dart';
 import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
-import '../../services/llm_config_service.dart';
+import '../../features/llm_config/data/repositories/llm_config_service.dart';
 
 final GetIt locator = GetIt.instance;
 

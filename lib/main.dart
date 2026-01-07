@@ -9,7 +9,7 @@ import 'package:window_manager/window_manager.dart';
 import 'features/captioning/logic/captioning_cubit.dart';
 import 'features/image_operations/logic/image_operations_cubit.dart';
 import 'features/image_list/logic/image_list_cubit.dart';
-import 'logic/llm_config/llm_configs_cubit.dart';
+import 'features/llm_config/logic/llm_configs_cubit.dart';
 import 'core/constants/app_colors.dart';
 import 'screens/home_page.dart';
 import 'core/config/service_locator.dart';

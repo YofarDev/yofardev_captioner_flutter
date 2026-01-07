@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import '../../../image_list/data/models/app_image.dart';
-import '../../../models/llm_config.dart';
+import '../../../llm_config/data/models/llm_config.dart';
 import './caption_repository.dart';
 
 class CaptioningRepository {

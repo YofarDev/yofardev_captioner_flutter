@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../models/llm_config.dart';
-import '../../models/llm_configs.dart';
-import '../../models/llm_provider_type.dart';
-import '../../services/llm_config_service.dart';
+import '../data/models/llm_config.dart';
+import '../data/models/llm_configs.dart';
+import '../data/models/llm_provider_type.dart';
+import '../data/repositories/llm_config_service.dart';
 
 part 'llm_configs_state.dart';
 

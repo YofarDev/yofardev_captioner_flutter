@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../features/image_list/logic/image_list_cubit.dart';
-import '../../features/captioning/presentation/widgets/caption_text_area.dart';
-import 'controls_view.dart';
+import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../captioning/presentation/widgets/caption_text_area.dart';
+import '../../image_operations/presentation/widgets/controls_view.dart';
 import 'current_image_view.dart';
 
 class MainAreaView extends StatelessWidget {

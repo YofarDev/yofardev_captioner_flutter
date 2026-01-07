@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:yofardev_captioner/utils/app_file_utils.dart';
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 
 void main() {
   group('AppFileUtils', () {

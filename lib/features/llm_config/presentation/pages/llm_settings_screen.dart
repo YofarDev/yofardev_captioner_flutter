@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../logic/llm_configs_cubit.dart';
-import '../data/models/llm_config.dart';
-import '../data/models/llm_provider_type.dart';
-import '../../../core/constants/app_colors.dart';
+import '../../data/models/llm_config.dart';
+import '../../data/models/llm_provider_type.dart';
+import '../../../../core/constants/app_colors.dart';
 
 class LlmSettingsScreen extends StatefulWidget {
   const LlmSettingsScreen({super.key});

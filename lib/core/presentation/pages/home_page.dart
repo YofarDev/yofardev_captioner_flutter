@@ -6,10 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'features/image_list/logic/image_list_cubit.dart';
+import '../../../features/image_list/logic/image_list_cubit.dart';
 import '../../constants/app_colors.dart';
-import 'features/image_list/presentation/pages/images_list_view.dart';
-import 'features/main_area/presentation/pages/main_area_view.dart';
+import '../../../features/image_list/presentation/pages/images_list_view.dart';
+import '../../../features/main_area/presentation/pages/main_area_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

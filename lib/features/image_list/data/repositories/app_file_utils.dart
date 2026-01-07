@@ -11,7 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../models/app_image.dart';
 import '../../../captioning/data/models/caption_data.dart';
 import '../../../captioning/data/models/caption_database.dart';
-import '../../core/services/cache_service.dart';
+import '../../../../core/services/cache_service.dart';
 
 /// A utility class for file-related operations in the application.
 class AppFileUtils {

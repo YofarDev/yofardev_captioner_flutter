@@ -8,8 +8,8 @@ import 'package:yofardev_captioner/features/captioning/logic/captioning_cubit.da
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
-import 'package:yofardev_captioner/models/llm_config.dart';
-import 'package:yofardev_captioner/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 
 import 'captioning_cubit_test.mocks.dart';

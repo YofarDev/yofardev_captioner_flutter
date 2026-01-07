@@ -6,8 +6,8 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../data/models/caption_options.dart';
 import '../../../llm_config/data/models/llm_config.dart';
-import '../../../core/constants/app_colors.dart';
-import '../../core/widgets/app_button.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/widgets/app_button.dart';
 
 class CaptionControls extends StatefulWidget {
   const CaptionControls({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../features/image_list/logic/image_list_cubit.dart';
+import '../../../image_list/logic/image_list_cubit.dart';
 
 class AspectRatioDialog extends StatelessWidget {
   const AspectRatioDialog({super.key});

@@ -6,10 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-import '../../image_operations/logic/image_operations_cubit.dart';
-import '../../image_list/logic/image_list_cubit.dart';
-import '../../image_list/data/models/app_image.dart';
-import '../../image_operations/data/utils/image_utils.dart';
+import '../../../image_operations/logic/image_operations_cubit.dart';
+import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/data/models/app_image.dart';
+import '../../../image_operations/data/utils/image_utils.dart';
 
 class CurrentImageView extends StatelessWidget {
   const CurrentImageView({super.key});

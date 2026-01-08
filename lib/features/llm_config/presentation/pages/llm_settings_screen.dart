@@ -301,11 +301,11 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: lightGrey,
+      backgroundColor: darkGrey,
       appBar: AppBar(
-        title: const Text('LLM Settings'),
+        title: const Text('Vision Model Settings'),
         centerTitle: true,
-        backgroundColor: darkGrey,
+        backgroundColor: const Color(0xFF121212),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
@@ -314,37 +314,96 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
           return SafeArea(
             child: LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
-                // Use a more space-efficient layout for smaller screens
-                final bool useCompactLayout = constraints.maxHeight < 600;
+                // Responsive breakpoint: collapse to single column on narrow screens
+                final bool useSingleColumn = constraints.maxWidth < 1024;
 
-                return Column(
+                if (useSingleColumn) {
+                  // Single column layout for narrow screens
+                  return Column(
+                    children: <Widget>[
+                      _buildSectionHeader(
+                        context,
+                        title: "Vision Models",
+                        icon: Icons.settings_input_component,
+                        onAdd: () => _showConfigDialog(),
+                        count: state.llmConfigs.configs.length,
+                      ),
+                      Expanded(
+                        flex: 5,
+                        child: state.llmConfigs.configs.isEmpty
+                            ? _buildEmptyState("No models configured yet.")
+                            : _buildModelsList(state),
+                      ),
+                      Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: lightGrey.withValues(alpha: 0.3),
+                      ),
+                      _buildSectionHeader(
+                        context,
+                        title: "Prompts",
+                        icon: Icons.chat_bubble_outline,
+                        onAdd: () => _showPromptDialog(),
+                        count: state.llmConfigs.prompts.length,
+                      ),
+                      Expanded(
+                        flex: 4,
+                        child: state.llmConfigs.prompts.isEmpty
+                            ? _buildEmptyState("No prompts added yet.")
+                            : _buildPromptsList(state),
+                      ),
+                    ],
+                  );
+                }
+
+                // Side-by-side layout (45/55 split)
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _buildSectionHeader(
-                      context,
-                      title: "Vision Models",
-                      icon: Icons.settings_input_component,
-                      onAdd: () => _showConfigDialog(),
-                      count: state.llmConfigs.configs.length,
-                    ),
+                    // Models panel (45%)
                     Expanded(
-                      flex: useCompactLayout ? 4 : 5,
-                      child: state.llmConfigs.configs.isEmpty
-                          ? _buildEmptyState("No models configured yet.")
-                          : _buildModelsList(state),
+                      flex: 45,
+                      child: Column(
+                        children: <Widget>[
+                          _buildSectionHeader(
+                            context,
+                            title: "Vision Models",
+                            icon: Icons.settings_input_component,
+                            onAdd: () => _showConfigDialog(),
+                            count: state.llmConfigs.configs.length,
+                          ),
+                          Expanded(
+                            child: state.llmConfigs.configs.isEmpty
+                                ? _buildEmptyState("No models configured yet.")
+                                : _buildModelsList(state),
+                          ),
+                        ],
+                      ),
                     ),
-                    Divider(height: 1, thickness: 1, color: Colors.grey[800]),
-                    _buildSectionHeader(
-                      context,
-                      title: "Prompts",
-                      icon: Icons.chat_bubble_outline,
-                      onAdd: () => _showPromptDialog(),
-                      count: state.llmConfigs.prompts.length,
+                    // Vertical divider
+                    Container(
+                      width: 1,
+                      color: lightGrey.withValues(alpha: 0.3),
                     ),
+                    // Prompts panel (55%)
                     Expanded(
-                      flex: useCompactLayout ? 3 : 4,
-                      child: state.llmConfigs.prompts.isEmpty
-                          ? _buildEmptyState("No prompts added yet.")
-                          : _buildPromptsList(state),
+                      flex: 55,
+                      child: Column(
+                        children: <Widget>[
+                          _buildSectionHeader(
+                            context,
+                            title: "Prompts",
+                            icon: Icons.chat_bubble_outline,
+                            onAdd: () => _showPromptDialog(),
+                            count: state.llmConfigs.prompts.length,
+                          ),
+                          Expanded(
+                            child: state.llmConfigs.prompts.isEmpty
+                                ? _buildEmptyState("No prompts added yet.")
+                                : _buildPromptsList(state),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 );
@@ -359,6 +418,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
   Widget _buildModelsList(LlmConfigsState state) {
     return CustomRadioGroup<String?>(
       groupValue: state.llmConfigs.selectedConfigId,
+
       onChanged: (String? val) {
         if (val != null) {
           context.read<LlmConfigsCubit>().selectLlmConfig(val);
@@ -428,52 +488,49 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     int count = 0,
   }) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 12, 12),
-      color: lightGrey,
+      padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
+      color: darkGrey,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(icon, color: Colors.white, size: 22),
-              const SizedBox(width: 10),
+              Icon(icon, color: Colors.white70, size: 20),
+              const SizedBox(width: 12),
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 17,
+                  letterSpacing: -0.2,
                 ),
               ),
               if (count > 0) ...<Widget>[
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: lightPink.withAlpha(120),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    count.toString(),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                const SizedBox(width: 12),
+                Text(
+                  count.toString(),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.grey[500],
+                    letterSpacing: -0.3,
                   ),
                 ),
               ],
             ],
           ),
-          IconButton.filledTonal(
+          IconButton(
             onPressed: onAdd,
-            icon: const Icon(Icons.add, size: 22),
+            icon: const Icon(Icons.add, size: 20),
             tooltip: "Add New",
-            constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-            padding: const EdgeInsets.all(10),
+            color: Colors.white70,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            padding: EdgeInsets.zero,
+            style: IconButton.styleFrom(
+              backgroundColor: lightGrey.withValues(alpha: 0.2),
+              hoverColor: lightGrey.withValues(alpha: 0.3),
+            ),
           ),
         ],
       ),
@@ -485,14 +542,15 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(Icons.inbox, size: 56, color: Colors.grey[500]),
-          const SizedBox(height: 16),
+          Icon(Icons.inbox, size: 48, color: Colors.grey[700]),
+          const SizedBox(height: 12),
           Text(
             message,
             style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -508,74 +566,97 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     required VoidCallback onEdit,
     required VoidCallback onDelete,
   }) {
-    return Card(
-      elevation: isSelected ? 4 : 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? BorderSide(color: lightPink, width: 2.5)
-            : BorderSide(color: Colors.grey[700]!),
-      ),
-      color: isSelected ? lightPink.withAlpha(100) : Colors.grey[900],
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: <Widget>[
-              Transform.scale(
-                scale: 0.9,
-                child: Radio<String>(
-                  // ignore: deprecated_member_use
-                  value: config.id,
-                  // ignore: deprecated_member_use
-                  groupValue: state.llmConfigs.selectedConfigId,
-                  // ignore: deprecated_member_use
-                  onChanged: (_) => onTap(),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.comfortable,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: isSelected
+                ? lightPink.withValues(alpha: 0.5)
+                : lightGrey.withValues(alpha: 0.2),
+          ),
+        ),
+        color: isSelected
+            ? lightPink.withValues(alpha: 0.12)
+            : lightGrey.withValues(alpha: 0.08),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          hoverColor: lightGrey.withValues(alpha: 0.2),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 16,
+                  height: 16,
+                  margin: const EdgeInsets.only(right: 14),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? lightPink : Colors.grey[700]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: lightPink,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      config.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        color: Colors.white,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        config.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 15,
+                          color: Colors.white,
+                          letterSpacing: -0.2,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      config.model,
-                      style: TextStyle(color: Colors.grey[300], fontSize: 13),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      children: <Widget>[
-                        _buildProviderChip(config.providerType.name),
-                        if (config.providerType == LlmProviderType.remote &&
-                            config.url != null)
-                          _buildInfoChip(Icons.link, config.url!),
-                      ],
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      Text(
+                        config.model,
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 13,
+                          letterSpacing: -0.1,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: <Widget>[
+                          _buildMinimalChip(config.providerType.name),
+                          if (config.providerType == LlmProviderType.remote &&
+                              config.url != null) ...<Widget>[
+                            const SizedBox(width: 6),
+                            _buildMinimalChip(config.url!),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              _buildActionButtons(onEdit, onDelete),
-            ],
+                _buildHoverActionButtons(onEdit, onDelete),
+              ],
+            ),
           ),
         ),
       ),
@@ -590,133 +671,130 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     required VoidCallback onEdit,
     required VoidCallback onDelete,
   }) {
-    return Card(
-      elevation: isSelected ? 4 : 2,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: isSelected
-            ? BorderSide(color: lightPink, width: 2.5)
-            : BorderSide(color: Colors.grey[700]!),
-      ),
-      color: isSelected ? lightPink.withAlpha(100) : Colors.grey[900],
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Transform.scale(
-                scale: 0.9,
-                child: Radio<String>(
-                  // ignore: deprecated_member_use
-                  value: prompt,
-                  // ignore: deprecated_member_use
-                  groupValue: state.llmConfigs.selectedPrompt,
-                  // ignore: deprecated_member_use
-                  onChanged: (_) => onTap(),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  visualDensity: VisualDensity.comfortable,
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Card(
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: isSelected
+                ? lightPink.withValues(alpha: 0.5)
+                : lightGrey.withValues(alpha: 0.2),
+          ),
+        ),
+        color: isSelected
+            ? lightPink.withValues(alpha: 0.12)
+            : lightGrey.withValues(alpha: 0.08),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(8),
+          hoverColor: lightGrey.withValues(alpha: 0.2),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Container(
+                  width: 16,
+                  height: 16,
+                  margin: const EdgeInsets.only(right: 14, top: 2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? lightPink : Colors.grey[700]!,
+                      width: 1.5,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: lightPink,
+                            ),
+                          ),
+                        )
+                      : null,
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  prompt,
-                  maxLines: 4,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                    color: Colors.white,
+                Expanded(
+                  child: Text(
+                    prompt,
+                    maxLines: 5,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: Colors.grey[100],
+                      letterSpacing: -0.1,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              _buildActionButtons(onEdit, onDelete),
-            ],
+                _buildHoverActionButtons(onEdit, onDelete),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(VoidCallback onEdit, VoidCallback onDelete) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.edit_outlined, size: 20),
-          onPressed: onEdit,
-          color: Colors.white,
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          padding: const EdgeInsets.all(7),
-          tooltip: 'Edit',
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.grey[700]?.withAlpha(100),
-          ),
-        ),
-        const SizedBox(width: 4),
-        IconButton(
-          icon: const Icon(Icons.delete_outline, size: 20),
-          onPressed: onDelete,
-          color: Colors.red[300],
-          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          padding: const EdgeInsets.all(7),
-          tooltip: 'Delete',
-          style: IconButton.styleFrom(
-            backgroundColor: Colors.red[700]?.withAlpha(50),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProviderChip(String providerType) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.blue.withAlpha(80),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        providerType,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: Colors.grey[700]?.withAlpha(100),
-        borderRadius: BorderRadius.circular(6),
-      ),
+  Widget _buildHoverActionButtons(VoidCallback onEdit, VoidCallback onDelete) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 11, color: Colors.grey[300]),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            onPressed: onEdit,
+            color: Colors.grey[400],
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(6),
+            tooltip: 'Edit',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              hoverColor: lightGrey.withValues(alpha: 0.2),
+            ),
+          ),
           const SizedBox(width: 4),
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[300],
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+          IconButton(
+            icon: const Icon(Icons.delete_outline, size: 18),
+            onPressed: onDelete,
+            color: Colors.grey[500],
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(6),
+            tooltip: 'Delete',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              hoverColor: lightGrey.withValues(alpha: 0.2),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMinimalChip(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: lightGrey.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w400,
+          color: Colors.grey[500],
+          letterSpacing: -0.2,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }

@@ -30,18 +30,24 @@ class CaptionService {
     File image,
     String prompt,
   ) async {
-    final List<String> arguments = <String>[
-      '--model',
-      config.model,
-      '--temperature',
-      '0.0',
-      '--prompt',
-      prompt,
-      '--image',
-      image.path,
-    ];
-
+    File? imageToSend;
     try {
+      // Prepare and optimize image for local processing
+      imageToSend = await ImageUtils.resizeImageIfNecessary(image);
+
+      final List<String> arguments = <String>[
+        '--model',
+        config.model,
+        '--temperature',
+        '0.0',
+        '--max-tokens',
+        '4096',
+        '--prompt',
+        prompt,
+        '--image',
+        imageToSend.path,
+      ];
+
       final String executable = (config.mlxPath?.isNotEmpty ?? false)
           ? config.mlxPath!
           : 'mlx_vlm.generate';
@@ -73,6 +79,15 @@ class CaptionService {
       throw ApiException(
         'Failed to run local captioning script. Is Python with mlx_vlm installed and in your PATH? Details: $e',
       );
+    } finally {
+      // Clean up temporary file if it was created
+      if (imageToSend != null && imageToSend.path != image.path) {
+        try {
+          await imageToSend.delete();
+        } catch (e) {
+          _logger.warning('Failed to delete temporary file: $e');
+        }
+      }
     }
   }
 

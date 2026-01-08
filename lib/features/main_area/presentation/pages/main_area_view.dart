@@ -18,8 +18,7 @@ class MainAreaView extends StatelessWidget {
         return const Column(
           children: <Widget>[
             CurrentImageView(),
-            CaptionTextArea(),
-            Spacer(),
+            Expanded(child: CaptionTextArea()),
             ControlsView(),
             SizedBox(height: 16),
           ],

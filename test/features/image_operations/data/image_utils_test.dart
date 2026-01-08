@@ -37,5 +37,19 @@ void main() {
       runTestForAspectRatio(const Size(2, 3), '2:3');
       runTestForAspectRatio(const Size(3, 4), '3:4');
     });
+
+    group('resizeImageIfNecessary - Configuration', () {
+      test('should have correct max file size limit (2MB)', () {
+        expect(ImageUtils.maxFileSize, equals(2 * 1024 * 1024));
+      });
+
+      test('should have correct max dimension limit (2048px)', () {
+        expect(ImageUtils.maxDimension, equals(2048));
+      });
+    });
+
+    // Note: Full integration tests for resizeImageIfNecessary require flutter_image_compress
+    // which is not available in unit tests. See image_utils_manual_test.dart for logic tests.
+    // For full end-to-end testing, run the app and test with actual image files.
   });
 }

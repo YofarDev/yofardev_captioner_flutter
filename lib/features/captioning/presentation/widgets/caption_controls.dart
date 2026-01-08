@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
@@ -191,17 +193,28 @@ class _CaptionControlsState extends State<CaptionControls> {
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Tooltip(
-                        message: captioningState.error,
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withAlpha(100),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.error_outline,
-                            color: Colors.red,
-                            size: 18,
+                        message: 'Click to copy error',
+                        child: InkWell(
+                          onTap: () {
+                            Clipboard.setData(
+                              ClipboardData(text: captioningState.error!),
+                            );
+                            NotificationOverlay.show(
+                              context,
+                              message: 'Error copied to clipboard',
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withAlpha(100),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.error_outline,
+                              color: Colors.red,
+                              size: 18,
+                            ),
                           ),
                         ),
                       ),

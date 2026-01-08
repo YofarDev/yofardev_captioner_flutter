@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import '../../../image_list/data/models/app_image.dart';
 import 'bash_scripts_runner.dart';
@@ -18,7 +17,8 @@ import 'bash_scripts_runner.dart';
 /// This includes getting image dimensions, opening images with default applications,
 /// and retrieving image file sizes.
 class ImageUtils {
-  static const int maxFileSize = 5 * 1024 * 1024;
+  static const int maxFileSize = 1 * 1024 * 1024;
+  static const int maxDimension = 1024;
 
   /// Asynchronously retrieves the dimensions (width and height) of an image.
   ///
@@ -145,33 +145,73 @@ class ImageUtils {
   }
 
   static Future<File> resizeImageIfNecessary(File imageFile) async {
-    final int fileSize = await imageFile.length();
-    if (fileSize <= maxFileSize) {
+    final Directory tempDir = Directory.systemTemp;
+    final String baseName = p.basenameWithoutExtension(imageFile.path);
+    final String tempPath = p.join(tempDir.path, '${baseName}_compressed.jpg');
+
+    // Get current image dimensions
+    final Size originalSize = await getImageDimensions(imageFile.path);
+    final int originalWidth = originalSize.width.toInt();
+    final int originalHeight = originalSize.height.toInt();
+
+    // Calculate target dimensions maintaining aspect ratio
+    int targetWidth = originalWidth;
+    int targetHeight = originalHeight;
+
+    if (originalWidth > maxDimension || originalHeight > maxDimension) {
+      if (originalWidth > originalHeight) {
+        // Landscape or square
+        targetWidth = maxDimension;
+        targetHeight = (maxDimension * originalHeight / originalWidth).round();
+      } else {
+        // Portrait
+        targetHeight = maxDimension;
+        targetWidth = (maxDimension * originalWidth / originalHeight).round();
+      }
+    }
+
+    // Convert to JPEG and resize if necessary, maintaining quality
+    final XFile? result = await FlutterImageCompress.compressAndGetFile(
+      imageFile.absolute.path,
+      tempPath,
+      minWidth: targetWidth,
+      minHeight: targetHeight,
+    );
+
+    if (result == null) {
+      // If conversion fails, return original file
       return imageFile;
     }
 
-    final Directory tempDir = await getTemporaryDirectory();
-    final String tempPath = p.join(
-      tempDir.path,
-      '${p.basename(imageFile.path)}_compressed.jpg',
-    );
+    File compressedImageFile = File(result.path);
+    final int fileSize = await compressedImageFile.length();
 
+    // If already under the file size limit, return the processed version
+    if (fileSize <= maxFileSize) {
+      return compressedImageFile;
+    }
+
+    // If still too large in file size, reduce quality progressively
     int quality = 95;
-    File compressedImageFile = imageFile;
+    while (quality > 10) {
+      final XFile? furtherCompressed =
+          await FlutterImageCompress.compressAndGetFile(
+            imageFile.absolute.path,
+            tempPath,
+            quality: quality,
+            minWidth: targetWidth,
+            minHeight: targetHeight,
+          );
 
-    while (await compressedImageFile.length() > maxFileSize && quality > 10) {
-      final XFile? result = await FlutterImageCompress.compressAndGetFile(
-        imageFile.absolute.path,
-        tempPath,
-        quality: quality,
-      );
-
-      if (result != null) {
-        compressedImageFile = File(result.path);
+      if (furtherCompressed != null) {
+        compressedImageFile = File(furtherCompressed.path);
+        if (await compressedImageFile.length() <= maxFileSize) {
+          return compressedImageFile;
+        }
         quality -= 5;
       } else {
-        // if compression fails, return original file
-        return imageFile;
+        // If compression fails, return current best effort
+        return compressedImageFile;
       }
     }
 

@@ -2,7 +2,7 @@
 
 # Yofardev Captioner (MacOS, Linux & Windows)
 
-A desktop application for managing and captioning image files.
+An open-source desktop application for managing and captioning image files.
 
 ![Screenshot of Yofardev Captioner](assets/screenshot_.png)
 
@@ -14,12 +14,14 @@ The application uses a third-party API for generating captions automatically. Th
 
 ## Features
 
--   **View and Manage Images**: Select a folder and view images one by one.
--   **Edit Captions**: Add, edit, and save captions for each image. Captions are saved as `.txt` files.
--   **Automatic Captioning**: Use a third-party API to automatically generate captions for your images.
--   **Image Operations**: Crop and resize images.
--   **Search and Replace**: Batch search and replace text in captions.
--   **Sort and Filter**: Sort images by name, date, or caption length.
+- **View and Manage Images**: Select a folder and view images one by one.
+- **Edit Captions**: Add, edit, and save captions for each image. Captions are saved as `.txt` files.
+- **Automatic Captioning**: Use a third-party API to automatically generate captions for your images.
+- **Image Operations**: Crop and resize images.
+- **Search and Replace**: Batch search and replace text in captions.
+- **Sort and Filter**: Sort images by name, date, or caption length.
+
+![Screenshot of Settings](assets/screenshot_2.png)
 
 ## Run on Desktop
 

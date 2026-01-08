@@ -29,7 +29,11 @@ class SortByWidget extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
                 dropdownColor: Colors.grey[850],
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 20),
+                icon: const Icon(
+                  Icons.arrow_drop_down,
+                  color: Colors.white70,
+                  size: 20,
+                ),
                 underline: const SizedBox.shrink(),
                 items: const <DropdownMenuItem<SortBy>>[
                   DropdownMenuItem<SortBy>(

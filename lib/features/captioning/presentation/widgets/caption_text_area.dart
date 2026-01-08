@@ -111,6 +111,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                             },
                           );
                         },
+                        minLines: 9,
                         maxLines: 10,
                         decoration: const InputDecoration(
                           border: InputBorder.none,

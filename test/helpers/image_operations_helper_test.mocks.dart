@@ -3,7 +3,7 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i5;
 import 'dart:io' as _i8;
 
 import 'package:flutter_bloc/flutter_bloc.dart' as _i6;
@@ -11,7 +11,7 @@ import 'package:mockito/mockito.dart' as _i1;
 import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart'
     as _i3;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
-    as _i5;
+    as _i4;
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart'
     as _i7;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
@@ -44,6 +44,11 @@ class _FakeCaptionDatabase_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeAppImage_2 extends _i1.SmartFake implements _i4.AppImage {
+  _FakeAppImage_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [ImageListCubit].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -61,13 +66,13 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i2.ImageListState);
 
   @override
-  _i4.Stream<_i2.ImageListState> get stream =>
+  _i5.Stream<_i2.ImageListState> get stream =>
       (super.noSuchMethod(
             Invocation.getter(#stream),
-            returnValue: _i4.Stream<_i2.ImageListState>.empty(),
-            returnValueForMissingStub: _i4.Stream<_i2.ImageListState>.empty(),
+            returnValue: _i5.Stream<_i2.ImageListState>.empty(),
+            returnValueForMissingStub: _i5.Stream<_i2.ImageListState>.empty(),
           )
-          as _i4.Stream<_i2.ImageListState>);
+          as _i5.Stream<_i2.ImageListState>);
 
   @override
   bool get isClosed =>
@@ -85,22 +90,22 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  _i4.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
+  _i5.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath], {#force: force}),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> onFileOpened(String? filePath) =>
+  _i5.Future<void> onFileOpened(String? filePath) =>
       (super.noSuchMethod(
             Invocation.method(#onFileOpened, [filePath]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void nextImage() => super.noSuchMethod(
@@ -115,13 +120,13 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  _i4.Future<void> saveChanges() =>
+  _i5.Future<void> saveChanges() =>
       (super.noSuchMethod(
             Invocation.method(#saveChanges, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void onSortChanged(_i2.SortBy? sortBy, bool? sortAscending) =>
@@ -137,13 +142,13 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  _i4.Future<void> getSingleImageSize() =>
+  _i5.Future<void> getSingleImageSize() =>
       (super.noSuchMethod(
             Invocation.method(#getSingleImageSize, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void searchAndReplace(String? search, String? replace) => super.noSuchMethod(
@@ -164,7 +169,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void updateImage({required _i5.AppImage? image}) => super.noSuchMethod(
+  void updateImage({required _i4.AppImage? image}) => super.noSuchMethod(
     Invocation.method(#updateImage, [], {#image: image}),
     returnValueForMissingStub: null,
   );
@@ -183,6 +188,15 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
             returnValueForMissingStub: <String, int>{},
           )
           as Map<String, int>);
+
+  @override
+  _i5.Future<void> duplicateImage() =>
+      (super.noSuchMethod(
+            Invocation.method(#duplicateImage, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
 
   @override
   void emit(_i2.ImageListState? state) => super.noSuchMethod(
@@ -209,13 +223,13 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  _i4.Future<void> close() =>
+  _i5.Future<void> close() =>
       (super.noSuchMethod(
             Invocation.method(#close, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 }
 
 /// A class which mocks [AppFileUtils].
@@ -223,46 +237,46 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
 /// See the documentation for Mockito's code generation for more information.
 class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
   @override
-  _i4.Future<List<_i5.AppImage>> onFolderPicked(String? folderPath) =>
+  _i5.Future<List<_i4.AppImage>> onFolderPicked(String? folderPath) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath]),
-            returnValue: _i4.Future<List<_i5.AppImage>>.value(<_i5.AppImage>[]),
-            returnValueForMissingStub: _i4.Future<List<_i5.AppImage>>.value(
-              <_i5.AppImage>[],
+            returnValue: _i5.Future<List<_i4.AppImage>>.value(<_i4.AppImage>[]),
+            returnValueForMissingStub: _i5.Future<List<_i4.AppImage>>.value(
+              <_i4.AppImage>[],
             ),
           )
-          as _i4.Future<List<_i5.AppImage>>);
+          as _i5.Future<List<_i4.AppImage>>);
 
   @override
-  _i4.Future<_i3.CaptionDatabase> readDb(String? folderPath) =>
+  _i5.Future<_i3.CaptionDatabase> readDb(String? folderPath) =>
       (super.noSuchMethod(
             Invocation.method(#readDb, [folderPath]),
-            returnValue: _i4.Future<_i3.CaptionDatabase>.value(
+            returnValue: _i5.Future<_i3.CaptionDatabase>.value(
               _FakeCaptionDatabase_1(
                 this,
                 Invocation.method(#readDb, [folderPath]),
               ),
             ),
-            returnValueForMissingStub: _i4.Future<_i3.CaptionDatabase>.value(
+            returnValueForMissingStub: _i5.Future<_i3.CaptionDatabase>.value(
               _FakeCaptionDatabase_1(
                 this,
                 Invocation.method(#readDb, [folderPath]),
               ),
             ),
           )
-          as _i4.Future<_i3.CaptionDatabase>);
+          as _i5.Future<_i3.CaptionDatabase>);
 
   @override
-  _i4.Future<void> writeDb(String? folderPath, _i3.CaptionDatabase? db) =>
+  _i5.Future<void> writeDb(String? folderPath, _i3.CaptionDatabase? db) =>
       (super.noSuchMethod(
             Invocation.method(#writeDb, [folderPath, db]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> updateDbForRename(
+  _i5.Future<void> updateDbForRename(
     Map<String, String>? oldNameToNewName,
     String? folderPath,
   ) =>
@@ -271,40 +285,59 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
               oldNameToNewName,
               folderPath,
             ]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> exportAsArchive(
+  _i5.Future<void> exportAsArchive(
     String? folderPath,
-    List<_i5.AppImage>? images,
+    List<_i4.AppImage>? images,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#exportAsArchive, [folderPath, images]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> removeImage(_i8.File? imageFile) =>
+  _i5.Future<void> removeImage(_i8.File? imageFile) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageFile]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i4.Future<void> saveCaptionToFile(_i5.AppImage? image) =>
+  _i5.Future<void> saveCaptionToFile(_i4.AppImage? image) =>
       (super.noSuchMethod(
             Invocation.method(#saveCaptionToFile, [image]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i4.Future<void>);
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i4.AppImage> duplicateImage(_i4.AppImage? originalImage) =>
+      (super.noSuchMethod(
+            Invocation.method(#duplicateImage, [originalImage]),
+            returnValue: _i5.Future<_i4.AppImage>.value(
+              _FakeAppImage_2(
+                this,
+                Invocation.method(#duplicateImage, [originalImage]),
+              ),
+            ),
+            returnValueForMissingStub: _i5.Future<_i4.AppImage>.value(
+              _FakeAppImage_2(
+                this,
+                Invocation.method(#duplicateImage, [originalImage]),
+              ),
+            ),
+          )
+          as _i5.Future<_i4.AppImage>);
 
   @override
   int compareNatural(String? a, String? b) =>

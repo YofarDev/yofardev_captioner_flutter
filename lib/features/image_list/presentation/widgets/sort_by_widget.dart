@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import '../../logic/image_list_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
@@ -12,40 +13,56 @@ class SortByWidget extends StatelessWidget {
           children: <Widget>[
             const Text('Sort by:', style: TextStyle(fontSize: 12)),
             const SizedBox(width: 8),
-            DropdownButton<SortBy>(
-              value: state.sortBy,
-              style: const TextStyle(fontSize: 12),
-              dropdownColor: Colors.black87,
-              items: const <DropdownMenuItem<SortBy>>[
-                DropdownMenuItem<SortBy>(
-                  value: SortBy.name,
-                  child: Text('Name'),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withAlpha(30)),
+              ),
+              child: DropdownButton<SortBy>(
+                value: state.sortBy,
+                isDense: true,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
                 ),
-                DropdownMenuItem<SortBy>(
-                  value: SortBy.size,
-                  child: Text('Size'),
-                ),
-                DropdownMenuItem<SortBy>(
-                  value: SortBy.caption,
-                  child: Text('Caption'),
-                ),
-              ],
-              onChanged: (SortBy? value) {
-                if (value != null) {
-                  context.read<ImageListCubit>().onSortChanged(
-                    value,
-                    state.sortAscending,
-                  );
-                }
-              },
+                dropdownColor: Colors.grey[850],
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70, size: 20),
+                underline: const SizedBox.shrink(),
+                items: const <DropdownMenuItem<SortBy>>[
+                  DropdownMenuItem<SortBy>(
+                    value: SortBy.name,
+                    child: Text('Name'),
+                  ),
+                  DropdownMenuItem<SortBy>(
+                    value: SortBy.size,
+                    child: Text('Size'),
+                  ),
+                  DropdownMenuItem<SortBy>(
+                    value: SortBy.caption,
+                    child: Text('Caption'),
+                  ),
+                ],
+                onChanged: (SortBy? value) {
+                  if (value != null) {
+                    context.read<ImageListCubit>().onSortChanged(
+                      value,
+                      state.sortAscending,
+                    );
+                  }
+                },
+              ),
             ),
-            IconButton(
-              icon: Icon(
+            const SizedBox(width: 8),
+            InkWell(
+              child: Icon(
                 color: Colors.white,
                 size: 16,
                 state.sortAscending ? Icons.arrow_downward : Icons.arrow_upward,
               ),
-              onPressed: () {
+              onTap: () {
                 context.read<ImageListCubit>().onSortChanged(
                   state.sortBy,
                   !state.sortAscending,

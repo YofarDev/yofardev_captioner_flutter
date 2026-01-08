@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../../core/widgets/notification_overlay.dart';
 import '../../data/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 import '../widgets/header_widget.dart';
@@ -130,8 +131,20 @@ class ImagesListView extends StatelessWidget {
                                                       const EdgeInsets.only(
                                                         left: 8.0,
                                                       ),
-                                                  child: Tooltip(
-                                                    message: image.error,
+                                                  child: GestureDetector(
+                                                    onTap: () {
+                                                      NotificationOverlay.show(
+                                                        context,
+                                                        message: image.error!,
+                                                        duration:
+                                                            const Duration(
+                                                              seconds: 4,
+                                                            ),
+                                                        backgroundColor: Colors
+                                                            .red
+                                                            .withAlpha(200),
+                                                      );
+                                                    },
                                                     child: const Icon(
                                                       Icons.error,
                                                       color: Colors.red,
@@ -160,7 +173,7 @@ class ImagesListView extends StatelessWidget {
                                 ),
                                 if (image.caption.isNotEmpty)
                                   Tooltip(
-                                    message: 'Copy caption',
+                                    message: 'Copy caption to clipboard',
                                     child: IconButton(
                                       icon: Icon(
                                         Icons.copy,
@@ -173,56 +186,55 @@ class ImagesListView extends StatelessWidget {
                                         Clipboard.setData(
                                           ClipboardData(text: image.caption),
                                         );
-                                        ScaffoldMessenger.of(
+                                        NotificationOverlay.show(
                                           context,
-                                        ).showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
+                                          message:
                                               'Caption copied to clipboard',
-                                            ),
-                                          ),
                                         );
                                       },
                                     ),
                                   ),
-                                IconButton(
-                                  icon: Icon(
-                                    Icons.delete,
-                                    size: 16,
-                                    color: isSelected
-                                        ? lightPink
-                                        : Colors.white70,
+                                Tooltip(
+                                  message: 'Remove this image and its caption',
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.delete,
+                                      size: 16,
+                                      color: isSelected
+                                          ? lightPink
+                                          : Colors.white70,
+                                    ),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return AlertDialog(
+                                            title: const Text('Remove Image'),
+                                            content: const Text(
+                                              'Are you sure you want to remove this image and its caption?',
+                                            ),
+                                            actions: <Widget>[
+                                              TextButton(
+                                                child: const Text('Cancel'),
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                              TextButton(
+                                                child: const Text('Remove'),
+                                                onPressed: () {
+                                                  context
+                                                      .read<ImageListCubit>()
+                                                      .removeImage(index);
+                                                  Navigator.of(context).pop();
+                                                },
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      );
+                                    },
                                   ),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (BuildContext context) {
-                                        return AlertDialog(
-                                          title: const Text('Remove Image'),
-                                          content: const Text(
-                                            'Are you sure you want to remove this image and its caption?',
-                                          ),
-                                          actions: <Widget>[
-                                            TextButton(
-                                              child: const Text('Cancel'),
-                                              onPressed: () {
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                            TextButton(
-                                              child: const Text('Remove'),
-                                              onPressed: () {
-                                                context
-                                                    .read<ImageListCubit>()
-                                                    .removeImage(index);
-                                                Navigator.of(context).pop();
-                                              },
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  },
                                 ),
                               ],
                             ),

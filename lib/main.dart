@@ -20,7 +20,7 @@ void main() async {
   if (!Platform.isAndroid && !Platform.isIOS) {
     await windowManager.ensureInitialized();
     final Display primaryDisplay = await screenRetriever.getPrimaryDisplay();
-    final double displayHeight = primaryDisplay.size.height * 0.8;
+    final double displayHeight = primaryDisplay.size.height * 0.85;
     final double displayWidth = primaryDisplay.size.width * 0.7;
     final WindowOptions windowOptions = WindowOptions(
       title: 'Yofardev Captioner',

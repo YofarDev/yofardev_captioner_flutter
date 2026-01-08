@@ -16,8 +16,9 @@ class ControlsView extends StatelessWidget {
         width: double.infinity,
         child: Column(
           children: <Widget>[
+            const SizedBox(height: 16),
             _buildFirstRow(),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             _buildSecondRow(),
           ],
         ),

@@ -31,19 +31,27 @@ class _CaptionControlsState extends State<CaptionControls> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text("Caption: "),
+            const Text(
+              "Caption: ",
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 8),
             _buildRadioButton(
               label: 'This image',
               option: CaptionOptions.current,
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             _buildRadioButton(
               label: 'Missing captions',
               option: CaptionOptions.missing,
             ),
-            const SizedBox(width: 8),
-            _buildRadioButton(label: 'All', option: CaptionOptions.all),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
+            _buildRadioButton(label: 'All images', option: CaptionOptions.all),
+            const SizedBox(width: 20),
             _buildRunButton(),
           ],
         ),
@@ -55,13 +63,54 @@ class _CaptionControlsState extends State<CaptionControls> {
     required String label,
     required CaptionOptions option,
   }) {
+    final bool isSelected = _selectedOption == option;
     return InkWell(
       onTap: () => setState(() => _selectedOption = option),
-      child: Row(
-        children: <Widget>[
-          Radio<CaptionOptions>(value: option),
-          Text(label),
-        ],
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? lightPink.withAlpha(80)
+              : Colors.white.withAlpha(10),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? lightPink.withAlpha(150)
+                : Colors.white.withAlpha(30),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Transform.scale(
+              scale: 0.8,
+              child: Radio<CaptionOptions>(
+                value: option,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                fillColor: WidgetStateProperty.resolveWith<Color>((
+                  Set<WidgetState> states,
+                ) {
+                  if (states.contains(WidgetState.selected)) {
+                    return lightPink;
+                  }
+                  return Colors.grey;
+                }),
+              ),
+            ),
+            const SizedBox(width: 2),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: isSelected ? Colors.white : Colors.grey[300],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -77,36 +126,64 @@ class _CaptionControlsState extends State<CaptionControls> {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
-                  AppButton(
-                    text: "▶️  Run",
-                    isLoading: isCaptioning,
-                    backgroundColor: lightPink.withAlpha(200),
-                    onTap:
-                        imageListState.images.isNotEmpty &&
-                            configState.llmConfigs.selectedConfigId != null &&
-                            !isCaptioning
-                        ? () {
-                            context.read<CaptioningCubit>().runCaptioner(
-                              llm: configState.llmConfigs.configs.firstWhere(
-                                (LlmConfig c) =>
-                                    c.id ==
-                                    configState.llmConfigs.selectedConfigId,
-                              ),
-                              prompt: configState.llmConfigs.selectedPrompt!,
-                              option: _selectedOption,
-                            );
-                          }
-                        : null,
+                  Tooltip(
+                    message: 'Run Vision model with current settings',
+                    child: AppButton(
+                      text: "▶  Run",
+                      isLoading: isCaptioning,
+                      backgroundColor: lightPink.withAlpha(220),
+                      onTap:
+                          imageListState.images.isNotEmpty &&
+                              configState.llmConfigs.selectedConfigId != null &&
+                              !isCaptioning
+                          ? () {
+                              context.read<CaptioningCubit>().runCaptioner(
+                                llm: configState.llmConfigs.configs.firstWhere(
+                                  (LlmConfig c) =>
+                                      c.id ==
+                                      configState.llmConfigs.selectedConfigId,
+                                ),
+                                prompt: configState.llmConfigs.selectedPrompt!,
+                                option: _selectedOption,
+                              );
+                            }
+                          : null,
+                    ),
                   ),
                   if (isCaptioning)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Text(
-                        '${captioningState.processedImages}/${captioningState.totalImages}',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontSize: 12,
-                        ),
+                    Container(
+                      margin: const EdgeInsets.only(left: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withAlpha(100),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.green,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${captioningState.processedImages}/${captioningState.totalImages}',
+                            style: const TextStyle(
+                              color: Colors.green,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   if (captioningState.error != null &&
@@ -115,10 +192,17 @@ class _CaptionControlsState extends State<CaptionControls> {
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Tooltip(
                         message: captioningState.error,
-                        child: const Icon(
-                          Icons.error,
-                          color: Colors.red,
-                          size: 16,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withAlpha(100),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),

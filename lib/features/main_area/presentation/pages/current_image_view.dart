@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/data/utils/image_utils.dart';
@@ -74,15 +75,43 @@ class CurrentImageView extends StatelessWidget {
                       currentImage.captionTimestamp != null)
                     _buildTimestamp(context, currentImage),
                   const Spacer(),
+
                   _buildSizeInfos(state.images[state.currentIndex]),
                   const SizedBox(width: 8),
-                  IconButton(
-                    onPressed: () {
-                      context.read<ImageOperationsCubit>().cropCurrentImage(
-                        context,
-                      );
-                    },
-                    icon: const Icon(Icons.crop),
+                  Tooltip(
+                    message: 'Crop this image',
+                    child: IconButton(
+                      onPressed: () {
+                        context.read<ImageOperationsCubit>().cropCurrentImage(
+                          context,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.crop,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  Tooltip(
+                    message: 'Duplicate this image and its caption',
+                    child: IconButton(
+                      onPressed: () async {
+                        await context.read<ImageListCubit>().duplicateImage();
+                        if (context.mounted) {
+                          NotificationOverlay.show(
+                            context,
+                            message: 'Image duplicated',
+                            duration: const Duration(seconds: 2),
+                          );
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.perm_media_outlined,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -95,11 +124,18 @@ class CurrentImageView extends StatelessWidget {
 
   Widget _buildTimestamp(BuildContext context, AppImage currentImage) {
     final DateFormat formatter = DateFormat('d/MM/y • h:mm');
+    final String timestampMessage =
+        '🤖 First caption ▶ ${formatter.format(currentImage.captionTimestamp!)}${currentImage.lastModified != null ? '\n✍ Last modified ▶ ${formatter.format(currentImage.lastModified!)}' : ''}';
     return Padding(
       padding: const EdgeInsets.only(left: 32),
-      child: Tooltip(
-        message:
-            '🤖 First caption ▶ ${formatter.format(currentImage.captionTimestamp!)}${currentImage.lastModified != null ? '\n✍ Last modified ▶ ${formatter.format(currentImage.lastModified!)}' : ''}',
+      child: GestureDetector(
+        onTap: () {
+          NotificationOverlay.show(
+            context,
+            message: timestampMessage,
+            duration: const Duration(seconds: 5),
+          );
+        },
         child: Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: <Widget>[

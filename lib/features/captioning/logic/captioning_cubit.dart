@@ -67,14 +67,19 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
-        final AppImage updatedImage = await _captioningRepository.captionImage(
+        AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,
           prompt,
         );
+        // Clear any previous errors on success
+        updatedImage = updatedImage.copyWith(clearError: true);
         _imageListCubit.updateImage(image: updatedImage);
       } catch (e) {
         errors.add('Failed to caption ${image.image.path}: $e');
+        // Store error in the image object
+        final AppImage errorImage = image.copyWith(error: '$e');
+        _imageListCubit.updateImage(image: errorImage);
       }
       processedImagesCount++;
       emit(

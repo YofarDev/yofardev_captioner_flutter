@@ -60,6 +60,7 @@ class AppImage extends Equatable {
     String? captionModel,
     DateTime? captionTimestamp,
     DateTime? lastModified,
+    bool clearError = false,
   }) {
     return AppImage(
       id: id ?? this.id,
@@ -68,7 +69,7 @@ class AppImage extends Equatable {
       width: width ?? this.width,
       height: height ?? this.height,
       size: size ?? this.size,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       isCaptionEdited: isCaptionEdited ?? this.isCaptionEdited,
       captionModel: captionModel ?? this.captionModel,
       captionTimestamp: captionTimestamp ?? this.captionTimestamp,

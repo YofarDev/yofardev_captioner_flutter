@@ -13,17 +13,24 @@ class PickFolderButton extends StatelessWidget {
   const PickFolderButton();
   @override
   Widget build(BuildContext context) {
-    return AppButton(
-      text: "📂  Pick folder",
-      onTap: () async {
-        final String? selectedDirectory = await FilePicker.platform
-            .getDirectoryPath(
-              initialDirectory: context.read<ImageListCubit>().state.folderPath,
-            );
-        if (selectedDirectory != null) {
-          context.read<ImageListCubit>().onFolderPicked(selectedDirectory);
-        }
-      },
+    return Tooltip(
+      message: 'Select a folder containing images to caption',
+      child: AppButton(
+        text: "Pick folder",
+        iconAssetPath: 'assets/icons/folder.png',
+        onTap: () async {
+          final String? selectedDirectory = await FilePicker.platform
+              .getDirectoryPath(
+                initialDirectory: context
+                    .read<ImageListCubit>()
+                    .state
+                    .folderPath,
+              );
+          if (selectedDirectory != null) {
+            context.read<ImageListCubit>().onFolderPicked(selectedDirectory);
+          }
+        },
+      ),
     );
   }
 }
@@ -32,13 +39,16 @@ class SettingsButton extends StatelessWidget {
   const SettingsButton();
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () {
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => const LlmSettingsScreen()),
-        );
-      },
-      child: const Text("⚙️"),
+    return Tooltip(
+      message: 'Open Vision model settings',
+      child: TextButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute<void>(builder: (_) => const LlmSettingsScreen()),
+          );
+        },
+        child: const Text("⚙️"),
+      ),
     );
   }
 }
@@ -47,11 +57,15 @@ class RenameAllFilesButton extends StatelessWidget {
   const RenameAllFilesButton();
   @override
   Widget build(BuildContext context) {
-    return AppButton(
-      text: "📘  Rename all files",
-      onTap: () {
-        context.read<ImageOperationsCubit>().renameAllFiles();
-      },
+    return Tooltip(
+      message: 'Rename all image files to sequential numbers (01, 02, 03...)',
+      child: AppButton(
+        text: "Rename all files",
+        iconAssetPath: 'assets/icons/rename.png',
+        onTap: () {
+          context.read<ImageOperationsCubit>().renameAllFiles();
+        },
+      ),
     );
   }
 }

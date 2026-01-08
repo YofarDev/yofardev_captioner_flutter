@@ -203,15 +203,65 @@ class AppFileUtils {
       );
       return Directory(folderPath);
     } else {
-      final FileSystemEntity resolvedEntity = await secureBookmarks
-          .resolveBookmark(bookmark);
-      // Start accessing the security scoped resource
-      await secureBookmarks.startAccessingSecurityScopedResource(
-        resolvedEntity,
-      );
-      // Return a Directory object using the resolved path
-      return Directory(resolvedEntity.path);
+      try {
+        final FileSystemEntity resolvedEntity = await secureBookmarks
+            .resolveBookmark(bookmark);
+        // Start accessing the security scoped resource
+        await secureBookmarks.startAccessingSecurityScopedResource(
+          resolvedEntity,
+        );
+        // Return a Directory object using the resolved path
+        return Directory(resolvedEntity.path);
+      } catch (e) {
+        // If bookmark resolution fails (folder removed/moved), clear the bookmark
+        await CacheService.clearMacosBookmark(folderPath: folderPath);
+        await CacheService.clearFolderPath();
+        rethrow;
+      }
     }
+  }
+
+  Future<AppImage> duplicateImage(AppImage originalImage) async {
+    final String originalPath = originalImage.image.path;
+    final String directory = p.dirname(originalPath);
+    final String basenameWithoutExtension = p.basenameWithoutExtension(
+      originalPath,
+    );
+    final String extension = p.extension(originalPath);
+
+    // Generate a unique filename by adding _copy suffix
+    String newBasename = '${basenameWithoutExtension}_copy$extension';
+    String newPath = p.join(directory, newBasename);
+
+    // If file exists, append a number
+    int counter = 1;
+    while (await File(newPath).exists()) {
+      newBasename = '${basenameWithoutExtension}_copy$counter$extension';
+      newPath = p.join(directory, newBasename);
+      counter++;
+    }
+
+    // Copy the image file
+    await originalImage.image.copy(newPath);
+
+    // Copy the caption file if it exists
+    final String originalCaptionPath = p.setExtension(originalPath, '.txt');
+    final String newCaptionPath = p.setExtension(newPath, '.txt');
+    if (await File(originalCaptionPath).exists()) {
+      await File(originalCaptionPath).copy(newCaptionPath);
+    }
+
+    // Return the new AppImage with a new ID
+    return AppImage(
+      id: const Uuid().v4(),
+      image: File(newPath),
+      caption: originalImage.caption,
+      size: await File(newPath).length(),
+      isCaptionEdited: originalImage.isCaptionEdited,
+      captionModel: originalImage.captionModel,
+      captionTimestamp: originalImage.captionTimestamp,
+      lastModified: DateTime.now(),
+    );
   }
 
   /// Compares two strings naturally, handling numerical parts correctly.

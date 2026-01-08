@@ -5,6 +5,7 @@ import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/widgets/notification_overlay.dart';
 import '../../data/models/crop_image.dart';
 
 class CropImageScreen extends StatefulWidget {
@@ -90,8 +91,10 @@ class _CropImageScreenState extends State<CropImageScreen> {
                   controller: _cropController,
                   onCropped: (CropResult cropResult) {
                     if (cropResult is CropFailure) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text(cropResult.cause.toString())),
+                      NotificationOverlay.show(
+                        context,
+                        message: cropResult.cause.toString(),
+                        backgroundColor: Colors.red.withAlpha(200),
                       );
                       return;
                     }

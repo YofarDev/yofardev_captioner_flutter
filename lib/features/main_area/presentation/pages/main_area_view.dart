@@ -15,12 +15,13 @@ class MainAreaView extends StatelessWidget {
         if (state.images.isEmpty) {
           return _buildEmptyView();
         }
-        return ListView(
-          children: const <Widget>[
+        return const Column(
+          children: <Widget>[
             CurrentImageView(),
             CaptionTextArea(),
-            SizedBox(height: 16),
+            Spacer(),
             ControlsView(),
+            SizedBox(height: 16),
           ],
         );
       },

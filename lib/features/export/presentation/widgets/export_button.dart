@@ -8,11 +8,15 @@ class ExportButton extends StatelessWidget {
   const ExportButton({super.key});
   @override
   Widget build(BuildContext context) {
-    return AppButton(
-      onTap: () {
-        context.read<ImageOperationsCubit>().exportAsArchive();
-      },
-      text: '💾  Export as Archive',
+    return Tooltip(
+      message: 'Export images and captions as zip file',
+      child: AppButton(
+        onTap: () {
+          context.read<ImageOperationsCubit>().exportAsArchive();
+        },
+        text: 'Export as Archive',
+        iconAssetPath: 'assets/icons/archive.png',
+      ),
     );
   }
 }

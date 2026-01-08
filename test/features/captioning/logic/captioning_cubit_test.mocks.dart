@@ -177,6 +177,15 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as Map<String, int>);
 
   @override
+  _i4.Future<void> duplicateImage() =>
+      (super.noSuchMethod(
+            Invocation.method(#duplicateImage, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   void emit(_i2.ImageListState? state) => super.noSuchMethod(
     Invocation.method(#emit, [state]),
     returnValueForMissingStub: null,

@@ -23,12 +23,15 @@ class ImageListCubit extends Cubit<ImageListState> {
   final AppFileUtils _fileUtils;
 
   void onInit() async {
-    await CacheService.loadFolderPath().then((String? path) {
-      if (path != null) {
-        onFolderPicked(path);
-        emit(state.copyWith(folderPath: path));
-      }
-    });
+    final String? path = await CacheService.loadFolderPath();
+    if (path != null) {
+      // Small delay to ensure window is ready (fixes startup timing issue)
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await onFolderPicked(path).catchError((Object error) {
+        // Clear state if folder no longer exists
+        emit(const ImageListState());
+      });
+    }
   }
 
   Future<void> onFolderPicked(String folderPath, {bool force = false}) async {
@@ -46,17 +49,30 @@ class ImageListCubit extends Cubit<ImageListState> {
       ),
     );
 
-    windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
-    CacheService.saveFolderPath(folderPath);
+    try {
+      await windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
+      CacheService.saveFolderPath(folderPath);
 
-    final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
+      final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
 
-    if (state.folderPath != folderPath) {
+      if (state.folderPath != folderPath) {
+        return;
+      }
+
+      emit(state.copyWith(images: images));
+    } catch (e) {
+      // Clear state if folder couldn't be loaded (e.g., folder was removed)
+      emit(const ImageListState());
+      windowManager.setTitle('Yofardev Captioner');
       return;
     }
 
-    emit(state.copyWith(images: images));
-    _getImagesSizeSync();
+    // Get image sizes separately, don't fail if this fails
+    try {
+      await _getImagesSizeSync();
+    } catch (_) {
+      // Ignore errors from getting image sizes
+    }
   }
 
   Future<void> onFileOpened(String filePath) async {
@@ -279,5 +295,47 @@ class ImageListCubit extends Cubit<ImageListState> {
       counts[aspectRatio] = (counts[aspectRatio] ?? 0) + 1;
     }
     return counts;
+  }
+
+  int getTotalImagesSize() {
+    int totalSize = 0;
+    for (final AppImage image in state.images) {
+      totalSize += image.size;
+    }
+    return totalSize;
+  }
+
+  Future<void> duplicateImage() async {
+    if (state.images.isEmpty) return;
+
+    final AppImage originalImage = state.images[state.currentIndex];
+    AppImage duplicatedImage = await _fileUtils.duplicateImage(originalImage);
+
+    // Load the image dimensions for the duplicated image
+    try {
+      duplicatedImage = await ImageUtils.getSingleImageSize(duplicatedImage);
+    } catch (_) {
+      // If loading dimensions fails, continue without them
+    }
+
+    // Add the duplicated image to the list
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    updatedImages.add(duplicatedImage);
+
+    // Sort images to maintain natural order
+    updatedImages.sort(
+      (AppImage a, AppImage b) =>
+          _fileUtils.compareNatural(a.image.path, b.image.path),
+    );
+
+    // Find the index of the duplicated image
+    final int newIndex = updatedImages.indexWhere(
+      (AppImage img) => img.id == duplicatedImage.id,
+    );
+
+    emit(state.copyWith(images: updatedImages, currentIndex: newIndex));
+
+    // Update the database with the new image
+    await _saveDb();
   }
 }

@@ -11,31 +11,44 @@ class LlmConfigWidget extends StatelessWidget {
     return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
       builder: (BuildContext context, LlmConfigsState state) {
         return Row(
+          mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Text('Model: '),
-            const SizedBox(width: 8),
-            DropdownButton<String>(
-              value: state.llmConfigs.selectedConfigId,
-              isDense: true,
-              style: const TextStyle(fontSize: 12),
-
-              hint: const Text(
-                "Select Model",
-                style: TextStyle(fontSize: 12, height: 1),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(10),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withAlpha(30)),
               ),
-              onChanged: (String? newValue) {
-                if (newValue != null) {
-                  context.read<LlmConfigsCubit>().selectLlmConfig(newValue);
-                }
-              },
-              items: state.llmConfigs.configs.map<DropdownMenuItem<String>>((
-                LlmConfig config,
-              ) {
-                return DropdownMenuItem<String>(
-                  value: config.id,
-                  child: Text(config.name),
-                );
-              }).toList(),
+              child: DropdownButton<String>(
+                value: state.llmConfigs.selectedConfigId,
+                isDense: true,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+                dropdownColor: Colors.grey[850],
+                icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                underline: const SizedBox.shrink(),
+                hint: const Text(
+                  "Select Model",
+                  style: TextStyle(fontSize: 13, height: 1),
+                ),
+                onChanged: (String? newValue) {
+                  if (newValue != null) {
+                    context.read<LlmConfigsCubit>().selectLlmConfig(newValue);
+                  }
+                },
+                items: state.llmConfigs.configs.map<DropdownMenuItem<String>>((
+                  LlmConfig config,
+                ) {
+                  return DropdownMenuItem<String>(
+                    value: config.id,
+                    child: Text(config.name),
+                  );
+                }).toList(),
+              ),
             ),
           ],
         );

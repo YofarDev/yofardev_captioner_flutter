@@ -38,7 +38,8 @@ void main() {
       },
       build: () => imageOperationsCubit,
       act: (ImageOperationsCubit cubit) => cubit.renameAllFiles(),
-      expect: () => <ImageOperationsState>[], // No state emitted when folder is null
+      expect: () =>
+          <ImageOperationsState>[], // No state emitted when folder is null
     );
 
     blocTest<ImageOperationsCubit, ImageOperationsState>(
@@ -48,7 +49,8 @@ void main() {
       },
       build: () => imageOperationsCubit,
       act: (ImageOperationsCubit cubit) => cubit.exportAsArchive(),
-      expect: () => <ImageOperationsState>[], // No state emitted when folder is null
+      expect: () =>
+          <ImageOperationsState>[], // No state emitted when folder is null
     );
 
     test('should instantiate correctly', () {

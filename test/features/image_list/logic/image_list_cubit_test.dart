@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
@@ -16,11 +17,15 @@ import 'image_list_cubit_test.mocks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize SharedPreferences for tests
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+
   const MethodChannel channel = MethodChannel('window_manager');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
         return null;
       });
+
   group('ImageListCubit', () {
     late ImageListCubit imageListCubit;
     late MockAppFileUtils mockAppFileUtils;
@@ -138,6 +143,55 @@ void main() {
       ],
       verify: (_) {
         verify(mockAppFileUtils.onFolderPicked('/existing/path')).called(1);
+      },
+    );
+
+    blocTest<ImageListCubit, ImageListState>(
+      'duplicateImage adds duplicated image to list and updates index',
+      build: () {
+        final AppImage duplicatedImage = AppImage(
+          id: 'duplicated-id',
+          image: File('test/test_resources/test_image_copy.jpg'),
+          caption: 'test caption',
+          size: 123,
+        );
+        when(
+          mockAppFileUtils.duplicateImage(any),
+        ).thenAnswer((_) async => duplicatedImage);
+        when(mockAppFileUtils.compareNatural(any, any)).thenReturn(0);
+        when(mockAppFileUtils.writeDb(any, any)).thenAnswer((_) async {});
+        return imageListCubit;
+      },
+      seed: () => ImageListState(
+        folderPath: '/test/path',
+        images: <AppImage>[testImage],
+      ),
+      act: (ImageListCubit cubit) => cubit.duplicateImage(),
+      expect: () => <TypeMatcher<ImageListState>>[
+        isA<ImageListState>()
+            .having((ImageListState s) => s.images, 'images', hasLength(2))
+            .having(
+              (ImageListState s) => s.currentIndex,
+              'currentIndex',
+              greaterThanOrEqualTo(0),
+            ),
+      ],
+      verify: (_) {
+        verify(mockAppFileUtils.duplicateImage(testImage)).called(1);
+        verify(mockAppFileUtils.writeDb(any, any)).called(1);
+      },
+    );
+
+    blocTest<ImageListCubit, ImageListState>(
+      'duplicateImage does nothing when images list is empty',
+      build: () {
+        return imageListCubit;
+      },
+      seed: () => const ImageListState(),
+      act: (ImageListCubit cubit) => cubit.duplicateImage(),
+      expect: () => <ImageListState>[],
+      verify: (_) {
+        verifyNever(mockAppFileUtils.duplicateImage(any));
       },
     );
   });

@@ -443,6 +443,8 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
             onEdit: () => _showConfigDialog(config),
             onDelete: () =>
                 context.read<LlmConfigsCubit>().deleteLlmConfig(config.id),
+            onDuplicate: () =>
+                context.read<LlmConfigsCubit>().duplicateLlmConfig(config.id),
           );
         },
       ),
@@ -474,6 +476,8 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
             onEdit: () => _showPromptDialog(oldPrompt: prompt, index: index),
             onDelete: () =>
                 context.read<LlmConfigsCubit>().deletePrompt(prompt),
+            onDuplicate: () =>
+                context.read<LlmConfigsCubit>().duplicatePrompt(prompt),
           );
         },
       ),
@@ -565,6 +569,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     required VoidCallback onTap,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
+    required VoidCallback onDuplicate,
   }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -654,7 +659,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                     ],
                   ),
                 ),
-                _buildHoverActionButtons(onEdit, onDelete),
+                _buildHoverActionButtons(onEdit, onDelete, onDuplicate),
               ],
             ),
           ),
@@ -670,6 +675,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     required VoidCallback onTap,
     required VoidCallback onEdit,
     required VoidCallback onDelete,
+    required VoidCallback onDuplicate,
   }) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -733,7 +739,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                     ),
                   ),
                 ),
-                _buildHoverActionButtons(onEdit, onDelete),
+                _buildHoverActionButtons(onEdit, onDelete, onDuplicate),
               ],
             ),
           ),
@@ -742,12 +748,29 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
     );
   }
 
-  Widget _buildHoverActionButtons(VoidCallback onEdit, VoidCallback onDelete) {
+  Widget _buildHoverActionButtons(
+    VoidCallback onEdit,
+    VoidCallback onDelete,
+    VoidCallback onDuplicate,
+  ) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.copy_outlined, size: 18),
+            onPressed: onDuplicate,
+            color: Colors.grey[400],
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            padding: const EdgeInsets.all(6),
+            tooltip: 'Duplicate',
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              hoverColor: lightGrey.withValues(alpha: 0.2),
+            ),
+          ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.edit_outlined, size: 18),
             onPressed: onEdit,

@@ -9,6 +9,7 @@ class CaptioningState extends Equatable {
   final int totalImages;
   final String? error;
   final String? currentlyCaptioningImage;
+  final bool isCancelling;
 
   const CaptioningState({
     this.status = CaptioningStatus.initial,
@@ -17,6 +18,7 @@ class CaptioningState extends Equatable {
     this.totalImages = 0,
     this.error,
     this.currentlyCaptioningImage,
+    this.isCancelling = false,
   });
 
   CaptioningState copyWith({
@@ -27,6 +29,7 @@ class CaptioningState extends Equatable {
     String? error,
     String? currentlyCaptioningImage,
     bool? setCurrentlyCaptioningImage,
+    bool? isCancelling,
   }) {
     return CaptioningState(
       status: status ?? this.status,
@@ -37,16 +40,18 @@ class CaptioningState extends Equatable {
       currentlyCaptioningImage: (setCurrentlyCaptioningImage ?? false)
           ? currentlyCaptioningImage
           : this.currentlyCaptioningImage,
+      isCancelling: isCancelling ?? this.isCancelling,
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
-    status,
-    progress,
-    processedImages,
-    totalImages,
-    error,
-    currentlyCaptioningImage,
-  ];
+        status,
+        progress,
+        processedImages,
+        totalImages,
+        error,
+        currentlyCaptioningImage,
+        isCancelling,
+      ];
 }

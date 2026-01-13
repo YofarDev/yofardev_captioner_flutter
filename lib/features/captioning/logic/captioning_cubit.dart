@@ -21,12 +21,20 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   final ImageListCubit _imageListCubit;
   final CaptioningRepository _captioningRepository;
 
+  Completer<void>? _cancelCompleter;
+
   Future<void> runCaptioner({
     required LlmConfig llm,
     required String prompt,
     required CaptionOptions option,
   }) async {
-    emit(state.copyWith(status: CaptioningStatus.inProgress, progress: 0.0));
+    // Reset or create cancel completer
+    _cancelCompleter = Completer<void>();
+    emit(state.copyWith(
+      status: CaptioningStatus.inProgress,
+      progress: 0.0,
+      isCancelling: false,
+    ));
 
     List<AppImage> imagesToCaption = <AppImage>[];
     final List<AppImage> allImages = _imageListCubit.state.images;
@@ -56,6 +64,18 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     final List<String> errors = <String>[];
 
     for (final AppImage image in imagesToCaption) {
+      // Check if cancelled
+      if (_cancelCompleter?.isCompleted ?? false) {
+        emit(
+          state.copyWith(
+            status: CaptioningStatus.initial,
+            error: 'Captioning cancelled',
+          ),
+        );
+        _cancelCompleter = null;
+        return;
+      }
+
       if (processedImagesCount > 0 && llm.delay > 0) {
         await Future<void>.delayed(Duration(milliseconds: llm.delay));
       }
@@ -112,6 +132,13 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
     }
+    // Clear the cancel completer when done
+    _cancelCompleter = null;
+  }
+
+  void cancelCaptioning() {
+    _cancelCompleter?.complete();
+    emit(state.copyWith(isCancelling: true));
   }
 
   void clearErrors() {

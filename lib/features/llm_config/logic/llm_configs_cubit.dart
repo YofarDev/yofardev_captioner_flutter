@@ -108,6 +108,40 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
+  /// Duplicates an existing [LlmConfig] with the given [id].
+  ///
+  /// Creates a copy of the configuration with a new ID and adds it to the list.
+  void duplicateLlmConfig(String id) {
+    final LlmConfig configToDuplicate = state.llmConfigs.configs.firstWhere(
+      (LlmConfig c) => c.id == id,
+    );
+
+    final LlmConfig duplicatedConfig = LlmConfig(
+      name: '${configToDuplicate.name} (copy)',
+      url: configToDuplicate.url,
+      model: configToDuplicate.model,
+      apiKey: configToDuplicate.apiKey,
+      delay: configToDuplicate.delay,
+      providerType: configToDuplicate.providerType,
+      mlxPath: configToDuplicate.mlxPath,
+    );
+
+    final List<LlmConfig> newConfigs = <LlmConfig>[
+      ...state.llmConfigs.configs,
+      duplicatedConfig,
+    ];
+
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(
+          configs: newConfigs,
+          selectedConfigId: duplicatedConfig.id,
+        ),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
   /// Selects an [LlmConfig] with the given [id] as the active configuration.
   ///
   /// The updated configurations are then saved.
@@ -174,6 +208,26 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     emit(
       state.copyWith(
         llmConfigs: state.llmConfigs.copyWith(selectedPrompt: prompt),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Duplicates an existing prompt.
+  ///
+  /// Creates a copy of the prompt with "(copy)" appended and adds it to the list.
+  void duplicatePrompt(String prompt) {
+    final String duplicatedPrompt = '$prompt (copy)';
+    final List<String> newPrompts = <String>[
+      ...state.llmConfigs.prompts,
+      duplicatedPrompt,
+    ];
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(
+          prompts: newPrompts,
+          selectedPrompt: duplicatedPrompt,
+        ),
       ),
     );
     LlmConfigService.saveLlmConfigs(state.llmConfigs);

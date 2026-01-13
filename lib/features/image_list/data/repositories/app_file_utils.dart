@@ -48,7 +48,7 @@ class AppFileUtils {
           final String txtPath = p.setExtension(file.path, '.txt');
           String caption = '';
           if (await File(txtPath).exists()) {
-            caption = await File(txtPath).readAsString();
+            caption = (await File(txtPath).readAsString()).trim();
           }
 
           images.add(

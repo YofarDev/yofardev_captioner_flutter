@@ -166,23 +166,54 @@ class _CaptionControlsState extends State<CaptionControls> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: <Widget>[
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.green,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
                           Text(
                             '${captioningState.processedImages}/${captioningState.totalImages}',
                             style: const TextStyle(
                               color: Colors.green,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Tooltip(
+                            message: captioningState.isCancelling
+                                ? 'Waiting for last job...'
+                                : 'Cancel captioning',
+                            child: InkWell(
+                              onTap: captioningState.isCancelling
+                                  ? null
+                                  : () {
+                                      context
+                                          .read<CaptioningCubit>()
+                                          .cancelCaptioning();
+                                    },
+                              borderRadius: BorderRadius.circular(4),
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: captioningState.isCancelling
+                                      ? Colors.white.withAlpha(10)
+                                      : Colors.white.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: captioningState.isCancelling
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.close,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                              ),
                             ),
                           ),
                         ],
@@ -193,7 +224,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                     Padding(
                       padding: const EdgeInsets.only(left: 8.0),
                       child: Tooltip(
-                        message: 'Click to copy error',
+                        message: captioningState.error,
                         child: InkWell(
                           onTap: () {
                             Clipboard.setData(

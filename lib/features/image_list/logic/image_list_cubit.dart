@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 import 'package:window_manager/window_manager.dart';
@@ -16,12 +17,15 @@ import '../data/repositories/app_file_utils.dart';
 part 'image_list_state.dart';
 
 class ImageListCubit extends Cubit<ImageListState> {
+  static const MethodChannel _channel = MethodChannel(
+    'dev.yofardev.io/open_file',
+  );
+
   ImageListCubit({AppFileUtils? fileUtils})
     : _fileUtils = fileUtils ?? AppFileUtils(),
       super(const ImageListState());
 
   final AppFileUtils _fileUtils;
-  Timer? _initTimer;
 
   /// Returns the filtered list of images based on the current search query.
   /// If no search query is active, returns all images.
@@ -54,17 +58,19 @@ class ImageListCubit extends Cubit<ImageListState> {
     return displayed[state.currentIndex];
   }
 
-  void onInit() async {
+  Future<void> onInit({bool skipLoadLastSession = false}) async {
+    if (skipLoadLastSession) {
+      // Don't load the previous session folder if the app was launched with a file
+      return;
+    }
+
     final String? path = await CacheService.loadFolderPath();
     if (path != null) {
-      // Delay loading the previous session folder to allow time for
-      // a file to be opened via right-click context menu
-      _initTimer = Timer(const Duration(milliseconds: 300), () async {
-        await onFolderPicked(path).catchError((Object error) {
-          // Clear state if folder no longer exists
-          emit(const ImageListState());
-        });
-        _initTimer = null;
+      // Small delay to ensure window is ready (fixes startup timing issue)
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      await onFolderPicked(path).catchError((Object error) {
+        // Clear state if folder no longer exists
+        emit(const ImageListState());
       });
     }
   }
@@ -87,7 +93,15 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     try {
-      await windowManager.setTitle('Yofardev Captioner ➡️ "$folderPath"');
+      final String newTitle = 'Yofardev Captioner ➡️ "$folderPath"';
+
+      // Use native method to set window title (works better on macOS)
+      try {
+        await _channel.invokeMethod('setWindowTitle', newTitle);
+      } catch (e) {
+        await windowManager.setTitle(newTitle);
+      }
+
       CacheService.saveFolderPath(folderPath);
 
       final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
@@ -113,11 +127,6 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> onFileOpened(String filePath) async {
-    // Cancel the init timer if it's running - this prevents loading the
-    // previous session folder when opening a file via right-click
-    _initTimer?.cancel();
-    _initTimer = null;
-
     final String folderPath = p.dirname(filePath);
     await onFolderPicked(folderPath);
 
@@ -165,9 +174,8 @@ class ImageListCubit extends Cubit<ImageListState> {
         images.sort((AppImage a, AppImage b) => b.size.compareTo(a.size));
       case SortBy.caption:
         images.sort(
-          (AppImage a, AppImage b) => _getWordCount(b.caption).compareTo(
-            _getWordCount(a.caption),
-          ),
+          (AppImage a, AppImage b) =>
+              _getWordCount(b.caption).compareTo(_getWordCount(a.caption)),
         );
     }
     if (!sortAscending) {
@@ -218,9 +226,13 @@ class ImageListCubit extends Cubit<ImageListState> {
     final AppImage? currentImage = currentDisplayedImage;
     if (currentImage == null) return;
 
-    final AppImage updatedImage = await ImageUtils.getSingleImageSize(currentImage);
+    final AppImage updatedImage = await ImageUtils.getSingleImageSize(
+      currentImage,
+    );
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    final int index = updatedImages.indexWhere((AppImage i) => i.id == currentImage.id);
+    final int index = updatedImages.indexWhere(
+      (AppImage i) => i.id == currentImage.id,
+    );
     if (index != -1) {
       updatedImages[index] = updatedImage;
     }
@@ -291,7 +303,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    final int index = updatedImages.indexWhere((AppImage i) => i.id == originalImage.id);
+    final int index = updatedImages.indexWhere(
+      (AppImage i) => i.id == originalImage.id,
+    );
     if (index != -1) {
       updatedImages[index] = updated;
     }
@@ -394,8 +408,10 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     int totalWords = 0;
     for (final AppImage image in imagesWithCaptions) {
-      totalWords +=
-          image.caption.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length;
+      totalWords += image.caption
+          .split(RegExp(r'\s+'))
+          .where((String s) => s.isNotEmpty)
+          .length;
     }
 
     return totalWords / imagesWithCaptions.length;

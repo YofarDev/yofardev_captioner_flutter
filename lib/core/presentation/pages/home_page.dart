@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   static const MethodChannel _channel = MethodChannel(
     'dev.yofardev.io/open_file',
   );
+  bool _filePending = false;
 
   @override
   void initState() {
@@ -30,7 +31,16 @@ class _HomePageState extends State<HomePage> {
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'setFilePath') {
         final String path = call.arguments as String;
+        _filePending = true;
         context.read<ImageListCubit>().onFileOpened(path);
+      }
+    });
+
+    // Small delay to check if a file will be opened via MethodChannel
+    // If not, proceed with normal initialization
+    Future<void>.delayed(const Duration(milliseconds: 100), () async {
+      if (!_filePending) {
+        await context.read<ImageListCubit>().onInit();
       }
     });
   }

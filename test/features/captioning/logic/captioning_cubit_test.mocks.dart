@@ -51,6 +51,22 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   }
 
   @override
+  List<_i3.AppImage> get filteredImages =>
+      (super.noSuchMethod(
+            Invocation.getter(#filteredImages),
+            returnValue: <_i3.AppImage>[],
+          )
+          as List<_i3.AppImage>);
+
+  @override
+  List<_i3.AppImage> get displayedImages =>
+      (super.noSuchMethod(
+            Invocation.getter(#displayedImages),
+            returnValue: <_i3.AppImage>[],
+          )
+          as List<_i3.AppImage>);
+
+  @override
   _i2.ImageListState get state =>
       (super.noSuchMethod(
             Invocation.getter(#state),
@@ -72,10 +88,15 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as bool);
 
   @override
-  void onInit() => super.noSuchMethod(
-    Invocation.method(#onInit, []),
-    returnValueForMissingStub: null,
-  );
+  _i4.Future<void> onInit({bool? skipLoadLastSession = false}) =>
+      (super.noSuchMethod(
+            Invocation.method(#onInit, [], {
+              #skipLoadLastSession: skipLoadLastSession,
+            }),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 
   @override
   _i4.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
@@ -175,6 +196,40 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
             returnValue: <String, int>{},
           )
           as Map<String, int>);
+
+  @override
+  int getTotalImagesSize() =>
+      (super.noSuchMethod(
+            Invocation.method(#getTotalImagesSize, []),
+            returnValue: 0,
+          )
+          as int);
+
+  @override
+  void updateSearchQuery(String? query) => super.noSuchMethod(
+    Invocation.method(#updateSearchQuery, [query]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void toggleCaseSensitive() => super.noSuchMethod(
+    Invocation.method(#toggleCaseSensitive, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void clearSearch() => super.noSuchMethod(
+    Invocation.method(#clearSearch, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  double getAverageWordsPerCaption() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAverageWordsPerCaption, []),
+            returnValue: 0.0,
+          )
+          as double);
 
   @override
   _i4.Future<void> duplicateImage() =>

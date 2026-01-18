@@ -100,7 +100,7 @@ class HeaderWidget extends StatelessWidget {
         Image.asset('assets/icons/image.png', width: _iconSize),
         const SizedBox(width: _spacing),
         Text(
-          '${images.length} / $captionCount captions',
+          '$captionCount / ${images.length} captions',
           style: const TextStyle(fontSize: _fontSize),
         ),
       ],

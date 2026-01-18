@@ -14,7 +14,10 @@
       "Bash(flutter packages pub run build_runner build:*)",
       "Bash(git push:*)",
       "Bash(git branch:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(flutter pub run build_runner build:*)",
+      "Bash(flutter build:*)",
+      "Bash(flutter pub:*)"
     ]
   }
 }

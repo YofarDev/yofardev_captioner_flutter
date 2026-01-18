@@ -18,6 +18,7 @@ import 'features/llm_config/logic/llm_configs_cubit.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   setupLocator();
+
   if (!Platform.isAndroid && !Platform.isIOS) {
     await windowManager.ensureInitialized();
     final Display primaryDisplay = await screenRetriever.getPrimaryDisplay();
@@ -40,12 +41,13 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
         BlocProvider<ImageListCubit>(
-          create: (BuildContext context) => ImageListCubit()..onInit(),
+          create: (BuildContext context) => ImageListCubit(),
         ),
         BlocProvider<CaptioningCubit>(
           create: (BuildContext context) =>

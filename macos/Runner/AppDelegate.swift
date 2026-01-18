@@ -20,11 +20,32 @@ class AppDelegate: FlutterAppDelegate {
         let controller: FlutterViewController = mainFlutterWindow?.contentViewController as! FlutterViewController
         methodChannel = FlutterMethodChannel(name: "dev.yofardev.io/open_file",
                                                binaryMessenger: controller.engine.binaryMessenger)
-        
+
+        // Set up method handler for setting window title
+        methodChannel?.setMethodCallHandler({ [weak self] (call, result) in
+            if call.method == "setFilePath" {
+                if let url = call.arguments as? String {
+                    self?.handleFileOpen(url: url)
+                }
+                result(nil)
+            } else if call.method == "setWindowTitle" {
+                if let title = call.arguments as? String {
+                    self?.mainFlutterWindow?.title = title
+                }
+                result(nil)
+            } else {
+                result(FlutterMethodNotImplemented)
+            }
+        })
+
         if let url = fileToOpen {
-            methodChannel?.invokeMethod("setFilePath", arguments: url.path)
+            handleFileOpen(url: url.path)
             fileToOpen = nil
         }
+    }
+
+    private func handleFileOpen(url: String) {
+        methodChannel?.invokeMethod("setFilePath", arguments: url)
     }
 
     override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

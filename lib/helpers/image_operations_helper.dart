@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
@@ -111,11 +112,44 @@ class ImageOperationsHelper {
       return null;
     }
 
+    // Convert to PNG first for lossless quality during crop
+    final Uint8List originalBytes = currentImage.image.readAsBytesSync();
+    final String originalExt = p.extension(currentImage.image.path).toLowerCase();
+    Uint8List pngBytes;
+
+    if (originalExt == '.png') {
+      pngBytes = originalBytes;
+    } else {
+      // Decode using Flutter's codec at full resolution, then re-encode as PNG
+      final ui.Codec codec = await ui.instantiateImageCodec(
+        originalBytes,
+        targetWidth: currentImage.width,
+        targetHeight: currentImage.height,
+      );
+      final ui.FrameInfo frameInfo = await codec.getNextFrame();
+      final ui.Image image = frameInfo.image;
+
+      // Convert to byte data
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        debugPrint('Failed to convert image to PNG bytes');
+        codec.dispose();
+        image.dispose();
+        return null;
+      }
+      pngBytes = byteData.buffer.asUint8List();
+
+      codec.dispose();
+      image.dispose();
+      debugPrint('Converted to PNG using Flutter codec: ${pngBytes.length} bytes');
+    }
+
+    debugPrint('Passing to crop screen: ${pngBytes.length} bytes');
+
     final CropImage? result = await Navigator.push(
       context,
       MaterialPageRoute<CropImage>(
-        builder: (BuildContext context) =>
-            CropImageScreen(image: currentImage.image.readAsBytesSync()),
+        builder: (BuildContext context) => CropImageScreen(image: pngBytes),
       ),
     );
     if (result is CropImage && result.bytes != null) {

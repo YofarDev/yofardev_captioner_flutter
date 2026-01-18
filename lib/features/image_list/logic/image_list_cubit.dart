@@ -21,15 +21,19 @@ class ImageListCubit extends Cubit<ImageListState> {
       super(const ImageListState());
 
   final AppFileUtils _fileUtils;
+  Timer? _initTimer;
 
   void onInit() async {
     final String? path = await CacheService.loadFolderPath();
     if (path != null) {
-      // Small delay to ensure window is ready (fixes startup timing issue)
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      await onFolderPicked(path).catchError((Object error) {
-        // Clear state if folder no longer exists
-        emit(const ImageListState());
+      // Delay loading the previous session folder to allow time for
+      // a file to be opened via right-click context menu
+      _initTimer = Timer(const Duration(milliseconds: 300), () async {
+        await onFolderPicked(path).catchError((Object error) {
+          // Clear state if folder no longer exists
+          emit(const ImageListState());
+        });
+        _initTimer = null;
       });
     }
   }
@@ -76,6 +80,11 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> onFileOpened(String filePath) async {
+    // Cancel the init timer if it's running - this prevents loading the
+    // previous session folder when opening a file via right-click
+    _initTimer?.cancel();
+    _initTimer = null;
+
     final String folderPath = p.dirname(filePath);
     await onFolderPicked(folderPath);
 
@@ -117,9 +126,13 @@ class ImageListCubit extends Cubit<ImageListState> {
           (AppImage a, AppImage b) => a.image.path.compareTo(b.image.path),
         );
       case SortBy.size:
-        images.sort((AppImage a, AppImage b) => a.size.compareTo(b.size));
+        images.sort((AppImage a, AppImage b) => b.size.compareTo(a.size));
       case SortBy.caption:
-        images.sort((AppImage a, AppImage b) => a.caption.compareTo(b.caption));
+        images.sort(
+          (AppImage a, AppImage b) => _getWordCount(b.caption).compareTo(
+            _getWordCount(a.caption),
+          ),
+        );
     }
     if (!sortAscending) {
       final List<AppImage> reversed = images.reversed.toList();
@@ -303,6 +316,29 @@ class ImageListCubit extends Cubit<ImageListState> {
       totalSize += image.size;
     }
     return totalSize;
+  }
+
+  int _getWordCount(String text) {
+    if (text.isEmpty) return 0;
+    return text.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length;
+  }
+
+  double getAverageWordsPerCaption() {
+    final List<AppImage> imagesWithCaptions = state.images
+        .where((AppImage image) => image.caption.isNotEmpty)
+        .toList();
+
+    if (imagesWithCaptions.isEmpty) {
+      return 0.0;
+    }
+
+    int totalWords = 0;
+    for (final AppImage image in imagesWithCaptions) {
+      totalWords +=
+          image.caption.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length;
+    }
+
+    return totalWords / imagesWithCaptions.length;
   }
 
   Future<void> duplicateImage() async {

@@ -46,7 +46,7 @@ class SortByWidget extends StatelessWidget {
                   ),
                   DropdownMenuItem<SortBy>(
                     value: SortBy.caption,
-                    child: Text('Caption'),
+                    child: Text('Word count'),
                   ),
                 ],
                 onChanged: (SortBy? value) {

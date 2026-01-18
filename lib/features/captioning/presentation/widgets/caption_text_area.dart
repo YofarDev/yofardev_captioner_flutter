@@ -129,6 +129,27 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                           ),
                           Positioned(
                             bottom: 8,
+                            left: 8,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(50),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                "${currentImage.caption.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            bottom: 8,
                             right: 8,
                             child: Tooltip(
                               message: currentImage.caption.trim().isEmpty

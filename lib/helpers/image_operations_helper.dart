@@ -106,7 +106,11 @@ class ImageOperationsHelper {
     BuildContext context,
     ImageListState state,
   ) async {
-    final AppImage currentImage = state.images[state.currentIndex];
+    final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+    if (currentImage == null) {
+      return null;
+    }
+
     final CropImage? result = await Navigator.push(
       context,
       MaterialPageRoute<CropImage>(
@@ -134,7 +138,11 @@ class ImageOperationsHelper {
         await newFile.writeAsBytes(resizedBytes);
         // Update state to point to the new file
         final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-        updatedImages[state.currentIndex] = currentImage.copyWith(
+        final int index = updatedImages.indexWhere((AppImage i) => i.id == currentImage.id);
+        if (index == -1) {
+          return null;
+        }
+        updatedImages[index] = currentImage.copyWith(
           id: const Uuid().v4(),
           image: newFile,
         );

@@ -18,16 +18,45 @@ class CurrentImageView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
       builder: (BuildContext context, ImageListState state) {
-        if (state.images.isEmpty) {
+        final ImageListCubit cubit = context.read<ImageListCubit>();
+        final AppImage? currentImage = cubit.currentDisplayedImage;
+
+        // Show "No results" message when search returns no matches
+        if (currentImage == null) {
+          if (state.images.isNotEmpty && state.searchQuery.isNotEmpty) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.5,
+              child: const Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      'No results found',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey,
+                        fontFamily: 'Orbitron',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
           return const SizedBox.shrink();
         }
-        final AppImage currentImage = state.images[state.currentIndex];
         return Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             InkWell(
               onTap: () => ImageUtils.openImageWithDefaultApp(
-                state.images[state.currentIndex].image.path,
+                currentImage.image.path,
               ),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
@@ -44,7 +73,7 @@ class CurrentImageView extends StatelessWidget {
                         fit: StackFit.expand,
                         children: <Widget>[
                           Image.file(
-                            state.images[state.currentIndex].image,
+                            currentImage.image,
                             width: double.infinity,
                             fit: BoxFit.cover,
                           ),
@@ -59,7 +88,7 @@ class CurrentImageView extends StatelessWidget {
                     ),
                     // Main image on top
                     Image.file(
-                      state.images[state.currentIndex].image,
+                      currentImage.image,
                       fit: BoxFit.contain,
                     ),
                   ],
@@ -76,7 +105,7 @@ class CurrentImageView extends StatelessWidget {
                     _buildTimestamp(context, currentImage),
                   const Spacer(),
 
-                  _buildSizeInfos(state.images[state.currentIndex]),
+                  _buildSizeInfos(currentImage),
                   const SizedBox(width: 8),
                   Tooltip(
                     message: 'Crop this image',

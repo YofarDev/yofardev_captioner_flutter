@@ -11,7 +11,7 @@ import 'sort_by_widget.dart';
 class HeaderWidget extends StatelessWidget {
   const HeaderWidget({super.key});
 
-  static const double _iconSize = 14;
+  static const double _iconSize = 12;
   static const double _spacing = 8.0;
   static const double _fontSize = 10;
   static const EdgeInsets _padding = EdgeInsets.symmetric(

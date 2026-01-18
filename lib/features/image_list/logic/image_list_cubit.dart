@@ -23,6 +23,37 @@ class ImageListCubit extends Cubit<ImageListState> {
   final AppFileUtils _fileUtils;
   Timer? _initTimer;
 
+  /// Returns the filtered list of images based on the current search query.
+  /// If no search query is active, returns all images.
+  List<AppImage> get filteredImages {
+    if (state.searchQuery.isEmpty) {
+      return state.images;
+    }
+
+    final String query = state.caseSensitive
+        ? state.searchQuery
+        : state.searchQuery.toLowerCase();
+
+    return state.images.where((AppImage image) {
+      final String caption = state.caseSensitive
+          ? image.caption
+          : image.caption.toLowerCase();
+      return caption.contains(query);
+    }).toList();
+  }
+
+  /// Returns the list of images that should be displayed based on search state.
+  List<AppImage> get displayedImages => filteredImages;
+
+  /// Returns the currently displayed image based on the search state.
+  AppImage? get currentDisplayedImage {
+    final List<AppImage> displayed = displayedImages;
+    if (displayed.isEmpty || state.currentIndex >= displayed.length) {
+      return null;
+    }
+    return displayed[state.currentIndex];
+  }
+
   void onInit() async {
     final String? path = await CacheService.loadFolderPath();
     if (path != null) {
@@ -50,6 +81,8 @@ class ImageListCubit extends Cubit<ImageListState> {
         folderPath: folderPath,
         occurrencesCount: 0,
         occurrenceFileNames: <String>[],
+        searchQuery: '',
+        caseSensitive: false,
       ),
     );
 
@@ -100,21 +133,24 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void nextImage() {
-    if (state.images.isEmpty) return;
-    final int nextIndex = (state.currentIndex + 1) % state.images.length;
-    onImageSelected(nextIndex);
+    final List<AppImage> displayed = displayedImages;
+    if (displayed.isEmpty) return;
+    final int nextIndex = (state.currentIndex + 1) % displayed.length;
+    emit(state.copyWith(currentIndex: nextIndex));
   }
 
   void previousImage() {
-    if (state.images.isEmpty) return;
+    final List<AppImage> displayed = displayedImages;
+    if (displayed.isEmpty) return;
     final int previousIndex =
-        (state.currentIndex - 1 + state.images.length) % state.images.length;
-    onImageSelected(previousIndex);
+        (state.currentIndex - 1 + displayed.length) % displayed.length;
+    emit(state.copyWith(currentIndex: previousIndex));
   }
 
   Future<void> saveChanges() async {
-    final AppImage image = state.images[state.currentIndex];
-    await _saveCaptionToFile(image);
+    final AppImage? currentImage = currentDisplayedImage;
+    if (currentImage == null) return;
+    await _saveCaptionToFile(currentImage);
     await _saveDb();
   }
 
@@ -179,11 +215,15 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> getSingleImageSize() async {
-    final AppImage updatedImage = await ImageUtils.getSingleImageSize(
-      state.images[state.currentIndex],
-    );
+    final AppImage? currentImage = currentDisplayedImage;
+    if (currentImage == null) return;
+
+    final AppImage updatedImage = await ImageUtils.getSingleImageSize(currentImage);
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages[state.currentIndex] = updatedImage;
+    final int index = updatedImages.indexWhere((AppImage i) => i.id == currentImage.id);
+    if (index != -1) {
+      updatedImages[index] = updatedImage;
+    }
     emit(state.copyWith(images: updatedImages));
   }
 
@@ -239,7 +279,9 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   void updateCaption({required String caption}) async {
-    final AppImage originalImage = state.images[state.currentIndex];
+    final AppImage? originalImage = currentDisplayedImage;
+    if (originalImage == null) return;
+
     final AppImage updated = originalImage.copyWith(
       caption: caption,
       isCaptionEdited: true,
@@ -249,7 +291,10 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages[state.currentIndex] = updated;
+    final int index = updatedImages.indexWhere((AppImage i) => i.id == originalImage.id);
+    if (index != -1) {
+      updatedImages[index] = updated;
+    }
 
     emit(state.copyWith(images: updatedImages));
     await _saveCaptionToFile(updated);
@@ -318,6 +363,21 @@ class ImageListCubit extends Cubit<ImageListState> {
     return totalSize;
   }
 
+  /// Updates the search query and resets the current index to 0.
+  void updateSearchQuery(String query) {
+    emit(state.copyWith(searchQuery: query, currentIndex: 0));
+  }
+
+  /// Toggles case sensitivity for search.
+  void toggleCaseSensitive() {
+    emit(state.copyWith(caseSensitive: !state.caseSensitive));
+  }
+
+  /// Clears the search query while preserving the current image selection.
+  void clearSearch() {
+    emit(state.copyWith(searchQuery: '', caseSensitive: false));
+  }
+
   int _getWordCount(String text) {
     if (text.isEmpty) return 0;
     return text.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length;
@@ -342,9 +402,9 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> duplicateImage() async {
-    if (state.images.isEmpty) return;
+    final AppImage? originalImage = currentDisplayedImage;
+    if (originalImage == null) return;
 
-    final AppImage originalImage = state.images[state.currentIndex];
     AppImage duplicatedImage = await _fileUtils.duplicateImage(originalImage);
 
     // Load the image dimensions for the duplicated image

@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 import 'core/config/service_locator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/presentation/pages/home_page.dart';
+import 'features/caption_search/logic/caption_search_cubit.dart';
 import 'features/captioning/logic/captioning_cubit.dart';
 import 'features/image_list/logic/image_list_cubit.dart';
 import 'features/image_operations/logic/image_operations_cubit.dart';
@@ -56,6 +57,12 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<LlmConfigsCubit>(
           create: (BuildContext context) => LlmConfigsCubit()..onInit(),
+        ),
+        BlocProvider<CaptionSearchCubit>(
+          create: (BuildContext context) =>
+              CaptionSearchCubit(
+                imageListCubit: context.read<ImageListCubit>(),
+              ),
         ),
       ],
       child: MaterialApp(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../data/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 import '../widgets/header_widget.dart';
 import '../widgets/image_list_item.dart';
@@ -12,7 +13,10 @@ class ImagesListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
       builder: (BuildContext context, ImageListState state) {
-        if (state.images.isEmpty) {
+        final ImageListCubit cubit = context.read<ImageListCubit>();
+        final List<AppImage> displayedImages = cubit.displayedImages;
+
+        if (displayedImages.isEmpty) {
           return const SizedBox.shrink();
         }
         return Column(
@@ -22,11 +26,12 @@ class ImagesListView extends StatelessWidget {
             Expanded(
               child: ListView.builder(
                 shrinkWrap: true,
-                itemCount: state.images.length,
+                itemCount: displayedImages.length,
                 itemBuilder: (BuildContext context, int index) {
+                  final AppImage image = displayedImages[index];
                   return ImageListItem(
-                    key: ValueKey<String>(state.images[index].image.path),
-                    image: state.images[index],
+                    key: ValueKey<String>(image.image.path),
+                    image: image,
                     index: index,
                     isSelected: index == state.currentIndex,
                   );

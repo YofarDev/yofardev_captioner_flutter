@@ -10,6 +10,8 @@ class ImageListState extends Equatable {
   final int currentIndex;
   final int occurrencesCount;
   final List<String> occurrenceFileNames;
+  final String searchQuery;
+  final bool caseSensitive;
 
   const ImageListState({
     this.images = const <AppImage>[],
@@ -19,6 +21,8 @@ class ImageListState extends Equatable {
     this.currentIndex = 0,
     this.occurrencesCount = 0,
     this.occurrenceFileNames = const <String>[],
+    this.searchQuery = '',
+    this.caseSensitive = false,
   });
 
   ImageListState copyWith({
@@ -29,6 +33,8 @@ class ImageListState extends Equatable {
     int? currentIndex,
     int? occurrencesCount,
     List<String>? occurrenceFileNames,
+    String? searchQuery,
+    bool? caseSensitive,
   }) {
     return ImageListState(
       images: images ?? this.images,
@@ -38,6 +44,8 @@ class ImageListState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
       occurrenceFileNames: occurrenceFileNames ?? this.occurrenceFileNames,
+      searchQuery: searchQuery ?? this.searchQuery,
+      caseSensitive: caseSensitive ?? this.caseSensitive,
     );
   }
 
@@ -50,5 +58,7 @@ class ImageListState extends Equatable {
     currentIndex,
     occurrencesCount,
     occurrenceFileNames,
+    searchQuery,
+    caseSensitive,
   ];
 }

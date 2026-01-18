@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../caption_search/presentation/widgets/caption_search_bar.dart';
 import '../../../captioning/presentation/widgets/caption_text_area.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_view.dart';
@@ -12,15 +14,33 @@ class MainAreaView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
       builder: (BuildContext context, ImageListState state) {
+        // Only show empty view when no images are loaded at all
+        // (not when search returns no results)
         if (state.images.isEmpty) {
           return _buildEmptyView();
         }
-        return const Column(
+        return Stack(
           children: <Widget>[
-            CurrentImageView(),
-            Expanded(child: CaptionTextArea()),
-            ControlsView(),
-            SizedBox(height: 16),
+            const Column(
+              children: <Widget>[
+                CurrentImageView(),
+                Expanded(child: CaptionTextArea()),
+                ControlsView(),
+                SizedBox(height: 16),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: darkGrey.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                padding: const EdgeInsets.all(4),
+                child: const CaptionSearchBar(),
+              ),
+            ),
           ],
         );
       },

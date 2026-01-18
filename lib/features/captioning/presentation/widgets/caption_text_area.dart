@@ -9,6 +9,7 @@ import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../logic/captioning_cubit.dart';
+import 'highlight_text_controller.dart';
 
 class CaptionTextArea extends StatefulWidget {
   const CaptionTextArea({super.key});
@@ -18,7 +19,7 @@ class CaptionTextArea extends StatefulWidget {
 }
 
 class _CaptionTextAreaState extends State<CaptionTextArea> {
-  final TextEditingController _controller = TextEditingController();
+  late HighlightTextController _controller;
   Timer? _debounce;
 
   final FocusNode _focusNode = FocusNode();
@@ -27,6 +28,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
   @override
   void initState() {
     super.initState();
+    _controller = HighlightTextController();
     _focusNode.addListener(() {
       setState(() {
         _isFocused = _focusNode.hasFocus;
@@ -46,9 +48,14 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
   Widget build(BuildContext context) {
     return BlocListener<ImageListCubit, ImageListState>(
       listener: (BuildContext context, ImageListState state) {
-        if (state.images.isNotEmpty) {
-          final String currentCaption =
-              state.images[state.currentIndex].caption;
+        // Update highlight properties when search changes
+        _controller.highlightQuery = state.searchQuery;
+        _controller.caseSensitive = state.caseSensitive;
+
+        final AppImage? currentImage =
+            context.read<ImageListCubit>().currentDisplayedImage;
+        if (currentImage != null) {
+          final String currentCaption = currentImage.caption;
           if (_controller.text != currentCaption) {
             _controller.text = currentCaption;
           }
@@ -56,10 +63,11 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
       },
       child: BlocBuilder<ImageListCubit, ImageListState>(
         builder: (BuildContext context, ImageListState state) {
-          if (state.images.isEmpty) {
+          final AppImage? currentImage =
+              context.read<ImageListCubit>().currentDisplayedImage;
+          if (currentImage == null) {
             return const SizedBox.shrink();
           }
-          final AppImage currentImage = state.images[state.currentIndex];
           return BlocBuilder<CaptioningCubit, CaptioningState>(
             builder: (BuildContext context, CaptioningState captioningState) {
               final String currentImagePath = currentImage.image.path;

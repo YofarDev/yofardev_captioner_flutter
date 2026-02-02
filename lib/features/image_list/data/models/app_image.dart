@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:equatable/equatable.dart';
+import '../../captioning/data/models/caption_entry.dart';
 
 class AppImage extends Equatable {
   final String id;
   final File image;
-  final String caption;
+  final Map<String, CaptionEntry> captions;
   final int width;
   final int height;
   final int size;
@@ -17,7 +18,7 @@ class AppImage extends Equatable {
   const AppImage({
     required this.id,
     required this.image,
-    required this.caption,
+    required this.captions,
     this.width = -1,
     this.height = -1,
     this.size = -1,
@@ -27,6 +28,12 @@ class AppImage extends Equatable {
     this.captionTimestamp,
     this.lastModified,
   });
+
+  String get caption {
+    // Return empty string if no captions or no active category
+    if (captions.isEmpty) return '';
+    return captions.values.first.text;
+  }
 
   double get aspectRatioAsDouble {
     if (width <= 0 || height <= 0) {
@@ -38,7 +45,7 @@ class AppImage extends Equatable {
   @override
   List<Object?> get props => <Object?>[
     image,
-    caption,
+    captions,
     width,
     height,
     size,
@@ -51,7 +58,7 @@ class AppImage extends Equatable {
   AppImage copyWith({
     String? id,
     File? image,
-    String? caption,
+    Map<String, CaptionEntry>? captions,
     int? width,
     int? height,
     int? size,
@@ -65,7 +72,7 @@ class AppImage extends Equatable {
     return AppImage(
       id: id ?? this.id,
       image: image ?? this.image,
-      caption: caption ?? this.caption,
+      captions: captions ?? this.captions,
       width: width ?? this.width,
       height: height ?? this.height,
       size: size ?? this.size,

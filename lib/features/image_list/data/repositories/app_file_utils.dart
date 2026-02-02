@@ -91,10 +91,10 @@ class AppFileUtils {
     Map<String, dynamic> oldJson,
     String folderPath,
   ) async {
-    final oldImages = oldJson['images'] as List;
-    final migratedImages = <CaptionData>[];
+    final List<dynamic> oldImages = oldJson['images'] as List<dynamic>;
+    final List<CaptionData> migratedImages = <CaptionData>[];
 
-    for (final img in oldImages) {
+    for (final dynamic img in oldImages) {
       final String filename = img['filename'] as String;
       final String id = img['id'] as String;
 
@@ -115,7 +115,6 @@ class AppFileUtils {
             timestamp: img['captionTimestamp'] != null
                 ? DateTime.parse(img['captionTimestamp'] as String)
                 : null,
-            isEdited: false,
           ),
         },
         lastModified: img['lastModified'] != null
@@ -125,7 +124,6 @@ class AppFileUtils {
     }
 
     return CaptionDatabase(
-      version: 2,
       categories: <String>['default'],
       activeCategory: 'default',
       images: migratedImages,
@@ -137,7 +135,7 @@ class AppFileUtils {
     if (await dbFile.exists()) {
       try {
         final String content = await dbFile.readAsString();
-        final json = jsonDecode(content) as Map<String, dynamic>;
+        final Map<String, dynamic> json = jsonDecode(content) as Map<String, dynamic>;
 
         // Check version for migration
         if (!json.containsKey('version')) {
@@ -150,7 +148,6 @@ class AppFileUtils {
         return CaptionDatabase.fromJson(json);
       } catch (e) {
         return CaptionDatabase(
-          version: 2,
           categories: <String>['default'],
           activeCategory: 'default',
           images: <CaptionData>[],
@@ -160,7 +157,6 @@ class AppFileUtils {
 
     // New folder - create with default structure
     return CaptionDatabase(
-      version: 2,
       categories: <String>['default'],
       activeCategory: 'default',
       images: <CaptionData>[],

@@ -45,8 +45,10 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           _imageListCubit.state.images[_imageListCubit.state.currentIndex],
         ];
       case CaptionOptions.missing:
+        final String category = _imageListCubit.state.activeCategory ?? 'default';
         imagesToCaption = allImages
-            .where((AppImage image) => image.caption.isEmpty)
+            .where((AppImage image) =>
+                (image.captions[category]?.text ?? '').isEmpty)
             .toList();
       case CaptionOptions.all:
         imagesToCaption = allImages
@@ -87,10 +89,12 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
+        final String category = _imageListCubit.state.activeCategory ?? 'default';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,
           prompt,
+          category: category,
         );
         // Clear any previous errors on success
         updatedImage = updatedImage.copyWith(clearError: true);

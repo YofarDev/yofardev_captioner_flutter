@@ -9,7 +9,7 @@ class CategoryTabBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
-      builder: (context, state) {
+      builder: (BuildContext context, ImageListState state) {
         if (state.categories.isEmpty) {
           return const SizedBox.shrink();
         }
@@ -21,7 +21,6 @@ class CategoryTabBar extends StatelessWidget {
             border: Border(
               bottom: BorderSide(
                 color: Colors.white.withAlpha(20),
-                width: 1,
               ),
             ),
           ),
@@ -31,7 +30,7 @@ class CategoryTabBar extends StatelessWidget {
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: state.categories.length,
-                  itemBuilder: (context, index) {
+                  itemBuilder: (BuildContext context, int index) {
                     final String category = state.categories[index];
                     final bool isActive = category == state.activeCategory;
 
@@ -64,7 +63,7 @@ class CategoryTabBar extends StatelessWidget {
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('Add Category'),
         content: TextField(
           controller: controller,
@@ -140,7 +139,7 @@ class _CategoryTab extends StatelessWidget {
   void _showContextMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
+      builder: (BuildContext context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -170,7 +169,7 @@ class _CategoryTab extends StatelessWidget {
     final TextEditingController controller = TextEditingController(text: category);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('Rename Category'),
         content: TextField(
           controller: controller,
@@ -204,7 +203,7 @@ class _CategoryTab extends StatelessWidget {
   void _showDeleteDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (BuildContext context) => AlertDialog(
         title: const Text('Delete Category'),
         content: Text('Delete "$category"? All captions in this category will be lost.'),
         actions: <Widget>[

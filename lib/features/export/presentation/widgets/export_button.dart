@@ -24,7 +24,7 @@ class ExportButton extends StatelessWidget {
   void _showExportDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => const _ExportCategoryDialog(),
+      builder: (BuildContext context) => const _ExportCategoryDialog(),
     );
   }
 }
@@ -43,7 +43,7 @@ class _ExportCategoryDialogState extends State<_ExportCategoryDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Initialize with active category when dependencies change
-    final state = context.read<ImageListCubit>().state;
+    final ImageListState state = context.read<ImageListCubit>().state;
     if (selectedCategory == null && state.activeCategory != null) {
       selectedCategory = state.activeCategory!;
     }
@@ -52,7 +52,7 @@ class _ExportCategoryDialogState extends State<_ExportCategoryDialog> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
-      builder: (context, state) {
+      builder: (BuildContext context, ImageListState state) {
         if (state.categories.isEmpty) {
           return AlertDialog(
             title: const Text('Export'),

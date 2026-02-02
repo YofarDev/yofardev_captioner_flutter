@@ -9,6 +9,7 @@ import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../logic/captioning_cubit.dart';
+import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
 
 class CaptionTextArea extends StatefulWidget {
@@ -55,7 +56,8 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
         final AppImage? currentImage =
             context.read<ImageListCubit>().currentDisplayedImage;
         if (currentImage != null) {
-          final String currentCaption = currentImage.caption;
+          final String category = state.activeCategory ?? 'default';
+          final String currentCaption = currentImage.captions[category]?.text ?? '';
           if (_controller.text != currentCaption) {
             _controller.text = currentCaption;
           }
@@ -77,6 +79,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
                   children: <Widget>[
+                    const CategoryTabBar(),
                     Expanded(
                       child: Stack(
                         children: <Widget>[
@@ -147,54 +150,66 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                 color: Colors.black.withAlpha(50),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Text(
-                                "${currentImage.caption.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white54,
-                                ),
+                              child: Builder(
+                                builder: (BuildContext context) {
+                                  final String category = state.activeCategory ?? 'default';
+                                  final String captionText = currentImage.captions[category]?.text ?? '';
+                                  return Text(
+                                    "${captionText.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.white54,
+                                    ),
+                                  );
+                                },
                               ),
                             ),
                           ),
                           Positioned(
                             bottom: 8,
                             right: 8,
-                            child: Tooltip(
-                              message: currentImage.caption.trim().isEmpty
-                                  ? 'No caption to copy'
-                                  : 'Copy caption to clipboard',
-                              child: InkWell(
-                                onTap: currentImage.caption.trim().isEmpty
-                                    ? null
-                                    : () {
-                                        Clipboard.setData(
-                                          ClipboardData(
-                                            text: currentImage.caption,
-                                          ),
-                                        );
-                                        NotificationOverlay.show(
-                                          context,
-                                          message:
-                                              'Caption copied to clipboard',
-                                        );
-                                      },
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: currentImage.caption.trim().isEmpty
-                                        ? Colors.white.withAlpha(20)
-                                        : Colors.white.withAlpha(40),
-                                    borderRadius: BorderRadius.circular(8),
+                            child: Builder(
+                              builder: (BuildContext context) {
+                                final String category = state.activeCategory ?? 'default';
+                                final String captionText = currentImage.captions[category]?.text ?? '';
+                                return Tooltip(
+                                  message: captionText.trim().isEmpty
+                                      ? 'No caption to copy'
+                                      : 'Copy caption to clipboard',
+                                  child: InkWell(
+                                    onTap: captionText.trim().isEmpty
+                                        ? null
+                                        : () {
+                                            Clipboard.setData(
+                                              ClipboardData(
+                                                text: captionText,
+                                              ),
+                                            );
+                                            NotificationOverlay.show(
+                                              context,
+                                              message:
+                                                  'Caption copied to clipboard',
+                                            );
+                                          },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: captionText.trim().isEmpty
+                                            ? Colors.white.withAlpha(20)
+                                            : Colors.white.withAlpha(40),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Icon(
+                                        Icons.copy,
+                                        size: 16,
+                                        color: captionText.trim().isEmpty
+                                            ? Colors.white.withAlpha(50)
+                                            : Colors.white70,
+                                      ),
+                                    ),
                                   ),
-                                  child: Icon(
-                                    Icons.copy,
-                                    size: 16,
-                                    color: currentImage.caption.trim().isEmpty
-                                        ? Colors.white.withAlpha(50)
-                                        : Colors.white70,
-                                  ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ),
                         ],

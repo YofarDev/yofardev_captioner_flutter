@@ -236,7 +236,7 @@ class AppFileUtils {
         }
       }
 
-      // Close the zip file (this writes the central directory and finalizes the archive)
+      // Close the zip file first to finalize the archive
       encoder.close();
     } catch (e) {
       // Re-throw with more context

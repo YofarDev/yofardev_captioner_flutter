@@ -11,6 +11,7 @@ import '../../../core/services/cache_service.dart';
 import '../../../features/image_operations/data/utils/image_utils.dart';
 import '../../captioning/data/models/caption_data.dart';
 import '../../captioning/data/models/caption_database.dart';
+import '../../captioning/data/models/caption_entry.dart';
 import '../data/models/app_image.dart';
 import '../data/repositories/app_file_utils.dart';
 
@@ -38,11 +39,14 @@ class ImageListCubit extends Cubit<ImageListState> {
         ? state.searchQuery
         : state.searchQuery.toLowerCase();
 
+    final String category = state.activeCategory ?? 'default';
+
     return state.images.where((AppImage image) {
-      final String caption = state.caseSensitive
-          ? image.caption
-          : image.caption.toLowerCase();
-      return caption.contains(query);
+      final String caption = image.captions[category]?.text ?? '';
+      final String searchCaption = state.caseSensitive
+          ? caption
+          : caption.toLowerCase();
+      return searchCaption.contains(query);
     }).toList();
   }
 
@@ -106,11 +110,18 @@ class ImageListCubit extends Cubit<ImageListState> {
 
       final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
 
+      // Load database to get categories
+      final CaptionDatabase db = await _fileUtils.readDb(folderPath);
+
       if (state.folderPath != folderPath) {
         return;
       }
 
-      emit(state.copyWith(images: images));
+      emit(state.copyWith(
+        images: images,
+        categories: db.categories,
+        activeCategory: db.activeCategory ?? 'default',
+      ));
     } catch (e) {
       // Clear state if folder couldn't be loaded (e.g., folder was removed)
       emit(const ImageListState());
@@ -157,14 +168,13 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   Future<void> saveChanges() async {
-    final AppImage? currentImage = currentDisplayedImage;
-    if (currentImage == null) return;
-    await _saveCaptionToFile(currentImage);
     await _saveDb();
   }
 
   void onSortChanged(SortBy sortBy, bool sortAscending) {
     final List<AppImage> images = List<AppImage>.from(state.images);
+    final String category = state.activeCategory ?? 'default';
+
     switch (sortBy) {
       case SortBy.name:
         images.sort(
@@ -174,8 +184,11 @@ class ImageListCubit extends Cubit<ImageListState> {
         images.sort((AppImage a, AppImage b) => b.size.compareTo(a.size));
       case SortBy.caption:
         images.sort(
-          (AppImage a, AppImage b) =>
-              _getWordCount(b.caption).compareTo(_getWordCount(a.caption)),
+          (AppImage a, AppImage b) {
+            final String captionA = a.captions[category]?.text ?? '';
+            final String captionB = b.captions[category]?.text ?? '';
+            return _getWordCount(captionB).compareTo(_getWordCount(captionA));
+          },
         );
     }
     if (!sortAscending) {
@@ -242,16 +255,25 @@ class ImageListCubit extends Cubit<ImageListState> {
   void searchAndReplace(String search, String replace) async {
     if (search.isEmpty) return;
 
+    final String category = state.activeCategory ?? 'default';
+
     final List<AppImage> updatedImages = <AppImage>[];
     bool wasModified = false;
     for (final AppImage image in state.images) {
-      if (image.caption.contains(search)) {
+      final String caption = image.captions[category]?.text ?? '';
+      if (caption.contains(search)) {
         wasModified = true;
-        final String newCaption = image.caption.replaceAll(search, replace);
+        final String newCaption = caption.replaceAll(search, replace);
+        final Map<String, CaptionEntry> updatedCaptions = Map<String, CaptionEntry>.from(image.captions);
+        updatedCaptions[category] = CaptionEntry(
+          text: newCaption,
+          model: image.captions[category]?.model,
+          timestamp: image.captions[category]?.timestamp,
+          isEdited: true,
+        );
         updatedImages.add(
           image.copyWith(
-            caption: newCaption,
-            isCaptionEdited: true,
+            captions: updatedCaptions,
             lastModified: DateTime.now(),
           ),
         );
@@ -262,9 +284,6 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     if (wasModified) {
       emit(state.copyWith(images: updatedImages));
-      for (final AppImage image in updatedImages) {
-        await _saveCaptionToFile(image);
-      }
       await _saveDb();
     }
   }
@@ -276,10 +295,14 @@ class ImageListCubit extends Cubit<ImageListState> {
       );
       return;
     }
+
+    final String category = state.activeCategory ?? 'default';
+
     int count = 0;
     final List<String> fileNames = <String>[];
     for (final AppImage image in state.images) {
-      final int matches = search.allMatches(image.caption).length;
+      final String caption = image.captions[category]?.text ?? '';
+      final int matches = search.allMatches(caption).length;
       if (matches > 0) {
         count += matches;
         fileNames.add(p.basename(image.image.path));
@@ -294,12 +317,21 @@ class ImageListCubit extends Cubit<ImageListState> {
     final AppImage? originalImage = currentDisplayedImage;
     if (originalImage == null) return;
 
+    final String category = state.activeCategory ?? 'default';
+    final Map<String, CaptionEntry> updatedCaptions = Map<String, CaptionEntry>.from(originalImage.captions);
+
+    // Get existing entry or create new one
+    final CaptionEntry? existingEntry = updatedCaptions[category];
+    updatedCaptions[category] = CaptionEntry(
+      text: caption,
+      model: caption.isEmpty ? null : existingEntry?.model,
+      timestamp: caption.isEmpty ? null : existingEntry?.timestamp,
+      isEdited: true,
+    );
+
     final AppImage updated = originalImage.copyWith(
-      caption: caption,
-      isCaptionEdited: true,
+      captions: updatedCaptions,
       lastModified: DateTime.now(),
-      captionModel: caption.isEmpty ? '' : originalImage.captionModel,
-      captionTimestamp: caption.isEmpty ? null : originalImage.captionTimestamp,
     );
 
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
@@ -311,7 +343,6 @@ class ImageListCubit extends Cubit<ImageListState> {
     }
 
     emit(state.copyWith(images: updatedImages));
-    await _saveCaptionToFile(updated);
     await _saveDb();
   }
 
@@ -325,29 +356,29 @@ class ImageListCubit extends Cubit<ImageListState> {
     updatedImages[index] = image;
 
     emit(state.copyWith(images: updatedImages));
-    await _saveCaptionToFile(image);
     await _saveDb();
-  }
-
-  Future<void> _saveCaptionToFile(AppImage image) async {
-    if (!image.isCaptionEdited) return;
-    await _fileUtils.saveCaptionToFile(image);
   }
 
   Future<void> _saveDb() async {
     if (state.folderPath == null || state.folderPath!.isEmpty) return;
+
     final List<CaptionData> captionDataList = state.images
         .map<CaptionData>(
           (AppImage img) => CaptionData(
             id: img.id,
             filename: p.basename(img.image.path),
-            captionModel: img.captionModel,
-            captionTimestamp: img.captionTimestamp,
+            captions: img.captions,
             lastModified: img.lastModified,
           ),
         )
         .toList();
-    final CaptionDatabase db = CaptionDatabase(images: captionDataList);
+
+    final CaptionDatabase db = CaptionDatabase(
+      categories: state.categories,
+      activeCategory: state.activeCategory,
+      images: captionDataList,
+    );
+
     await _fileUtils.writeDb(state.folderPath!, db);
   }
 
@@ -398,8 +429,11 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   double getAverageWordsPerCaption() {
+    final String category = state.activeCategory ?? 'default';
+
     final List<AppImage> imagesWithCaptions = state.images
-        .where((AppImage image) => image.caption.isNotEmpty)
+        .where((AppImage image) =>
+            (image.captions[category]?.text ?? '').isNotEmpty)
         .toList();
 
     if (imagesWithCaptions.isEmpty) {
@@ -408,8 +442,8 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     int totalWords = 0;
     for (final AppImage image in imagesWithCaptions) {
-      totalWords += image.caption
-          .split(RegExp(r'\s+'))
+      final String text = image.captions[category]?.text ?? '';
+      totalWords += text.split(RegExp(r'\s+'))
           .where((String s) => s.isNotEmpty)
           .length;
     }
@@ -448,6 +482,86 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(images: updatedImages, currentIndex: newIndex));
 
     // Update the database with the new image
+    await _saveDb();
+  }
+
+  void addCategory(String name) async {
+    if (state.categories.contains(name)) {
+      return; // Already exists
+    }
+
+    final List<String> updatedCategories = List<String>.from(state.categories)..add(name);
+    emit(state.copyWith(categories: updatedCategories));
+
+    await _saveDb();
+  }
+
+  void removeCategory(String name) async {
+    if (state.categories.length <= 1) {
+      return; // Must have at least one category
+    }
+
+    final List<String> updatedCategories = List<String>.from(state.categories)..remove(name);
+    final String? newActiveCategory = state.activeCategory == name
+        ? updatedCategories.first
+        : state.activeCategory;
+
+    emit(state.copyWith(
+      categories: updatedCategories,
+      activeCategory: newActiveCategory,
+    ));
+
+    await _saveDb();
+  }
+
+  void renameCategory(String oldName, String newName) async {
+    if (state.categories.contains(newName)) {
+      return; // Already exists
+    }
+
+    final List<String> updatedCategories = List<String>.from(state.categories);
+    final int index = updatedCategories.indexOf(oldName);
+    updatedCategories[index] = newName;
+
+    // Update all images to rename the category key
+    final List<AppImage> updatedImages = state.images.map<AppImage>((AppImage img) {
+      final Map<String, CaptionEntry> newCaptions = Map<String, CaptionEntry>.from(img.captions);
+      if (newCaptions.containsKey(oldName)) {
+        newCaptions[newName] = newCaptions.remove(oldName)!;
+      }
+      return img.copyWith(captions: newCaptions);
+    }).toList();
+
+    final String? newActiveCategory = state.activeCategory == oldName
+        ? newName
+        : state.activeCategory;
+
+    emit(state.copyWith(
+      categories: updatedCategories,
+      activeCategory: newActiveCategory,
+      images: updatedImages,
+    ));
+
+    await _saveDb();
+  }
+
+  void setActiveCategory(String name) {
+    if (!state.categories.contains(name)) {
+      return;
+    }
+    emit(state.copyWith(activeCategory: name));
+  }
+
+  void reorderCategories(int oldIndex, int newIndex) async {
+    final List<String> updatedCategories = List<String>.from(state.categories);
+    int adjustedIndex = newIndex;
+    if (oldIndex < newIndex) {
+      adjustedIndex -= 1;
+    }
+    final String item = updatedCategories.removeAt(oldIndex);
+    updatedCategories.insert(adjustedIndex, item);
+
+    emit(state.copyWith(categories: updatedCategories));
     await _saveDb();
   }
 }

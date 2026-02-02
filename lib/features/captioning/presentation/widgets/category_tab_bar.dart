@@ -27,25 +27,23 @@ class CategoryTabBar extends StatelessWidget {
           child: Row(
             children: <Widget>[
               Expanded(
-                child: ListView.builder(
+                child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
-                  shrinkWrap: true,
-                  itemCount: state.categories.length,
-                  itemBuilder: (BuildContext context, int index) {
-                    final String category = state.categories[index];
-                    final bool isActive = category == state.activeCategory;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: _CategoryTab(
-                        category: category,
-                        isActive: isActive,
-                        onTap: () {
-                          context.read<ImageListCubit>().setActiveCategory(category);
-                        },
-                      ),
-                    );
-                  },
+                  child: Row(
+                    children: state.categories.map((String category) {
+                      final bool isActive = category == state.activeCategory;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _CategoryTab(
+                          category: category,
+                          isActive: isActive,
+                          onTap: () {
+                            context.read<ImageListCubit>().setActiveCategory(category);
+                          },
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
               IconButton(

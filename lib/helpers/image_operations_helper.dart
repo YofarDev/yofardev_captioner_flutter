@@ -74,8 +74,12 @@ class ImageOperationsHelper {
     return files;
   }
 
-  Future<void> exportAsArchive(String folderPath, List<AppImage> images) async {
-    await _fileUtils.exportAsArchive(folderPath, images);
+  Future<void> exportAsArchive(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+  ) async {
+    await _fileUtils.exportAsArchive(folderPath, images, category);
   }
 
   Stream<ImageListState> convertAllImages({

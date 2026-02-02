@@ -11,6 +11,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../captioning/data/models/caption_data.dart';
 import '../../../captioning/data/models/caption_database.dart';
+import '../../../captioning/data/models/caption_entry.dart';
 import '../models/app_image.dart';
 
 /// A utility class for file-related operations in the application.
@@ -38,27 +39,24 @@ class AppFileUtils {
             (CaptionData d) => d.filename == filename,
             orElse: () {
               dbWasModified = true;
-              return CaptionData(id: const Uuid().v4(), filename: filename);
+              return CaptionData(
+                id: const Uuid().v4(),
+                filename: filename,
+                captions: <String, CaptionEntry>{},
+              );
             },
           );
+
           if (!db.images.contains(captionData)) {
             db.images.add(captionData);
-          }
-          // Always read caption from .txt file
-          final String txtPath = p.setExtension(file.path, '.txt');
-          String caption = '';
-          if (await File(txtPath).exists()) {
-            caption = (await File(txtPath).readAsString()).trim();
           }
 
           images.add(
             AppImage(
               id: captionData.id,
               image: file,
-              caption: caption,
+              captions: captionData.captions,
               size: file.lengthSync(),
-              captionModel: captionData.captionModel,
-              captionTimestamp: captionData.captionTimestamp,
               lastModified: captionData.lastModified,
             ),
           );
@@ -89,20 +87,84 @@ class AppFileUtils {
     return File(p.join(folderPath, 'db.json'));
   }
 
+  Future<CaptionDatabase> _migrateV1ToV2(
+    Map<String, dynamic> oldJson,
+    String folderPath,
+  ) async {
+    final oldImages = oldJson['images'] as List;
+    final migratedImages = <CaptionData>[];
+
+    for (final img in oldImages) {
+      final String filename = img['filename'] as String;
+      final String id = img['id'] as String;
+
+      // Read caption from .txt file
+      final File txtFile = File(p.join(folderPath, p.setExtension(filename, '.txt')));
+      String captionText = '';
+      if (await txtFile.exists()) {
+        captionText = await txtFile.readAsString();
+      }
+
+      migratedImages.add(CaptionData(
+        id: id,
+        filename: filename,
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(
+            text: captionText,
+            model: img['captionModel'] as String?,
+            timestamp: img['captionTimestamp'] != null
+                ? DateTime.parse(img['captionTimestamp'] as String)
+                : null,
+            isEdited: false,
+          ),
+        },
+        lastModified: img['lastModified'] != null
+            ? DateTime.parse(img['lastModified'] as String)
+            : null,
+      ));
+    }
+
+    return CaptionDatabase(
+      version: 2,
+      categories: <String>['default'],
+      activeCategory: 'default',
+      images: migratedImages,
+    );
+  }
+
   Future<CaptionDatabase> readDb(String folderPath) async {
     final File dbFile = _getDbPath(folderPath);
     if (await dbFile.exists()) {
       try {
         final String content = await dbFile.readAsString();
-        return CaptionDatabase.fromJson(
-          jsonDecode(content) as Map<String, dynamic>,
-        );
+        final json = jsonDecode(content) as Map<String, dynamic>;
+
+        // Check version for migration
+        if (!json.containsKey('version')) {
+          // Migrate from v1 to v2
+          final migrated = await _migrateV1ToV2(json, folderPath);
+          await writeDb(folderPath, migrated);
+          return migrated;
+        }
+
+        return CaptionDatabase.fromJson(json);
       } catch (e) {
-        // If file is corrupt or not valid JSON, return an empty DB
-        return CaptionDatabase(images: <CaptionData>[]);
+        return CaptionDatabase(
+          version: 2,
+          categories: <String>['default'],
+          activeCategory: 'default',
+          images: <CaptionData>[],
+        );
       }
     }
-    return CaptionDatabase(images: <CaptionData>[]);
+
+    // New folder - create with default structure
+    return CaptionDatabase(
+      version: 2,
+      categories: <String>['default'],
+      activeCategory: 'default',
+      images: <CaptionData>[],
+    );
   }
 
   Future<void> writeDb(String folderPath, CaptionDatabase db) async {
@@ -133,7 +195,11 @@ class AppFileUtils {
     await writeDb(folderPath, db);
   }
 
-  Future<void> exportAsArchive(String folderPath, List<AppImage> images) async {
+  Future<void> exportAsArchive(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+  ) async {
     final String? downloadsPath = await getDownloadsDirectory().then(
       (Directory? dir) => dir?.path,
     );
@@ -152,8 +218,10 @@ class AppFileUtils {
     // Add images and their captions
     for (final AppImage image in images) {
       await encoder.addFile(image.image);
-      if (image.caption.isNotEmpty) {
-        final List<int> captionBytes = utf8.encode(image.caption);
+
+      final captionEntry = image.captions[category];
+      if (captionEntry != null && captionEntry.text.isNotEmpty) {
+        final List<int> captionBytes = utf8.encode(captionEntry.text);
         final ArchiveFile archiveFile = ArchiveFile(
           p.setExtension(p.basename(image.image.path), '.txt'),
           captionBytes.length,
@@ -182,8 +250,9 @@ class AppFileUtils {
   }
 
   Future<void> saveCaptionToFile(AppImage image) async {
-    final String txtPath = p.setExtension(image.image.path, '.txt');
-    await File(txtPath).writeAsString(image.caption);
+    // Captions are now saved in db.json, no need to write .txt files
+    // final String txtPath = p.setExtension(image.image.path, '.txt');
+    // await File(txtPath).writeAsString(image.caption);
   }
 
   Future<Directory> _managePersistentPermission(String folderPath) async {
@@ -244,22 +313,14 @@ class AppFileUtils {
     // Copy the image file
     await originalImage.image.copy(newPath);
 
-    // Copy the caption file if it exists
-    final String originalCaptionPath = p.setExtension(originalPath, '.txt');
-    final String newCaptionPath = p.setExtension(newPath, '.txt');
-    if (await File(originalCaptionPath).exists()) {
-      await File(originalCaptionPath).copy(newCaptionPath);
-    }
+    // Note: Captions are now in db.json, no need to copy .txt files
 
     // Return the new AppImage with a new ID
     return AppImage(
       id: const Uuid().v4(),
       image: File(newPath),
-      caption: originalImage.caption,
+      captions: originalImage.captions,
       size: await File(newPath).length(),
-      isCaptionEdited: originalImage.isCaptionEdited,
-      captionModel: originalImage.captionModel,
-      captionTimestamp: originalImage.captionTimestamp,
       lastModified: DateTime.now(),
     );
   }

@@ -208,9 +208,14 @@ class AppFileUtils {
       final String? downloadsPath = await getDownloadsDirectory().then(
         (Directory? dir) => dir?.path,
       );
+      final String baseFileName = p.basename(folderPath);
+      final String fileName = category == 'default'
+          ? '$baseFileName.zip'
+          : '$baseFileName-$category.zip';
+
       final String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Please select an output file',
-        fileName: '${p.basename(folderPath)}.zip',
+        fileName: fileName,
         initialDirectory: downloadsPath,
       );
       if (outputFile == null) {

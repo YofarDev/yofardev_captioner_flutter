@@ -34,7 +34,7 @@ class HeaderWidget extends StatelessWidget {
                 children: <Widget>[
                   _buildFolderInfoRow(context, state),
                   const SizedBox(height: 6),
-                  _buildImageCountRow(state.images),
+                  _buildImageCountRow(state.images, state.activeCategory),
                   const SizedBox(height: 6),
                   _buildWordsPerCaptionRow(context),
                   const SizedBox(height: 12),
@@ -90,9 +90,14 @@ class HeaderWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildImageCountRow(List<AppImage> images) {
+  Widget _buildImageCountRow(
+    List<AppImage> images,
+    String? activeCategory,
+  ) {
+    final String category = activeCategory ?? 'default';
     final int captionCount = images
-        .where((AppImage image) => image.caption.isNotEmpty)
+        .where((AppImage image) =>
+            (image.captions[category]?.text ?? '').isNotEmpty)
         .length;
 
     return Row(
@@ -100,7 +105,9 @@ class HeaderWidget extends StatelessWidget {
         Image.asset('assets/icons/image.png', width: _iconSize),
         const SizedBox(width: _spacing),
         Text(
-          '$captionCount / ${images.length} captions',
+          activeCategory != null
+              ? '$captionCount / ${images.length} captions ($activeCategory)'
+              : '$captionCount / ${images.length} captions',
           style: const TextStyle(fontSize: _fontSize),
         ),
       ],

@@ -1,12 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 
 import 'image_list_cubit_categories_test.mocks.dart';
 
-@GenerateNiceMocks([MockSpec<AppFileUtils>()])
+@GenerateNiceMocks(<MockSpec<Object>>[MockSpec<AppFileUtils>()])
 void main() {
   group('ImageListCubit Category Management', () {
     late ImageListCubit cubit;

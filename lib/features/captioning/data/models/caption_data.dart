@@ -1,20 +1,20 @@
 import 'package:json_annotation/json_annotation.dart';
 
+import 'caption_entry.dart';
+
 part 'caption_data.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class CaptionData {
   final String id;
   String filename;
-  String? captionModel;
-  DateTime? captionTimestamp;
-  DateTime? lastModified;
+  final Map<String, CaptionEntry> captions; // Changed from single fields
+  final DateTime? lastModified;
 
   CaptionData({
     required this.id,
     required this.filename,
-    this.captionModel,
-    this.captionTimestamp,
+    required this.captions,
     this.lastModified,
   });
 

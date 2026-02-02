@@ -99,28 +99,32 @@ class AppFileUtils {
       final String id = img['id'] as String;
 
       // Read caption from .txt file
-      final File txtFile = File(p.join(folderPath, p.setExtension(filename, '.txt')));
+      final File txtFile = File(
+        p.join(folderPath, p.setExtension(filename, '.txt')),
+      );
       String captionText = '';
       if (await txtFile.exists()) {
         captionText = await txtFile.readAsString();
       }
 
-      migratedImages.add(CaptionData(
-        id: id,
-        filename: filename,
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(
-            text: captionText,
-            model: img['captionModel'] as String?,
-            timestamp: img['captionTimestamp'] != null
-                ? DateTime.parse(img['captionTimestamp'] as String)
-                : null,
-          ),
-        },
-        lastModified: img['lastModified'] != null
-            ? DateTime.parse(img['lastModified'] as String)
-            : null,
-      ));
+      migratedImages.add(
+        CaptionData(
+          id: id,
+          filename: filename,
+          captions: <String, CaptionEntry>{
+            'default': CaptionEntry(
+              text: captionText,
+              model: img['captionModel'] as String?,
+              timestamp: img['captionTimestamp'] != null
+                  ? DateTime.parse(img['captionTimestamp'] as String)
+                  : null,
+            ),
+          },
+          lastModified: img['lastModified'] != null
+              ? DateTime.parse(img['lastModified'] as String)
+              : null,
+        ),
+      );
     }
 
     return CaptionDatabase(
@@ -135,12 +139,16 @@ class AppFileUtils {
     if (await dbFile.exists()) {
       try {
         final String content = await dbFile.readAsString();
-        final Map<String, dynamic> json = jsonDecode(content) as Map<String, dynamic>;
+        final Map<String, dynamic> json =
+            jsonDecode(content) as Map<String, dynamic>;
 
         // Check version for migration
         if (!json.containsKey('version')) {
           // Migrate from v1 to v2
-          final migrated = await _migrateV1ToV2(json, folderPath);
+          final CaptionDatabase migrated = await _migrateV1ToV2(
+            json,
+            folderPath,
+          );
           await writeDb(folderPath, migrated);
           return migrated;
         }
@@ -196,44 +204,44 @@ class AppFileUtils {
     List<AppImage> images,
     String category,
   ) async {
-    final String? downloadsPath = await getDownloadsDirectory().then(
-      (Directory? dir) => dir?.path,
-    );
-    final String? outputFile = await FilePicker.platform.saveFile(
-      dialogTitle: 'Please select an output file',
-      fileName: '${p.basename(folderPath)}.zip',
-      initialDirectory: downloadsPath,
-    );
-    if (outputFile == null) {
-      return;
-    }
-
-    final ZipFileEncoder encoder = ZipFileEncoder();
-    encoder.create(outputFile);
-
-    // Add images and their captions
-    for (final AppImage image in images) {
-      await encoder.addFile(image.image);
-
-      final CaptionEntry? captionEntry = image.captions[category];
-      if (captionEntry != null && captionEntry.text.isNotEmpty) {
-        final List<int> captionBytes = utf8.encode(captionEntry.text);
-        final ArchiveFile archiveFile = ArchiveFile(
-          p.setExtension(p.basename(image.image.path), '.txt'),
-          captionBytes.length,
-          captionBytes,
-        );
-        encoder.addArchiveFile(archiveFile);
+    try {
+      final String? downloadsPath = await getDownloadsDirectory().then(
+        (Directory? dir) => dir?.path,
+      );
+      final String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Please select an output file',
+        fileName: '${p.basename(folderPath)}.zip',
+        initialDirectory: downloadsPath,
+      );
+      if (outputFile == null) {
+        return;
       }
-    }
 
-    // Add the captions.json file
-    final File dbFile = _getDbPath(folderPath);
-    if (await dbFile.exists()) {
-      await encoder.addFile(dbFile);
-    }
+      final ZipFileEncoder encoder = ZipFileEncoder();
+      encoder.create(outputFile);
 
-    encoder.close();
+      // Add images and their captions
+      for (final AppImage image in images) {
+        await encoder.addFile(image.image);
+
+        final CaptionEntry? captionEntry = image.captions[category];
+        if (captionEntry != null && captionEntry.text.isNotEmpty) {
+          final List<int> captionBytes = utf8.encode(captionEntry.text);
+          final ArchiveFile archiveFile = ArchiveFile(
+            p.setExtension(p.basename(image.image.path), '.txt'),
+            captionBytes.length,
+            captionBytes,
+          );
+          encoder.addArchiveFile(archiveFile);
+        }
+      }
+
+      // Close the zip file (this writes the central directory and finalizes the archive)
+      encoder.close();
+    } catch (e) {
+      // Re-throw with more context
+      throw Exception('Failed to export archive: $e');
+    }
   }
 
   Future<void> removeImage(File imageFile) async {

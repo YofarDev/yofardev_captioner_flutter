@@ -1,7 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
 import 'caption_data.dart';
-import 'caption_entry.dart';
 
 part 'caption_database.g.dart';
 

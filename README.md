@@ -20,8 +20,39 @@ The application uses a third-party API for generating captions automatically. Th
 - **Image Operations**: Crop and resize images.
 - **Search and Replace**: Batch search and replace text in captions.
 - **Sort and Filter**: Sort images by name, date, or caption length.
+- **Multi-Category Captions**: Maintain different types of captions for each image (e.g., short, detailed, tags).
 
 ![Screenshot of Settings](assets/screenshot_2.png)
+
+## Multi-Category Captions
+
+The app supports multiple caption categories per image, allowing you to maintain different types of captions for the same dataset.
+
+### Creating Categories
+
+1. Click the **+** button next to the category tabs
+2. Enter a category name (e.g., "tags", "short", "detailed")
+3. Click **Add**
+
+### Managing Categories
+
+- **Switch categories:** Click on a category tab to view/edit captions for that category
+- **Rename category:** Long-press on a category tab → Rename
+- **Delete category:** Long-press on a category tab → Delete (cannot delete the last category)
+
+### Exporting by Category
+
+When exporting images as an archive:
+1. Click **Export as Archive**
+2. Select which caption category to export
+3. The app will export images with `.txt` files containing captions from the selected category only
+
+### Migration from Single Captions
+
+If you open a folder with the old single-caption format:
+- The app automatically migrates to the new multi-category format
+- Existing captions are moved to a "default" category
+- You can create additional categories as needed
 
 ## Run on Desktop
 

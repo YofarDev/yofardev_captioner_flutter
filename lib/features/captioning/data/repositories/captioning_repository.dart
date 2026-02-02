@@ -2,6 +2,7 @@ import 'dart:async';
 
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
+import '../models/caption_entry.dart';
 import './caption_repository.dart';
 
 class CaptioningRepository {
@@ -9,8 +10,9 @@ class CaptioningRepository {
   Future<AppImage> captionImage(
     LlmConfig config,
     AppImage image,
-    String prompt,
-  ) async {
+    String prompt, {
+    String category = 'default',
+  }) async {
     final String caption = await _captionRepository.getCaption(
       config,
       image,
@@ -18,11 +20,16 @@ class CaptioningRepository {
     );
     final DateTime timestamp = DateTime.now();
     return image.copyWith(
-      caption: caption,
-      captionModel: config.name,
-      captionTimestamp: timestamp,
-      isCaptionEdited:
-          true, // A newly generated caption is not "edited" by the user
+      captions: <String, CaptionEntry>{
+        ...image.captions,
+        category: CaptionEntry(
+          text: caption,
+          model: config.name,
+          timestamp: timestamp,
+          isEdited: false,
+        ),
+      },
+      lastModified: timestamp,
     );
   }
 }

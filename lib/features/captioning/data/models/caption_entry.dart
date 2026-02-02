@@ -37,5 +37,5 @@ class CaptionEntry extends Equatable {
   }
 
   @override
-  List<Object?> get props => [text, model, timestamp, isEdited];
+  List<Object?> get props => <Object?>[text, model, timestamp, isEdited];
 }

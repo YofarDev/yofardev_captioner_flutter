@@ -97,15 +97,6 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     try {
-      final String newTitle = 'Yofardev Captioner ➡️ "$folderPath"';
-
-      // Use native method to set window title (works better on macOS)
-      try {
-        await _channel.invokeMethod('setWindowTitle', newTitle);
-      } catch (e) {
-        await windowManager.setTitle(newTitle);
-      }
-
       CacheService.saveFolderPath(folderPath);
 
       final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
@@ -122,6 +113,19 @@ class ImageListCubit extends Cubit<ImageListState> {
         categories: db.categories,
         activeCategory: db.activeCategory ?? 'default',
       ));
+
+      // Set window title with category if not default
+      final String activeCategory = db.activeCategory ?? 'default';
+      final String newTitle = activeCategory == 'default'
+          ? 'Yofardev Captioner ➡️ "$folderPath"'
+          : 'Yofardev Captioner ➡️ "$folderPath" [$activeCategory]';
+
+      // Use native method to set window title (works better on macOS)
+      try {
+        await _channel.invokeMethod('setWindowTitle', newTitle);
+      } catch (e) {
+        await windowManager.setTitle(newTitle);
+      }
     } catch (e) {
       // Clear state if folder couldn't be loaded (e.g., folder was removed)
       emit(const ImageListState());
@@ -550,6 +554,23 @@ class ImageListCubit extends Cubit<ImageListState> {
       return;
     }
     emit(state.copyWith(activeCategory: name));
+
+    // Update window title with new category
+    if (state.folderPath != null) {
+      _updateWindowTitle(state.folderPath!, name);
+    }
+  }
+
+  Future<void> _updateWindowTitle(String folderPath, String category) async {
+    final String newTitle = category == 'default'
+        ? 'Yofardev Captioner ➡️ "$folderPath"'
+        : 'Yofardev Captioner ➡️ "$folderPath" [$category]';
+
+    try {
+      await _channel.invokeMethod('setWindowTitle', newTitle);
+    } catch (e) {
+      await windowManager.setTitle(newTitle);
+    }
   }
 
   void reorderCategories(int oldIndex, int newIndex) async {

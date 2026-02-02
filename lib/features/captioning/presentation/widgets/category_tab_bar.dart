@@ -26,7 +26,7 @@ class CategoryTabBar extends StatelessWidget {
           ),
           child: Row(
             children: <Widget>[
-              Expanded(
+              Flexible(
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: state.categories.length,

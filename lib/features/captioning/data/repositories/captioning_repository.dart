@@ -26,7 +26,6 @@ class CaptioningRepository {
           text: caption,
           model: config.name,
           timestamp: timestamp,
-          isEdited: false,
         ),
       },
       lastModified: timestamp,

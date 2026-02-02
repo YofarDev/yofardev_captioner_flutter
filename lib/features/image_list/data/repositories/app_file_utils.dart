@@ -215,7 +215,7 @@ class AppFileUtils {
     for (final AppImage image in images) {
       await encoder.addFile(image.image);
 
-      final captionEntry = image.captions[category];
+      final CaptionEntry? captionEntry = image.captions[category];
       if (captionEntry != null && captionEntry.text.isNotEmpty) {
         final List<int> captionBytes = utf8.encode(captionEntry.text);
         final ArchiveFile archiveFile = ArchiveFile(

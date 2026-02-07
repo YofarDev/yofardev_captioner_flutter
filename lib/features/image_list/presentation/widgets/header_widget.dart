@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../image_operations/presentation/pages/aspect_ratio_dialog.dart';
 import '../../data/models/app_image.dart';
@@ -104,11 +105,24 @@ class HeaderWidget extends StatelessWidget {
       children: <Widget>[
         Image.asset('assets/icons/image.png', width: _iconSize),
         const SizedBox(width: _spacing),
-        Text(
-          activeCategory != null
-              ? '$captionCount / ${images.length} captions ($activeCategory)'
-              : '$captionCount / ${images.length} captions',
-          style: const TextStyle(fontSize: _fontSize),
+        RichText(
+          text: TextSpan(
+            style: const TextStyle(fontSize: _fontSize, color: Colors.white, fontFamily: 'Inter'),
+            children: <TextSpan>[
+              TextSpan(text: '$captionCount / ${images.length} captions'),
+              if (activeCategory != null) ...<TextSpan>[
+                const TextSpan(text: ' ('),
+                TextSpan(
+                  text: activeCategory,
+                  style: TextStyle(
+                    color: lightPink,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const TextSpan(text: ')'),
+              ],
+            ],
+          ),
         ),
       ],
     );

@@ -39,12 +39,12 @@ void main() {
     });
 
     group('resizeImageIfNecessary - Configuration', () {
-      test('should have correct max file size limit (2MB)', () {
-        expect(ImageUtils.maxFileSize, equals(2 * 1024 * 1024));
+      test('should have correct max file size limit (1MB)', () {
+        expect(ImageUtils.maxFileSize, equals(1 * 1024 * 1024));
       });
 
-      test('should have correct max dimension limit (2048px)', () {
-        expect(ImageUtils.maxDimension, equals(2048));
+      test('should have correct max dimension limit (1024px)', () {
+        expect(ImageUtils.maxDimension, equals(1024));
       });
     });
 

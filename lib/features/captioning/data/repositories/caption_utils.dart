@@ -1,6 +1,9 @@
 import 'dart:io';
+
 import 'package:path/path.dart' as p;
+
 import '../../../image_list/data/models/app_image.dart';
+import '../models/caption_entry.dart';
 
 /// A utility class for caption-related operations.
 ///
@@ -24,8 +27,18 @@ class CaptionUtils {
         final File captionFile = File(captionPath);
         final String newCaption = image.caption.replaceAll(search, replace);
         captionFile.writeAsStringSync(newCaption);
+
+        // Update the caption in the first (active) category
+        final Map<String, CaptionEntry> updatedCaptions =
+            Map<String, CaptionEntry>.from(image.captions);
+        if (updatedCaptions.isNotEmpty) {
+          final String activeCategory = updatedCaptions.keys.first;
+          updatedCaptions[activeCategory] = updatedCaptions[activeCategory]!
+              .copyWith(text: newCaption);
+        }
+
         updatedImages.add(
-          image.copyWith(caption: newCaption, isCaptionEdited: true),
+          image.copyWith(captions: updatedCaptions, isCaptionEdited: true),
         );
       } else {
         updatedImages.add(image);

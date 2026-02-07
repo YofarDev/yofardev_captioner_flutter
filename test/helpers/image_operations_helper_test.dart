@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_data.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
@@ -40,7 +41,10 @@ void main() {
     setUp(() async {
       mockImageListCubit = MockImageListCubit();
       mockAppFileUtils = MockAppFileUtils();
-      inMemoryDb = CaptionDatabase(images: <CaptionData>[]);
+      inMemoryDb = CaptionDatabase(
+        categories: <String>['default'],
+        images: <CaptionData>[],
+      );
 
       // Mock natural sort comparison to behave like standard string comparison for tests
       when(mockAppFileUtils.compareNatural(any, any)).thenAnswer((
@@ -115,17 +119,23 @@ void main() {
           AppImage(
             id: const Uuid().v4(),
             image: imageCFile,
-            caption: await captionCFile.readAsString(),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await captionCFile.readAsString()),
+            },
           ),
           AppImage(
             id: const Uuid().v4(),
             image: imageAFile,
-            caption: await captionAFile.readAsString(),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await captionAFile.readAsString()),
+            },
           ),
           AppImage(
             id: const Uuid().v4(),
             image: imageBFile,
-            caption: await captionBFile.readAsString(),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await captionBFile.readAsString()),
+            },
           ),
         ];
 
@@ -206,9 +216,27 @@ void main() {
           ..createSync();
 
         final List<AppImage> initialImages = <AppImage>[
-          AppImage(id: const Uuid().v4(), image: image1, caption: 'Caption C'),
-          AppImage(id: const Uuid().v4(), image: image2, caption: 'Caption A'),
-          AppImage(id: const Uuid().v4(), image: image3, caption: 'Caption B'),
+          AppImage(
+            id: const Uuid().v4(),
+            image: image1,
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption C'),
+            },
+          ),
+          AppImage(
+            id: const Uuid().v4(),
+            image: image2,
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption A'),
+            },
+          ),
+          AppImage(
+            id: const Uuid().v4(),
+            image: image3,
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption B'),
+            },
+          ),
         ];
 
         when(mockImageListCubit.state).thenReturn(

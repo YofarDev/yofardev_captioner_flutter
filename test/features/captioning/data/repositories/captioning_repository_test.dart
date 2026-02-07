@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
@@ -35,7 +36,9 @@ void main() {
       final AppImage appImage = AppImage(
         id: 'test-id',
         image: testImage,
-        caption: 'test caption',
+        captions: const <String, CaptionEntry>{
+          'default': CaptionEntry(text: 'test caption'),
+        },
         size: 1024,
         width: 1920,
         height: 1080,

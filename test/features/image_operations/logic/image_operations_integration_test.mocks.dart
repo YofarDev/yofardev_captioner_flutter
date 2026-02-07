@@ -248,6 +248,36 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i5.Future<void>);
 
   @override
+  void addCategory(String? name) => super.noSuchMethod(
+    Invocation.method(#addCategory, [name]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void removeCategory(String? name) => super.noSuchMethod(
+    Invocation.method(#removeCategory, [name]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void renameCategory(String? oldName, String? newName) => super.noSuchMethod(
+    Invocation.method(#renameCategory, [oldName, newName]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void setActiveCategory(String? name) => super.noSuchMethod(
+    Invocation.method(#setActiveCategory, [name]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void reorderCategories(int? oldIndex, int? newIndex) => super.noSuchMethod(
+    Invocation.method(#reorderCategories, [oldIndex, newIndex]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void emit(_i2.ImageListState? state) => super.noSuchMethod(
     Invocation.method(#emit, [state]),
     returnValueForMissingStub: null,
@@ -338,9 +368,10 @@ class MockAppFileUtils extends _i1.Mock implements _i7.AppFileUtils {
   _i5.Future<void> exportAsArchive(
     String? folderPath,
     List<_i4.AppImage>? images,
+    String? category,
   ) =>
       (super.noSuchMethod(
-            Invocation.method(#exportAsArchive, [folderPath, images]),
+            Invocation.method(#exportAsArchive, [folderPath, images, category]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

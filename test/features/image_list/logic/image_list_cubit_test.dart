@@ -7,6 +7,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
@@ -38,7 +39,7 @@ void main() {
     final AppImage testImage = AppImage(
       id: const Uuid().v4(),
       image: File('test/test_resources/test_image.jpg'),
-      caption: 'test caption',
+      captions: const <String, CaptionEntry>{},
       size: 123,
     );
 
@@ -152,7 +153,7 @@ void main() {
         final AppImage duplicatedImage = AppImage(
           id: 'duplicated-id',
           image: File('test/test_resources/test_image_copy.jpg'),
-          caption: 'test caption',
+          captions: const <String, CaptionEntry>{},
           size: 123,
         );
         when(

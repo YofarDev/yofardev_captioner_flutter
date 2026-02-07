@@ -7,6 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
@@ -68,17 +69,23 @@ void main() {
           AppImage(
             id: const Uuid().v4(),
             image: imageFile1,
-            caption: 'Caption C',
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption C'),
+            },
           ),
           AppImage(
             id: const Uuid().v4(),
             image: imageFile2,
-            caption: 'Caption A',
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption A'),
+            },
           ),
           AppImage(
             id: const Uuid().v4(),
             image: imageFile3,
-            caption: 'Caption B',
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'Caption B'),
+            },
           ),
         ];
 

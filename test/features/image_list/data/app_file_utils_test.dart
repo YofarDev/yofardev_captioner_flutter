@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 
@@ -51,99 +52,78 @@ void main() {
       );
     });
 
-    test(
-      'duplicateImage should copy both image and caption file with _copy suffix',
-      () async {
-        // 1. Create original image file with content
-        final File originalImageFile = File(
-          p.join(tempDir.path, 'test_image.jpg'),
-        );
-        await originalImageFile.writeAsBytes(<int>[1, 2, 3, 4, 5]);
+    test('duplicateImage should copy image file with _copy suffix', () async {
+      // 1. Create original image file with content
+      final File originalImageFile = File(
+        p.join(tempDir.path, 'test_image.jpg'),
+      );
+      await originalImageFile.writeAsBytes(<int>[1, 2, 3, 4, 5]);
 
-        // 2. Create original caption file with content
-        final File originalCaptionFile = File(
-          p.join(tempDir.path, 'test_image.txt'),
-        );
-        const String originalCaption = 'Test caption content';
-        await originalCaptionFile.writeAsString(originalCaption);
+      // 2. Create AppImage with caption in database (not .txt file)
+      const String originalCaption = 'Test caption content';
+      final AppImage originalImage = AppImage(
+        id: 'original-id',
+        image: originalImageFile,
+        captions: const <String, CaptionEntry>{
+          'default': CaptionEntry(text: originalCaption),
+        },
+        size: await originalImageFile.length(),
+        captionModel: 'test-model',
+        captionTimestamp: DateTime(2025),
+      );
 
-        // 3. Create AppImage
-        final AppImage originalImage = AppImage(
-          id: 'original-id',
-          image: originalImageFile,
-          caption: originalCaption,
-          size: await originalImageFile.length(),
-          captionModel: 'test-model',
-          captionTimestamp: DateTime(2025),
-        );
+      // 3. Duplicate the image
+      final AppImage duplicatedImage = await appFileUtils.duplicateImage(
+        originalImage,
+      );
 
-        // 4. Duplicate the image
-        final AppImage duplicatedImage = await appFileUtils.duplicateImage(
-          originalImage,
-        );
+      // 4. Verify duplicated image file exists
+      final File duplicatedImageFile = File(
+        p.join(tempDir.path, 'test_image_copy.jpg'),
+      );
+      expect(
+        await duplicatedImageFile.exists(),
+        isTrue,
+        reason: 'Duplicated image file should exist',
+      );
 
-        // 5. Verify duplicated image file exists
-        final File duplicatedImageFile = File(
-          p.join(tempDir.path, 'test_image_copy.jpg'),
-        );
-        expect(
-          await duplicatedImageFile.exists(),
-          isTrue,
-          reason: 'Duplicated image file should exist',
-        );
+      // 5. Verify duplicated image file has same content
+      expect(
+        await duplicatedImageFile.readAsBytes(),
+        <int>[1, 2, 3, 4, 5],
+        reason: 'Duplicated image should have same content',
+      );
 
-        // 6. Verify duplicated image file has same content
-        expect(
-          await duplicatedImageFile.readAsBytes(),
-          <int>[1, 2, 3, 4, 5],
-          reason: 'Duplicated image should have same content',
-        );
+      // Note: With multi-category system, captions are stored in db.json,
+      // not in individual .txt files, so we don't check for .txt file copying
 
-        // 7. Verify duplicated caption file exists
-        final File duplicatedCaptionFile = File(
-          p.join(tempDir.path, 'test_image_copy.txt'),
-        );
-        expect(
-          await duplicatedCaptionFile.exists(),
-          isTrue,
-          reason: 'Duplicated caption file should exist',
-        );
-
-        // 8. Verify duplicated caption has same content
-        expect(
-          await duplicatedCaptionFile.readAsString(),
-          originalCaption,
-          reason: 'Duplicated caption should have same content',
-        );
-
-        // 9. Verify duplicated AppImage has correct properties
-        expect(
-          duplicatedImage.id,
-          isNot(equals(originalImage.id)),
-          reason: 'Duplicated image should have new ID',
-        );
-        expect(
-          duplicatedImage.caption,
-          equals(originalCaption),
-          reason: 'Duplicated image should have same caption',
-        );
-        expect(
-          duplicatedImage.captionModel,
-          equals('test-model'),
-          reason: 'Duplicated image should preserve caption model',
-        );
-        expect(
-          duplicatedImage.captionTimestamp,
-          equals(DateTime(2025)),
-          reason: 'Duplicated image should preserve caption timestamp',
-        );
-        expect(
-          duplicatedImage.lastModified,
-          isNotNull,
-          reason: 'Duplicated image should have last modified timestamp',
-        );
-      },
-    );
+      // 6. Verify duplicated AppImage has correct properties
+      expect(
+        duplicatedImage.id,
+        isNot(equals(originalImage.id)),
+        reason: 'Duplicated image should have new ID',
+      );
+      expect(
+        duplicatedImage.caption,
+        equals(originalCaption),
+        reason: 'Duplicated image should have same caption',
+      );
+      expect(
+        duplicatedImage.captionModel,
+        equals('test-model'),
+        reason: 'Duplicated image should preserve caption model',
+      );
+      expect(
+        duplicatedImage.captionTimestamp,
+        equals(DateTime(2025)),
+        reason: 'Duplicated image should preserve caption timestamp',
+      );
+      expect(
+        duplicatedImage.lastModified,
+        isNotNull,
+        reason: 'Duplicated image should have last modified timestamp',
+      );
+    });
 
     test(
       'duplicateImage should handle duplicate filenames by adding number suffix',
@@ -164,7 +144,7 @@ void main() {
         final AppImage originalImage = AppImage(
           id: 'original-id',
           image: originalImageFile,
-          caption: '',
+          captions: const <String, CaptionEntry>{},
         );
         final AppImage duplicatedImage = await appFileUtils.duplicateImage(
           originalImage,
@@ -200,7 +180,7 @@ void main() {
         final AppImage originalImage = AppImage(
           id: 'original-id',
           image: originalImageFile,
-          caption: '',
+          captions: const <String, CaptionEntry>{},
         );
 
         // 3. Duplicate the image

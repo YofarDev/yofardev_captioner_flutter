@@ -4,6 +4,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/captioning/logic/captioning_cubit.dart';
@@ -40,12 +41,12 @@ void main() {
         final AppImage image1 = AppImage(
           id: '1',
           image: File('path/to/img1.jpg'),
-          caption: '',
+          captions: const <String, CaptionEntry>{},
         );
         final AppImage image2 = AppImage(
           id: '2',
           image: File('path/to/img2.jpg'),
-          caption: '',
+          captions: const <String, CaptionEntry>{},
         );
         final List<AppImage> images = <AppImage>[image1, image2];
         final LlmConfig llmConfig = LlmConfig(

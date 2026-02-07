@@ -95,7 +95,7 @@ class AppFileUtils {
     final List<CaptionData> migratedImages = <CaptionData>[];
 
     for (final dynamic img in oldImages) {
-      final String filename = img['filename'] as String;
+      final String filename = ( img as Map<String, dynamic>)['filename'] as String;
       final String id = img['id'] as String;
 
       // Read caption from .txt file

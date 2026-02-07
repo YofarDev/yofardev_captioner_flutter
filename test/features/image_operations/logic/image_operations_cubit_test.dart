@@ -2,6 +2,7 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/logic/image_operations_cubit.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
@@ -48,7 +49,11 @@ void main() {
         when(mockImageListCubit.state).thenReturn(const ImageListState());
       },
       build: () => imageOperationsCubit,
-      act: (ImageOperationsCubit cubit) => cubit.exportAsArchive(),
+      act: (ImageOperationsCubit cubit) => cubit.exportAsArchive(
+        '/fake/path',
+        <AppImage>[],
+        'default',
+      ),
       expect: () =>
           <ImageOperationsState>[], // No state emitted when folder is null
     );

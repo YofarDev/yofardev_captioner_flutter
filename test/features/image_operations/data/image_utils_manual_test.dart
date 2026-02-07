@@ -8,20 +8,20 @@ void main() {
   group('ImageUtils Manual Tests', () {
     test('Configuration values are correct', () {
       // Verify constants are set as expected
-      expect(ImageUtils.maxFileSize, equals(2 * 1024 * 1024));
-      expect(ImageUtils.maxDimension, equals(2048));
+      expect(ImageUtils.maxFileSize, equals(1 * 1024 * 1024));
+      expect(ImageUtils.maxDimension, equals(1024));
     });
 
     test('Calculate aspect ratio preservation', () {
       // Test that aspect ratio calculations are correct
-      const int maxDim = 2048;
+      const int maxDim = 1024;
 
       // Landscape: width is constrained
       const int originalWidth = 4000;
       const int originalHeight = 3000;
       final int expectedHeight = ((maxDim * originalHeight) / originalWidth)
           .round();
-      expect(expectedHeight, equals(1536));
+      expect(expectedHeight, equals(768));
 
       // Verify aspect ratio is maintained
       const double originalAspect = originalWidth / originalHeight;
@@ -30,14 +30,14 @@ void main() {
     });
 
     test('Portrait image calculations', () {
-      const int maxDim = 2048;
+      const int maxDim = 1024;
       const int originalWidth = 2000;
       const int originalHeight = 5000;
 
       // Portrait: height is constrained
       final int expectedWidth = ((maxDim * originalWidth) / originalHeight)
           .round();
-      expect(expectedWidth, equals(819));
+      expect(expectedWidth, equals(410));
 
       // Verify aspect ratio is maintained
       const double originalAspect = originalWidth / originalHeight;
@@ -46,11 +46,11 @@ void main() {
     });
 
     test('Square image calculations', () {
-      const int maxDim = 2048;
+      const int maxDim = 1024;
 
       // Square: both dimensions should equal maxDim
-      expect(maxDim, equals(2048));
-      expect(maxDim, equals(2048));
+      expect(maxDim, equals(1024));
+      expect(maxDim, equals(1024));
     });
 
     test('Target dimension calculation logic', () {

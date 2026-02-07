@@ -9,7 +9,7 @@ void main() {
         const MaterialApp(home: Scaffold(body: ExportButton())),
       );
 
-      expect(find.text('💾  Export as Archive'), findsOneWidget);
+      expect(find.text('Export as Archive'), findsOneWidget);
     });
 
     testWidgets('should have correct button styling', (

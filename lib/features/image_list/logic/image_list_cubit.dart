@@ -1,13 +1,10 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
-import 'package:window_manager/window_manager.dart';
 
 import '../../../../core/utils/extensions.dart';
-import '../../../core/services/cache_service.dart';
 import '../../../features/image_operations/data/utils/image_utils.dart';
 import '../../captioning/data/models/caption_data.dart';
 import '../../captioning/data/models/caption_database.dart';
@@ -18,10 +15,6 @@ import '../data/repositories/app_file_utils.dart';
 part 'image_list_state.dart';
 
 class ImageListCubit extends Cubit<ImageListState> {
-  static const MethodChannel _channel = MethodChannel(
-    'dev.yofardev.io/open_file',
-  );
-
   ImageListCubit({AppFileUtils? fileUtils})
     : _fileUtils = fileUtils ?? AppFileUtils(),
       super(const ImageListState());
@@ -62,21 +55,12 @@ class ImageListCubit extends Cubit<ImageListState> {
     return displayed[state.currentIndex];
   }
 
-  Future<void> onInit({bool skipLoadLastSession = false}) async {
-    if (skipLoadLastSession) {
-      // Don't load the previous session folder if the app was launched with a file
-      return;
-    }
-
-    final String? path = await CacheService.loadFolderPath();
-    if (path != null) {
-      // Small delay to ensure window is ready (fixes startup timing issue)
-      await Future<void>.delayed(const Duration(milliseconds: 150));
-      await onFolderPicked(path).catchError((Object error) {
-        // Clear state if folder no longer exists
-        emit(const ImageListState());
-      });
-    }
+  Future<void> onInit({String? folderPath}) async {
+    if (folderPath == null) return;
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    await onFolderPicked(folderPath).catchError((Object error) {
+      emit(const ImageListState());
+    });
   }
 
   Future<void> onFolderPicked(String folderPath, {bool force = false}) async {
@@ -97,8 +81,6 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     try {
-      CacheService.saveFolderPath(folderPath);
-
       final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
 
       // Load database to get categories
@@ -108,28 +90,16 @@ class ImageListCubit extends Cubit<ImageListState> {
         return;
       }
 
-      emit(state.copyWith(
-        images: images,
-        categories: db.categories,
-        activeCategory: db.activeCategory ?? 'default',
-      ));
-
-      // Set window title with category if not default
-      final String activeCategory = db.activeCategory ?? 'default';
-      final String newTitle = activeCategory == 'default'
-          ? 'Yofardev Captioner ➡️ "$folderPath"'
-          : 'Yofardev Captioner ➡️ "$folderPath" [$activeCategory]';
-
-      // Use native method to set window title (works better on macOS)
-      try {
-        await _channel.invokeMethod('setWindowTitle', newTitle);
-      } catch (e) {
-        await windowManager.setTitle(newTitle);
-      }
+      emit(
+        state.copyWith(
+          images: images,
+          categories: db.categories,
+          activeCategory: db.activeCategory ?? 'default',
+        ),
+      );
     } catch (e) {
       // Clear state if folder couldn't be loaded (e.g., folder was removed)
       emit(const ImageListState());
-      windowManager.setTitle('Yofardev Captioner');
       return;
     }
 
@@ -187,13 +157,11 @@ class ImageListCubit extends Cubit<ImageListState> {
       case SortBy.size:
         images.sort((AppImage a, AppImage b) => b.size.compareTo(a.size));
       case SortBy.caption:
-        images.sort(
-          (AppImage a, AppImage b) {
-            final String captionA = a.captions[category]?.text ?? '';
-            final String captionB = b.captions[category]?.text ?? '';
-            return _getWordCount(captionB).compareTo(_getWordCount(captionA));
-          },
-        );
+        images.sort((AppImage a, AppImage b) {
+          final String captionA = a.captions[category]?.text ?? '';
+          final String captionB = b.captions[category]?.text ?? '';
+          return _getWordCount(captionB).compareTo(_getWordCount(captionA));
+        });
     }
     if (!sortAscending) {
       final List<AppImage> reversed = images.reversed.toList();
@@ -268,7 +236,8 @@ class ImageListCubit extends Cubit<ImageListState> {
       if (caption.contains(search)) {
         wasModified = true;
         final String newCaption = caption.replaceAll(search, replace);
-        final Map<String, CaptionEntry> updatedCaptions = Map<String, CaptionEntry>.from(image.captions);
+        final Map<String, CaptionEntry> updatedCaptions =
+            Map<String, CaptionEntry>.from(image.captions);
         updatedCaptions[category] = CaptionEntry(
           text: newCaption,
           model: image.captions[category]?.model,
@@ -322,7 +291,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     if (originalImage == null) return;
 
     final String category = state.activeCategory ?? 'default';
-    final Map<String, CaptionEntry> updatedCaptions = Map<String, CaptionEntry>.from(originalImage.captions);
+    final Map<String, CaptionEntry> updatedCaptions =
+        Map<String, CaptionEntry>.from(originalImage.captions);
 
     // Get existing entry or create new one
     final CaptionEntry? existingEntry = updatedCaptions[category];
@@ -436,8 +406,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     final String category = state.activeCategory ?? 'default';
 
     final List<AppImage> imagesWithCaptions = state.images
-        .where((AppImage image) =>
-            (image.captions[category]?.text ?? '').isNotEmpty)
+        .where(
+          (AppImage image) => (image.captions[category]?.text ?? '').isNotEmpty,
+        )
         .toList();
 
     if (imagesWithCaptions.isEmpty) {
@@ -447,7 +418,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     int totalWords = 0;
     for (final AppImage image in imagesWithCaptions) {
       final String text = image.captions[category]?.text ?? '';
-      totalWords += text.split(RegExp(r'\s+'))
+      totalWords += text
+          .split(RegExp(r'\s+'))
           .where((String s) => s.isNotEmpty)
           .length;
     }
@@ -494,7 +466,8 @@ class ImageListCubit extends Cubit<ImageListState> {
       return; // Already exists
     }
 
-    final List<String> updatedCategories = List<String>.from(state.categories)..add(name);
+    final List<String> updatedCategories = List<String>.from(state.categories)
+      ..add(name);
     emit(state.copyWith(categories: updatedCategories));
 
     await _saveDb();
@@ -505,15 +478,18 @@ class ImageListCubit extends Cubit<ImageListState> {
       return; // Must have at least one category
     }
 
-    final List<String> updatedCategories = List<String>.from(state.categories)..remove(name);
+    final List<String> updatedCategories = List<String>.from(state.categories)
+      ..remove(name);
     final String? newActiveCategory = state.activeCategory == name
         ? updatedCategories.first
         : state.activeCategory;
 
-    emit(state.copyWith(
-      categories: updatedCategories,
-      activeCategory: newActiveCategory,
-    ));
+    emit(
+      state.copyWith(
+        categories: updatedCategories,
+        activeCategory: newActiveCategory,
+      ),
+    );
 
     await _saveDb();
   }
@@ -528,8 +504,11 @@ class ImageListCubit extends Cubit<ImageListState> {
     updatedCategories[index] = newName;
 
     // Update all images to rename the category key
-    final List<AppImage> updatedImages = state.images.map<AppImage>((AppImage img) {
-      final Map<String, CaptionEntry> newCaptions = Map<String, CaptionEntry>.from(img.captions);
+    final List<AppImage> updatedImages = state.images.map<AppImage>((
+      AppImage img,
+    ) {
+      final Map<String, CaptionEntry> newCaptions =
+          Map<String, CaptionEntry>.from(img.captions);
       if (newCaptions.containsKey(oldName)) {
         newCaptions[newName] = newCaptions.remove(oldName)!;
       }
@@ -540,11 +519,13 @@ class ImageListCubit extends Cubit<ImageListState> {
         ? newName
         : state.activeCategory;
 
-    emit(state.copyWith(
-      categories: updatedCategories,
-      activeCategory: newActiveCategory,
-      images: updatedImages,
-    ));
+    emit(
+      state.copyWith(
+        categories: updatedCategories,
+        activeCategory: newActiveCategory,
+        images: updatedImages,
+      ),
+    );
 
     await _saveDb();
   }
@@ -554,23 +535,6 @@ class ImageListCubit extends Cubit<ImageListState> {
       return;
     }
     emit(state.copyWith(activeCategory: name));
-
-    // Update window title with new category
-    if (state.folderPath != null) {
-      _updateWindowTitle(state.folderPath!, name);
-    }
-  }
-
-  Future<void> _updateWindowTitle(String folderPath, String category) async {
-    final String newTitle = category == 'default'
-        ? 'Yofardev Captioner ➡️ "$folderPath"'
-        : 'Yofardev Captioner ➡️ "$folderPath" [$category]';
-
-    try {
-      await _channel.invokeMethod('setWindowTitle', newTitle);
-    } catch (e) {
-      await windowManager.setTitle(newTitle);
-    }
   }
 
   void reorderCategories(int oldIndex, int newIndex) async {

@@ -35,4 +35,27 @@ class CacheService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove(folderPath);
   }
+
+  static const String _tabPathsKey = 'tabPaths';
+  static const String _activeTabIndexKey = 'activeTabIndex';
+
+  static Future<void> saveTabPaths(List<String> paths) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_tabPathsKey, paths);
+  }
+
+  static Future<List<String>> loadTabPaths() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getStringList(_tabPathsKey) ?? <String>[];
+  }
+
+  static Future<void> saveActiveTabIndex(int index) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_activeTabIndexKey, index);
+  }
+
+  static Future<int> loadActiveTabIndex() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_activeTabIndexKey) ?? 0;
+  }
 }

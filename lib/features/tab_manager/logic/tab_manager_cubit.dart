@@ -1,23 +1,36 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../image_list/logic/image_list_cubit.dart';
 import '../data/models/app_tab.dart';
 
 part 'tab_manager_state.dart';
 
 class TabManagerCubit extends Cubit<TabManagerState> {
   TabManagerCubit()
-      : super(const TabManagerState(tabs: <AppTab>[
-          AppTab(id: 'default', displayName: 'New Tab'),
-        ]));
+    : super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')]));
+
+  final Map<String, ImageListCubit> _tabCubits = <String, ImageListCubit>{};
+
+  void registerTabCubit(String tabId, ImageListCubit cubit) {
+    _tabCubits[tabId] = cubit;
+  }
+
+  void unregisterTabCubit(String tabId) {
+    _tabCubits.remove(tabId);
+  }
+
+  ImageListCubit? getCubitForTab(String tabId) => _tabCubits[tabId];
 
   void addTab(String? folderPath) {
     final String tabId = 'tab_${DateTime.now().millisecondsSinceEpoch}';
     final List<AppTab> newTabs = List<AppTab>.from(state.tabs)
-      ..add(AppTab(
-        id: tabId,
-        folderPath: folderPath,
-        displayName: folderPath?.split('/').last ?? 'New Tab',
-      ));
+      ..add(
+        AppTab(
+          id: tabId,
+          folderPath: folderPath,
+          displayName: folderPath?.split('/').last ?? 'New Tab',
+        ),
+      );
     emit(state.copyWith(tabs: newTabs, activeTabIndex: newTabs.length - 1));
   }
 

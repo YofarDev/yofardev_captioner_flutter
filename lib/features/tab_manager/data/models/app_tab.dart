@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 class AppTab extends Equatable {
+  /// Unique identifier. Generated via timestamp or UUID.
   final String id;
   final String? folderPath;
   final String displayName;

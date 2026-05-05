@@ -42,6 +42,13 @@ void main() {
       expect(tab.props, equals(<Object?>['a', '/photos', 'Photos']));
     });
 
+    test('clearFolderPath takes precedence over folderPath', () {
+      const AppTab tab = AppTab(id: 'a', folderPath: '/old');
+      final AppTab result = tab.copyWith(folderPath: '/new', clearFolderPath: true);
+
+      expect(result.folderPath, isNull);
+    });
+
     test('defaults displayName to New Tab', () {
       const AppTab tab = AppTab(id: 'a');
 

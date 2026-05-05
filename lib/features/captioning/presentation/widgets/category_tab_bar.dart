@@ -84,139 +84,159 @@ class CategoryTabBar extends StatelessWidget {
   }
 
   void _showAddCategoryDialog(BuildContext context) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     final TextEditingController controller = TextEditingController();
     showDialog(
       context: context,
-      builder: (BuildContext context) => _CategoryDialog(
-        title: 'Add Category',
-        hintText: 'Category name',
-        controller: controller,
-        confirmText: 'Add',
-        onConfirm: () {
-          if (controller.text.trim().isNotEmpty) {
-            context.read<ImageListCubit>().addCategory(controller.text.trim());
-          }
-        },
+      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
+        value: imageListCubit,
+        child: _CategoryDialog(
+          title: 'Add Category',
+          hintText: 'Category name',
+          controller: controller,
+          confirmText: 'Add',
+          onConfirm: () {
+            if (controller.text.trim().isNotEmpty) {
+              context.read<ImageListCubit>().addCategory(
+                controller.text.trim(),
+              );
+            }
+          },
+        ),
       ),
     );
   }
 
   void _showCategoryOptions(BuildContext context, String category) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     showModalBottomSheet(
       context: context,
       backgroundColor: darkGrey,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (BuildContext context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const SizedBox(height: 8),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(50),
-                borderRadius: BorderRadius.circular(2),
+      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
+        value: imageListCubit,
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(50),
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: Colors.white),
-              title: const Text(
-                'Rename category',
-                style: TextStyle(color: Colors.white),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: Colors.white),
+                title: const Text(
+                  'Rename category',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showRenameDialog(context, category);
+                },
               ),
-              onTap: () {
-                Navigator.pop(context);
-                _showRenameDialog(context, category);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.delete_outline,
-                color: Colors.redAccent,
+              ListTile(
+                leading: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                ),
+                title: const Text(
+                  'Delete category',
+                  style: TextStyle(color: Colors.redAccent),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteDialog(context, category);
+                },
               ),
-              title: const Text(
-                'Delete category',
-                style: TextStyle(color: Colors.redAccent),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteDialog(context, category);
-              },
-            ),
-            const SizedBox(height: 16),
-          ],
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
     );
   }
 
   void _showRenameDialog(BuildContext context, String category) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     final TextEditingController controller = TextEditingController(
       text: category,
     );
     showDialog(
       context: context,
-      builder: (BuildContext context) => _CategoryDialog(
-        title: 'Rename Category',
-        hintText: 'New name',
-        controller: controller,
-        confirmText: 'Rename',
-        onConfirm: () {
-          if (controller.text.trim().isNotEmpty) {
-            context.read<ImageListCubit>().renameCategory(
-              category,
-              controller.text.trim(),
-            );
-          }
-        },
+      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
+        value: imageListCubit,
+        child: _CategoryDialog(
+          title: 'Rename Category',
+          hintText: 'New name',
+          controller: controller,
+          confirmText: 'Rename',
+          onConfirm: () {
+            if (controller.text.trim().isNotEmpty) {
+              context.read<ImageListCubit>().renameCategory(
+                category,
+                controller.text.trim(),
+              );
+            }
+          },
+        ),
       ),
     );
   }
 
   void _showDeleteDialog(BuildContext context, String category) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     showDialog(
       context: context,
-      builder: (BuildContext context) => AlertDialog(
-        backgroundColor: darkGrey,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        title: const Text(
-          'Delete Category',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Delete "$category"? All captions in this category will be lost.',
-          style: const TextStyle(color: Colors.white70),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white.withAlpha(150)),
-            ),
+      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
+        value: imageListCubit,
+        child: AlertDialog(
+          backgroundColor: darkGrey,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          ElevatedButton(
-            onPressed: () {
-              context.read<ImageListCubit>().removeCategory(category);
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+          title: const Text(
+            'Delete Category',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Delete "$category"? All captions in this category will be lost.',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white.withAlpha(150)),
               ),
             ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            ElevatedButton(
+              onPressed: () {
+                context.read<ImageListCubit>().removeCategory(category);
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

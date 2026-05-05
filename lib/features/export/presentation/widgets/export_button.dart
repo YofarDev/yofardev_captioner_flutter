@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nested/nested.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
@@ -23,9 +24,18 @@ class ExportButton extends StatelessWidget {
   }
 
   void _showExportDialog(BuildContext context) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
+    final ImageOperationsCubit imageOperationsCubit = context
+        .read<ImageOperationsCubit>();
     showDialog(
       context: context,
-      builder: (BuildContext context) => const _ExportCategoryDialog(),
+      builder: (BuildContext context) => MultiBlocProvider(
+        providers: <SingleChildWidget>[
+          BlocProvider<ImageListCubit>.value(value: imageListCubit),
+          BlocProvider<ImageOperationsCubit>.value(value: imageOperationsCubit),
+        ],
+        child: const _ExportCategoryDialog(),
+      ),
     );
   }
 }

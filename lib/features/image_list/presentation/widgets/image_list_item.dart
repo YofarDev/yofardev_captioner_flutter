@@ -164,31 +164,36 @@ class _ImageListItemState extends State<ImageListItem> {
                           color: widget.isSelected ? lightPink : Colors.white70,
                         ),
                         onTap: () {
+                          final ImageListCubit imageListCubit = context
+                              .read<ImageListCubit>();
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Remove Image'),
-                                content: const Text(
-                                  'Are you sure you want to remove this image and its caption?',
+                              return BlocProvider<ImageListCubit>.value(
+                                value: imageListCubit,
+                                child: AlertDialog(
+                                  title: const Text('Remove Image'),
+                                  content: const Text(
+                                    'Are you sure you want to remove this image and its caption?',
+                                  ),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      child: const Text('Cancel'),
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                    TextButton(
+                                      child: const Text('Remove'),
+                                      onPressed: () {
+                                        context
+                                            .read<ImageListCubit>()
+                                            .removeImage(widget.index);
+                                        Navigator.of(context).pop();
+                                      },
+                                    ),
+                                  ],
                                 ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    child: const Text('Cancel'),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: const Text('Remove'),
-                                    onPressed: () {
-                                      context
-                                          .read<ImageListCubit>()
-                                          .removeImage(widget.index);
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
                               );
                             },
                           );

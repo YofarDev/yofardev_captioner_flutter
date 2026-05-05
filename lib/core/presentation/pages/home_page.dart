@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../core/services/cache_service.dart';
 import '../../../features/image_list/logic/image_list_cubit.dart';
 import '../../../features/tab_manager/data/models/app_tab.dart';
 import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
@@ -48,12 +49,52 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initTabs() async {
     final TabManagerCubit tabManager = context.read<TabManagerCubit>();
-    final String tabId = tabManager.state.activeTab.id;
-    // Wait for TabContent to register its cubit
+    final List<String> savedPaths = await CacheService.loadTabPaths();
+
+    // Wait for initial TabContent to register its cubit
     await Future<void>.delayed(const Duration(milliseconds: 100));
-    final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
-    if (cubit != null) {
-      cubit.onInit();
+
+    if (savedPaths.isEmpty) {
+      // No saved tabs — try loading last folder into default tab
+      final String tabId = tabManager.state.activeTab.id;
+      final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
+      if (cubit != null) {
+        final String? lastPath = await CacheService.loadFolderPath();
+        if (lastPath != null) {
+          tabManager.updateTabFolderPath(tabId, lastPath);
+          cubit.onInit(folderPath: lastPath);
+        }
+      }
+      return;
+    }
+
+    // Restore saved tabs
+    final int savedIndex = await CacheService.loadActiveTabIndex();
+
+    // Load first tab into the default empty tab
+    final String defaultTabId = tabManager.state.activeTab.id;
+    final ImageListCubit? defaultCubit = tabManager.getCubitForTab(
+      defaultTabId,
+    );
+    if (defaultCubit != null && savedPaths.isNotEmpty) {
+      tabManager.updateTabFolderPath(defaultTabId, savedPaths.first);
+      defaultCubit.onInit(folderPath: savedPaths.first);
+    }
+
+    // Create additional tabs for remaining paths
+    for (int i = 1; i < savedPaths.length; i++) {
+      tabManager.addTab(savedPaths[i]);
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      final String newTabId = tabManager.activeTabId;
+      final ImageListCubit? cubit = tabManager.getCubitForTab(newTabId);
+      if (cubit != null) {
+        cubit.onInit(folderPath: savedPaths[i]);
+      }
+    }
+
+    // Restore active tab index
+    if (savedIndex < savedPaths.length) {
+      tabManager.switchTab(savedIndex);
     }
   }
 
@@ -68,9 +109,18 @@ class _HomePageState extends State<HomePage> {
       if (cubit != null) {
         cubit.onFileOpened(filePath);
       }
+      return;
+    }
+
+    final AppTab activeTab = tabManager.state.activeTab;
+    if (activeTab.folderPath == null) {
+      tabManager.updateTabFolderPath(activeTab.id, folderPath);
+      final ImageListCubit? cubit = tabManager.getCubitForTab(activeTab.id);
+      if (cubit != null) {
+        cubit.onFileOpened(filePath);
+      }
     } else {
       tabManager.addTab(folderPath);
-      // Wait for new TabContent to register
       Future<void>.delayed(const Duration(milliseconds: 100), () {
         final ImageListCubit? cubit = tabManager.getCubitForTab(
           tabManager.activeTabId,

@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yofardev_captioner/core/services/cache_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
 import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -209,6 +211,123 @@ void main() {
       test('returns id of active tab', () {
         expect(cubit.activeTabId, 'default');
       });
+    });
+  });
+
+  group('cubit registry', () {
+    late TabManagerCubit cubit;
+
+    setUp(() {
+      cubit = TabManagerCubit();
+    });
+
+    tearDown(() {
+      // Close any registered ImageListCubits to prevent resource leaks
+      for (final ImageListCubit imageCubit
+          in cubit.state.tabs
+              .map((AppTab t) => cubit.getCubitForTab(t.id))
+              .whereType<ImageListCubit>()) {
+        imageCubit.close();
+      }
+      cubit.close();
+    });
+
+    test('registerTabCubit stores cubit for tab id', () {
+      final ImageListCubit imageCubit = ImageListCubit();
+
+      cubit.registerTabCubit('tab_a', imageCubit);
+
+      expect(cubit.getCubitForTab('tab_a'), same(imageCubit));
+
+      imageCubit.close();
+    });
+
+    test('unregisterTabCubit removes cubit', () {
+      final ImageListCubit imageCubit = ImageListCubit();
+      cubit.registerTabCubit('tab_a', imageCubit);
+
+      cubit.unregisterTabCubit('tab_a');
+
+      expect(cubit.getCubitForTab('tab_a'), isNull);
+
+      imageCubit.close();
+    });
+
+    test('getCubitForTab returns null for unregistered tab', () {
+      expect(cubit.getCubitForTab('nonexistent'), isNull);
+    });
+
+    test('registerTabCubit overwrites existing registration', () {
+      final ImageListCubit firstCubit = ImageListCubit();
+      final ImageListCubit secondCubit = ImageListCubit();
+
+      cubit.registerTabCubit('tab_a', firstCubit);
+      cubit.registerTabCubit('tab_a', secondCubit);
+
+      expect(cubit.getCubitForTab('tab_a'), same(secondCubit));
+      expect(cubit.getCubitForTab('tab_a'), isNot(same(firstCubit)));
+
+      firstCubit.close();
+      secondCubit.close();
+    });
+  });
+
+  group('persistence', () {
+    late TabManagerCubit cubit;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      cubit = TabManagerCubit();
+    });
+
+    tearDown(() {
+      cubit.close();
+    });
+
+    test('addTab triggers saveTabPaths', () async {
+      cubit.addTab('/photos');
+
+      // Allow fire-and-forget persistence to complete
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final List<String> paths = await CacheService.loadTabPaths();
+      expect(paths, contains('/photos'));
+    });
+
+    test('closeTab triggers saveTabPaths', () async {
+      cubit.addTab('/first');
+      // Wait to ensure unique millisecond-based tab IDs
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      cubit.addTab('/second');
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      // Close the first added tab (index 1) by folder lookup
+      final AppTab firstTab = cubit.state.tabs.firstWhere(
+        (AppTab t) => t.folderPath == '/first',
+      );
+      cubit.closeTab(firstTab.id);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final List<String> paths = await CacheService.loadTabPaths();
+      expect(paths, isNot(contains('/first')));
+      expect(paths, contains('/second'));
+    });
+
+    test('switchTab triggers saveActiveTabIndex', () async {
+      cubit.addTab('/first');
+      await Future<void>.delayed(const Duration(milliseconds: 10));
+      cubit.addTab('/second');
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      cubit.switchTab(0);
+
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final int index = await CacheService.loadActiveTabIndex();
+      expect(index, 0);
     });
   });
 }

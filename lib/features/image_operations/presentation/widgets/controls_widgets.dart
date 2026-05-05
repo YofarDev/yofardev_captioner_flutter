@@ -6,6 +6,8 @@ import 'package:nested/nested.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/presentation/pages/llm_settings_screen.dart';
+import '../../../tab_manager/data/models/app_tab.dart';
+import '../../../tab_manager/logic/tab_manager_cubit.dart';
 import '../../logic/image_operations_cubit.dart';
 import '../pages/convert_images_dialog.dart';
 
@@ -27,6 +29,9 @@ class PickFolderButton extends StatelessWidget {
                     .folderPath,
               );
           if (selectedDirectory != null) {
+            final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+            final AppTab activeTab = tabManager.state.activeTab;
+            tabManager.updateTabFolderPath(activeTab.id, selectedDirectory);
             context.read<ImageListCubit>().onFolderPicked(selectedDirectory);
           }
         },

@@ -50,9 +50,13 @@ class HeaderWidget extends StatelessWidget {
   }
 
   void _showAspectRatioDialog(BuildContext context) {
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     showDialog(
       context: context,
-      builder: (BuildContext context) => const AspectRatioDialog(),
+      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
+        value: imageListCubit,
+        child: const AspectRatioDialog(),
+      ),
     );
   }
 

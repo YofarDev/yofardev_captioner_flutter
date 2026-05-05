@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:window_manager/window_manager.dart';
+import '../../../core/services/cache_service.dart';
 import '../../image_list/logic/image_list_cubit.dart';
 import '../data/models/app_tab.dart';
 
@@ -10,6 +12,31 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     : super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')]));
 
   final Map<String, ImageListCubit> _tabCubits = <String, ImageListCubit>{};
+
+  @override
+  void onChange(Change<TabManagerState> change) {
+    super.onChange(change);
+    _persistTabs(change.nextState);
+    _updateWindowTitle(change.nextState);
+  }
+
+  void _persistTabs(TabManagerState state) {
+    final List<String> paths = state.tabs
+        .where((AppTab t) => t.folderPath != null)
+        .map((AppTab t) => t.folderPath!)
+        .toList();
+    CacheService.saveTabPaths(paths);
+    CacheService.saveActiveTabIndex(state.activeTabIndex);
+  }
+
+  void _updateWindowTitle(TabManagerState state) {
+    final AppTab active = state.activeTab;
+    if (active.folderPath == null) {
+      windowManager.setTitle('Yofardev Captioner');
+      return;
+    }
+    windowManager.setTitle('Yofardev Captioner ➡️ "${active.folderPath}"');
+  }
 
   void registerTabCubit(String tabId, ImageListCubit cubit) {
     _tabCubits[tabId] = cubit;

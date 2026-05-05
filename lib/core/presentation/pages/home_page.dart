@@ -5,14 +5,17 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../features/image_list/logic/image_list_cubit.dart';
-import '../../../features/image_list/presentation/pages/images_list_view.dart';
-import '../../../features/main_area/presentation/pages/main_area_view.dart';
-import '../../constants/app_colors.dart';
+import '../../../features/tab_manager/data/models/app_tab.dart';
+import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
+import '../../../features/tab_manager/presentation/widgets/tab_bar_widget.dart';
+import '../../../features/tab_manager/presentation/widgets/tab_content.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
   @override
   State<HomePage> createState() => _HomePageState();
 }
@@ -32,17 +35,74 @@ class _HomePageState extends State<HomePage> {
       if (call.method == 'setFilePath') {
         final String path = call.arguments as String;
         _filePending = true;
-        context.read<ImageListCubit>().onFileOpened(path);
+        _handleFileOpened(path);
       }
     });
 
-    // Small delay to check if a file will be opened via MethodChannel
-    // If not, proceed with normal initialization
-    Future<void>.delayed(const Duration(milliseconds: 100), () async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_filePending) {
-        await context.read<ImageListCubit>().onInit();
+        _initTabs();
       }
     });
+  }
+
+  Future<void> _initTabs() async {
+    final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+    final String tabId = tabManager.state.activeTab.id;
+    // Wait for TabContent to register its cubit
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
+    if (cubit != null) {
+      cubit.onInit();
+    }
+  }
+
+  void _handleFileOpened(String filePath) {
+    final String folderPath = p.dirname(filePath);
+    final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+    final AppTab? existing = tabManager.findTabByFolderPath(folderPath);
+
+    if (existing != null) {
+      tabManager.switchTab(tabManager.state.tabs.indexOf(existing));
+      final ImageListCubit? cubit = tabManager.getCubitForTab(existing.id);
+      if (cubit != null) {
+        cubit.onFileOpened(filePath);
+      }
+    } else {
+      tabManager.addTab(folderPath);
+      // Wait for new TabContent to register
+      Future<void>.delayed(const Duration(milliseconds: 100), () {
+        final ImageListCubit? cubit = tabManager.getCubitForTab(
+          tabManager.activeTabId,
+        );
+        if (cubit != null) {
+          cubit.onFileOpened(filePath);
+        }
+      });
+    }
+  }
+
+  void _handleFolderPicked(String folderPath) {
+    final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+    final AppTab activeTab = tabManager.state.activeTab;
+
+    if (activeTab.folderPath == null) {
+      tabManager.updateTabFolderPath(activeTab.id, folderPath);
+      final ImageListCubit? cubit = tabManager.getCubitForTab(activeTab.id);
+      if (cubit != null) {
+        cubit.onFolderPicked(folderPath);
+      }
+    } else {
+      tabManager.addTab(folderPath);
+      Future<void>.delayed(const Duration(milliseconds: 100), () {
+        final ImageListCubit? cubit = tabManager.getCubitForTab(
+          tabManager.activeTabId,
+        );
+        if (cubit != null) {
+          cubit.onFolderPicked(folderPath);
+        }
+      });
+    }
   }
 
   @override
@@ -54,12 +114,18 @@ class _HomePageState extends State<HomePage> {
         if (event is KeyDownEvent) {
           final bool isControlPressed =
               HardwareKeyboard.instance.isControlPressed;
+          final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+          final ImageListCubit? cubit = tabManager.getCubitForTab(
+            tabManager.activeTabId,
+          );
+          if (cubit == null) return;
+
           if (isControlPressed && event.logicalKey == LogicalKeyboardKey.keyS) {
-            context.read<ImageListCubit>().saveChanges();
+            cubit.saveChanges();
           } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            context.read<ImageListCubit>().nextImage();
+            cubit.nextImage();
           } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            context.read<ImageListCubit>().previousImage();
+            cubit.previousImage();
           }
         }
       },
@@ -80,27 +146,31 @@ class _HomePageState extends State<HomePage> {
                 filePath,
               );
               if (entity == FileSystemEntityType.directory) {
-                context.read<ImageListCubit>().onFolderPicked(filePath);
+                _handleFolderPicked(filePath);
               } else {
-                context.read<ImageListCubit>().onFileOpened(filePath);
+                _handleFileOpened(filePath);
               }
             }
           },
           child: Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Row(
+              Column(
                 children: <Widget>[
-                  Container(
-                    color: lightGrey,
-                    height: double.infinity,
-                    width: 240,
-                    child: const ImagesListView(),
-                  ),
+                  const TabBarWidget(),
                   Expanded(
-                    child: ColoredBox(
-                      color: darkGrey,
-                      child: const MainAreaView(),
+                    child: BlocBuilder<TabManagerCubit, TabManagerState>(
+                      builder: (BuildContext context, TabManagerState state) {
+                        return IndexedStack(
+                          index: state.activeTabIndex,
+                          children: state.tabs.map((AppTab tab) {
+                            return TabContent(
+                              key: ValueKey<String>(tab.id),
+                              tabId: tab.id,
+                            );
+                          }).toList(),
+                        );
+                      },
                     ),
                   ),
                 ],

@@ -9,11 +9,8 @@ import 'package:window_manager/window_manager.dart';
 import 'core/config/service_locator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/presentation/pages/home_page.dart';
-import 'features/caption_search/logic/caption_search_cubit.dart';
-import 'features/captioning/logic/captioning_cubit.dart';
-import 'features/image_list/logic/image_list_cubit.dart';
-import 'features/image_operations/logic/image_operations_cubit.dart';
 import 'features/llm_config/logic/llm_configs_cubit.dart';
+import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,25 +43,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
-        BlocProvider<ImageListCubit>(
-          create: (BuildContext context) => ImageListCubit(),
-        ),
-        BlocProvider<CaptioningCubit>(
-          create: (BuildContext context) =>
-              CaptioningCubit(context.read<ImageListCubit>()),
-        ),
-        BlocProvider<ImageOperationsCubit>(
-          create: (BuildContext context) =>
-              ImageOperationsCubit(context.read<ImageListCubit>()),
-        ),
         BlocProvider<LlmConfigsCubit>(
           create: (BuildContext context) => LlmConfigsCubit()..onInit(),
         ),
-        BlocProvider<CaptionSearchCubit>(
-          create: (BuildContext context) =>
-              CaptionSearchCubit(
-                imageListCubit: context.read<ImageListCubit>(),
-              ),
+        BlocProvider<TabManagerCubit>(
+          create: (BuildContext context) => TabManagerCubit(),
         ),
       ],
       child: MaterialApp(

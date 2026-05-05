@@ -46,10 +46,10 @@ class CaptionSearchState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        isExpanded,
-        showReplaceMode,
-        searchQuery,
-        replaceText,
-        isCaseSensitive,
-      ];
+    isExpanded,
+    showReplaceMode,
+    searchQuery,
+    replaceText,
+    isCaseSensitive,
+  ];
 }

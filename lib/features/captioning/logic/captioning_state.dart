@@ -46,12 +46,12 @@ class CaptioningState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        status,
-        progress,
-        processedImages,
-        totalImages,
-        error,
-        currentlyCaptioningImage,
-        isCancelling,
-      ];
+    status,
+    progress,
+    processedImages,
+    totalImages,
+    error,
+    currentlyCaptioningImage,
+    isCancelling,
+  ];
 }

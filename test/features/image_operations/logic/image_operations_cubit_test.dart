@@ -49,11 +49,8 @@ void main() {
         when(mockImageListCubit.state).thenReturn(const ImageListState());
       },
       build: () => imageOperationsCubit,
-      act: (ImageOperationsCubit cubit) => cubit.exportAsArchive(
-        '/fake/path',
-        <AppImage>[],
-        'default',
-      ),
+      act: (ImageOperationsCubit cubit) =>
+          cubit.exportAsArchive('/fake/path', <AppImage>[], 'default'),
       expect: () =>
           <ImageOperationsState>[], // No state emitted when folder is null
     );

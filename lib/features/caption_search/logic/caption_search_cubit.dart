@@ -15,9 +15,9 @@ part 'caption_search_state.dart';
 class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// Creates a [CaptionSearchCubit] that depends on [ImageListCubit].
   CaptionSearchCubit({required this.imageListCubit})
-    : super(CaptionSearchState(
-          isCaseSensitive: imageListCubit.state.caseSensitive,
-        ));
+    : super(
+        CaptionSearchState(isCaseSensitive: imageListCubit.state.caseSensitive),
+      );
 
   /// The ImageListCubit used for search and replace operations.
   final ImageListCubit imageListCubit;

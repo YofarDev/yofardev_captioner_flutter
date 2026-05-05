@@ -204,8 +204,8 @@ class _CaptionControlsState extends State<CaptionControls> {
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : const Icon(

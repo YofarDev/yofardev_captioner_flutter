@@ -39,24 +39,52 @@ class ImageOperationsHelper {
 
     final Map<String, String> oldNameToNewName = <String, String>{};
 
-    // Perform renames and update AppImage objects
+    // Pass 1: Rename all files to temporary unique names to prevent collisions
+    // when sequential targets overlap with existing file names
+    final List<String> tempImagePaths = <String>[];
+    final List<String?> tempCaptionPaths = <String?>[];
+
     for (int i = 0; i < sortedImageFiles.length; i++) {
       final File originalFile = sortedImageFiles[i];
-      final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
       final String extension = p.extension(originalFile.path);
+      final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
+      final String finalName = '$paddedIndex$extension';
 
-      final String newImageName = '$paddedIndex$extension';
-      final String newPath = p.join(folderPath, newImageName);
+      oldNameToNewName[p.basename(originalFile.path)] = finalName;
 
-      oldNameToNewName[p.basename(originalFile.path)] = newImageName;
+      final String tempImagePath = p.join(
+        folderPath,
+        '.tmp_rename_${const Uuid().v4()}$extension',
+      );
+      await originalFile.rename(tempImagePath);
+      tempImagePaths.add(tempImagePath);
 
-      await originalFile.rename(newPath);
-
-      // Also rename caption file if it exists
       final String oldCaptionPath = p.setExtension(originalFile.path, '.txt');
       if (await File(oldCaptionPath).exists()) {
-        final String newCaptionPath = p.setExtension(newPath, '.txt');
-        await File(oldCaptionPath).rename(newCaptionPath);
+        final String tempCaptionPath = p.join(
+          folderPath,
+          '.tmp_rename_${const Uuid().v4()}.txt',
+        );
+        await File(oldCaptionPath).rename(tempCaptionPath);
+        tempCaptionPaths.add(tempCaptionPath);
+      } else {
+        tempCaptionPaths.add(null);
+      }
+    }
+
+    // Pass 2: Rename from temporary to final sequential names
+    for (int i = 0; i < tempImagePaths.length; i++) {
+      final String paddedIndex = (i + 1).toString().padLeft(padding, '0');
+      final String extension = p.extension(tempImagePaths[i]);
+      final String finalImageName = '$paddedIndex$extension';
+      final String finalImagePath = p.join(folderPath, finalImageName);
+
+      await File(tempImagePaths[i]).rename(finalImagePath);
+
+      if (tempCaptionPaths[i] != null) {
+        final String finalCaptionName = p.setExtension(finalImageName, '.txt');
+        final String finalCaptionPath = p.join(folderPath, finalCaptionName);
+        await File(tempCaptionPaths[i]!).rename(finalCaptionPath);
       }
     }
 
@@ -118,7 +146,9 @@ class ImageOperationsHelper {
 
     // Convert to PNG first for lossless quality during crop
     final Uint8List originalBytes = currentImage.image.readAsBytesSync();
-    final String originalExt = p.extension(currentImage.image.path).toLowerCase();
+    final String originalExt = p
+        .extension(currentImage.image.path)
+        .toLowerCase();
     Uint8List pngBytes;
 
     if (originalExt == '.png') {
@@ -134,7 +164,9 @@ class ImageOperationsHelper {
       final ui.Image image = frameInfo.image;
 
       // Convert to byte data
-      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final ByteData? byteData = await image.toByteData(
+        format: ui.ImageByteFormat.png,
+      );
       if (byteData == null) {
         debugPrint('Failed to convert image to PNG bytes');
         codec.dispose();
@@ -145,7 +177,9 @@ class ImageOperationsHelper {
 
       codec.dispose();
       image.dispose();
-      debugPrint('Converted to PNG using Flutter codec: ${pngBytes.length} bytes');
+      debugPrint(
+        'Converted to PNG using Flutter codec: ${pngBytes.length} bytes',
+      );
     }
 
     debugPrint('Passing to crop screen: ${pngBytes.length} bytes');
@@ -176,7 +210,9 @@ class ImageOperationsHelper {
         await newFile.writeAsBytes(resizedBytes);
         // Update state to point to the new file
         final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-        final int index = updatedImages.indexWhere((AppImage i) => i.id == currentImage.id);
+        final int index = updatedImages.indexWhere(
+          (AppImage i) => i.id == currentImage.id,
+        );
         if (index == -1) {
           return null;
         }

@@ -30,11 +30,7 @@ class CurrentImageView extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(
-                      Icons.search_off,
-                      size: 48,
-                      color: Colors.grey,
-                    ),
+                    Icon(Icons.search_off, size: 48, color: Colors.grey),
                     SizedBox(height: 16),
                     Text(
                       'No results found',
@@ -55,9 +51,8 @@ class CurrentImageView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             InkWell(
-              onTap: () => ImageUtils.openImageWithDefaultApp(
-                currentImage.image.path,
-              ),
+              onTap: () =>
+                  ImageUtils.openImageWithDefaultApp(currentImage.image.path),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
                   minHeight: MediaQuery.of(context).size.height * 0.5,
@@ -87,10 +82,7 @@ class CurrentImageView extends StatelessWidget {
                       ),
                     ),
                     // Main image on top
-                    Image.file(
-                      currentImage.image,
-                      fit: BoxFit.contain,
-                    ),
+                    Image.file(currentImage.image, fit: BoxFit.contain),
                   ],
                 ),
               ),

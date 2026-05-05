@@ -7,6 +7,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_data.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
@@ -71,6 +73,12 @@ void main() {
         when(
           mockAppFileUtils.onFolderPicked(any),
         ).thenAnswer((_) async => <AppImage>[testImage]);
+        when(mockAppFileUtils.readDb(any)).thenAnswer(
+          (_) async => CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
+        );
         return imageListCubit;
       },
       act: (ImageListCubit cubit) => cubit.onFolderPicked('/new/path'),
@@ -122,6 +130,12 @@ void main() {
         when(
           mockAppFileUtils.onFolderPicked(any),
         ).thenAnswer((_) async => <AppImage>[testImage]);
+        when(mockAppFileUtils.readDb(any)).thenAnswer(
+          (_) async => CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
+        );
         return imageListCubit;
       },
       seed: () => ImageListState(

@@ -30,10 +30,12 @@ void main() {
     });
 
     test('removes category and switches active if needed', () {
-      cubit.emit(cubit.state.copyWith(
-        categories: <String>['default', 'tags'],
-        activeCategory: 'tags',
-      ));
+      cubit.emit(
+        cubit.state.copyWith(
+          categories: <String>['default', 'tags'],
+          activeCategory: 'tags',
+        ),
+      );
 
       cubit.removeCategory('tags');
 
@@ -42,10 +44,12 @@ void main() {
     });
 
     test('prevents removing last category', () {
-      cubit.emit(cubit.state.copyWith(
-        categories: <String>['default'],
-        activeCategory: 'default',
-      ));
+      cubit.emit(
+        cubit.state.copyWith(
+          categories: <String>['default'],
+          activeCategory: 'default',
+        ),
+      );
 
       cubit.removeCategory('default');
 
@@ -53,10 +57,12 @@ void main() {
     });
 
     test('renames category', () {
-      cubit.emit(cubit.state.copyWith(
-        categories: <String>['default', 'old'],
-        activeCategory: 'old',
-      ));
+      cubit.emit(
+        cubit.state.copyWith(
+          categories: <String>['default', 'old'],
+          activeCategory: 'old',
+        ),
+      );
 
       cubit.renameCategory('old', 'new');
 
@@ -66,14 +72,15 @@ void main() {
     });
 
     test('prevents renaming to existing category name', () {
-      cubit.emit(cubit.state.copyWith(
-        categories: <String>['default', 'tags'],
-      ));
+      cubit.emit(cubit.state.copyWith(categories: <String>['default', 'tags']));
 
       cubit.renameCategory('tags', 'default');
 
       // Should not create duplicate
-      expect(cubit.state.categories.where((String c) => c == 'default').length, 1);
+      expect(
+        cubit.state.categories.where((String c) => c == 'default').length,
+        1,
+      );
     });
   });
 }

@@ -11,10 +11,7 @@ class TabManagerState extends Equatable {
 
   AppTab get activeTab => tabs[activeTabIndex];
 
-  TabManagerState copyWith({
-    List<AppTab>? tabs,
-    int? activeTabIndex,
-  }) {
+  TabManagerState copyWith({List<AppTab>? tabs, int? activeTabIndex}) {
     return TabManagerState(
       tabs: tabs ?? this.tabs,
       activeTabIndex: activeTabIndex ?? this.activeTabIndex,

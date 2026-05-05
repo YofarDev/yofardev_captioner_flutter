@@ -30,11 +30,13 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   }) async {
     // Reset or create cancel completer
     _cancelCompleter = Completer<void>();
-    emit(state.copyWith(
-      status: CaptioningStatus.inProgress,
-      progress: 0.0,
-      isCancelling: false,
-    ));
+    emit(
+      state.copyWith(
+        status: CaptioningStatus.inProgress,
+        progress: 0.0,
+        isCancelling: false,
+      ),
+    );
 
     List<AppImage> imagesToCaption = <AppImage>[];
     final List<AppImage> allImages = _imageListCubit.state.images;
@@ -45,10 +47,13 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           _imageListCubit.state.images[_imageListCubit.state.currentIndex],
         ];
       case CaptionOptions.missing:
-        final String category = _imageListCubit.state.activeCategory ?? 'default';
+        final String category =
+            _imageListCubit.state.activeCategory ?? 'default';
         imagesToCaption = allImages
-            .where((AppImage image) =>
-                (image.captions[category]?.text ?? '').isEmpty)
+            .where(
+              (AppImage image) =>
+                  (image.captions[category]?.text ?? '').isEmpty,
+            )
             .toList();
       case CaptionOptions.all:
         imagesToCaption = allImages
@@ -89,7 +94,8 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
-        final String category = _imageListCubit.state.activeCategory ?? 'default';
+        final String category =
+            _imageListCubit.state.activeCategory ?? 'default';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,

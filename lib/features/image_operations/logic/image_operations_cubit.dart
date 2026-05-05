@@ -45,11 +45,7 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
       return;
     }
     await _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
-    await _imageOperationsHelper.exportAsArchive(
-      folderPath,
-      images,
-      category,
-    );
+    await _imageOperationsHelper.exportAsArchive(folderPath, images, category);
   }
 
   void convertAllImages({required String format, required int quality}) async {

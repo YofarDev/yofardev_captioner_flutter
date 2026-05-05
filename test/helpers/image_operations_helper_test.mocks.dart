@@ -102,11 +102,9 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as bool);
 
   @override
-  _i5.Future<void> onInit({bool? skipLoadLastSession = false}) =>
+  _i5.Future<void> onInit({String? folderPath}) =>
       (super.noSuchMethod(
-            Invocation.method(#onInit, [], {
-              #skipLoadLastSession: skipLoadLastSession,
-            }),
+            Invocation.method(#onInit, [], {#folderPath: folderPath}),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

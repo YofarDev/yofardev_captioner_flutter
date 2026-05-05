@@ -194,6 +194,231 @@ void main() {
       },
     );
 
+    /// Test Case: **renameAllFiles preserves all files when rename targets collide**
+    ///
+    /// **Scenario:**
+    /// A new image `00.jpg` sorts before existing numbered files `01.jpg`, `02.jpg`,
+    /// `03.jpg`. After sorting, the sequential targets are `01.jpg`, `02.jpg`,
+    /// `03.jpg`, `04.jpg`. Without a two-pass rename, `00.jpg` → `01.jpg` overwrites
+    /// the original `01.jpg`, then the overwritten file cascades through all slots,
+    /// destroying every original image. Only the new image survives.
+    ///
+    /// **Expected Outcome:**
+    /// 1. All 4 image files survive with correct content.
+    /// 2. All 4 caption files survive with correct content.
+    /// 3. Database update receives the correct name mapping.
+    test(
+      'renameAllFiles preserves all files when rename targets collide with existing names',
+      () async {
+        // ---------------------------------------------------------------------
+        // 1. Arrange
+        // ---------------------------------------------------------------------
+
+        // Create image files with unique content so we can trace data survival
+        final File file00 = File(p.join(tempDir.path, '00.jpg'))
+          ..writeAsStringSync('content 00');
+        final File file01 = File(p.join(tempDir.path, '01.jpg'))
+          ..writeAsStringSync('content 01');
+        final File file02 = File(p.join(tempDir.path, '02.jpg'))
+          ..writeAsStringSync('content 02');
+        final File file03 = File(p.join(tempDir.path, '03.jpg'))
+          ..writeAsStringSync('content 03');
+
+        // Create caption files with unique content
+        final File caption00 = File(p.join(tempDir.path, '00.txt'))
+          ..writeAsStringSync('caption 00');
+        final File caption01 = File(p.join(tempDir.path, '01.txt'))
+          ..writeAsStringSync('caption 01');
+        final File caption02 = File(p.join(tempDir.path, '02.txt'))
+          ..writeAsStringSync('caption 02');
+        final File caption03 = File(p.join(tempDir.path, '03.txt'))
+          ..writeAsStringSync('caption 03');
+
+        final List<AppImage> initialImages = <AppImage>[
+          AppImage(
+            id: 'id-00',
+            image: file00,
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await caption00.readAsString()),
+            },
+          ),
+          AppImage(
+            id: 'id-01',
+            image: file01,
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await caption01.readAsString()),
+            },
+          ),
+          AppImage(
+            id: 'id-02',
+            image: file02,
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await caption02.readAsString()),
+            },
+          ),
+          AppImage(
+            id: 'id-03',
+            image: file03,
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: await caption03.readAsString()),
+            },
+          ),
+        ];
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(folderPath: tempDir.path, images: initialImages),
+        );
+        when(mockImageListCubit.onFolderPicked(any)).thenAnswer((_) async {});
+
+        // ---------------------------------------------------------------------
+        // 2. Act
+        // ---------------------------------------------------------------------
+        await imageOperationsHelper.renameAllFiles(tempDir.path);
+
+        // ---------------------------------------------------------------------
+        // 3. Assert
+        // ---------------------------------------------------------------------
+
+        // All 4 image files must survive
+        final List<String> imageFiles = tempDir
+            .listSync()
+            .whereType<File>()
+            .map((File f) => p.basename(f.path))
+            .where((String name) => !name.startsWith('.tmp_rename'))
+            .where((String name) => p.extension(name) != '.txt')
+            .toList();
+
+        expect(imageFiles, hasLength(4));
+        expect(
+          imageFiles,
+          containsAll(<String>['01.jpg', '02.jpg', '03.jpg', '04.jpg']),
+        );
+
+        // Content must be correctly mapped: 00→01, 01→02, 02→03, 03→04
+        expect(
+          await File(p.join(tempDir.path, '01.jpg')).readAsString(),
+          'content 00',
+        );
+        expect(
+          await File(p.join(tempDir.path, '02.jpg')).readAsString(),
+          'content 01',
+        );
+        expect(
+          await File(p.join(tempDir.path, '03.jpg')).readAsString(),
+          'content 02',
+        );
+        expect(
+          await File(p.join(tempDir.path, '04.jpg')).readAsString(),
+          'content 03',
+        );
+
+        // All 4 caption files must survive with correct content
+        expect(
+          await File(p.join(tempDir.path, '01.txt')).readAsString(),
+          'caption 00',
+        );
+        expect(
+          await File(p.join(tempDir.path, '02.txt')).readAsString(),
+          'caption 01',
+        );
+        expect(
+          await File(p.join(tempDir.path, '03.txt')).readAsString(),
+          'caption 02',
+        );
+        expect(
+          await File(p.join(tempDir.path, '04.txt')).readAsString(),
+          'caption 03',
+        );
+
+        // Database update was called with correct mapping
+        verify(
+          mockAppFileUtils.updateDbForRename(<String, String>{
+            '00.jpg': '01.jpg',
+            '01.jpg': '02.jpg',
+            '02.jpg': '03.jpg',
+            '03.jpg': '04.jpg',
+          }, tempDir.path),
+        ).called(1);
+      },
+    );
+
+    /// Test Case: **renameAllFiles handles files already named sequentially**
+    ///
+    /// **Scenario:**
+    /// Files are already named `01.jpg`, `02.jpg`, `03.jpg`.
+    /// Rename targets are the same names.
+    ///
+    /// **Expected Outcome:**
+    /// All files survive with same content (no-op renames).
+    test(
+      'renameAllFiles handles files already named sequentially (no-op rename)',
+      () async {
+        // ---------------------------------------------------------------------
+        // 1. Arrange
+        // ---------------------------------------------------------------------
+        final File file01 = File(p.join(tempDir.path, '01.jpg'))
+          ..writeAsStringSync('content 01');
+        final File file02 = File(p.join(tempDir.path, '02.jpg'))
+          ..writeAsStringSync('content 02');
+        final File file03 = File(p.join(tempDir.path, '03.jpg'))
+          ..writeAsStringSync('content 03');
+
+        final List<AppImage> initialImages = <AppImage>[
+          AppImage(
+            id: 'id-01',
+            image: file01,
+            captions: const <String, CaptionEntry>{},
+          ),
+          AppImage(
+            id: 'id-02',
+            image: file02,
+            captions: const <String, CaptionEntry>{},
+          ),
+          AppImage(
+            id: 'id-03',
+            image: file03,
+            captions: const <String, CaptionEntry>{},
+          ),
+        ];
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(folderPath: tempDir.path, images: initialImages),
+        );
+        when(mockImageListCubit.onFolderPicked(any)).thenAnswer((_) async {});
+
+        // ---------------------------------------------------------------------
+        // 2. Act
+        // ---------------------------------------------------------------------
+        await imageOperationsHelper.renameAllFiles(tempDir.path);
+
+        // ---------------------------------------------------------------------
+        // 3. Assert
+        // ---------------------------------------------------------------------
+        final List<String> imageFiles = tempDir
+            .listSync()
+            .whereType<File>()
+            .map((File f) => p.basename(f.path))
+            .where((String name) => !name.startsWith('.tmp_rename'))
+            .toList();
+
+        expect(imageFiles, hasLength(3));
+        expect(imageFiles, containsAll(<String>['01.jpg', '02.jpg', '03.jpg']));
+
+        expect(
+          await File(p.join(tempDir.path, '01.jpg')).readAsString(),
+          'content 01',
+        );
+        expect(
+          await File(p.join(tempDir.path, '02.jpg')).readAsString(),
+          'content 02',
+        );
+        expect(
+          await File(p.join(tempDir.path, '03.jpg')).readAsString(),
+          'content 03',
+        );
+      },
+    );
+
     /// Test Case: **renameAllFiles renames image files and triggers folder pick**
     ///
     /// **Scenario:**

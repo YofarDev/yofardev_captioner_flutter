@@ -91,14 +91,12 @@ class HeaderWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildImageCountRow(
-    List<AppImage> images,
-    String? activeCategory,
-  ) {
+  Widget _buildImageCountRow(List<AppImage> images, String? activeCategory) {
     final String category = activeCategory ?? 'default';
     final int captionCount = images
-        .where((AppImage image) =>
-            (image.captions[category]?.text ?? '').isNotEmpty)
+        .where(
+          (AppImage image) => (image.captions[category]?.text ?? '').isNotEmpty,
+        )
         .length;
 
     return Row(
@@ -107,7 +105,11 @@ class HeaderWidget extends StatelessWidget {
         const SizedBox(width: _spacing),
         RichText(
           text: TextSpan(
-            style: const TextStyle(fontSize: _fontSize, color: Colors.white, fontFamily: 'Inter'),
+            style: const TextStyle(
+              fontSize: _fontSize,
+              color: Colors.white,
+              fontFamily: 'Inter',
+            ),
             children: <TextSpan>[
               TextSpan(text: '$captionCount / ${images.length} captions'),
               if (activeCategory != null) ...<TextSpan>[

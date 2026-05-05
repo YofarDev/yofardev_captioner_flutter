@@ -1,8 +1,20 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
 import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+
+  const MethodChannel channel = MethodChannel('window_manager');
+  TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+      .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+        return null;
+      });
+
   group('TabManagerCubit', () {
     late TabManagerCubit cubit;
 

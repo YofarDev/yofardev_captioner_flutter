@@ -30,7 +30,9 @@ class HighlightTextController extends TextEditingController {
 
     final List<TextSpan> spans = <TextSpan>[];
     final String text = this.text;
-    final String query = caseSensitive ? highlightQuery : highlightQuery.toLowerCase();
+    final String query = caseSensitive
+        ? highlightQuery
+        : highlightQuery.toLowerCase();
     final String searchTarget = caseSensitive ? text : text.toLowerCase();
 
     int lastIndex = 0;

@@ -95,7 +95,8 @@ class AppFileUtils {
     final List<CaptionData> migratedImages = <CaptionData>[];
 
     for (final dynamic img in oldImages) {
-      final String filename = ( img as Map<String, dynamic>)['filename'] as String;
+      final String filename =
+          (img as Map<String, dynamic>)['filename'] as String;
       final String id = img['id'] as String;
 
       // Read caption from .txt file
@@ -330,6 +331,8 @@ class AppFileUtils {
       image: File(newPath),
       captions: originalImage.captions,
       size: await File(newPath).length(),
+      captionModel: originalImage.captionModel,
+      captionTimestamp: originalImage.captionTimestamp,
       lastModified: DateTime.now(),
     );
   }

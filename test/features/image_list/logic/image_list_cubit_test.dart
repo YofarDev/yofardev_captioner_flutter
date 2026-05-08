@@ -54,7 +54,7 @@ void main() {
         return imageListCubit;
       },
       seed: () => ImageListState(images: <AppImage>[testImage]),
-      act: (ImageListCubit cubit) => cubit.removeImage(0),
+      act: (ImageListCubit cubit) => cubit.removeImage(testImage.id),
       expect: () => <TypeMatcher<ImageListState>>[
         isA<ImageListState>().having(
           (ImageListState state) => state.images,
@@ -186,9 +186,9 @@ void main() {
         isA<ImageListState>()
             .having((ImageListState s) => s.images, 'images', hasLength(2))
             .having(
-              (ImageListState s) => s.currentIndex,
-              'currentIndex',
-              greaterThanOrEqualTo(0),
+              (ImageListState s) => s.currentImageId,
+              'currentImageId',
+              isNotNull,
             ),
       ],
       verify: (_) {

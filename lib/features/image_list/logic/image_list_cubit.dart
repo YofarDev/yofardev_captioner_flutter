@@ -46,13 +46,28 @@ class ImageListCubit extends Cubit<ImageListState> {
   /// Returns the list of images that should be displayed based on search state.
   List<AppImage> get displayedImages => filteredImages;
 
+  /// Resolves the index of [currentImageId] within [displayedImages].
+  /// Returns null if the ID is not found or not set.
+  int? get _currentDisplayIndex {
+    final String? id = state.currentImageId;
+    if (id == null) return null;
+    final List<AppImage> displayed = displayedImages;
+    for (int i = 0; i < displayed.length; i++) {
+      if (displayed[i].id == id) return i;
+    }
+    return null;
+  }
+
   /// Returns the currently displayed image based on the search state.
   AppImage? get currentDisplayedImage {
-    final List<AppImage> displayed = displayedImages;
-    if (displayed.isEmpty || state.currentIndex >= displayed.length) {
-      return null;
+    final int? index = _currentDisplayIndex;
+    if (index == null) {
+      final List<AppImage> displayed = displayedImages;
+      if (displayed.isEmpty) return null;
+      // Fallback: first image
+      return displayed.isNotEmpty ? displayed[0] : null;
     }
-    return displayed[state.currentIndex];
+    return displayedImages[index];
   }
 
   Future<void> onInit({String? folderPath}) async {
@@ -71,7 +86,6 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(
       state.copyWith(
         images: <AppImage>[],
-        currentIndex: 0,
         folderPath: folderPath,
         occurrencesCount: 0,
         occurrenceFileNames: <String>[],
@@ -95,6 +109,7 @@ class ImageListCubit extends Cubit<ImageListState> {
           images: images,
           categories: db.categories,
           activeCategory: db.activeCategory ?? 'default',
+          currentImageId: images.isNotEmpty ? images[0].id : null,
         ),
       );
     } catch (e) {
@@ -118,27 +133,32 @@ class ImageListCubit extends Cubit<ImageListState> {
     // Wait for the state to be updated with the new images
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
-    final int index = state.images.indexWhere(
+    if (state.images.isEmpty) return;
+
+    final int matchIndex = state.images.indexWhere(
       (AppImage img) => img.image.path == filePath,
     );
-    if (index != -1) {
-      onImageSelected(index);
-    }
+    final AppImage target = matchIndex != -1
+        ? state.images[matchIndex]
+        : state.images[0];
+    onImageSelected(target.id);
   }
 
   void nextImage() {
     final List<AppImage> displayed = displayedImages;
     if (displayed.isEmpty) return;
-    final int nextIndex = (state.currentIndex + 1) % displayed.length;
-    emit(state.copyWith(currentIndex: nextIndex));
+    final int currentIdx = _currentDisplayIndex ?? 0;
+    final int nextIndex = (currentIdx + 1) % displayed.length;
+    emit(state.copyWith(currentImageId: displayed[nextIndex].id));
   }
 
   void previousImage() {
     final List<AppImage> displayed = displayedImages;
     if (displayed.isEmpty) return;
+    final int currentIdx = _currentDisplayIndex ?? 0;
     final int previousIndex =
-        (state.currentIndex - 1 + displayed.length) % displayed.length;
-    emit(state.copyWith(currentIndex: previousIndex));
+        (currentIdx - 1 + displayed.length) % displayed.length;
+    emit(state.copyWith(currentImageId: displayed[previousIndex].id));
   }
 
   Future<void> saveChanges() async {
@@ -177,8 +197,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
   }
 
-  void onImageSelected(int index) async {
-    emit(state.copyWith(currentIndex: index));
+  void onImageSelected(String imageId) async {
+    emit(state.copyWith(currentImageId: imageId));
     if (!(await _checkAllFiles())) {
       onFolderPicked(state.folderPath!);
     }
@@ -286,7 +306,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
   }
 
-  void updateCaption({required String caption}) async {
+  Future<void> updateCaption({required String caption}) async {
     final AppImage? originalImage = currentDisplayedImage;
     if (originalImage == null) return;
 
@@ -320,7 +340,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     await _saveDb();
   }
 
-  void updateImage({required AppImage image}) async {
+  Future<void> updateImage({required AppImage image}) async {
     final int index = state.images.indexWhere((AppImage i) => i.id == image.id);
     if (index == -1) {
       return;
@@ -356,11 +376,18 @@ class ImageListCubit extends Cubit<ImageListState> {
     await _fileUtils.writeDb(state.folderPath!, db);
   }
 
-  void removeImage(int index) async {
+  Future<void> removeImage(String imageId) async {
+    final int index = state.images.indexWhere((AppImage i) => i.id == imageId);
+    if (index == -1) return;
     final AppImage imageToRemove = state.images[index];
     final List<AppImage> updatedImages = List<AppImage>.from(state.images);
     updatedImages.removeAt(index);
-    emit(state.copyWith(images: updatedImages, currentIndex: 0));
+    final String? newCurrentId = updatedImages.isEmpty
+        ? null
+        : (index < updatedImages.length
+              ? updatedImages[index].id
+              : updatedImages.last.id);
+    emit(state.copyWith(images: updatedImages, currentImageId: newCurrentId));
     await _saveDb();
     await _fileUtils.removeImage(imageToRemove.image);
   }
@@ -382,9 +409,15 @@ class ImageListCubit extends Cubit<ImageListState> {
     return totalSize;
   }
 
-  /// Updates the search query and resets the current index to 0.
+  /// Updates the search query and resets the selection to the first displayed image.
   void updateSearchQuery(String query) {
-    emit(state.copyWith(searchQuery: query, currentIndex: 0));
+    final List<AppImage> displayed = state.images;
+    emit(
+      state.copyWith(
+        searchQuery: query,
+        currentImageId: displayed.isNotEmpty ? displayed[0].id : null,
+      ),
+    );
   }
 
   /// Toggles case sensitivity for search.
@@ -392,7 +425,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(caseSensitive: !state.caseSensitive));
   }
 
-  /// Clears the search query while preserving the current image selection.
+  /// Clears the search query. Selection preserved automatically via ID tracking.
   void clearSearch() {
     emit(state.copyWith(searchQuery: '', caseSensitive: false));
   }
@@ -450,12 +483,9 @@ class ImageListCubit extends Cubit<ImageListState> {
           _fileUtils.compareNatural(a.image.path, b.image.path),
     );
 
-    // Find the index of the duplicated image
-    final int newIndex = updatedImages.indexWhere(
-      (AppImage img) => img.id == duplicatedImage.id,
+    emit(
+      state.copyWith(images: updatedImages, currentImageId: duplicatedImage.id),
     );
-
-    emit(state.copyWith(images: updatedImages, currentIndex: newIndex));
 
     // Update the database with the new image
     await _saveDb();

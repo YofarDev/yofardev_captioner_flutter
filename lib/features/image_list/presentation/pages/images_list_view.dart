@@ -32,8 +32,7 @@ class ImagesListView extends StatelessWidget {
                   return ImageListItem(
                     key: ValueKey<String>(image.image.path),
                     image: image,
-                    index: index,
-                    isSelected: index == state.currentIndex,
+                    isSelected: image.id == state.currentImageId,
                   );
                 },
               ),

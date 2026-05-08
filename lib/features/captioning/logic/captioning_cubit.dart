@@ -43,9 +43,17 @@ class CaptioningCubit extends Cubit<CaptioningState> {
 
     switch (option) {
       case CaptionOptions.current:
-        imagesToCaption = <AppImage>[
-          _imageListCubit.state.images[_imageListCubit.state.currentIndex],
-        ];
+        final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+        if (currentImage == null) {
+          emit(
+            state.copyWith(
+              status: CaptioningStatus.failure,
+              error: 'No image selected',
+            ),
+          );
+          return;
+        }
+        imagesToCaption = <AppImage>[currentImage];
       case CaptionOptions.missing:
         final String category =
             _imageListCubit.state.activeCategory ?? 'default';

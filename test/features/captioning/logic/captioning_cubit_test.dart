@@ -148,9 +148,10 @@ void main() {
         ImageListState(
           images: <AppImage>[image1, image2],
           folderPath: '/tmp',
-          currentIndex: 1,
+          currentImageId: '2',
         ),
       );
+      when(mockImageListCubit.currentDisplayedImage).thenReturn(image2);
       when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
         (Invocation invocation) async =>
             invocation.positionalArguments[1] as AppImage,

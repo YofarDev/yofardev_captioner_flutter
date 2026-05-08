@@ -10,13 +10,11 @@ import '../../logic/image_list_cubit.dart';
 class ImageListItem extends StatefulWidget {
   const ImageListItem({
     required this.image,
-    required this.index,
     required this.isSelected,
     super.key,
   });
 
   final AppImage image;
-  final int index;
   final bool isSelected;
 
   @override
@@ -68,7 +66,7 @@ class _ImageListItemState extends State<ImageListItem> {
       child: InkWell(
         key: ValueKey<String>(widget.image.image.path),
         onTap: () =>
-            context.read<ImageListCubit>().onImageSelected(widget.index),
+            context.read<ImageListCubit>().onImageSelected(widget.image.id),
         child: ColoredBox(
           color: widget.image.error != null
               ? Colors.red.withAlpha(20)
@@ -157,47 +155,45 @@ class _ImageListItemState extends State<ImageListItem> {
                     const SizedBox(width: 12),
                     Tooltip(
                       message: 'Remove this image and its caption',
-                      child: InkWell(
-                        child: Icon(
-                          Icons.delete,
-                          size: 18,
-                          color: widget.isSelected ? lightPink : Colors.white70,
-                        ),
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
                         onTap: () {
                           final ImageListCubit imageListCubit = context
                               .read<ImageListCubit>();
                           showDialog(
                             context: context,
                             builder: (BuildContext context) {
-                              return BlocProvider<ImageListCubit>.value(
-                                value: imageListCubit,
-                                child: AlertDialog(
-                                  title: const Text('Remove Image'),
-                                  content: const Text(
-                                    'Are you sure you want to remove this image and its caption?',
-                                  ),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      child: const Text('Cancel'),
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                    TextButton(
-                                      child: const Text('Remove'),
-                                      onPressed: () {
-                                        context
-                                            .read<ImageListCubit>()
-                                            .removeImage(widget.index);
-                                        Navigator.of(context).pop();
-                                      },
-                                    ),
-                                  ],
+                              return AlertDialog(
+                                title: const Text('Remove Image'),
+                                content: const Text(
+                                  'Are you sure you want to remove this image and its caption?',
                                 ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    child: const Text('Cancel'),
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                  TextButton(
+                                    child: const Text('Remove'),
+                                    onPressed: () {
+                                      imageListCubit.removeImage(
+                                        widget.image.id,
+                                      );
+                                      Navigator.of(context).pop();
+                                    },
+                                  ),
+                                ],
                               );
                             },
                           );
                         },
+                        child: Icon(
+                          Icons.delete,
+                          size: 18,
+                          color: widget.isSelected ? lightPink : Colors.white70,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),

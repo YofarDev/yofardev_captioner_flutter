@@ -7,7 +7,7 @@ class ImageListState extends Equatable {
   final SortBy sortBy;
   final bool sortAscending;
   final String? folderPath;
-  final int currentIndex;
+  final String? currentImageId;
   final int occurrencesCount;
   final List<String> occurrenceFileNames;
   final String searchQuery;
@@ -20,7 +20,7 @@ class ImageListState extends Equatable {
     this.sortBy = SortBy.name,
     this.sortAscending = true,
     this.folderPath,
-    this.currentIndex = 0,
+    this.currentImageId,
     this.occurrencesCount = 0,
     this.occurrenceFileNames = const <String>[],
     this.searchQuery = '',
@@ -34,7 +34,7 @@ class ImageListState extends Equatable {
     SortBy? sortBy,
     bool? sortAscending,
     String? folderPath,
-    int? currentIndex,
+    String? currentImageId,
     int? occurrencesCount,
     List<String>? occurrenceFileNames,
     String? searchQuery,
@@ -47,7 +47,7 @@ class ImageListState extends Equatable {
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
       folderPath: folderPath ?? this.folderPath,
-      currentIndex: currentIndex ?? this.currentIndex,
+      currentImageId: currentImageId ?? this.currentImageId,
       occurrencesCount: occurrencesCount ?? this.occurrencesCount,
       occurrenceFileNames: occurrenceFileNames ?? this.occurrenceFileNames,
       searchQuery: searchQuery ?? this.searchQuery,
@@ -63,7 +63,7 @@ class ImageListState extends Equatable {
     sortBy,
     sortAscending,
     folderPath,
-    currentIndex,
+    currentImageId,
     occurrencesCount,
     occurrenceFileNames,
     searchQuery,

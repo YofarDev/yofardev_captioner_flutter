@@ -45,7 +45,12 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
       return;
     }
     await _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
-    await _imageOperationsHelper.exportAsArchive(folderPath, images, category);
+    // Use fresh state from cubit after reload, not stale captured list
+    await _imageOperationsHelper.exportAsArchive(
+      _imageListCubit.state.folderPath!,
+      _imageListCubit.state.images,
+      category,
+    );
   }
 
   void convertAllImages({required String format, required int quality}) async {
@@ -55,19 +60,25 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     final int totalImages = _imageListCubit.state.images.length;
     int processedImages = 0;
 
-    await for (final ImageListState _
+    await for (final ImageListState newState
         in _imageOperationsHelper.convertAllImages(
           format: format,
           quality: quality,
           state: _imageListCubit.state,
         )) {
       processedImages++;
+      _imageListCubit.emit(newState);
       emit(state.copyWith(progress: processedImages / totalImages));
     }
 
+    await _imageListCubit.saveChanges();
+
     emit(state.copyWith(status: ImageOperationsStatus.success));
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
+    _imageListCubit.onFolderPicked(
+      _imageListCubit.state.folderPath!,
+      force: true,
+    );
   }
 
   Future<void> cropCurrentImage(BuildContext context) async {

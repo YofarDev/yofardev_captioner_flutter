@@ -216,11 +216,12 @@ class ImageOperationsHelper {
         if (index == -1) {
           return null;
         }
-        updatedImages[index] = currentImage.copyWith(
-          id: const Uuid().v4(),
-          image: newFile,
+        final String newId = const Uuid().v4();
+        updatedImages[index] = currentImage.copyWith(id: newId, image: newFile);
+        final ImageListState newState = state.copyWith(
+          images: updatedImages,
+          currentImageId: newId,
         );
-        final ImageListState newState = state.copyWith(images: updatedImages);
         // If original wasn't a PNG and the paths differ, attempt to delete the original file
         if (!originalWasPng && originalFile.path != newFile.path) {
           try {

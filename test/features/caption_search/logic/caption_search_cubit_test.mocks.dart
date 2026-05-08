@@ -134,8 +134,8 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
       );
 
   @override
-  void onImageSelected(int? index) => super.noSuchMethod(
-    Invocation.method(#onImageSelected, [index]),
+  void onImageSelected(String? imageId) => super.noSuchMethod(
+    Invocation.method(#onImageSelected, [imageId]),
     returnValueForMissingStub: null,
   );
 
@@ -161,22 +161,31 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void updateCaption({required String? caption}) => super.noSuchMethod(
-    Invocation.method(#updateCaption, [], {#caption: caption}),
-    returnValueForMissingStub: null,
-  );
+  _i4.Future<void> updateCaption({required String? caption}) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateCaption, [], {#caption: caption}),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 
   @override
-  void updateImage({required _i3.AppImage? image}) => super.noSuchMethod(
-    Invocation.method(#updateImage, [], {#image: image}),
-    returnValueForMissingStub: null,
-  );
+  _i4.Future<void> updateImage({required _i3.AppImage? image}) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateImage, [], {#image: image}),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 
   @override
-  void removeImage(int? index) => super.noSuchMethod(
-    Invocation.method(#removeImage, [index]),
-    returnValueForMissingStub: null,
-  );
+  _i4.Future<void> removeImage(String? imageId) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeImage, [imageId]),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 
   @override
   Map<String, int> getAspectRatioCounts() =>

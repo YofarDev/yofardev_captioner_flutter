@@ -98,14 +98,14 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _handleFileOpened(String filePath) {
+  Future<void> _handleFileOpened(String filePath) async {
     final String folderPath = p.dirname(filePath);
     final TabManagerCubit tabManager = context.read<TabManagerCubit>();
     final AppTab? existing = tabManager.findTabByFolderPath(folderPath);
 
     if (existing != null) {
       tabManager.switchTab(tabManager.state.tabs.indexOf(existing));
-      final ImageListCubit? cubit = tabManager.getCubitForTab(existing.id);
+      final ImageListCubit? cubit = await _waitForCubit(existing.id);
       if (cubit != null) {
         cubit.onFileOpened(filePath);
       }
@@ -115,43 +115,45 @@ class _HomePageState extends State<HomePage> {
     final AppTab activeTab = tabManager.state.activeTab;
     if (activeTab.folderPath == null) {
       tabManager.updateTabFolderPath(activeTab.id, folderPath);
-      final ImageListCubit? cubit = tabManager.getCubitForTab(activeTab.id);
+      final ImageListCubit? cubit = await _waitForCubit(activeTab.id);
       if (cubit != null) {
         cubit.onFileOpened(filePath);
       }
     } else {
       tabManager.addTab(folderPath);
-      Future<void>.delayed(const Duration(milliseconds: 100), () {
-        final ImageListCubit? cubit = tabManager.getCubitForTab(
-          tabManager.activeTabId,
-        );
-        if (cubit != null) {
-          cubit.onFileOpened(filePath);
-        }
-      });
+      final ImageListCubit? cubit = await _waitForCubit(tabManager.activeTabId);
+      if (cubit != null) {
+        cubit.onFileOpened(filePath);
+      }
     }
   }
 
-  void _handleFolderPicked(String folderPath) {
+  Future<ImageListCubit?> _waitForCubit(String tabId) async {
+    final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+    for (int i = 0; i < 10; i++) {
+      final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
+      if (cubit != null) return cubit;
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    return null;
+  }
+
+  Future<void> _handleFolderPicked(String folderPath) async {
     final TabManagerCubit tabManager = context.read<TabManagerCubit>();
     final AppTab activeTab = tabManager.state.activeTab;
 
     if (activeTab.folderPath == null) {
       tabManager.updateTabFolderPath(activeTab.id, folderPath);
-      final ImageListCubit? cubit = tabManager.getCubitForTab(activeTab.id);
+      final ImageListCubit? cubit = await _waitForCubit(activeTab.id);
       if (cubit != null) {
         cubit.onFolderPicked(folderPath);
       }
     } else {
       tabManager.addTab(folderPath);
-      Future<void>.delayed(const Duration(milliseconds: 100), () {
-        final ImageListCubit? cubit = tabManager.getCubitForTab(
-          tabManager.activeTabId,
-        );
-        if (cubit != null) {
-          cubit.onFolderPicked(folderPath);
-        }
-      });
+      final ImageListCubit? cubit = await _waitForCubit(tabManager.activeTabId);
+      if (cubit != null) {
+        cubit.onFolderPicked(folderPath);
+      }
     }
   }
 

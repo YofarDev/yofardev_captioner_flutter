@@ -66,5 +66,69 @@ void main() {
       expect(db.activeCategory, equals('default'));
       expect(db.images.length, equals(0));
     });
+
+    test(
+      'backfills captions from legacy txt files into existing v2 database',
+      () async {
+        final Map<String, dynamic> v2Db = <String, dynamic>{
+          'version': 2,
+          'categories': <String>['default'],
+          'activeCategory': 'default',
+          'images': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'img-1',
+              'filename': '01.jpg',
+              'captions': <String, dynamic>{},
+              'lastModified': null,
+            },
+          ],
+        };
+
+        await File(
+          p.join(tempDir.path, 'db.json'),
+        ).writeAsString(jsonEncode(v2Db));
+        await File(p.join(tempDir.path, '01.jpg')).writeAsBytes(<int>[1, 2, 3]);
+        await File(
+          p.join(tempDir.path, '01.txt'),
+        ).writeAsString('Legacy caption');
+
+        final images = await fileUtils.onFolderPicked(tempDir.path);
+        final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
+
+        expect(images, hasLength(1));
+        expect(
+          images.first.captions['default']?.text,
+          equals('Legacy caption'),
+        );
+        expect(
+          updatedDb.images.first.captions['default']?.text,
+          equals('Legacy caption'),
+        );
+      },
+    );
+
+    test(
+      'imports legacy txt captions when opening a folder without db.json',
+      () async {
+        await File(p.join(tempDir.path, '01.jpg')).writeAsBytes(<int>[1, 2, 3]);
+        await File(
+          p.join(tempDir.path, '01.txt'),
+        ).writeAsString('Imported caption');
+
+        final images = await fileUtils.onFolderPicked(tempDir.path);
+        final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
+
+        expect(images, hasLength(1));
+        expect(
+          images.first.captions['default']?.text,
+          equals('Imported caption'),
+        );
+        expect(updatedDb.images, hasLength(1));
+        expect(
+          updatedDb.images.first.captions['default']?.text,
+          equals('Imported caption'),
+        );
+      },
+    );
   });
 }

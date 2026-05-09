@@ -47,17 +47,30 @@ class AppFileUtils {
             },
           );
 
+          final CaptionData hydratedCaptionData =
+              await _hydrateCaptionDataFromLegacyTxt(
+                captionData: captionData,
+                folderPath: folderPath,
+              );
+
+          if (!identical(hydratedCaptionData, captionData)) {
+            dbWasModified = true;
+          }
+
           if (!db.images.contains(captionData)) {
-            db.images.add(captionData);
+            db.images.add(hydratedCaptionData);
+          } else if (!identical(hydratedCaptionData, captionData)) {
+            final int existingIndex = db.images.indexOf(captionData);
+            db.images[existingIndex] = hydratedCaptionData;
           }
 
           images.add(
             AppImage(
-              id: captionData.id,
+              id: hydratedCaptionData.id,
               image: file,
-              captions: captionData.captions,
+              captions: hydratedCaptionData.captions,
               size: file.lengthSync(),
-              lastModified: captionData.lastModified,
+              lastModified: hydratedCaptionData.lastModified,
             ),
           );
         }
@@ -83,6 +96,58 @@ class AppFileUtils {
     return images;
   }
 
+  Future<String?> _readLegacyCaptionText({
+    required String folderPath,
+    required String filename,
+  }) async {
+    final File txtFile = File(
+      p.join(folderPath, p.setExtension(filename, '.txt')),
+    );
+
+    if (!await txtFile.exists()) {
+      return null;
+    }
+
+    return txtFile.readAsString();
+  }
+
+  bool _hasAnyNonEmptyCaption(Map<String, CaptionEntry> captions) {
+    return captions.values.any((CaptionEntry entry) => entry.text.isNotEmpty);
+  }
+
+  Future<CaptionData> _hydrateCaptionDataFromLegacyTxt({
+    required CaptionData captionData,
+    required String folderPath,
+  }) async {
+    if (_hasAnyNonEmptyCaption(captionData.captions)) {
+      return captionData;
+    }
+
+    final String? legacyCaptionText = await _readLegacyCaptionText(
+      folderPath: folderPath,
+      filename: captionData.filename,
+    );
+
+    if (legacyCaptionText == null) {
+      return captionData;
+    }
+
+    return CaptionData(
+      id: captionData.id,
+      filename: captionData.filename,
+      captions: <String, CaptionEntry>{
+        ...captionData.captions,
+        'default': CaptionEntry(
+          text: legacyCaptionText,
+          model: captionData.captions['default']?.model,
+          timestamp: captionData.captions['default']?.timestamp,
+          isEdited: captionData.captions['default']?.isEdited ?? false,
+        ),
+      },
+      lastModified: captionData.lastModified,
+    );
+  }
+
   File _getDbPath(String folderPath) {
     return File(p.join(folderPath, 'db.json'));
   }
@@ -99,14 +164,12 @@ class AppFileUtils {
           (img as Map<String, dynamic>)['filename'] as String;
       final String id = img['id'] as String;
 
-      // Read caption from .txt file
-      final File txtFile = File(
-        p.join(folderPath, p.setExtension(filename, '.txt')),
-      );
-      String captionText = '';
-      if (await txtFile.exists()) {
-        captionText = await txtFile.readAsString();
-      }
+      final String captionText =
+          await _readLegacyCaptionText(
+            folderPath: folderPath,
+            filename: filename,
+          ) ??
+          '';
 
       migratedImages.add(
         CaptionData(

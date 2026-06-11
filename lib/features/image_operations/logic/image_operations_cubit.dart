@@ -11,16 +11,13 @@ import '../../image_list/logic/image_list_cubit.dart';
 part 'image_operations_state.dart';
 
 class ImageOperationsCubit extends Cubit<ImageOperationsState> {
-  late final ImageOperationsHelper _imageOperationsHelper;
-
-  ImageOperationsCubit(this._imageListCubit)
-    : super(const ImageOperationsState()) {
-    _imageOperationsHelper = ImageOperationsHelper(
-      imageListCubit: _imageListCubit,
-    );
-  }
-
+  final ImageOperationsHelper _imageOperationsHelper;
   final ImageListCubit _imageListCubit;
+
+  ImageOperationsCubit(this._imageListCubit, {ImageOperationsHelper? helper})
+    : _imageOperationsHelper =
+          helper ?? ImageOperationsHelper(imageListCubit: _imageListCubit),
+      super(const ImageOperationsState());
 
   void renameAllFiles() async {
     if (_imageListCubit.state.folderPath == null) {

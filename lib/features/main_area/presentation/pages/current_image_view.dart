@@ -11,6 +11,8 @@ import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/data/utils/image_utils.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
+import '../../../structured_captioning/presentation/widgets/bbox_overlay.dart';
+import '../../../structured_captioning/presentation/widgets/ideogram_caption_view.dart';
 
 class CurrentImageView extends StatelessWidget {
   const CurrentImageView({super.key});
@@ -81,8 +83,30 @@ class CurrentImageView extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Main image on top
-                    Image.file(currentImage.image, fit: BoxFit.contain),
+                    // Main image on top — with bbox overlay if Ideogram JSON caption
+                    Builder(
+                      builder: (BuildContext context) {
+                        final String category =
+                            context
+                                .read<ImageListCubit>()
+                                .state
+                                .activeCategory ??
+                            'default';
+                        final String caption =
+                            currentImage.captions[category]?.text ?? '';
+                        if (IdeogramCaptionView.isIdeogramJson(caption) &&
+                            BboxElement.parse(caption).isNotEmpty) {
+                          return BboxOverlayImage(
+                            imageFile: currentImage.image,
+                            captionJson: caption,
+                          );
+                        }
+                        return Image.file(
+                          currentImage.image,
+                          fit: BoxFit.contain,
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),

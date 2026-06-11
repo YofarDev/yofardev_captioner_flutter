@@ -8,12 +8,20 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../structured_captioning/presentation/widgets/ideogram_caption_view.dart';
 import '../../logic/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
 
 class CaptionTextArea extends StatefulWidget {
-  const CaptionTextArea({super.key});
+  const CaptionTextArea({
+    super.key,
+    this.onToggleImage,
+    this.isImageVisible = true,
+  });
+
+  final VoidCallback? onToggleImage;
+  final bool isImageVisible;
 
   @override
   State<CaptionTextArea> createState() => _CaptionTextAreaState();
@@ -25,6 +33,10 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
 
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
+
+  /// When true and caption is Ideogram JSON, show raw text instead of
+  /// structured view.
+  bool _showRawJson = false;
 
   @override
   void initState() {
@@ -78,6 +90,12 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
               final String currentImagePath = currentImage.image.path;
               final bool isThisImageBeingCaptioned =
                   captioningState.currentlyCaptioningImage == currentImagePath;
+              final String category = state.activeCategory ?? 'default';
+              final String captionText =
+                  currentImage.captions[category]?.text ?? '';
+              final bool isIdeogram =
+                  IdeogramCaptionView.isIdeogramJson(captionText) &&
+                  !_showRawJson;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
@@ -97,50 +115,56 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                               border: Border.all(
                                 color: isThisImageBeingCaptioned
                                     ? lightPink.withAlpha(100)
+                                    : isIdeogram
+                                    ? Colors.teal.withAlpha(80)
                                     : Colors.white.withAlpha(40),
                                 width: isThisImageBeingCaptioned ? 2 : 1,
                               ),
                               boxShadow: _isFocused
                                   ? <BoxShadow>[
                                       BoxShadow(
-                                        color: lightPink.withAlpha(30),
+                                        color: isIdeogram
+                                            ? Colors.teal.withAlpha(20)
+                                            : lightPink.withAlpha(30),
                                         blurRadius: 15,
                                         spreadRadius: 2,
                                       ),
                                     ]
                                   : <BoxShadow>[],
                             ),
-                            child: TextField(
-                              focusNode: _focusNode,
-                              readOnly: isThisImageBeingCaptioned,
-                              controller: _controller,
-                              style: const TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 16,
-                                height: 1.5,
-                                color: Colors.white,
-                              ),
-                              onChanged: (String value) {
-                                if (_debounce?.isActive ?? false) {
-                                  _debounce!.cancel();
-                                }
-                                _debounce = Timer(
-                                  const Duration(milliseconds: 300),
-                                  () {
-                                    context
-                                        .read<ImageListCubit>()
-                                        .updateCaption(caption: value);
-                                  },
-                                );
-                              },
-                              maxLines: null,
-                              expands: true,
-                              textAlignVertical: TextAlignVertical.top,
-                              decoration: const InputDecoration(
-                                border: InputBorder.none,
-                                isDense: true,
-                              ),
-                            ),
+                            child: isIdeogram
+                                ? IdeogramCaptionView(jsonString: captionText)
+                                : TextField(
+                                    focusNode: _focusNode,
+                                    readOnly: isThisImageBeingCaptioned,
+                                    controller: _controller,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 16,
+                                      height: 1.5,
+                                      color: Colors.white,
+                                    ),
+                                    onChanged: (String value) {
+                                      if (_debounce?.isActive ?? false) {
+                                        _debounce!.cancel();
+                                      }
+                                      _debounce = Timer(
+                                        const Duration(milliseconds: 300),
+                                        () {
+                                          context
+                                              .read<ImageListCubit>()
+                                              .updateCaption(caption: value);
+                                        },
+                                      );
+                                    },
+                                    maxLines: null,
+                                    expands: true,
+                                    textAlignVertical: TextAlignVertical.top,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      isDense: true,
+                                    ),
+                                  ),
                           ),
 
                           Positioned(
@@ -148,12 +172,49 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                             right: 8,
                             child: Builder(
                               builder: (BuildContext context) {
-                                final String category =
-                                    state.activeCategory ?? 'default';
-                                final String captionText =
-                                    currentImage.captions[category]?.text ?? '';
                                 return Row(
                                   children: <Widget>[
+                                    // Ideogram JSON toggle
+                                    if (IdeogramCaptionView.isIdeogramJson(
+                                      captionText,
+                                    ))
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: Tooltip(
+                                          message: _showRawJson
+                                              ? 'Show structured view'
+                                              : 'Show raw JSON',
+                                          child: InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                _showRawJson = !_showRawJson;
+                                              });
+                                            },
+                                            borderRadius: BorderRadius.circular(
+                                              6,
+                                            ),
+                                            child: Container(
+                                              padding: const EdgeInsets.all(6),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withAlpha(
+                                                  50,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(6),
+                                              ),
+                                              child: Icon(
+                                                _showRawJson
+                                                    ? Icons.data_object
+                                                    : Icons.code,
+                                                size: 16,
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -163,26 +224,45 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         color: Colors.black.withAlpha(50),
                                         borderRadius: BorderRadius.circular(6),
                                       ),
-                                      child: Builder(
-                                        builder: (BuildContext context) {
-                                          final String category =
-                                              state.activeCategory ?? 'default';
-                                          final String captionText =
-                                              currentImage
-                                                  .captions[category]
-                                                  ?.text ??
-                                              '';
-                                          return Text(
-                                            "${captionText.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.white54,
-                                            ),
-                                          );
-                                        },
+                                      child: Text(
+                                        "${captionText.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.white54,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
+                                    // Image visibility toggle
+                                    if (widget.onToggleImage != null)
+                                      Tooltip(
+                                        message: widget.isImageVisible
+                                            ? 'Hide image to expand caption'
+                                            : 'Show image',
+                                        child: InkWell(
+                                          onTap: widget.onToggleImage,
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withAlpha(50),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Icon(
+                                              widget.isImageVisible
+                                                  ? Icons.expand_more
+                                                  : Icons.expand_less,
+                                              size: 16,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    if (widget.onToggleImage != null)
+                                      const SizedBox(width: 8),
                                     Tooltip(
                                       message: captionText.trim().isEmpty
                                           ? 'No caption to copy'

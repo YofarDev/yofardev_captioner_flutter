@@ -277,7 +277,7 @@ class AppFileUtils {
           ? '$baseFileName.zip'
           : '$baseFileName-$category.zip';
 
-      final String? outputFile = await FilePicker.platform.saveFile(
+      final String? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Please select an output file',
         fileName: fileName,
         initialDirectory: downloadsPath,

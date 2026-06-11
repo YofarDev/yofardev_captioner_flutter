@@ -6,16 +6,28 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../../../../core/config/service_locator.dart';
-import '../../../image_operations/data/utils/image_utils.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../models/caption/caption_request.dart';
 import '../models/caption/caption_response.dart';
 import '../models/caption/content.dart';
 import '../models/caption/message.dart';
+import 'image_resizer.dart';
+import 'process_runner.dart';
 
 class CaptionService {
   final Logger _logger = locator<Logger>();
+  final ProcessRunner _processRunner;
+  final http.Client _httpClient;
+  final ImageResizer _imageResizer;
+
+  CaptionService({
+    ProcessRunner? processRunner,
+    http.Client? httpClient,
+    ImageResizer? imageResizer,
+  }) : _processRunner = processRunner ?? const ProcessRunner(),
+       _httpClient = httpClient ?? http.Client(),
+       _imageResizer = imageResizer ?? const ImageResizer();
 
   Future<String> getCaption(LlmConfig config, File image, String prompt) {
     if (config.providerType == LlmProviderType.localMlx) {
@@ -32,8 +44,7 @@ class CaptionService {
   ) async {
     File? imageToSend;
     try {
-      // Prepare and optimize image for local processing
-      imageToSend = await ImageUtils.resizeImageIfNecessary(image);
+      imageToSend = await _imageResizer.resizeImageIfNecessary(image);
 
       final List<String> arguments = <String>[
         '--model',
@@ -51,7 +62,10 @@ class CaptionService {
       final String executable = (config.mlxPath?.isNotEmpty ?? false)
           ? config.mlxPath!
           : 'mlx_vlm.generate';
-      final ProcessResult result = await Process.run(executable, arguments);
+      final ProcessResult result = await _processRunner.run(
+        executable,
+        arguments,
+      );
 
       if (result.exitCode == 0) {
         final String output = result.stdout.toString();
@@ -80,7 +94,6 @@ class CaptionService {
         'Failed to run local captioning script. Is Python with mlx_vlm installed and in your PATH? Details: $e',
       );
     } finally {
-      // Clean up temporary file if it was created
       if (imageToSend != null && imageToSend.path != image.path) {
         try {
           await imageToSend.delete();
@@ -103,11 +116,11 @@ class CaptionService {
           'URL and API Key are required for remote providers.',
         );
       }
-      imageToSend = await ImageUtils.resizeImageIfNecessary(image);
+      imageToSend = await _imageResizer.resizeImageIfNecessary(image);
       final Uint8List bytes = await imageToSend.readAsBytes();
       final String base64Image = base64Encode(bytes);
 
-      final String url = _buildUrl(config.url!);
+      final String url = buildUrl(config.url!);
 
       final CaptionRequest request = CaptionRequest(
         model: config.model,
@@ -125,7 +138,7 @@ class CaptionService {
         ],
       );
 
-      final http.Response response = await http.post(
+      final http.Response response = await _httpClient.post(
         Uri.parse(url),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -162,7 +175,8 @@ class CaptionService {
     }
   }
 
-  String _buildUrl(String baseUrl) {
+  /// Visible for testing. Builds the chat completions URL from a base URL.
+  String buildUrl(String baseUrl) {
     if (baseUrl.endsWith('chat/completions')) {
       return baseUrl;
     } else if (baseUrl.endsWith('/')) {

@@ -21,13 +21,9 @@ class PickFolderButton extends StatelessWidget {
         text: "Pick folder",
         iconAssetPath: 'assets/icons/folder.png',
         onTap: () async {
-          final String? selectedDirectory = await FilePicker.platform
-              .getDirectoryPath(
-                initialDirectory: context
-                    .read<ImageListCubit>()
-                    .state
-                    .folderPath,
-              );
+          final String? selectedDirectory = await FilePicker.getDirectoryPath(
+            initialDirectory: context.read<ImageListCubit>().state.folderPath,
+          );
           if (selectedDirectory != null) {
             final TabManagerCubit tabManager = context.read<TabManagerCubit>();
             final AppTab activeTab = tabManager.state.activeTab;

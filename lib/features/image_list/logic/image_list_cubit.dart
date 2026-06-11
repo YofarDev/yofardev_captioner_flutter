@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
@@ -82,6 +83,11 @@ class ImageListCubit extends Cubit<ImageListState> {
     if (folderPath == state.folderPath && !force) {
       return;
     }
+
+    // Evict cached thumbnails so reload shows fresh images.
+    // Without this, Flutter's global ImageCache may serve stale
+    // decoded bytes when new files appear or files are renamed.
+    _evictImageCache();
 
     emit(
       state.copyWith(
@@ -578,5 +584,14 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     emit(state.copyWith(categories: updatedCategories));
     await _saveDb();
+  }
+
+  /// Evicts all current image thumbnails from Flutter's global ImageCache.
+  /// Prevents stale thumbnails when files are added, renamed, or replaced.
+  void _evictImageCache() {
+    final ImageCache cache = PaintingBinding.instance.imageCache;
+    for (final AppImage image in state.images) {
+      cache.evict(FileImage(image.image));
+    }
   }
 }

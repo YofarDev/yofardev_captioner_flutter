@@ -8,6 +8,7 @@ import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
 import '../../data/models/caption_options.dart';
 import '../../logic/captioning_cubit.dart';
 
@@ -119,138 +120,53 @@ class _CaptionControlsState extends State<CaptionControls> {
 
   Widget _buildRunButton() => BlocBuilder<ImageListCubit, ImageListState>(
     builder: (BuildContext context, ImageListState imageListState) {
-      return BlocBuilder<CaptioningCubit, CaptioningState>(
-        builder: (BuildContext context, CaptioningState captioningState) {
-          return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
-            builder: (BuildContext context, LlmConfigsState configState) {
-              final bool isCaptioning =
-                  captioningState.status == CaptioningStatus.inProgress;
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Tooltip(
-                    message: 'Run Vision model with current settings',
-                    child: AppButton(
-                      text: "▶  Run",
-                      isLoading: isCaptioning,
-                      backgroundColor: lightPink.withAlpha(220),
-                      onTap:
-                          imageListState.images.isNotEmpty &&
-                              configState.llmConfigs.selectedConfigId != null &&
-                              !isCaptioning
-                          ? () {
-                              context.read<CaptioningCubit>().runCaptioner(
-                                llm: configState.llmConfigs.configs.firstWhere(
-                                  (LlmConfig c) =>
-                                      c.id ==
-                                      configState.llmConfigs.selectedConfigId,
-                                ),
-                                prompt: configState.llmConfigs.selectedPrompt!,
-                                option: _selectedOption,
-                              );
-                            }
-                          : null,
-                    ),
-                  ),
-                  if (isCaptioning)
-                    Container(
-                      margin: const EdgeInsets.only(left: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withAlpha(100),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          Text(
-                            '${captioningState.processedImages}/${captioningState.totalImages}',
-                            style: const TextStyle(
-                              color: Colors.green,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Tooltip(
-                            message: captioningState.isCancelling
-                                ? 'Waiting for last job...'
-                                : 'Cancel captioning',
-                            child: InkWell(
-                              onTap: captioningState.isCancelling
-                                  ? null
-                                  : () {
-                                      context
-                                          .read<CaptioningCubit>()
-                                          .cancelCaptioning();
-                                    },
-                              borderRadius: BorderRadius.circular(4),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: captioningState.isCancelling
-                                      ? Colors.white.withAlpha(10)
-                                      : Colors.white.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: captioningState.isCancelling
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  if (captioningState.error != null &&
-                      captioningState.error!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Tooltip(
-                        message: captioningState.error,
-                        child: InkWell(
-                          onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(text: captioningState.error!),
-                            );
-                            NotificationOverlay.show(
-                              context,
-                              message: 'Error copied to clipboard',
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withAlpha(100),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.error_outline,
-                              color: Colors.red,
-                              size: 18,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+      return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+        builder: (BuildContext context, LlmConfigsState configState) {
+          final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
+
+          // Listen to the active cubit's state.
+          if (ideogramMode) {
+            return BlocBuilder<
+              StructuredCaptioningCubit,
+              StructuredCaptioningState
+            >(
+              builder:
+                  (
+                    BuildContext context,
+                    StructuredCaptioningState structuredState,
+                  ) {
+                    return _buildRunRow(
+                      context: context,
+                      imageListState: imageListState,
+                      configState: configState,
+                      isInProgress:
+                          structuredState.status ==
+                          StructuredCaptioningStatus.inProgress,
+                      processedImages: structuredState.processedImages,
+                      totalImages: structuredState.totalImages,
+                      isCancelling: structuredState.isCancelling,
+                      stepLabel: structuredState.stepLabel,
+                      error: structuredState.error,
+                      isIdeogram: true,
+                    );
+                  },
+            );
+          }
+
+          return BlocBuilder<CaptioningCubit, CaptioningState>(
+            builder: (BuildContext context, CaptioningState captioningState) {
+              return _buildRunRow(
+                context: context,
+                imageListState: imageListState,
+                configState: configState,
+                isInProgress:
+                    captioningState.status == CaptioningStatus.inProgress,
+                processedImages: captioningState.processedImages,
+                totalImages: captioningState.totalImages,
+                isCancelling: captioningState.isCancelling,
+                stepLabel: null,
+                error: captioningState.error,
+                isIdeogram: false,
               );
             },
           );
@@ -258,4 +174,175 @@ class _CaptionControlsState extends State<CaptionControls> {
       );
     },
   );
+
+  Widget _buildRunRow({
+    required BuildContext context,
+    required ImageListState imageListState,
+    required LlmConfigsState configState,
+    required bool isInProgress,
+    required int processedImages,
+    required int totalImages,
+    required bool isCancelling,
+    required String? stepLabel,
+    required String? error,
+    required bool isIdeogram,
+  }) {
+    final Color accentColor = isIdeogram
+        ? Colors.teal.withAlpha(220)
+        : lightPink.withAlpha(220);
+    final Color progressBg = isIdeogram
+        ? Colors.teal.withAlpha(100)
+        : Colors.green.withAlpha(100);
+    final Color progressFg = isIdeogram ? Colors.teal : Colors.green;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Tooltip(
+          message: isIdeogram
+              ? 'Run Ideogram JSON structured pipeline'
+              : 'Run Vision model with current settings',
+          child: AppButton(
+            text: isIdeogram ? "▶  JSON Run" : "▶  Run",
+            isLoading: isInProgress,
+            backgroundColor: accentColor,
+            onTap:
+                imageListState.images.isNotEmpty &&
+                    configState.llmConfigs.selectedConfigId != null &&
+                    !isInProgress
+                ? () {
+                    final LlmConfig llm = configState.llmConfigs.configs
+                        .firstWhere(
+                          (LlmConfig c) =>
+                              c.id == configState.llmConfigs.selectedConfigId,
+                        );
+                    if (isIdeogram) {
+                      context
+                          .read<StructuredCaptioningCubit>()
+                          .runStructuredCaptioner(
+                            llm: llm,
+                            option: _selectedOption,
+                          );
+                    } else {
+                      context.read<CaptioningCubit>().runCaptioner(
+                        llm: llm,
+                        prompt: configState.llmConfigs.selectedPrompt!,
+                        option: _selectedOption,
+                      );
+                    }
+                  }
+                : null,
+          ),
+        ),
+        if (isInProgress)
+          Container(
+            margin: const EdgeInsets.only(left: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: progressBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (stepLabel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Text(
+                      stepLabel,
+                      style: TextStyle(
+                        color: isIdeogram ? Colors.tealAccent : Colors.green,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                Text(
+                  '$processedImages/$totalImages',
+                  style: TextStyle(
+                    color: progressFg,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Tooltip(
+                  message: isCancelling
+                      ? 'Waiting for last job...'
+                      : 'Cancel captioning',
+                  child: InkWell(
+                    onTap: isCancelling
+                        ? null
+                        : () {
+                            if (isIdeogram) {
+                              context
+                                  .read<StructuredCaptioningCubit>()
+                                  .cancelStructuredCaptioning();
+                            } else {
+                              context
+                                  .read<CaptioningCubit>()
+                                  .cancelCaptioning();
+                            }
+                          },
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: isCancelling
+                            ? Colors.white.withAlpha(10)
+                            : Colors.white.withAlpha(30),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: isCancelling
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (error != null && error.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 8.0),
+            child: Tooltip(
+              message: error,
+              child: InkWell(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: error));
+                  NotificationOverlay.show(
+                    context,
+                    message: 'Error copied to clipboard',
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withAlpha(100),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    color: Colors.red,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }

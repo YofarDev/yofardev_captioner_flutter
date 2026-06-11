@@ -8,8 +8,24 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_view.dart';
 import 'current_image_view.dart';
 
-class MainAreaView extends StatelessWidget {
+class MainAreaView extends StatefulWidget {
   const MainAreaView({super.key});
+
+  @override
+  State<MainAreaView> createState() => _MainAreaViewState();
+}
+
+class _MainAreaViewState extends State<MainAreaView> {
+  bool _imageVisible = true;
+
+  void toggleImageVisibility() {
+    setState(() {
+      _imageVisible = !_imageVisible;
+    });
+  }
+
+  bool get isImageVisible => _imageVisible;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
@@ -21,12 +37,17 @@ class MainAreaView extends StatelessWidget {
         }
         return Stack(
           children: <Widget>[
-            const Column(
+            Column(
               children: <Widget>[
-                CurrentImageView(),
-                Expanded(child: CaptionTextArea()),
-                ControlsView(),
-                SizedBox(height: 16),
+                if (_imageVisible) const CurrentImageView(),
+                Expanded(
+                  child: CaptionTextArea(
+                    onToggleImage: toggleImageVisibility,
+                    isImageVisible: _imageVisible,
+                  ),
+                ),
+                const ControlsView(),
+                const SizedBox(height: 16),
               ],
             ),
             Positioned(

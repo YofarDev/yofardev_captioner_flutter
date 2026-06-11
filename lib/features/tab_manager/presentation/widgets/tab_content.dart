@@ -9,6 +9,7 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/pages/images_list_view.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
 import '../../../main_area/presentation/pages/main_area_view.dart';
+import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
 import '../../logic/tab_manager_cubit.dart';
 
 class TabContent extends StatefulWidget {
@@ -27,6 +28,7 @@ class TabContentState extends State<TabContent>
 
   late final ImageListCubit _imageListCubit;
   late final CaptioningCubit _captioningCubit;
+  late final StructuredCaptioningCubit _structuredCaptioningCubit;
   late final ImageOperationsCubit _imageOperationsCubit;
   late final CaptionSearchCubit _captionSearchCubit;
   TabManagerCubit? _tabManagerCubit;
@@ -36,6 +38,7 @@ class TabContentState extends State<TabContent>
     super.initState();
     _imageListCubit = ImageListCubit();
     _captioningCubit = CaptioningCubit(_imageListCubit);
+    _structuredCaptioningCubit = StructuredCaptioningCubit(_imageListCubit);
     _imageOperationsCubit = ImageOperationsCubit(_imageListCubit);
     _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);
     // Register with TabManagerCubit after first frame (context available)
@@ -50,6 +53,7 @@ class TabContentState extends State<TabContent>
     _tabManagerCubit?.unregisterTabCubit(widget.tabId);
     _captionSearchCubit.close();
     _imageOperationsCubit.close();
+    _structuredCaptioningCubit.close();
     _captioningCubit.close();
     _imageListCubit.close();
     super.dispose();
@@ -65,6 +69,9 @@ class TabContentState extends State<TabContent>
       providers: <SingleChildWidget>[
         BlocProvider<ImageListCubit>.value(value: _imageListCubit),
         BlocProvider<CaptioningCubit>.value(value: _captioningCubit),
+        BlocProvider<StructuredCaptioningCubit>.value(
+          value: _structuredCaptioningCubit,
+        ),
         BlocProvider<ImageOperationsCubit>.value(value: _imageOperationsCubit),
         BlocProvider<CaptionSearchCubit>.value(value: _captionSearchCubit),
       ],

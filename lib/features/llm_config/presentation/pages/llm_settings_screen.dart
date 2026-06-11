@@ -312,105 +312,162 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
       body: BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
         builder: (BuildContext context, LlmConfigsState state) {
           return SafeArea(
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                // Responsive breakpoint: collapse to single column on narrow screens
-                final bool useSingleColumn = constraints.maxWidth < 1024;
+            child: Column(
+              children: <Widget>[
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (BuildContext context, BoxConstraints constraints) {
+                      // Responsive breakpoint: collapse to single column on narrow screens
+                      final bool useSingleColumn = constraints.maxWidth < 1024;
 
-                if (useSingleColumn) {
-                  // Single column layout for narrow screens
-                  return Column(
-                    children: <Widget>[
-                      _buildSectionHeader(
-                        context,
-                        title: "Vision Models",
-                        icon: Icons.settings_input_component,
-                        onAdd: () => _showConfigDialog(),
-                        count: state.llmConfigs.configs.length,
-                      ),
-                      Expanded(
-                        flex: 5,
-                        child: state.llmConfigs.configs.isEmpty
-                            ? _buildEmptyState("No models configured yet.")
-                            : _buildModelsList(state),
-                      ),
-                      Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: lightGrey.withValues(alpha: 0.3),
-                      ),
-                      _buildSectionHeader(
-                        context,
-                        title: "Prompts",
-                        icon: Icons.chat_bubble_outline,
-                        onAdd: () => _showPromptDialog(),
-                        count: state.llmConfigs.prompts.length,
-                      ),
-                      Expanded(
-                        flex: 4,
-                        child: state.llmConfigs.prompts.isEmpty
-                            ? _buildEmptyState("No prompts added yet.")
-                            : _buildPromptsList(state),
-                      ),
-                    ],
-                  );
-                }
+                      if (useSingleColumn) {
+                        // Single column layout for narrow screens
+                        return Column(
+                          children: <Widget>[
+                            _buildSectionHeader(
+                              context,
+                              title: "Vision Models",
+                              icon: Icons.settings_input_component,
+                              onAdd: () => _showConfigDialog(),
+                              count: state.llmConfigs.configs.length,
+                            ),
+                            Expanded(
+                              flex: 5,
+                              child: state.llmConfigs.configs.isEmpty
+                                  ? _buildEmptyState(
+                                      "No models configured yet.",
+                                    )
+                                  : _buildModelsList(state),
+                            ),
+                            Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: lightGrey.withValues(alpha: 0.3),
+                            ),
+                            _buildSectionHeader(
+                              context,
+                              title: "Prompts",
+                              icon: Icons.chat_bubble_outline,
+                              onAdd: () => _showPromptDialog(),
+                              count: state.llmConfigs.prompts.length,
+                            ),
+                            Expanded(
+                              flex: 4,
+                              child: state.llmConfigs.prompts.isEmpty
+                                  ? _buildEmptyState("No prompts added yet.")
+                                  : _buildPromptsList(state),
+                            ),
+                          ],
+                        );
+                      }
 
-                // Side-by-side layout (45/55 split)
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    // Models panel (45%)
-                    Expanded(
-                      flex: 45,
-                      child: Column(
+                      // Side-by-side layout (45/55 split)
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          _buildSectionHeader(
-                            context,
-                            title: "Vision Models",
-                            icon: Icons.settings_input_component,
-                            onAdd: () => _showConfigDialog(),
-                            count: state.llmConfigs.configs.length,
-                          ),
+                          // Models panel (45%)
                           Expanded(
-                            child: state.llmConfigs.configs.isEmpty
-                                ? _buildEmptyState("No models configured yet.")
-                                : _buildModelsList(state),
+                            flex: 45,
+                            child: Column(
+                              children: <Widget>[
+                                _buildSectionHeader(
+                                  context,
+                                  title: "Vision Models",
+                                  icon: Icons.settings_input_component,
+                                  onAdd: () => _showConfigDialog(),
+                                  count: state.llmConfigs.configs.length,
+                                ),
+                                Expanded(
+                                  child: state.llmConfigs.configs.isEmpty
+                                      ? _buildEmptyState(
+                                          "No models configured yet.",
+                                        )
+                                      : _buildModelsList(state),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Vertical divider
+                          Container(
+                            width: 1,
+                            color: lightGrey.withValues(alpha: 0.3),
+                          ),
+                          // Prompts panel (55%)
+                          Expanded(
+                            flex: 55,
+                            child: Column(
+                              children: <Widget>[
+                                _buildSectionHeader(
+                                  context,
+                                  title: "Prompts",
+                                  icon: Icons.chat_bubble_outline,
+                                  onAdd: () => _showPromptDialog(),
+                                  count: state.llmConfigs.prompts.length,
+                                ),
+                                Expanded(
+                                  child: state.llmConfigs.prompts.isEmpty
+                                      ? _buildEmptyState(
+                                          "No prompts added yet.",
+                                        )
+                                      : _buildPromptsList(state),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      ),
-                    ),
-                    // Vertical divider
-                    Container(
-                      width: 1,
-                      color: lightGrey.withValues(alpha: 0.3),
-                    ),
-                    // Prompts panel (55%)
-                    Expanded(
-                      flex: 55,
-                      child: Column(
-                        children: <Widget>[
-                          _buildSectionHeader(
-                            context,
-                            title: "Prompts",
-                            icon: Icons.chat_bubble_outline,
-                            onAdd: () => _showPromptDialog(),
-                            count: state.llmConfigs.prompts.length,
-                          ),
-                          Expanded(
-                            child: state.llmConfigs.prompts.isEmpty
-                                ? _buildEmptyState("No prompts added yet.")
-                                : _buildPromptsList(state),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
+                      );
+                    },
+                  ),
+                ),
+                _buildIdeogramSection(state),
+              ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildIdeogramSection(LlmConfigsState state) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      decoration: BoxDecoration(
+        color: lightGrey.withValues(alpha: 0.1),
+        border: Border(
+          top: BorderSide(color: lightGrey.withValues(alpha: 0.3)),
+        ),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.data_object, color: Colors.teal[300], size: 20),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Ideogram JSON Caption',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 15,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Uses VLM + SAM3 for structured bounding box output',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: state.llmConfigs.ideogramJsonEnabled,
+            onChanged: (bool value) {
+              context.read<LlmConfigsCubit>().setIdeogramJsonEnabled(value);
+            },
+            activeThumbColor: Colors.teal,
+          ),
+        ],
       ),
     );
   }

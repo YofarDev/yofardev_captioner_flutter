@@ -1,12 +1,13 @@
-import 'dart:async';
-
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../models/caption_entry.dart';
 import './caption_repository.dart';
 
 class CaptioningRepository {
-  final CaptionRepository _captionRepository = CaptionRepository();
+  final CaptionRepository _captionRepository;
+  CaptioningRepository({CaptionRepository? captionRepository})
+    : _captionRepository = captionRepository ?? CaptionRepository();
+
   Future<AppImage> captionImage(
     LlmConfig config,
     AppImage image,

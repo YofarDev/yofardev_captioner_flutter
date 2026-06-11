@@ -97,9 +97,7 @@ class CategoryTabBar extends StatelessWidget {
           confirmText: 'Add',
           onConfirm: () {
             if (controller.text.trim().isNotEmpty) {
-              context.read<ImageListCubit>().addCategory(
-                controller.text.trim(),
-              );
+              imageListCubit.addCategory(controller.text.trim());
             }
           },
         ),
@@ -115,52 +113,56 @@ class CategoryTabBar extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
-        value: imageListCubit,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              const SizedBox(height: 8),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.white.withAlpha(50),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+      builder: (BuildContext sheetContext) =>
+          BlocProvider<ImageListCubit>.value(
+            value: imageListCubit,
+            child: SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(50),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.edit_outlined,
+                      color: Colors.white,
+                    ),
+                    title: const Text(
+                      'Rename category',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showRenameDialog(context, category);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                    ),
+                    title: const Text(
+                      'Delete category',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      _showDeleteDialog(context, category);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined, color: Colors.white),
-                title: const Text(
-                  'Rename category',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showRenameDialog(context, category);
-                },
-              ),
-              ListTile(
-                leading: const Icon(
-                  Icons.delete_outline,
-                  color: Colors.redAccent,
-                ),
-                title: const Text(
-                  'Delete category',
-                  style: TextStyle(color: Colors.redAccent),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _showDeleteDialog(context, category);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -180,10 +182,7 @@ class CategoryTabBar extends StatelessWidget {
           confirmText: 'Rename',
           onConfirm: () {
             if (controller.text.trim().isNotEmpty) {
-              context.read<ImageListCubit>().renameCategory(
-                category,
-                controller.text.trim(),
-              );
+              imageListCubit.renameCategory(category, controller.text.trim());
             }
           },
         ),
@@ -220,7 +219,7 @@ class CategoryTabBar extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                context.read<ImageListCubit>().removeCategory(category);
+                imageListCubit.removeCategory(category);
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(

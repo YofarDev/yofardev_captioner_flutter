@@ -8,11 +8,15 @@ class LlmConfigs extends Equatable {
   final String? selectedConfigId;
   final String? selectedPrompt;
 
+  /// When true, the Run button uses the Ideogram4 structured JSON pipeline.
+  final bool ideogramJsonEnabled;
+
   const LlmConfigs({
     required this.configs,
     required this.prompts,
     this.selectedConfigId,
     this.selectedPrompt,
+    this.ideogramJsonEnabled = false,
   });
 
   @override
@@ -21,6 +25,7 @@ class LlmConfigs extends Equatable {
     prompts,
     selectedConfigId,
     selectedPrompt,
+    ideogramJsonEnabled,
   ];
 
   LlmConfigs copyWith({
@@ -29,6 +34,7 @@ class LlmConfigs extends Equatable {
     String? selectedConfigId,
     String? selectedPrompt,
     bool forceSelectedConfigId = false,
+    bool? ideogramJsonEnabled,
   }) {
     return LlmConfigs(
       configs: configs ?? this.configs,
@@ -37,6 +43,7 @@ class LlmConfigs extends Equatable {
           ? selectedConfigId
           : selectedConfigId ?? this.selectedConfigId,
       selectedPrompt: selectedPrompt ?? this.selectedPrompt,
+      ideogramJsonEnabled: ideogramJsonEnabled ?? this.ideogramJsonEnabled,
     );
   }
 
@@ -51,6 +58,7 @@ class LlmConfigs extends Equatable {
           : <String>[json['prompt'] as String],
       selectedConfigId: json['selectedConfigId'] as String?,
       selectedPrompt: json['selectedPrompt'] as String?,
+      ideogramJsonEnabled: json['ideogramJsonEnabled'] as bool? ?? false,
     );
   }
   Map<String, dynamic> toJson() {
@@ -59,6 +67,7 @@ class LlmConfigs extends Equatable {
       'prompts': prompts,
       'selectedConfigId': selectedConfigId,
       'selectedPrompt': selectedPrompt,
+      'ideogramJsonEnabled': ideogramJsonEnabled,
     };
   }
 

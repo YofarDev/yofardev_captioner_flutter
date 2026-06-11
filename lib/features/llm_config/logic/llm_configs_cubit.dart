@@ -232,4 +232,14 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     );
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
+
+  /// Toggles the Ideogram JSON structured captioning mode.
+  void setIdeogramJsonEnabled(bool enabled) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(ideogramJsonEnabled: enabled),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
 }

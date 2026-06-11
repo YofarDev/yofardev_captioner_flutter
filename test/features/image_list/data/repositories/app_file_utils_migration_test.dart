@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
+import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 
 void main() {
@@ -92,7 +93,9 @@ void main() {
           p.join(tempDir.path, '01.txt'),
         ).writeAsString('Legacy caption');
 
-        final images = await fileUtils.onFolderPicked(tempDir.path);
+        final List<AppImage> images = await fileUtils.onFolderPicked(
+          tempDir.path,
+        );
         final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
 
         expect(images, hasLength(1));
@@ -115,7 +118,9 @@ void main() {
           p.join(tempDir.path, '01.txt'),
         ).writeAsString('Imported caption');
 
-        final images = await fileUtils.onFolderPicked(tempDir.path);
+        final List<AppImage> images = await fileUtils.onFolderPicked(
+          tempDir.path,
+        );
         final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
 
         expect(images, hasLength(1));

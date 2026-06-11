@@ -3,7 +3,10 @@ import '../../../llm_config/data/models/llm_config.dart';
 import '../services/caption_service.dart';
 
 class CaptionRepository {
-  final CaptionService _captionService = CaptionService();
+  final CaptionService _captionService;
+  CaptionRepository({CaptionService? captionService})
+    : _captionService = captionService ?? CaptionService();
+
   Future<String> getCaption(LlmConfig config, AppImage image, String prompt) {
     return _captionService.getCaption(config, image.image, prompt);
   }

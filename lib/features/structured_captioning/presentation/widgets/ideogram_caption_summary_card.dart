@@ -2,11 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../image_list/logic/image_list_cubit.dart';
 import '../../data/models/ideogram_caption.dart';
-import '../pages/structured_editor_page.dart';
 
 /// Compact summary card for Ideogram JSON captions on the main screen.
 ///
@@ -105,67 +102,25 @@ class IdeogramCaptionSummaryCard extends StatelessWidget {
         ),
         const SizedBox(height: 10),
 
-        // Element count + edit button
-        Row(
-          children: <Widget>[
-            // Element count badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.teal.withAlpha(30),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$objCount obj${objCount != 1 ? 's' : ''}'
-                '${textCount > 0 ? ' · $textCount text' : ''}',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  color: Colors.tealAccent,
-                ),
-              ),
+        // Element count badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            color: Colors.teal.withAlpha(30),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            '$objCount obj${objCount != 1 ? 's' : ''}'
+            '${textCount > 0 ? ' · $textCount text' : ''}',
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 11,
+              color: Colors.tealAccent,
             ),
-            const Spacer(),
-            // Edit button
-            Tooltip(
-              message: 'Edit in structured editor',
-              child: InkWell(
-                onTap: () => _openEditor(context),
-                borderRadius: BorderRadius.circular(6),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.teal.withAlpha(40),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(
-                    Icons.edit_outlined,
-                    size: 16,
-                    color: Colors.tealAccent,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
         const Spacer(),
       ],
-    );
-  }
-
-  void _openEditor(BuildContext context) {
-    // Capture cubit BEFORE pushing — the new route's builder context
-    // does not have access to this route's providers.
-    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
-    Navigator.of(context).push<bool>(
-      MaterialPageRoute<bool>(
-        builder: (BuildContext routeContext) => StructuredEditorPage(
-          imageFile: imageFile,
-          captionJson: jsonString,
-          activeCategory: activeCategory,
-          imageListCubit: imageListCubit,
-        ),
-      ),
     );
   }
 }

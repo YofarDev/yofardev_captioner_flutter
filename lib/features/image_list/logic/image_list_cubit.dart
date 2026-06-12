@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 
 import '../../../../core/utils/extensions.dart';
 import '../../../features/image_operations/data/utils/image_utils.dart';
+import '../../caption_search/data/models/filter_query.dart';
+import '../../caption_search/data/services/filter_parser.dart';
 import '../../captioning/data/models/caption_data.dart';
 import '../../captioning/data/models/caption_database.dart';
 import '../../captioning/data/models/caption_entry.dart';
@@ -23,24 +25,43 @@ class ImageListCubit extends Cubit<ImageListState> {
   final AppFileUtils _fileUtils;
 
   /// Returns the filtered list of images based on the current search query.
-  /// If no search query is active, returns all images.
+  ///
+  /// Supports both plain text search and structured filter expressions
+  /// (e.g. `:has:text:`, `:medium:photograph:`). Filters are parsed via
+  /// [FilterParser] and all components combine with AND logic.
   List<AppImage> get filteredImages {
     if (state.searchQuery.isEmpty) {
       return state.images;
     }
 
-    final String query = state.caseSensitive
-        ? state.searchQuery
-        : state.searchQuery.toLowerCase();
-
     final String category = state.activeCategory ?? 'default';
+    final ParsedFilterQuery parsedQuery = FilterParser.parse(state.searchQuery);
+
+    // No filters and no text — return all
+    if (parsedQuery.filters.isEmpty && parsedQuery.plainTextQuery.isEmpty) {
+      return state.images;
+    }
 
     return state.images.where((AppImage image) {
-      final String caption = image.captions[category]?.text ?? '';
-      final String searchCaption = state.caseSensitive
-          ? caption
-          : caption.toLowerCase();
-      return searchCaption.contains(query);
+      final String captionText = image.captions[category]?.text ?? '';
+
+      // Plain text component (respects case sensitivity)
+      if (parsedQuery.plainTextQuery.isNotEmpty) {
+        final String query = state.caseSensitive
+            ? parsedQuery.plainTextQuery
+            : parsedQuery.plainTextQuery.toLowerCase();
+        final String searchCaption = state.caseSensitive
+            ? captionText
+            : captionText.toLowerCase();
+        if (!searchCaption.contains(query)) return false;
+      }
+
+      // Structured filter expressions (AND logic)
+      for (final FilterExpression filter in parsedQuery.filters) {
+        if (!filter.evaluate(captionText)) return false;
+      }
+
+      return true;
     }).toList();
   }
 

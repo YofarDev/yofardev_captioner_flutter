@@ -8,6 +8,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../structured_captioning/presentation/pages/structured_editor_page.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 import '../../logic/captioning_cubit.dart';
 import 'category_tab_bar.dart';
@@ -225,6 +226,50 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         ),
                                       ),
                                     ),
+                                    if (isIdeogram) ...<Widget>[
+                                      const SizedBox(width: 8),
+                                      Tooltip(
+                                        message: 'Edit in structured editor',
+                                        child: InkWell(
+                                          onTap: () {
+                                            final ImageListCubit
+                                            imageListCubit = context
+                                                .read<ImageListCubit>();
+                                            Navigator.of(context).push<bool>(
+                                              MaterialPageRoute<bool>(
+                                                builder:
+                                                    (
+                                                      BuildContext routeContext,
+                                                    ) => StructuredEditorPage(
+                                                      imageFile:
+                                                          currentImage.image,
+                                                      captionJson: captionText,
+                                                      activeCategory: category,
+                                                      imageListCubit:
+                                                          imageListCubit,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: Colors.teal.withAlpha(40),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 16,
+                                              color: Colors.tealAccent,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ],
                                 );
                               },

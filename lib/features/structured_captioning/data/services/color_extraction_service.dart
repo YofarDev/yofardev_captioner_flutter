@@ -4,24 +4,32 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-/// Extracts color palettes from images using k-means clustering on pixel data.
+/// Extracts color palettes from images using k-means clustering in CIELAB space.
+///
+/// Lab distance approximates human color perception much better than raw RGB
+/// distance, producing more visually distinct and accurate palettes.
 class ColorExtractionService {
   /// Extracts a palette of [colorCount] hex colors from [imageFile].
   ///
-  /// Returns colors as "#RRGGBB" strings.
+  /// Returns colors as "#RRGGBB" strings, sorted by dominance (largest cluster first).
   Future<List<String>> extractPalette(
     File imageFile, {
     int colorCount = 6,
   }) async {
     final Uint8List bytes = await imageFile.readAsBytes();
-    final img.Image? image = img.decodeImage(bytes);
+    img.Image? image;
+    try {
+      image = img.decodeImage(bytes);
+    } catch (_) {
+      return <String>[];
+    }
     if (image == null) return <String>[];
 
-    final List<_Rgb> pixels = _samplePixels(image);
-    if (pixels.isEmpty) return <String>[];
+    final List<_Lab> labPixels = _samplePixelsAsLab(image);
+    if (labPixels.isEmpty) return <String>[];
 
-    final List<_Rgb> centroids = _kMeansCluster(pixels, colorCount);
-    return centroids.map((_Rgb c) => '#${c.toHex()}').toList();
+    final List<_Lab> centroids = _kMeansLab(labPixels, colorCount);
+    return centroids.map((_Lab c) => _labToRgb(c).toHex()).toList();
   }
 
   /// Extracts a palette from a cropped region defined by [bbox].
@@ -33,7 +41,12 @@ class ColorExtractionService {
     int colorCount = 5,
   }) async {
     final Uint8List bytes = await imageFile.readAsBytes();
-    final img.Image? fullImage = img.decodeImage(bytes);
+    img.Image? fullImage;
+    try {
+      fullImage = img.decodeImage(bytes);
+    } catch (_) {
+      return <String>[];
+    }
     if (fullImage == null) return <String>[];
 
     final int imgW = fullImage.width;
@@ -55,47 +68,48 @@ class ColorExtractionService {
       height: py2 - py1,
     );
 
-    final List<_Rgb> pixels = _samplePixels(region);
-    if (pixels.isEmpty) return <String>[];
+    final List<_Lab> labPixels = _samplePixelsAsLab(region);
+    if (labPixels.isEmpty) return <String>[];
 
-    final List<_Rgb> centroids = _kMeansCluster(pixels, colorCount);
-    return centroids.map((_Rgb c) => '#${c.toHex()}').toList();
+    final List<_Lab> centroids = _kMeansLab(labPixels, colorCount);
+    return centroids.map((_Lab c) => _labToRgb(c).toHex()).toList();
   }
 
+  // ===========================================================================
+  // Pixel sampling
+  // ===========================================================================
+
   /// Samples pixels from an image, skipping every Nth pixel for performance.
-  List<_Rgb> _samplePixels(img.Image image) {
+  /// Converts directly to Lab space.
+  List<_Lab> _samplePixelsAsLab(img.Image image) {
     final int total = image.width * image.height;
-    // Target ~5000 pixels for clustering.
     final int step = max(1, total ~/ 5000);
-    final List<_Rgb> pixels = <_Rgb>[];
+    final List<_Lab> pixels = <_Lab>[];
 
     for (int y = 0; y < image.height; y++) {
       for (int x = 0; x < image.width; x++) {
         if ((y * image.width + x) % step != 0) continue;
         final img.Pixel pixel = image.getPixel(x, y);
-        // Skip mostly transparent pixels.
         if (pixel.a < 128) continue;
-        pixels.add(_Rgb(pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt()));
+        pixels.add(
+          _rgbToLab(_Rgb(pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt())),
+        );
       }
     }
     return pixels;
   }
 
-  /// K-means clustering on RGB pixel data.
-  ///
-  /// Uses k-means++ initialization and runs [maxIterations] refinement steps.
+  // ===========================================================================
+  // K-means in Lab space
+  // ===========================================================================
+
+  /// K-means clustering in CIELAB space with k-means++ initialization.
   /// Returns cluster centroids sorted by cluster size (largest first).
-  List<_Rgb> _kMeansCluster(
-    List<_Rgb> pixels,
-    int k, {
-    int maxIterations = 20,
-  }) {
-    if (pixels.length <= k) {
-      return pixels.take(k).toList();
-    }
+  List<_Lab> _kMeansLab(List<_Lab> pixels, int k, {int maxIterations = 20}) {
+    if (pixels.length <= k) return pixels.take(k).toList();
 
     final Random random = Random(42);
-    final List<_Rgb> centroids = _kMeansPlusPlusInit(pixels, k, random);
+    final List<_Lab> centroids = _kMeansPlusPlusInitLab(pixels, k, random);
     final List<int> assignments = List<int>.filled(pixels.length, 0);
 
     for (int iter = 0; iter < maxIterations; iter++) {
@@ -114,22 +128,22 @@ class ColorExtractionService {
       }
 
       // Recompute centroids.
-      final List<_Rgb> newCentroids = <_Rgb>[];
+      final List<_Lab> newCentroids = <_Lab>[];
       for (int c = 0; c < centroids.length; c++) {
-        int sumR = 0;
-        int sumG = 0;
-        int sumB = 0;
+        double sumL = 0;
+        double sumA = 0;
+        double sumB = 0;
         int count = 0;
         for (int i = 0; i < pixels.length; i++) {
           if (assignments[i] == c) {
-            sumR += pixels[i].r;
-            sumG += pixels[i].g;
+            sumL += pixels[i].l;
+            sumA += pixels[i].a;
             sumB += pixels[i].b;
             count++;
           }
         }
         if (count > 0) {
-          newCentroids.add(_Rgb(sumR ~/ count, sumG ~/ count, sumB ~/ count));
+          newCentroids.add(_Lab(sumL / count, sumA / count, sumB / count));
         } else {
           // Dead cluster — reinitialize to random pixel.
           newCentroids.add(pixels[random.nextInt(pixels.length)]);
@@ -139,7 +153,7 @@ class ColorExtractionService {
       // Check convergence.
       bool converged = true;
       for (int c = 0; c < centroids.length; c++) {
-        if (centroids[c].distanceSq(newCentroids[c]) > 1.0) {
+        if (centroids[c].distanceSq(newCentroids[c]) > 0.01) {
           converged = false;
           break;
         }
@@ -161,16 +175,16 @@ class ColorExtractionService {
     return indices.map((int i) => centroids[i]).toList();
   }
 
-  /// K-means++ initialization: spread initial centroids across the data.
-  List<_Rgb> _kMeansPlusPlusInit(List<_Rgb> pixels, int k, Random random) {
-    final List<_Rgb> centroids = <_Rgb>[];
+  /// K-means++ initialization in Lab space.
+  List<_Lab> _kMeansPlusPlusInitLab(List<_Lab> pixels, int k, Random random) {
+    final List<_Lab> centroids = <_Lab>[];
     centroids.add(pixels[random.nextInt(pixels.length)]);
 
     for (int c = 1; c < k; c++) {
       final List<double> distances = pixels
           .map(
-            (_Rgb p) => centroids
-                .map((_Rgb center) => p.distanceSq(center))
+            (_Lab p) => centroids
+                .map((_Lab center) => p.distanceSq(center))
                 .reduce(min),
           )
           .toList();
@@ -194,7 +208,85 @@ class ColorExtractionService {
     }
     return centroids;
   }
+
+  // ===========================================================================
+  // Color space conversions
+  // ===========================================================================
+
+  /// sRGB channel (0-255) → linear.
+  static double _srgbToLinear(int c) {
+    final double s = c / 255.0;
+    return s <= 0.04045 ? s / 12.92 : pow((s + 0.055) / 1.055, 2.4).toDouble();
+  }
+
+  /// Linear → sRGB byte (0-255).
+  static int _linearToSrgb(double c) {
+    final double s = c <= 0.0031308
+        ? c * 12.92
+        : 1.055 * pow(c, 1.0 / 2.4).toDouble() - 0.055;
+    return (s.clamp(0.0, 1.0) * 255.0).round();
+  }
+
+  static const double _labEpsilon = 0.008856; // (6/29)^3
+  static const double _labKappa = 903.3; // (29/3)^3
+
+  /// sRGB → CIELAB (D65 illuminant).
+  static _Lab _rgbToLab(_Rgb rgb) {
+    final double lr = _srgbToLinear(rgb.r);
+    final double lg = _srgbToLinear(rgb.g);
+    final double lb = _srgbToLinear(rgb.b);
+
+    // Linear RGB → XYZ (D65).
+    final double x = 0.4124564 * lr + 0.3575761 * lg + 0.1804375 * lb;
+    final double y = 0.2126729 * lr + 0.7151522 * lg + 0.0721750 * lb;
+    final double z = 0.0193339 * lr + 0.1191920 * lg + 0.9503041 * lb;
+
+    // XYZ normalized to D65 white point.
+    double fx = x / 0.95047;
+    double fy = y / 1.00000;
+    double fz = z / 1.08883;
+
+    fx = fx > _labEpsilon
+        ? pow(fx, 1.0 / 3.0).toDouble()
+        : (_labKappa * fx + 16.0) / 116.0;
+    fy = fy > _labEpsilon
+        ? pow(fy, 1.0 / 3.0).toDouble()
+        : (_labKappa * fy + 16.0) / 116.0;
+    fz = fz > _labEpsilon
+        ? pow(fz, 1.0 / 3.0).toDouble()
+        : (_labKappa * fz + 16.0) / 116.0;
+
+    return _Lab(116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz));
+  }
+
+  /// CIELAB → sRGB.
+  static _Rgb _labToRgb(_Lab lab) {
+    final double fy = (lab.l + 16.0) / 116.0;
+    final double fx = lab.a / 500.0 + fy;
+    final double fz = fy - lab.b / 200.0;
+
+    final double xr = fx * fx * fx > _labEpsilon
+        ? fx * fx * fx
+        : (116.0 * fx - 16.0) / _labKappa;
+    final double yr = lab.l > _labKappa * _labEpsilon
+        ? pow((lab.l + 16.0) / 116.0, 3.0).toDouble()
+        : lab.l / _labKappa;
+    final double zr = fz * fz * fz > _labEpsilon
+        ? fz * fz * fz
+        : (116.0 * fz - 16.0) / _labKappa;
+
+    // XYZ → linear RGB (D65).
+    final double lr = 3.2404542 * xr - 1.5371385 * yr - 0.4985314 * zr;
+    final double lg = -0.9692660 * xr + 1.8760108 * yr + 0.0415560 * zr;
+    final double lb = 0.0556434 * xr - 0.2040259 * yr + 1.0572252 * zr;
+
+    return _Rgb(_linearToSrgb(lr), _linearToSrgb(lg), _linearToSrgb(lb));
+  }
 }
+
+// =============================================================================
+// Internal data classes
+// =============================================================================
 
 class _Rgb {
   const _Rgb(this.r, this.g, this.b);
@@ -203,15 +295,23 @@ class _Rgb {
   final int g;
   final int b;
 
-  double distanceSq(_Rgb other) {
-    final int dr = r - other.r;
-    final int dg = g - other.g;
-    final int db = b - other.b;
-    return (dr * dr + dg * dg + db * db).toDouble();
-  }
-
   String toHex() =>
-      '${r.toRadixString(16).padLeft(2, '0').toUpperCase()}'
+      '#${r.toRadixString(16).padLeft(2, '0').toUpperCase()}'
       '${g.toRadixString(16).padLeft(2, '0').toUpperCase()}'
       '${b.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+}
+
+class _Lab {
+  const _Lab(this.l, this.a, this.b);
+
+  final double l;
+  final double a;
+  final double b;
+
+  double distanceSq(_Lab other) {
+    final double dl = l - other.l;
+    final double da = a - other.a;
+    final double db = b - other.b;
+    return dl * dl + da * da + db * db;
+  }
 }

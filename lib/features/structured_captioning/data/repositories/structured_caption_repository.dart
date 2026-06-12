@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
+
+import 'package:flutter/foundation.dart';
 
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
@@ -69,36 +70,66 @@ class StructuredCaptionRepository {
     final VlmAnalysis analysis = _parseVlmResponse(vlmRawResponse);
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
 
-    // Step 3: SAM3 detection.
+    // Step 3: SAM3 detection (skip group elements — SAM detects individuals).
+    final List<int> samIndices = <int>[];
+    final List<String> samNames = <String>[];
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final VlmObject obj = analysis.objects[i];
+      if (isLikelyGroup(obj.name, obj.desc)) {
+        _logger.fine('Skipping SAM for group element: "${obj.name}"');
+      } else {
+        samIndices.add(i);
+        samNames.add(obj.name);
+      }
+    }
+
     onProgress(
-      'Running SAM detection for ${analysis.objects.length} objects...',
+      'Running SAM detection for ${samNames.length} individual objects…',
     );
-    final List<String> objectNames = analysis.objects
-        .map((VlmObject o) => o.name)
-        .toList();
     final List<VlmObjectBboxPair> vlmBboxes = analysis.objects
         .map((VlmObject o) => VlmObjectBboxPair(name: o.name, bbox: o.bbox))
         .toList();
 
     List<SamDetection> detections = <SamDetection>[];
-    try {
-      detections = await _samProcessService.detectObjects(
-        imageFile.path,
-        objectNames,
-      );
-    } catch (e) {
-      _logger.warning('SAM detection failed, using VLM bboxes: $e');
+    if (samNames.isNotEmpty) {
+      try {
+        detections = await _samProcessService.detectObjects(
+          imageFile.path,
+          samNames,
+        );
+      } catch (e) {
+        _logger.warning('SAM detection failed, using VLM bboxes: $e');
+      }
     }
 
-    // Step 4: Greedy bbox matching.
-    final List<SamDetection> matched = _matchDetectionsToObjects(
+    // Step 4: Greedy bbox matching (SAM detections only for individual objects).
+    // Build full-length results: SAM-matched for individuals, VLM fallback for groups.
+    final List<VlmObjectBboxPair> samVlmBboxes = samIndices
+        .map((int i) => vlmBboxes[i])
+        .toList();
+    final List<SamDetection> samMatched = matchDetectionsToObjects(
       detections,
-      vlmBboxes,
+      samVlmBboxes,
     );
 
-    // Step 5: Per-element color palettes.
+    // Merge back: SAM results at their original positions, VLM bbox for groups.
+    final List<SamDetection> matched = List<SamDetection>.filled(
+      analysis.objects.length,
+      const SamDetection(name: ''),
+    );
+    for (int i = 0; i < analysis.objects.length; i++) {
+      matched[i] = SamDetection(
+        name: vlmBboxes[i].name,
+        bbox: vlmBboxes[i].bbox,
+      );
+    }
+    for (int j = 0; j < samIndices.length; j++) {
+      matched[samIndices[j]] = samMatched[j];
+    }
+
+    // Step 5: Per-element color palettes (keyed by index to handle duplicates).
     onProgress('Extracting element palettes...');
-    final Map<String, List<String>> elementPalettes = <String, List<String>>{};
+    final Map<int, List<String>> elementPalettes = <int, List<String>>{};
     for (int i = 0; i < analysis.objects.length; i++) {
       final List<int>? bbox = i < matched.length
           ? matched[i].bbox
@@ -108,7 +139,7 @@ class StructuredCaptionRepository {
           final List<String> palette = await _colorExtractionService
               .extractPaletteFromRegion(imageFile, bbox);
           if (palette.isNotEmpty) {
-            elementPalettes[analysis.objects[i].name] = palette;
+            elementPalettes[i] = palette;
           }
         } catch (e) {
           _logger.warning(
@@ -120,7 +151,7 @@ class StructuredCaptionRepository {
 
     // Step 6: Build final Ideogram4 JSON.
     onProgress('Building structured caption...');
-    final IdeogramCaption caption = _buildIdeogramCaption(
+    final IdeogramCaption caption = buildIdeogramCaption(
       globalPalette,
       analysis,
       matched,
@@ -325,7 +356,7 @@ class StructuredCaptionRepository {
     try {
       final Map<String, dynamic> json =
           jsonDecode(cleaned) as Map<String, dynamic>;
-      return _parseAnalysisJson(json);
+      return parseAnalysisJson(json);
     } catch (e) {
       _logger.warning('Failed to parse VLM response: $e');
       _logger.fine('Raw response was: $raw');
@@ -349,7 +380,8 @@ class StructuredCaptionRepository {
     return s;
   }
 
-  VlmAnalysis _parseAnalysisJson(Map<String, dynamic> json) {
+  @visibleForTesting
+  VlmAnalysis parseAnalysisJson(Map<String, dynamic> json) {
     // Parse style.
     final Map<String, dynamic> styleJson =
         json['style'] as Map<String, dynamic>;
@@ -396,7 +428,8 @@ class StructuredCaptionRepository {
   ///
   /// Ported from reference repo's sam_detection.py matching logic.
   /// Groups by name, matches by center distance, falls back to VLM bbox.
-  List<SamDetection> _matchDetectionsToObjects(
+  @visibleForTesting
+  List<SamDetection> matchDetectionsToObjects(
     List<SamDetection> detections,
     List<VlmObjectBboxPair> vlmObjects,
   ) {
@@ -496,11 +529,12 @@ class StructuredCaptionRepository {
   }
 
   /// Builds the final [IdeogramCaption] from pipeline data.
-  IdeogramCaption _buildIdeogramCaption(
+  @visibleForTesting
+  IdeogramCaption buildIdeogramCaption(
     List<String> globalPalette,
     VlmAnalysis analysis,
     List<SamDetection> detections,
-    Map<String, List<String>> elementPalettes,
+    Map<int, List<String>> elementPalettes,
     StructuredBatchOverrides? overrides,
   ) {
     // Apply batch overrides if enabled.
@@ -571,7 +605,7 @@ class StructuredCaptionRepository {
       final VlmObject obj = analysis.objects[i];
       final SamDetection? det = i < detections.length ? detections[i] : null;
       final List<int>? bbox = det?.bbox ?? obj.bbox;
-      final List<String>? elemPalette = elementPalettes[obj.name];
+      final List<String>? elemPalette = elementPalettes[i];
 
       if (obj.hasText) {
         elements.add(
@@ -603,6 +637,41 @@ class StructuredCaptionRepository {
         elements: elements,
       ),
     );
+  }
+
+  /// Returns true if the VLM element likely represents a group of items
+  /// rather than a single individual object.
+  ///
+  /// Heuristics:
+  /// - Name is explicitly plural (ends in 's' but not 'ss' like "glass")
+  /// - Description contains group indicators
+  @visibleForTesting
+  bool isLikelyGroup(String name, String desc) {
+    final String lower = name.toLowerCase();
+
+    // Plural name heuristic: ends in 's' but not 'ss' (glass, dress, cross, moss).
+    final bool isPlural = lower.endsWith('s') && !lower.endsWith('ss');
+
+    // Description group indicators.
+    final String lowerDesc = desc.toLowerCase();
+    const List<String> groupKeywords = <String>[
+      'group of',
+      'cluster of',
+      'row of',
+      'pair of',
+      'collection of',
+      'stack of',
+      'arrangement of',
+      'several ',
+      'multiple ',
+      'a set of',
+      'a bunch of',
+    ];
+    final bool descHasGroup = groupKeywords.any(
+      (String kw) => lowerDesc.contains(kw),
+    );
+
+    return isPlural || descHasGroup;
   }
 
   /// Computes center point from [y1, x1, y2, x2] bbox.

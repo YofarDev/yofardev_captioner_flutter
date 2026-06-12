@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../logic/caption_search_cubit.dart';
+import 'filter_help_dialog.dart';
 
 /// A search bar widget for filtering and replacing text in image captions.
 ///
@@ -189,6 +190,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
       children: <Widget>[
         const SizedBox(width: 4),
         Expanded(child: _buildSearchTextField(cubit)),
+        _buildHelpButton(),
         _buildCaseSensitiveButton(cubit),
         if (showActions) ...<Widget>[
           _buildReplaceToggleButton(cubit, state),
@@ -212,6 +214,17 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
         contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
       ),
       style: const TextStyle(fontSize: 13),
+    );
+  }
+
+  Widget _buildHelpButton() {
+    return Tooltip(
+      message: 'Filter syntax help',
+      child: IconButton(
+        onPressed: () => FilterHelpDialog.show(context),
+        icon: Icon(Icons.help_outline, size: 16, color: Colors.grey[500]),
+        splashRadius: 18,
+      ),
     );
   }
 

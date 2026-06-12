@@ -88,7 +88,7 @@ class ColorExtractionService {
   List<_Rgb> _kMeansCluster(
     List<_Rgb> pixels,
     int k, {
-    int maxIterations = 12,
+    int maxIterations = 20,
   }) {
     if (pixels.length <= k) {
       return pixels.take(k).toList();
@@ -181,11 +181,14 @@ class ColorExtractionService {
       }
 
       final double target = random.nextDouble() * totalDist;
-      int idx = 0;
       double cumulative = 0;
-      while (idx < distances.length - 1 && cumulative < target) {
-        cumulative += distances[idx];
-        idx++;
+      int idx = 0;
+      for (int j = 0; j < distances.length; j++) {
+        cumulative += distances[j];
+        if (cumulative >= target) {
+          idx = j;
+          break;
+        }
       }
       centroids.add(pixels[idx]);
     }

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../data/models/llm_config.dart';
 import '../data/models/llm_configs.dart';
 import '../data/models/llm_provider_type.dart';
+import '../data/models/structured_batch_overrides.dart';
 import '../data/repositories/llm_config_service.dart';
 
 part 'llm_configs_state.dart';
@@ -172,10 +173,16 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
 
   void updatePromptByIndex(String prompt, int index) {
     final List<String> newPrompts = <String>[...state.llmConfigs.prompts];
+    final String oldPrompt = newPrompts[index];
     newPrompts[index] = prompt;
     emit(
       state.copyWith(
-        llmConfigs: state.llmConfigs.copyWith(prompts: newPrompts),
+        llmConfigs: state.llmConfigs.copyWith(
+          prompts: newPrompts,
+          selectedPrompt: oldPrompt == state.llmConfigs.selectedPrompt
+              ? prompt
+              : state.llmConfigs.selectedPrompt,
+        ),
       ),
     );
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
@@ -238,6 +245,26 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     emit(
       state.copyWith(
         llmConfigs: state.llmConfigs.copyWith(ideogramJsonEnabled: enabled),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Toggles debug artifact saving for structured captioning.
+  void setDebugMode(bool enabled) {
+    emit(
+      state.copyWith(llmConfigs: state.llmConfigs.copyWith(debugMode: enabled)),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
+  /// Updates the structured batch overrides for the JSON captioning pipeline.
+  void updateStructuredBatchOverrides(StructuredBatchOverrides overrides) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(
+          structuredBatchOverrides: overrides,
+        ),
       ),
     );
     LlmConfigService.saveLlmConfigs(state.llmConfigs);

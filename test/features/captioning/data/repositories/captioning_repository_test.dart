@@ -123,7 +123,7 @@ void main() {
       },
     );
 
-    test('captionImage propagates exceptions from repository', () async {
+    test('captionImage propagates exceptions from repository', () {
       when(
         mockCaptionRepository.getCaption(any, any, any),
       ).thenThrow(Exception('API failure'));

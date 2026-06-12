@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
@@ -31,12 +32,18 @@ class SamProcessService {
   static const String _scriptAsset = 'assets/scripts/sam3_wrapper.py';
   static const String _scriptFileName = 'sam3_wrapper.py';
 
+  /// Optional override for the wrapper script path (used in tests).
+  @visibleForTesting
+  String? scriptPathOverride;
+
   SamProcessService({ProcessRunner? processRunner})
     : _processRunner = processRunner ?? const ProcessRunner();
 
   /// Returns the path to the extracted SAM wrapper script.
   /// Extracts from assets on first call.
   Future<String> _ensureScriptExtracted() async {
+    if (scriptPathOverride != null) return scriptPathOverride!;
+
     final Directory supportDir = await getApplicationSupportDirectory();
     final String scriptPath = '${supportDir.path}/$_scriptFileName';
     final File scriptFile = File(scriptPath);
@@ -45,6 +52,49 @@ class SamProcessService {
     final String scriptContent = await rootBundle.loadString(_scriptAsset);
     await scriptFile.writeAsString(scriptContent);
     return scriptPath;
+  }
+
+  /// Cached path to a Python interpreter that has SAM3 available.
+  @visibleForTesting
+  static String? cachedPythonPath;
+
+  /// Probes common Python interpreters and caches one that can import
+  /// [Sam3Predictor] from mlx_vlm.
+  @visibleForTesting
+  Future<String> findSamPythonForTest() async {
+    if (cachedPythonPath != null) return cachedPythonPath!;
+
+    // Candidate interpreters in priority order.
+    const List<String> candidates = <String>[
+      'python3.11',
+      'python3.12',
+      'python3.13',
+      'python3.10',
+      'python3',
+    ];
+
+    for (final String candidate in candidates) {
+      try {
+        final ProcessResult probe = await _processRunner.run(
+          candidate,
+          <String>[
+            '-c',
+            'from mlx_vlm.models.sam3.generate import Sam3Predictor',
+          ],
+        );
+        if (probe.exitCode == 0) {
+          _logger.info('SAM3-capable Python found: $candidate');
+          cachedPythonPath = candidate;
+          return candidate;
+        }
+      } catch (_) {
+        // Interpreter not found — try next.
+      }
+    }
+
+    // Fallback — will likely fail but lets the wrapper report the real error.
+    cachedPythonPath = 'python3';
+    return 'python3';
   }
 
   /// Runs SAM3 detection for each object name via the Python wrapper script.
@@ -59,8 +109,9 @@ class SamProcessService {
 
     try {
       final String scriptPath = await _ensureScriptExtracted();
+      final String python = await findSamPythonForTest();
 
-      final ProcessResult result = await _processRunner.run('python3', <String>[
+      final ProcessResult result = await _processRunner.run(python, <String>[
         scriptPath,
         '--image',
         imagePath,

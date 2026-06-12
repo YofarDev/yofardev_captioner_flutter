@@ -12,7 +12,7 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/data/utils/image_utils.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
 import '../../../structured_captioning/presentation/widgets/bbox_overlay.dart';
-import '../../../structured_captioning/presentation/widgets/ideogram_caption_view.dart';
+import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 
 class CurrentImageView extends StatelessWidget {
   const CurrentImageView({super.key});
@@ -94,7 +94,9 @@ class CurrentImageView extends StatelessWidget {
                             'default';
                         final String caption =
                             currentImage.captions[category]?.text ?? '';
-                        if (IdeogramCaptionView.isIdeogramJson(caption) &&
+                        if (IdeogramCaptionSummaryCard.isIdeogramJson(
+                              caption,
+                            ) &&
                             BboxElement.parse(caption).isNotEmpty) {
                           return BboxOverlayImage(
                             imageFile: currentImage.image,

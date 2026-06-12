@@ -12,6 +12,7 @@ import '../../../../core/services/cache_service.dart';
 import '../../../captioning/data/models/caption_data.dart';
 import '../../../captioning/data/models/caption_database.dart';
 import '../../../captioning/data/models/caption_entry.dart';
+import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 import '../models/app_image.dart';
 
 /// A utility class for file-related operations in the application.
@@ -295,9 +296,15 @@ class AppFileUtils {
 
         final CaptionEntry? captionEntry = image.captions[category];
         if (captionEntry != null && captionEntry.text.isNotEmpty) {
+          final bool isJson = IdeogramCaptionSummaryCard.isIdeogramJson(
+            captionEntry.text,
+          );
           final List<int> captionBytes = utf8.encode(captionEntry.text);
           final ArchiveFile archiveFile = ArchiveFile(
-            p.setExtension(p.basename(image.image.path), '.txt'),
+            p.setExtension(
+              p.basename(image.image.path),
+              isJson ? '.json' : '.txt',
+            ),
             captionBytes.length,
             captionBytes,
           );

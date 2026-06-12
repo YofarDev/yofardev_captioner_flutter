@@ -154,6 +154,10 @@ class _StructuredCaptionControlsState extends State<StructuredCaptionControls> {
                                                   .selectedConfigId,
                                         ),
                                     option: _selectedOption,
+                                    overrides: configState
+                                        .llmConfigs
+                                        .structuredBatchOverrides,
+                                    debugMode: configState.llmConfigs.debugMode,
                                   );
                             }
                           : null,

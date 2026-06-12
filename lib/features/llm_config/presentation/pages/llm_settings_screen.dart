@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/radio_group.dart';
 import '../../data/models/llm_config.dart';
 import '../../data/models/llm_provider_type.dart';
+import '../../data/models/structured_batch_overrides.dart';
 import '../../logic/llm_configs_cubit.dart';
 
 class LlmSettingsScreen extends StatefulWidget {
@@ -420,6 +421,8 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
                   ),
                 ),
                 _buildIdeogramSection(state),
+                _buildStructuredOverridesSection(state),
+                _buildDebugSection(state),
               ],
             ),
           );
@@ -469,6 +472,414 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDebugSection(LlmConfigsState state) {
+    final bool jsonEnabled = state.llmConfigs.ideogramJsonEnabled;
+    return Opacity(
+      opacity: jsonEnabled ? 1.0 : 0.4,
+      child: AbsorbPointer(
+        absorbing: !jsonEnabled,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: lightGrey.withValues(alpha: 0.05),
+            border: Border(
+              top: BorderSide(color: lightGrey.withValues(alpha: 0.3)),
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Icon(Icons.bug_report, color: Colors.amber[300], size: 20),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      'Debug Mode',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Save prompt, raw VLM response and bbox overlay image alongside each image',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: state.llmConfigs.debugMode,
+                onChanged: (bool value) {
+                  context.read<LlmConfigsCubit>().setDebugMode(value);
+                },
+                activeThumbColor: Colors.amber,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStructuredOverridesSection(LlmConfigsState state) {
+    final StructuredBatchOverrides overrides =
+        state.llmConfigs.structuredBatchOverrides;
+    final bool jsonEnabled = state.llmConfigs.ideogramJsonEnabled;
+    return Opacity(
+      opacity: jsonEnabled ? 1.0 : 0.4,
+      child: AbsorbPointer(
+        absorbing: !jsonEnabled,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: lightGrey.withValues(alpha: 0.05),
+            border: Border(
+              top: BorderSide(color: lightGrey.withValues(alpha: 0.3)),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Header row with master toggle
+              Row(
+                children: <Widget>[
+                  Icon(Icons.tune, color: Colors.teal[300], size: 20),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          'Structured Batch Overrides',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 15,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Override VLM fields for all images in a batch',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: overrides.enabled,
+                    onChanged: (bool value) {
+                      context
+                          .read<LlmConfigsCubit>()
+                          .updateStructuredBatchOverrides(
+                            overrides.copyWith(enabled: value),
+                          );
+                    },
+                    activeThumbColor: Colors.teal,
+                  ),
+                ],
+              ),
+              // Expandable content
+              if (overrides.enabled) ...<Widget>[
+                const SizedBox(height: 16),
+                // Style — Photo or Art Style (mutually exclusive), includes medium
+                _buildOverrideRow(
+                  label: 'Style',
+                  enabled: overrides.styleMode != null,
+                  onToggle: (bool v) {
+                    context
+                        .read<LlmConfigsCubit>()
+                        .updateStructuredBatchOverrides(
+                          overrides.copyWith(
+                            styleMode: v ? 'photo' : null,
+                            clearStyleMode: !v,
+                            clearStyleDetail: !v,
+                            overrideMedium: v,
+                            medium: v ? 'photograph' : null,
+                            clearMedium: !v,
+                          ),
+                        );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          ChoiceChip(
+                            label: const Text(
+                              'Photo',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            selected: overrides.styleMode == 'photo',
+                            onSelected: overrides.styleMode != null
+                                ? (bool v) {
+                                    context
+                                        .read<LlmConfigsCubit>()
+                                        .updateStructuredBatchOverrides(
+                                          overrides.copyWith(
+                                            styleMode: v ? 'photo' : null,
+                                            clearStyleMode: !v,
+                                            overrideMedium: v,
+                                            medium: v ? 'photograph' : null,
+                                            clearMedium: !v,
+                                          ),
+                                        );
+                                  }
+                                : null,
+                            selectedColor: Colors.teal[700],
+                            backgroundColor: lightGrey.withValues(alpha: 0.15),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          const SizedBox(width: 8),
+                          ChoiceChip(
+                            label: const Text(
+                              'Art Style',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            selected: overrides.styleMode == 'art_style',
+                            onSelected: overrides.styleMode != null
+                                ? (bool v) {
+                                    context
+                                        .read<LlmConfigsCubit>()
+                                        .updateStructuredBatchOverrides(
+                                          overrides.copyWith(
+                                            styleMode: v ? 'art_style' : null,
+                                            clearStyleMode: !v,
+                                            overrideMedium: false,
+                                            clearMedium: true,
+                                          ),
+                                        );
+                                  }
+                                : null,
+                            selectedColor: Colors.teal[700],
+                            backgroundColor: lightGrey.withValues(alpha: 0.15),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Medium field (only for Art Style — Photo auto-sets to "photograph")
+                      if (overrides.styleMode == 'art_style')
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              const Text(
+                                'Medium',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              _buildOverrideTextField(
+                                hint:
+                                    'e.g. illustration, painting, graphic_design, 3d_render...',
+                                value: overrides.medium,
+                                onChanged: (String v) {
+                                  context
+                                      .read<LlmConfigsCubit>()
+                                      .updateStructuredBatchOverrides(
+                                        overrides.copyWith(
+                                          medium: v.isEmpty ? null : v,
+                                          clearMedium: v.isEmpty,
+                                          overrideMedium: v.isNotEmpty,
+                                        ),
+                                      );
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      // Style detail text field
+                      _buildOverrideTextField(
+                        hint: overrides.styleMode == 'photo'
+                            ? 'Camera, lens, depth-of-field details'
+                            : 'Art style description',
+                        value: overrides.styleDetail,
+                        onChanged: (String v) {
+                          context
+                              .read<LlmConfigsCubit>()
+                              .updateStructuredBatchOverrides(
+                                overrides.copyWith(
+                                  styleDetail: v.isEmpty ? null : v,
+                                  clearStyleDetail: v.isEmpty,
+                                ),
+                              );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Aesthetics
+                _buildOverrideRow(
+                  label: 'Aesthetics',
+                  enabled: overrides.overrideAesthetics,
+                  onToggle: (bool v) {
+                    context
+                        .read<LlmConfigsCubit>()
+                        .updateStructuredBatchOverrides(
+                          overrides.copyWith(overrideAesthetics: v),
+                        );
+                  },
+                  child: _buildOverrideTextField(
+                    hint: '3 adjectives describing visual feel',
+                    value: overrides.aesthetics,
+                    onChanged: (String v) {
+                      context
+                          .read<LlmConfigsCubit>()
+                          .updateStructuredBatchOverrides(
+                            overrides.copyWith(
+                              aesthetics: v.isEmpty ? null : v,
+                              clearAesthetics: v.isEmpty,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Lighting
+                _buildOverrideRow(
+                  label: 'Lighting',
+                  enabled: overrides.overrideLighting,
+                  onToggle: (bool v) {
+                    context
+                        .read<LlmConfigsCubit>()
+                        .updateStructuredBatchOverrides(
+                          overrides.copyWith(overrideLighting: v),
+                        );
+                  },
+                  child: _buildOverrideTextField(
+                    hint: 'Lighting description',
+                    value: overrides.lighting,
+                    onChanged: (String v) {
+                      context
+                          .read<LlmConfigsCubit>()
+                          .updateStructuredBatchOverrides(
+                            overrides.copyWith(
+                              lighting: v.isEmpty ? null : v,
+                              clearLighting: v.isEmpty,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Background
+                _buildOverrideRow(
+                  label: 'Background',
+                  enabled: overrides.overrideBackground,
+                  onToggle: (bool v) {
+                    context
+                        .read<LlmConfigsCubit>()
+                        .updateStructuredBatchOverrides(
+                          overrides.copyWith(overrideBackground: v),
+                        );
+                  },
+                  child: _buildOverrideTextField(
+                    hint: 'Background description',
+                    value: overrides.background,
+                    maxLines: 3,
+                    onChanged: (String v) {
+                      context
+                          .read<LlmConfigsCubit>()
+                          .updateStructuredBatchOverrides(
+                            overrides.copyWith(
+                              background: v.isEmpty ? null : v,
+                              clearBackground: v.isEmpty,
+                            ),
+                          );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOverrideRow({
+    required String label,
+    required bool enabled,
+    required ValueChanged<bool> onToggle,
+    required Widget child,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        SizedBox(
+          width: 140,
+          child: Row(
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[300],
+                    fontWeight: FontWeight.w400,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              SizedBox(
+                height: 24,
+                width: 32,
+                child: Checkbox(
+                  value: enabled,
+                  onChanged: (bool? v) {
+                    if (v != null) onToggle(v);
+                  },
+                  visualDensity: VisualDensity.compact,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  activeColor: Colors.teal,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: child),
+      ],
+    );
+  }
+
+  Widget _buildOverrideTextField({
+    String? hint,
+    String? value,
+    int maxLines = 1,
+    required ValueChanged<String> onChanged,
+  }) {
+    return TextField(
+      controller: TextEditingController(text: value ?? '')
+        ..selection = TextSelection.collapsed(offset: (value ?? '').length),
+      decoration: InputDecoration(
+        hintText: hint,
+        border: const OutlineInputBorder(),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 10,
+        ),
+      ),
+      maxLines: maxLines,
+      style: const TextStyle(fontSize: 14),
+      onChanged: onChanged,
     );
   }
 

@@ -222,6 +222,16 @@ class _CaptionControlsState extends State<CaptionControls> {
                           .runStructuredCaptioner(
                             llm: llm,
                             option: _selectedOption,
+                            overrides:
+                                configState
+                                    .llmConfigs
+                                    .structuredBatchOverrides
+                                    .enabled
+                                ? configState
+                                      .llmConfigs
+                                      .structuredBatchOverrides
+                                : null,
+                            debugMode: configState.llmConfigs.debugMode,
                           );
                     } else {
                       context.read<CaptioningCubit>().runCaptioner(

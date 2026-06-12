@@ -68,7 +68,7 @@ void main() {
       },
     );
 
-    test('getCaption propagates exceptions from service', () async {
+    test('getCaption propagates exceptions from service', () {
       when(
         mockCaptionService.getCaption(any, any, any),
       ).thenThrow(Exception('API error'));

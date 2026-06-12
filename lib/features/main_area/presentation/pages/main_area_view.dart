@@ -8,46 +8,24 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_view.dart';
 import 'current_image_view.dart';
 
-class MainAreaView extends StatefulWidget {
+class MainAreaView extends StatelessWidget {
   const MainAreaView({super.key});
-
-  @override
-  State<MainAreaView> createState() => _MainAreaViewState();
-}
-
-class _MainAreaViewState extends State<MainAreaView> {
-  bool _imageVisible = true;
-
-  void toggleImageVisibility() {
-    setState(() {
-      _imageVisible = !_imageVisible;
-    });
-  }
-
-  bool get isImageVisible => _imageVisible;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ImageListCubit, ImageListState>(
       builder: (BuildContext context, ImageListState state) {
-        // Only show empty view when no images are loaded at all
-        // (not when search returns no results)
         if (state.images.isEmpty) {
           return _buildEmptyView();
         }
         return Stack(
           children: <Widget>[
-            Column(
+            const Column(
               children: <Widget>[
-                if (_imageVisible) const CurrentImageView(),
-                Expanded(
-                  child: CaptionTextArea(
-                    onToggleImage: toggleImageVisibility,
-                    isImageVisible: _imageVisible,
-                  ),
-                ),
-                const ControlsView(),
-                const SizedBox(height: 16),
+                CurrentImageView(),
+                Expanded(child: CaptionTextArea()),
+                ControlsView(),
+                SizedBox(height: 16),
               ],
             ),
             Positioned(

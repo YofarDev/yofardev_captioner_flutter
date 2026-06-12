@@ -8,20 +8,13 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../structured_captioning/presentation/widgets/ideogram_caption_view.dart';
+import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 import '../../logic/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
 
 class CaptionTextArea extends StatefulWidget {
-  const CaptionTextArea({
-    super.key,
-    this.onToggleImage,
-    this.isImageVisible = true,
-  });
-
-  final VoidCallback? onToggleImage;
-  final bool isImageVisible;
+  const CaptionTextArea({super.key});
 
   @override
   State<CaptionTextArea> createState() => _CaptionTextAreaState();
@@ -33,10 +26,6 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
 
   final FocusNode _focusNode = FocusNode();
   bool _isFocused = false;
-
-  /// When true and caption is Ideogram JSON, show raw text instead of
-  /// structured view.
-  bool _showRawJson = false;
 
   @override
   void initState() {
@@ -93,9 +82,9 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
               final String category = state.activeCategory ?? 'default';
               final String captionText =
                   currentImage.captions[category]?.text ?? '';
-              final bool isIdeogram =
-                  IdeogramCaptionView.isIdeogramJson(captionText) &&
-                  !_showRawJson;
+              final bool isIdeogram = IdeogramCaptionSummaryCard.isIdeogramJson(
+                captionText,
+              );
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(
@@ -133,7 +122,11 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                   : <BoxShadow>[],
                             ),
                             child: isIdeogram
-                                ? IdeogramCaptionView(jsonString: captionText)
+                                ? IdeogramCaptionSummaryCard(
+                                    jsonString: captionText,
+                                    imageFile: currentImage.image,
+                                    activeCategory: category,
+                                  )
                                 : TextField(
                                     focusNode: _focusNode,
                                     readOnly: isThisImageBeingCaptioned,
@@ -173,48 +166,8 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                             child: Builder(
                               builder: (BuildContext context) {
                                 return Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
-                                    // Ideogram JSON toggle
-                                    if (IdeogramCaptionView.isIdeogramJson(
-                                      captionText,
-                                    ))
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 8,
-                                        ),
-                                        child: Tooltip(
-                                          message: _showRawJson
-                                              ? 'Show structured view'
-                                              : 'Show raw JSON',
-                                          child: InkWell(
-                                            onTap: () {
-                                              setState(() {
-                                                _showRawJson = !_showRawJson;
-                                              });
-                                            },
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                            child: Container(
-                                              padding: const EdgeInsets.all(6),
-                                              decoration: BoxDecoration(
-                                                color: Colors.black.withAlpha(
-                                                  50,
-                                                ),
-                                                borderRadius:
-                                                    BorderRadius.circular(6),
-                                              ),
-                                              child: Icon(
-                                                _showRawJson
-                                                    ? Icons.data_object
-                                                    : Icons.code,
-                                                size: 16,
-                                                color: Colors.white70,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -233,36 +186,6 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    // Image visibility toggle
-                                    if (widget.onToggleImage != null)
-                                      Tooltip(
-                                        message: widget.isImageVisible
-                                            ? 'Hide image to expand caption'
-                                            : 'Show image',
-                                        child: InkWell(
-                                          onTap: widget.onToggleImage,
-                                          borderRadius: BorderRadius.circular(
-                                            6,
-                                          ),
-                                          child: Container(
-                                            padding: const EdgeInsets.all(6),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withAlpha(50),
-                                              borderRadius:
-                                                  BorderRadius.circular(6),
-                                            ),
-                                            child: Icon(
-                                              widget.isImageVisible
-                                                  ? Icons.expand_more
-                                                  : Icons.expand_less,
-                                              size: 16,
-                                              color: Colors.white70,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    if (widget.onToggleImage != null)
-                                      const SizedBox(width: 8),
                                     Tooltip(
                                       message: captionText.trim().isEmpty
                                           ? 'No caption to copy'

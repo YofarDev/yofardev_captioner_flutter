@@ -15,6 +15,33 @@ class IdeogramCaption extends Equatable {
   final IdeogramStyleDescription styleDescription;
   final IdeogramCompositionalDeconstruction compositionalDeconstruction;
 
+  factory IdeogramCaption.fromJson(Map<String, dynamic> json) {
+    return IdeogramCaption(
+      highLevelDescription: json['high_level_description'] as String? ?? '',
+      styleDescription: IdeogramStyleDescription.fromJson(
+        json['style_description'] as Map<String, dynamic>? ??
+            <String, dynamic>{},
+      ),
+      compositionalDeconstruction: IdeogramCompositionalDeconstruction.fromJson(
+        json['compositional_deconstruction'] as Map<String, dynamic>? ??
+            <String, dynamic>{},
+      ),
+    );
+  }
+
+  IdeogramCaption copyWith({
+    String? highLevelDescription,
+    IdeogramStyleDescription? styleDescription,
+    IdeogramCompositionalDeconstruction? compositionalDeconstruction,
+  }) {
+    return IdeogramCaption(
+      highLevelDescription: highLevelDescription ?? this.highLevelDescription,
+      styleDescription: styleDescription ?? this.styleDescription,
+      compositionalDeconstruction:
+          compositionalDeconstruction ?? this.compositionalDeconstruction,
+    );
+  }
+
   /// Produces compact JSON matching Ideogram4 schema.
   String toJsonString() => _compactJson(toJson());
 
@@ -53,6 +80,41 @@ class IdeogramStyleDescription extends Equatable {
   final String? artStyle;
 
   final List<String> colorPalette;
+
+  factory IdeogramStyleDescription.fromJson(Map<String, dynamic> json) {
+    return IdeogramStyleDescription(
+      aesthetics: json['aesthetics'] as String? ?? '',
+      lighting: json['lighting'] as String? ?? '',
+      medium: json['medium'] as String? ?? 'photograph',
+      photo: json['photo'] as String?,
+      artStyle: json['art_style'] as String?,
+      colorPalette:
+          (json['color_palette'] as List<dynamic>?)
+              ?.map((dynamic e) => e as String)
+              .toList() ??
+          <String>[],
+    );
+  }
+
+  IdeogramStyleDescription copyWith({
+    String? aesthetics,
+    String? lighting,
+    String? medium,
+    String? photo,
+    bool clearPhoto = false,
+    String? artStyle,
+    bool clearArtStyle = false,
+    List<String>? colorPalette,
+  }) {
+    return IdeogramStyleDescription(
+      aesthetics: aesthetics ?? this.aesthetics,
+      lighting: lighting ?? this.lighting,
+      medium: medium ?? this.medium,
+      photo: clearPhoto ? null : (photo ?? this.photo),
+      artStyle: clearArtStyle ? null : (artStyle ?? this.artStyle),
+      colorPalette: colorPalette ?? this.colorPalette,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> json = <String, dynamic>{
@@ -101,6 +163,42 @@ class IdeogramElement extends Equatable {
 
   final List<String>? colorPalette;
 
+  factory IdeogramElement.fromJson(Map<String, dynamic> json) {
+    final List<dynamic>? rawBbox = json['bbox'] as List<dynamic>?;
+    return IdeogramElement(
+      type: json['type'] as String? ?? 'obj',
+      bbox: rawBbox?.map((dynamic e) => (e as num).toInt()).toList(),
+      desc: json['desc'] as String? ?? '',
+      text: json['text'] as String?,
+      colorPalette:
+          (json['color_palette'] as List<dynamic>?)
+              ?.map((dynamic e) => e as String)
+              .toList() ??
+          <String>[],
+    );
+  }
+
+  IdeogramElement copyWith({
+    String? type,
+    List<int>? bbox,
+    bool clearBbox = false,
+    String? desc,
+    String? text,
+    bool clearText = false,
+    List<String>? colorPalette,
+    bool clearColorPalette = false,
+  }) {
+    return IdeogramElement(
+      type: type ?? this.type,
+      bbox: clearBbox ? null : (bbox ?? this.bbox),
+      desc: desc ?? this.desc,
+      text: clearText ? null : (text ?? this.text),
+      colorPalette: clearColorPalette
+          ? null
+          : (colorPalette ?? this.colorPalette),
+    );
+  }
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> json = <String, dynamic>{'type': type};
     if (bbox != null) {
@@ -128,6 +226,32 @@ class IdeogramCompositionalDeconstruction extends Equatable {
 
   final String background;
   final List<IdeogramElement> elements;
+
+  factory IdeogramCompositionalDeconstruction.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    return IdeogramCompositionalDeconstruction(
+      background: json['background'] as String? ?? '',
+      elements:
+          (json['elements'] as List<dynamic>?)
+              ?.map(
+                (dynamic e) =>
+                    IdeogramElement.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          <IdeogramElement>[],
+    );
+  }
+
+  IdeogramCompositionalDeconstruction copyWith({
+    String? background,
+    List<IdeogramElement>? elements,
+  }) {
+    return IdeogramCompositionalDeconstruction(
+      background: background ?? this.background,
+      elements: elements ?? this.elements,
+    );
+  }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'background': background,

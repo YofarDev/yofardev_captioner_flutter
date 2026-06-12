@@ -1,12 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
+import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
 import '../../../../core/config/service_locator.dart';
 import '../../../captioning/data/services/caption_service.dart';
 import '../../../llm_config/data/models/llm_config.dart';
+import '../../../llm_config/data/models/structured_batch_overrides.dart';
 import '../models/ideogram_caption.dart';
 import '../models/vlm_analysis.dart';
 import '../services/color_extraction_service.dart';
@@ -37,10 +40,14 @@ class StructuredCaptionRepository {
   /// Runs the full pipeline on a single image.
   ///
   /// [onProgress] emits step descriptions for UI progress tracking.
+  /// [debugMode] saves prompt, raw VLM response, bbox overlay and final
+  /// caption alongside the image in a debug/ subfolder.
   Future<IdeogramCaption> generateStructuredCaption(
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
+    StructuredBatchOverrides? overrides,
+    bool debugMode = false,
   }) async {
     // Step 1: Global color palette.
     onProgress('Extracting color palette...');
@@ -60,6 +67,7 @@ class StructuredCaptionRepository {
       prompt,
     );
     final VlmAnalysis analysis = _parseVlmResponse(vlmRawResponse);
+    _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
 
     // Step 3: SAM3 detection.
     onProgress(
@@ -112,12 +120,199 @@ class StructuredCaptionRepository {
 
     // Step 6: Build final Ideogram4 JSON.
     onProgress('Building structured caption...');
-    return _buildIdeogramCaption(
+    final IdeogramCaption caption = _buildIdeogramCaption(
       globalPalette,
       analysis,
       matched,
       elementPalettes,
+      overrides,
     );
+
+    // Debug artifacts.
+    if (debugMode) {
+      onProgress('Saving debug artifacts...');
+      await _saveDebugArtifacts(
+        imageFile: imageFile,
+        prompt: prompt,
+        vlmRawResponse: vlmRawResponse,
+        vlmObjects: analysis.objects,
+        detections: matched,
+        caption: caption,
+      );
+    }
+
+    return caption;
+  }
+
+  /// Saves debug artifacts alongside the image in a `debug/` subfolder.
+  Future<void> _saveDebugArtifacts({
+    required File imageFile,
+    required String prompt,
+    required String vlmRawResponse,
+    required List<VlmObject> vlmObjects,
+    required List<SamDetection> detections,
+    required IdeogramCaption caption,
+  }) async {
+    final String stem = imageFile.path.replaceAll(RegExp(r'\.[^.]+$'), '');
+    final Directory debugDir = Directory('${imageFile.parent.path}/debug');
+    await debugDir.create(recursive: true);
+
+    // 1. Prompt.
+    await File(
+      '${debugDir.path}/${stem.split('/').last}_prompt.txt',
+    ).writeAsString(prompt);
+
+    // 2. Raw VLM response.
+    await File(
+      '${debugDir.path}/${stem.split('/').last}_vlm_response.json',
+    ).writeAsString(vlmRawResponse);
+
+    // 3. Bbox overlay images (VLM and SAM separate) + selection log.
+    try {
+      final Uint8List bytes = await imageFile.readAsBytes();
+      final img.Image? source = img.decodeImage(bytes);
+      if (source != null) {
+        final int imgW = source.width;
+        final int imgH = source.height;
+
+        // Build per-object selection log.
+        final StringBuffer selectionLog = StringBuffer();
+        selectionLog.writeln('bbox_selection_log');
+        selectionLog.writeln('==================');
+        final List<String> selectionLines = <String>[];
+        for (int i = 0; i < vlmObjects.length; i++) {
+          final VlmObject obj = vlmObjects[i];
+          final List<int>? vlmBbox = obj.bbox;
+          final SamDetection? matched = i < detections.length
+              ? detections[i]
+              : null;
+          final bool samImproved =
+              matched != null && !_bboxesEqual(matched.bbox, vlmBbox);
+          final String chosen = samImproved ? 'SAM' : 'VLM';
+          selectionLines.add(
+            '${i + 1}. ${obj.name}: $chosen '
+            '(VLM: ${_fmtBbox(vlmBbox)} | SAM: ${_fmtBbox(matched?.bbox)})',
+          );
+        }
+        for (final String line in selectionLines) {
+          selectionLog.writeln(line);
+        }
+        await File(
+          '${debugDir.path}/${stem.split('/').last}_bbox_selection.txt',
+        ).writeAsString(selectionLog.toString());
+
+        // VLM-only overlay.
+        final img.Image vlmImage = source.clone();
+        for (final VlmObject obj in vlmObjects) {
+          if (obj.bbox == null) continue;
+          _drawBboxOutline(
+            vlmImage,
+            obj.bbox!,
+            img.ColorRgb8(100, 150, 255),
+            imgW,
+            imgH,
+          );
+          _drawLabel(vlmImage, obj.name, obj.bbox!, imgW, imgH);
+        }
+        await File(
+          '${debugDir.path}/${stem.split('/').last}_vlm_bboxes.png',
+        ).writeAsBytes(img.encodePng(vlmImage));
+
+        // SAM-only overlay (only genuine SAM refinements).
+        final img.Image samImage = source.clone();
+        for (int i = 0; i < detections.length; i++) {
+          final SamDetection det = detections[i];
+          if (det.bbox == null) continue;
+          final List<int>? vlmBbox = i < vlmObjects.length
+              ? vlmObjects[i].bbox
+              : null;
+          if (vlmBbox != null && _bboxesEqual(det.bbox, vlmBbox)) continue;
+          _drawBboxOutline(
+            samImage,
+            det.bbox!,
+            img.ColorRgb8(100, 255, 100),
+            imgW,
+            imgH,
+          );
+          _drawLabel(samImage, '${det.name} (SAM)', det.bbox!, imgW, imgH);
+        }
+        await File(
+          '${debugDir.path}/${stem.split('/').last}_sam_bboxes.png',
+        ).writeAsBytes(img.encodePng(samImage));
+      }
+    } catch (e) {
+      _logger.warning('Failed to save bbox debug images: $e');
+    }
+
+    // 4. Final caption JSON.
+    await File(
+      '${debugDir.path}/${stem.split('/').last}_final_caption.json',
+    ).writeAsString(caption.toJsonString());
+  }
+
+  /// Draws a colored bbox outline on [image] using [y1, x1, y2, x2]
+  /// normalized 0-1000 coordinates.
+  void _drawBboxOutline(
+    img.Image image,
+    List<int> bbox,
+    img.Color color,
+    int imgW,
+    int imgH,
+  ) {
+    final int y1 = (bbox[0] / 1000 * imgH).round().clamp(0, imgH - 1);
+    final int x1 = (bbox[1] / 1000 * imgW).round().clamp(0, imgW - 1);
+    final int y2 = (bbox[2] / 1000 * imgH).round().clamp(y1 + 1, imgH);
+    final int x2 = (bbox[3] / 1000 * imgW).round().clamp(x1 + 1, imgW);
+    img.drawRect(image, x1: x1, y1: y1, x2: x2, y2: y2, color: color);
+  }
+
+  /// Draws the [label] text at the top-left corner of [bbox] with a
+  /// black shadow for readability.
+  void _drawLabel(
+    img.Image image,
+    String label,
+    List<int> bbox,
+    int imgW,
+    int imgH,
+  ) {
+    final int y1 = (bbox[0] / 1000 * imgH).round().clamp(0, imgH - 1);
+    final int x1 = (bbox[1] / 1000 * imgW).round().clamp(0, imgW - 1);
+    final int labelX = (x1 + 2).clamp(0, imgW - 1);
+    final int labelY = (y1 + 2).clamp(0, (imgH - 14).clamp(0, imgH));
+    // Drop shadow for readability.
+    img.drawString(
+      image,
+      label,
+      font: img.arial14,
+      x: labelX + 1,
+      y: labelY + 1,
+      color: img.ColorRgb8(0, 0, 0),
+    );
+    img.drawString(
+      image,
+      label,
+      font: img.arial14,
+      x: labelX,
+      y: labelY,
+      color: img.ColorRgb8(255, 255, 255),
+    );
+  }
+
+  /// Returns true if two [y1, x1, y2, x2] bboxes are identical.
+  bool _bboxesEqual(List<int>? a, List<int>? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Formats a [y1, x1, y2, x2] bbox as a readable string.
+  String _fmtBbox(List<int>? bbox) {
+    if (bbox == null) return 'none';
+    return '[${bbox[0]}, ${bbox[1]}, ${bbox[2]}, ${bbox[3]}]';
   }
 
   /// Parses the VLM response string into a [VlmAnalysis].
@@ -173,7 +368,12 @@ class StructuredCaptionRepository {
       List<int>? bbox;
       final dynamic rawBbox = obj['bbox'];
       if (rawBbox is List && rawBbox.length == 4) {
-        bbox = rawBbox.map((dynamic v) => (v as num).round()).toList();
+        // VLMs return [x1, y1, x2, y2] regardless of prompt instructions.
+        // Swap to Ideogram [y1, x1, y2, x2] format.
+        final List<int> raw = rawBbox
+            .map((dynamic v) => (v as num).round())
+            .toList();
+        bbox = <int>[raw[1], raw[0], raw[3], raw[2]];
       }
       return VlmObject(
         name: obj['name'] as String? ?? '',
@@ -301,15 +501,68 @@ class StructuredCaptionRepository {
     VlmAnalysis analysis,
     List<SamDetection> detections,
     Map<String, List<String>> elementPalettes,
+    StructuredBatchOverrides? overrides,
   ) {
-    final bool isPhoto = analysis.style.medium == 'photograph';
+    // Apply batch overrides if enabled.
+    final String effectiveMedium =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.overrideMedium &&
+            overrides.medium != null
+        ? overrides.medium!
+        : analysis.style.medium;
+
+    final String effectiveAesthetics =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.overrideAesthetics &&
+            overrides.aesthetics != null
+        ? overrides.aesthetics!
+        : analysis.style.aesthetics;
+
+    final String effectiveLighting =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.overrideLighting &&
+            overrides.lighting != null
+        ? overrides.lighting!
+        : analysis.style.lighting;
+
+    final bool isPhoto = effectiveMedium == 'photograph';
+    final String? effectiveStyleDetail =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.styleMode != null &&
+            overrides.styleDetail != null
+        ? overrides.styleDetail
+        : null;
+
+    final String effectiveBackground =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.overrideBackground &&
+            overrides.background != null
+        ? overrides.background!
+        : analysis.background;
 
     final IdeogramStyleDescription styleDescription = IdeogramStyleDescription(
-      aesthetics: analysis.style.aesthetics,
-      lighting: analysis.style.lighting,
-      medium: analysis.style.medium,
-      photo: isPhoto ? analysis.style.photoOrArt : null,
-      artStyle: isPhoto ? null : analysis.style.photoOrArt,
+      aesthetics: effectiveAesthetics,
+      lighting: effectiveLighting,
+      medium: effectiveMedium,
+      photo:
+          overrides != null &&
+              overrides.enabled &&
+              overrides.styleMode == 'photo' &&
+              effectiveStyleDetail != null
+          ? effectiveStyleDetail
+          : (isPhoto ? analysis.style.photoOrArt : null),
+      artStyle:
+          overrides != null &&
+              overrides.enabled &&
+              overrides.styleMode == 'art_style' &&
+              effectiveStyleDetail != null
+          ? effectiveStyleDetail
+          : (isPhoto ? null : analysis.style.photoOrArt),
       colorPalette: globalPalette,
     );
 
@@ -346,7 +599,7 @@ class StructuredCaptionRepository {
       highLevelDescription: analysis.highLevelDescription,
       styleDescription: styleDescription,
       compositionalDeconstruction: IdeogramCompositionalDeconstruction(
-        background: analysis.background,
+        background: effectiveBackground,
         elements: elements,
       ),
     );

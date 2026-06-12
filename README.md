@@ -17,6 +17,10 @@ The application uses a third-party API for generating captions automatically. Th
 - **View and Manage Images**: Select a folder and view images one by one.
 - **Edit Captions**: Add, edit, and save captions for each image. Captions are saved as `.txt` files.
 - **Automatic Captioning**: Use a third-party API to automatically generate captions for your images.
+- **Structured Captioning (Ideogram JSON)**: Generate detailed structured captions with object-level bounding boxes, style descriptions, color palettes, and compositional deconstruction — ideal for preparing LoRA style training datasets.
+- **BBox Canvas Editor**: Visually inspect, move, resize, and add object bounding boxes on detected image layers.
+- **SAM3 Object Detection**: Apple Silicon–accelerated SAM3 refines bounding boxes for precise per-object color extraction.
+- **Color Palette Extraction**: K-means++ clustering extracts dominant colors per object region and globally.
 - **Image Operations**: Crop and resize images.
 - **Search and Replace**: Batch search and replace text in captions.
 - **Sort and Filter**: Sort images by name, date, or caption length.

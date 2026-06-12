@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'llm_config.dart';
+import 'structured_batch_overrides.dart';
 
 class LlmConfigs extends Equatable {
   final List<LlmConfig> configs;
@@ -11,12 +12,20 @@ class LlmConfigs extends Equatable {
   /// When true, the Run button uses the Ideogram4 structured JSON pipeline.
   final bool ideogramJsonEnabled;
 
+  /// When true, structured captioning saves prompt, VLM response, and bbox
+  /// images alongside each image for debugging.
+  final bool debugMode;
+
+  final StructuredBatchOverrides structuredBatchOverrides;
+
   const LlmConfigs({
     required this.configs,
     required this.prompts,
     this.selectedConfigId,
     this.selectedPrompt,
     this.ideogramJsonEnabled = false,
+    this.debugMode = false,
+    this.structuredBatchOverrides = const StructuredBatchOverrides(),
   });
 
   @override
@@ -26,6 +35,8 @@ class LlmConfigs extends Equatable {
     selectedConfigId,
     selectedPrompt,
     ideogramJsonEnabled,
+    debugMode,
+    structuredBatchOverrides,
   ];
 
   LlmConfigs copyWith({
@@ -35,6 +46,8 @@ class LlmConfigs extends Equatable {
     String? selectedPrompt,
     bool forceSelectedConfigId = false,
     bool? ideogramJsonEnabled,
+    bool? debugMode,
+    StructuredBatchOverrides? structuredBatchOverrides,
   }) {
     return LlmConfigs(
       configs: configs ?? this.configs,
@@ -44,6 +57,9 @@ class LlmConfigs extends Equatable {
           : selectedConfigId ?? this.selectedConfigId,
       selectedPrompt: selectedPrompt ?? this.selectedPrompt,
       ideogramJsonEnabled: ideogramJsonEnabled ?? this.ideogramJsonEnabled,
+      debugMode: debugMode ?? this.debugMode,
+      structuredBatchOverrides:
+          structuredBatchOverrides ?? this.structuredBatchOverrides,
     );
   }
 
@@ -59,6 +75,11 @@ class LlmConfigs extends Equatable {
       selectedConfigId: json['selectedConfigId'] as String?,
       selectedPrompt: json['selectedPrompt'] as String?,
       ideogramJsonEnabled: json['ideogramJsonEnabled'] as bool? ?? false,
+      debugMode: json['debugMode'] as bool? ?? false,
+      structuredBatchOverrides: StructuredBatchOverrides.fromJson(
+        json['structuredBatchOverrides'] as Map<String, dynamic>? ??
+            <String, dynamic>{},
+      ),
     );
   }
   Map<String, dynamic> toJson() {
@@ -68,6 +89,8 @@ class LlmConfigs extends Equatable {
       'selectedConfigId': selectedConfigId,
       'selectedPrompt': selectedPrompt,
       'ideogramJsonEnabled': ideogramJsonEnabled,
+      'debugMode': debugMode,
+      'structuredBatchOverrides': structuredBatchOverrides.toJson(),
     };
   }
 

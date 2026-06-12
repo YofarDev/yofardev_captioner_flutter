@@ -219,27 +219,24 @@ void main() {
         expect(result, 'A beautiful sunset');
       });
 
-      test(
-        'throws ApiException when MLX output does not match regex',
-        () async {
-          when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
-            return ProcessResult(0, 0, 'unparsable output', '');
-          });
+      test('throws ApiException when MLX output does not match regex', () {
+        when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
+          return ProcessResult(0, 0, 'unparsable output', '');
+        });
 
-          final LlmConfig config = LlmConfig(
-            name: 'mlx',
-            model: 'test',
-            providerType: LlmProviderType.localMlx,
-          );
+        final LlmConfig config = LlmConfig(
+          name: 'mlx',
+          model: 'test',
+          providerType: LlmProviderType.localMlx,
+        );
 
-          expect(
-            () => service.getCaption(config, File('/test/img.jpg'), 'prompt'),
-            throwsA(isA<ApiException>()),
-          );
-        },
-      );
+        expect(
+          () => service.getCaption(config, File('/test/img.jpg'), 'prompt'),
+          throwsA(isA<ApiException>()),
+        );
+      });
 
-      test('throws ApiException when MLX exits with non-zero code', () async {
+      test('throws ApiException when MLX exits with non-zero code', () {
         when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
           return ProcessResult(0, 1, '', 'error details');
         });
@@ -262,7 +259,7 @@ void main() {
         );
       });
 
-      test('wraps ProcessException in ApiException', () async {
+      test('wraps ProcessException in ApiException', () {
         when(
           mockProcessRunner.run(any, any),
         ).thenThrow(const ProcessException('mlx_vlm.generate', <String>[]));
@@ -311,7 +308,7 @@ void main() {
     // ─── Remote caption tests ──────────────────────────────────────
 
     group('remote caption', () {
-      test('throws ApiException when URL is null', () async {
+      test('throws ApiException when URL is null', () {
         final LlmConfig config = LlmConfig(
           name: 'test',
           model: 'gpt-4',
@@ -331,7 +328,7 @@ void main() {
         );
       });
 
-      test('throws ApiException when apiKey is null', () async {
+      test('throws ApiException when apiKey is null', () {
         final LlmConfig config = LlmConfig(
           name: 'test',
           model: 'gpt-4',
@@ -351,7 +348,7 @@ void main() {
         );
       });
 
-      test('throws ApiException on HTTP error status', () async {
+      test('throws ApiException on HTTP error status', () {
         when(
           mockHttpClient.post(
             any,
@@ -380,7 +377,7 @@ void main() {
         );
       });
 
-      test('throws ApiException when response has empty choices', () async {
+      test('throws ApiException when response has empty choices', () {
         when(
           mockHttpClient.post(
             any,

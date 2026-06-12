@@ -4,7 +4,28 @@
 
 An open-source desktop application for managing and captioning image files.
 
-![Screenshot of Yofardev Captioner](assets/screenshot_.png)
+![Screenshot of Yofardev Captioner](assets/screenshot_main.png)
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" align="center"><b>Main Captioning View</b></td>
+    <td width="50%" align="center"><b>Structured Captioning (Ideogram JSON)</b></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/screenshot_main.png" alt="Main captioning view"></td>
+    <td width="50%"><img src="assets/screenshot_structured.png" alt="Structured captioning"></td>
+  </tr>
+  <tr>
+    <td width="50%" align="center"><b>Structured Editor &amp; BBox Canvas</b></td>
+    <td width="50%" align="center"><b>Vision Model Settings</b></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/screenshot_editor.png" alt="Structured editor and bbox canvas"></td>
+    <td width="50%"><img src="assets/screenshot_settings.png" alt="Vision model settings"></td>
+  </tr>
+</table>
 
 # Project Overview
 
@@ -26,7 +47,7 @@ The application uses a third-party API for generating captions automatically. Th
 - **Sort and Filter**: Sort images by name, date, or caption length.
 - **Multi-Category Captions**: Maintain different types of captions for each image (e.g., short, detailed, tags).
 
-![Screenshot of Settings](assets/screenshot_2.png)
+![Screenshot of Settings](assets/screenshot_settings.png)
 
 ## Multi-Category Captions
 

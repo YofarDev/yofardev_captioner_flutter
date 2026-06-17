@@ -9,8 +9,12 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
+import '../../data/models/batch_apply_template.dart';
 import '../../data/models/caption_options.dart';
+import '../../logic/batch_apply/batch_json_apply_cubit.dart';
+import '../../logic/batch_apply/batch_json_apply_state.dart';
 import '../../logic/captioning_cubit.dart';
+import '../widgets/batch_json_apply_dialog.dart';
 
 class CaptionControls extends StatefulWidget {
   const CaptionControls({super.key});
@@ -255,6 +259,8 @@ class _CaptionControlsState extends State<CaptionControls> {
                 : null,
           ),
         ),
+        if (isIdeogram) const SizedBox(width: 8),
+        if (isIdeogram) _buildBatchApplyButton(context),
         if (isInProgress) ...<Widget>[
           Container(
             margin: const EdgeInsets.only(left: 12),
@@ -342,6 +348,89 @@ class _CaptionControlsState extends State<CaptionControls> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildBatchApplyButton(BuildContext context) {
+    return BlocBuilder<BatchJsonApplyCubit, BatchJsonApplyState>(
+      builder: (BuildContext context, BatchJsonApplyState state) {
+        final bool isInProgress = state is BatchJsonApplyInProgress;
+        final bool hasError = state is BatchJsonApplyError;
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Tooltip(
+              message: 'Batch apply structured fields to all images',
+              child: AppButton(
+                text: 'Batch Apply',
+                backgroundColor: const Color(0xFF7B68EE).withAlpha(220),
+                onTap: isInProgress
+                    ? null
+                    : () async {
+                        final BatchApplyTemplate? template =
+                            await showDialog<BatchApplyTemplate>(
+                              context: context,
+                              builder: (BuildContext _) =>
+                                  const BatchJsonApplyDialog(),
+                            );
+                        if (template != null && context.mounted) {
+                          context
+                              .read<BatchJsonApplyCubit>()
+                              .apply(template);
+                        }
+                      },
+              ),
+            ),
+            if (isInProgress) ...<Widget>[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF7B68EE).withAlpha(100),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '${state.processedImages}/${state.totalImages}',
+                  style: const TextStyle(
+                    color: Color(0xFF7B68EE),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _StopButton(
+                isCancelling: false,
+                onTap: () =>
+                    context.read<BatchJsonApplyCubit>().cancel(),
+              ),
+            ],
+            if (hasError)
+              Padding(
+                padding: const EdgeInsets.only(left: 6),
+                child: Tooltip(
+                  message: state.message,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withAlpha(100),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline,
+                      color: Colors.red,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }

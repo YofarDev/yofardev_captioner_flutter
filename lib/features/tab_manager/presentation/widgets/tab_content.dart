@@ -4,6 +4,7 @@ import 'package:nested/nested.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../caption_search/logic/caption_search_cubit.dart';
+import '../../../captioning/logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../../captioning/logic/captioning_cubit.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/pages/images_list_view.dart';
@@ -31,6 +32,7 @@ class TabContentState extends State<TabContent>
   late final StructuredCaptioningCubit _structuredCaptioningCubit;
   late final ImageOperationsCubit _imageOperationsCubit;
   late final CaptionSearchCubit _captionSearchCubit;
+  late final BatchJsonApplyCubit _batchJsonApplyCubit;
   TabManagerCubit? _tabManagerCubit;
 
   @override
@@ -41,6 +43,7 @@ class TabContentState extends State<TabContent>
     _structuredCaptioningCubit = StructuredCaptioningCubit(_imageListCubit);
     _imageOperationsCubit = ImageOperationsCubit(_imageListCubit);
     _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);
+    _batchJsonApplyCubit = BatchJsonApplyCubit(_imageListCubit);
     // Register with TabManagerCubit after first frame (context available)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tabManagerCubit = context.read<TabManagerCubit>();
@@ -52,6 +55,7 @@ class TabContentState extends State<TabContent>
   void dispose() {
     _tabManagerCubit?.unregisterTabCubit(widget.tabId);
     _captionSearchCubit.close();
+    _batchJsonApplyCubit.close();
     _imageOperationsCubit.close();
     _structuredCaptioningCubit.close();
     _captioningCubit.close();
@@ -74,6 +78,7 @@ class TabContentState extends State<TabContent>
         ),
         BlocProvider<ImageOperationsCubit>.value(value: _imageOperationsCubit),
         BlocProvider<CaptionSearchCubit>.value(value: _captionSearchCubit),
+        BlocProvider<BatchJsonApplyCubit>.value(value: _batchJsonApplyCubit),
       ],
       child: Row(
         children: <Widget>[

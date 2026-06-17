@@ -267,6 +267,115 @@ void main() {
       expect(captioningCubit.state.isCancelling, true);
     });
 
+    group('rewriteCaption', () {
+      test('updates current image caption with rewritten text', () async {
+        final AppImage image = AppImage(
+          id: '1',
+          image: File('img.jpg'),
+          captions: const <String, CaptionEntry>{
+            'default': CaptionEntry(text: 'A person stands.'),
+          },
+        );
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
+        );
+        when(mockImageListCubit.currentDisplayedImage).thenReturn(image);
+        when(mockCaptioningRepository.rewriteCaption(any, any, any)).thenAnswer(
+          (Invocation inv) async {
+            final AppImage img = inv.positionalArguments[1] as AppImage;
+            return img.copyWith(
+              captions: const <String, CaptionEntry>{
+                'default': CaptionEntry(
+                  text: 'A young woman stands.',
+                  isEdited: true,
+                ),
+              },
+            );
+          },
+        );
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        await captioningCubit.rewriteCaption(
+          llm: llmConfig,
+          instructions: 'make the person a young woman',
+        );
+
+        final AppImage passed =
+            verify(
+                  mockImageListCubit.updateImage(
+                    image: captureAnyNamed('image'),
+                  ),
+                ).captured.single
+                as AppImage;
+        expect(passed.captions['default']?.text, 'A young woman stands.');
+        expect(passed.captions['default']?.isEdited, true);
+      });
+
+      test('throws when no current image is selected', () async {
+        when(
+          mockImageListCubit.state,
+        ).thenReturn(const ImageListState(folderPath: '/tmp'));
+        when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        await expectLater(
+          captioningCubit.rewriteCaption(llm: llmConfig, instructions: 'x'),
+          throwsA(isA<Exception>()),
+        );
+        verifyNever(mockCaptioningRepository.rewriteCaption(any, any, any));
+      });
+
+      test(
+        'propagates repository errors and does not update the image',
+        () async {
+          final AppImage image = AppImage(
+            id: '1',
+            image: File('img.jpg'),
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'A person stands.'),
+            },
+          );
+
+          when(mockImageListCubit.state).thenReturn(
+            ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
+          );
+          when(mockImageListCubit.currentDisplayedImage).thenReturn(image);
+          when(
+            mockCaptioningRepository.rewriteCaption(any, any, any),
+          ).thenThrow(Exception('API error'));
+
+          final LlmConfig llmConfig = LlmConfig(
+            id: '1',
+            name: 'Test',
+            model: 'gpt-4',
+            providerType: LlmProviderType.remote,
+          );
+
+          await expectLater(
+            captioningCubit.rewriteCaption(
+              llm: llmConfig,
+              instructions: 'make it better',
+            ),
+            throwsA(isA<Exception>()),
+          );
+          verifyNever(mockImageListCubit.updateImage(image: anyNamed('image')));
+        },
+      );
+    });
+
     test('clearErrors resets status to initial', () async {
       final AppImage image = AppImage(
         id: '1',

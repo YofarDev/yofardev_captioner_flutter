@@ -83,8 +83,8 @@ class TabContentState extends State<TabContent>
             width: 240,
             child: const ImagesListView(),
           ),
-          Expanded(
-            child: ColoredBox(color: darkGrey, child: const MainAreaView()),
+          const Expanded(
+            child: ColoredBox(color: darkGrey, child: MainAreaView()),
           ),
         ],
       ),

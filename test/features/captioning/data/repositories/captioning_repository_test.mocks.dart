@@ -53,4 +53,29 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
             ),
           )
           as _i3.Future<String>);
+
+  @override
+  _i3.Future<String> rewriteCaption(
+    _i4.LlmConfig? config,
+    String? currentCaption,
+    String? instructions,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#rewriteCaption, [
+              config,
+              currentCaption,
+              instructions,
+            ]),
+            returnValue: _i3.Future<String>.value(
+              _i6.dummyValue<String>(
+                this,
+                Invocation.method(#rewriteCaption, [
+                  config,
+                  currentCaption,
+                  instructions,
+                ]),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
 }

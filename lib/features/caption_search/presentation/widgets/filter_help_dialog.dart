@@ -46,7 +46,7 @@ class FilterHelpDialog extends StatelessWidget {
                   'Combine with regular text for AND filtering.',
                 ),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Filters',
                   style: TextStyle(
                     fontFamily: 'Orbitron',
@@ -57,7 +57,7 @@ class FilterHelpDialog extends StatelessWidget {
                 const SizedBox(height: 8),
                 _buildFilterTable(),
                 const SizedBox(height: 16),
-                Text(
+                const Text(
                   'Examples',
                   style: TextStyle(
                     fontFamily: 'Orbitron',
@@ -94,7 +94,7 @@ class FilterHelpDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Close', style: TextStyle(color: lightPink)),
+          child: const Text('Close', style: TextStyle(color: lightPink)),
         ),
       ],
     );
@@ -166,7 +166,10 @@ class FilterHelpDialog extends StatelessWidget {
           children: <TextSpan>[
             TextSpan(
               text: query,
-              style: TextStyle(color: lightPink, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                color: lightPink,
+                fontWeight: FontWeight.w500,
+              ),
             ),
             TextSpan(
               text: ' — $description',

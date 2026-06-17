@@ -16,6 +16,10 @@ class LlmConfigs extends Equatable {
   /// images alongside each image for debugging.
   final bool debugMode;
 
+  /// When true, the structured pipeline skips SAM detection and uses the
+  /// VLM-provided bboxes directly.
+  final bool disableSam;
+
   final StructuredBatchOverrides structuredBatchOverrides;
 
   const LlmConfigs({
@@ -25,6 +29,7 @@ class LlmConfigs extends Equatable {
     this.selectedPrompt,
     this.ideogramJsonEnabled = false,
     this.debugMode = false,
+    this.disableSam = false,
     this.structuredBatchOverrides = const StructuredBatchOverrides(),
   });
 
@@ -36,6 +41,7 @@ class LlmConfigs extends Equatable {
     selectedPrompt,
     ideogramJsonEnabled,
     debugMode,
+    disableSam,
     structuredBatchOverrides,
   ];
 
@@ -47,6 +53,7 @@ class LlmConfigs extends Equatable {
     bool forceSelectedConfigId = false,
     bool? ideogramJsonEnabled,
     bool? debugMode,
+    bool? disableSam,
     StructuredBatchOverrides? structuredBatchOverrides,
   }) {
     return LlmConfigs(
@@ -58,6 +65,7 @@ class LlmConfigs extends Equatable {
       selectedPrompt: selectedPrompt ?? this.selectedPrompt,
       ideogramJsonEnabled: ideogramJsonEnabled ?? this.ideogramJsonEnabled,
       debugMode: debugMode ?? this.debugMode,
+      disableSam: disableSam ?? this.disableSam,
       structuredBatchOverrides:
           structuredBatchOverrides ?? this.structuredBatchOverrides,
     );
@@ -76,6 +84,7 @@ class LlmConfigs extends Equatable {
       selectedPrompt: json['selectedPrompt'] as String?,
       ideogramJsonEnabled: json['ideogramJsonEnabled'] as bool? ?? false,
       debugMode: json['debugMode'] as bool? ?? false,
+      disableSam: json['disableSam'] as bool? ?? false,
       structuredBatchOverrides: StructuredBatchOverrides.fromJson(
         json['structuredBatchOverrides'] as Map<String, dynamic>? ??
             <String, dynamic>{},
@@ -90,6 +99,7 @@ class LlmConfigs extends Equatable {
       'selectedPrompt': selectedPrompt,
       'ideogramJsonEnabled': ideogramJsonEnabled,
       'debugMode': debugMode,
+      'disableSam': disableSam,
       'structuredBatchOverrides': structuredBatchOverrides.toJson(),
     };
   }

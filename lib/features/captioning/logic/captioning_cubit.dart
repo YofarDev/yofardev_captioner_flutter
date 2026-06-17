@@ -154,6 +154,27 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     _cancelCompleter = null;
   }
 
+  /// Asks the LLM to rewrite the current image's active caption (text-only,
+  /// no image sent) given free-form [instructions]. Operates on the currently
+  /// displayed image only. Errors propagate to the caller for UX handling.
+  Future<void> rewriteCaption({
+    required LlmConfig llm,
+    required String instructions,
+  }) async {
+    final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+    if (currentImage == null) {
+      throw Exception('No image selected');
+    }
+    final String category = _imageListCubit.state.activeCategory ?? 'default';
+    final AppImage updatedImage = await _captioningRepository.rewriteCaption(
+      llm,
+      currentImage,
+      instructions,
+      category: category,
+    );
+    _imageListCubit.updateImage(image: updatedImage.copyWith(clearError: true));
+  }
+
   void cancelCaptioning() {
     _cancelCompleter?.complete();
     emit(state.copyWith(isCancelling: true));

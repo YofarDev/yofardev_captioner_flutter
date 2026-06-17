@@ -10,4 +10,13 @@ class CaptionRepository {
   Future<String> getCaption(LlmConfig config, AppImage image, String prompt) {
     return _captionService.getCaption(config, image.image, prompt);
   }
+
+  /// Rewrites an existing caption (text-only) using the LLM.
+  Future<String> rewriteCaption(
+    LlmConfig config,
+    String currentCaption,
+    String instructions,
+  ) {
+    return _captionService.rewriteCaption(config, currentCaption, instructions);
+  }
 }

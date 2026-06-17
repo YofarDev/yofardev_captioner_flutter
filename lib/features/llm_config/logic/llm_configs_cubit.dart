@@ -258,6 +258,16 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
+  /// Toggles SAM detection off in the structured pipeline.
+  void setDisableSam(bool enabled) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(disableSam: enabled),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
   /// Updates the structured batch overrides for the JSON captioning pipeline.
   void updateStructuredBatchOverrides(StructuredBatchOverrides overrides) {
     emit(

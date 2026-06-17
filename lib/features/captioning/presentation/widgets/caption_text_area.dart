@@ -13,6 +13,7 @@ import '../../../structured_captioning/presentation/widgets/ideogram_caption_sum
 import '../../logic/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
+import 'rewrite_caption_dialog.dart';
 
 class CaptionTextArea extends StatefulWidget {
   const CaptionTextArea({super.key});
@@ -226,6 +227,44 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         ),
                                       ),
                                     ),
+                                    if (!isIdeogram &&
+                                        captionText
+                                            .trim()
+                                            .isNotEmpty) ...<Widget>[
+                                      const SizedBox(width: 8),
+                                      Tooltip(
+                                        message: 'Rewrite caption with AI',
+                                        child: InkWell(
+                                          onTap: () {
+                                            showDialog<bool>(
+                                              context: context,
+                                              builder:
+                                                  (
+                                                    BuildContext dialogContext,
+                                                  ) => RewriteCaptionDialog(
+                                                    currentCaption: captionText,
+                                                  ),
+                                            );
+                                          },
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(6),
+                                            decoration: BoxDecoration(
+                                              color: lightPink.withAlpha(40),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.auto_fix_high,
+                                              size: 16,
+                                              color: lightPink,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                     if (isIdeogram) ...<Widget>[
                                       const SizedBox(width: 8),
                                       Tooltip(

@@ -32,6 +32,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     required CaptionOptions option,
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
+    bool disableSam = false,
   }) async {
     _cancelCompleter = Completer<void>();
     emit(
@@ -122,6 +123,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
               onProgress: _onStepProgress,
               overrides: overrides,
               debugMode: debugMode,
+              disableSam: disableSam,
             );
 
         // Store JSON string as caption in active category.

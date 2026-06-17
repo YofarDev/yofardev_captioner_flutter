@@ -412,6 +412,126 @@ void main() {
       });
     });
 
+    // ─── rewriteCaption (text-only) ─────────────────────────────────
+
+    group('rewriteCaption', () {
+      test('throws ApiException for local MLX provider', () {
+        final LlmConfig config = LlmConfig(
+          name: 'mlx',
+          model: 'm',
+          providerType: LlmProviderType.localMlx,
+        );
+
+        expect(
+          () => service.rewriteCaption(
+            config,
+            'A person stands.',
+            'make the person a young woman',
+          ),
+          throwsA(isA<ApiException>()),
+        );
+        verifyNever(mockProcessRunner.run(any, any));
+      });
+
+      test(
+        'sends text-only request (no image) and returns rewritten caption',
+        () async {
+          String? capturedBody;
+          when(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).thenAnswer((Invocation inv) async {
+            capturedBody = inv.namedArguments[const Symbol('body')] as String;
+            return http.Response(
+              jsonEncode(<String, dynamic>{
+                'choices': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'message': <String, dynamic>{
+                      'content': 'A young woman stands.',
+                    },
+                  },
+                ],
+              }),
+              200,
+            );
+          });
+
+          final LlmConfig config = LlmConfig(
+            name: 'openai',
+            model: 'gpt-4',
+            apiKey: 'key',
+            url: 'https://api.openai.com/v1',
+            providerType: LlmProviderType.remote,
+          );
+
+          final String result = await service.rewriteCaption(
+            config,
+            'A person stands.',
+            'make the person a young woman',
+          );
+
+          expect(result, 'A young woman stands.');
+
+          final Map<String, dynamic> decoded =
+              jsonDecode(capturedBody!) as Map<String, dynamic>;
+          final List<dynamic> messages = decoded['messages'] as List<dynamic>;
+
+          // Text-only: no image bytes are sent.
+          expect(capturedBody, isNot(contains('base64')));
+          expect(capturedBody, isNot(contains('data:image')));
+
+          // System + user roles, instruction and original caption present.
+          expect(messages, hasLength(2));
+          expect((messages[0] as Map<String, dynamic>)['role'], 'system');
+          final String userText =
+              ((messages[1] as Map<String, dynamic>)['content']
+                      as List<dynamic>)
+                  .map(
+                    (dynamic c) =>
+                        (c as Map<String, dynamic>)['text'] as String,
+                  )
+                  .join();
+          expect(userText, contains('make the person a young woman'));
+          expect(userText, contains('A person stands.'));
+
+          // Rewrite never touches the image pipeline.
+          verifyNever(mockImageResizer.resizeImageIfNecessary(any));
+        },
+      );
+
+      test('throws ApiException on HTTP error status', () {
+        when(
+          mockHttpClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer((_) async => http.Response('{"error": "bad"}', 500));
+
+        final LlmConfig config = LlmConfig(
+          name: 'openai',
+          model: 'gpt-4',
+          apiKey: 'key',
+          url: 'https://api.openai.com/v1',
+          providerType: LlmProviderType.remote,
+        );
+
+        expect(
+          () => service.rewriteCaption(config, 'cap', 'fix it'),
+          throwsA(
+            isA<ApiException>().having(
+              (ApiException e) => e.message,
+              'message',
+              contains('500'),
+            ),
+          ),
+        );
+      });
+    });
+
     // ─── ApiException ──────────────────────────────────────────────
 
     group('ApiException', () {

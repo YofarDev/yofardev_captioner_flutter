@@ -25,11 +25,39 @@ class ColorExtractionService {
     }
     if (image == null) return <String>[];
 
-    final List<_Lab> labPixels = _samplePixelsAsLab(image);
+    final img.Image rgb = _normalizeToRgb(image);
+    final List<_Lab> labPixels = _samplePixelsAsLab(rgb);
     if (labPixels.isEmpty) return <String>[];
 
     final List<_Lab> centroids = _kMeansLab(labPixels, colorCount);
-    return centroids.map((_Lab c) => _labToRgb(c).toHex()).toList();
+    return _centroidsToHex(centroids);
+  }
+
+  /// Normalizes a decoded image to 3-channel RGB.
+  ///
+  /// Grayscale / palettized / single-channel PNGs decode with numChannels < 3,
+  /// where only [Pixel.r] holds the value while g/b read as 0 — turning every
+  /// gray pixel into pure red (255,0,0). Converting to 3 channels resolves the
+  /// luminance into a proper RGB triplet and dereferences palette indices.
+  img.Image _normalizeToRgb(img.Image image) {
+    if (image.numChannels >= 3) return image;
+    return image.convert(numChannels: 3);
+  }
+
+  /// Snap low-chroma centroids to pure gray before output.
+  ///
+  /// In near-grayscale images, JPEG chroma noise makes k-means++ seed on tinted
+  /// outliers, producing spurious reds/blues. Centroids below [grayChromaThreshold]
+  /// Lab chroma get their a/b forced to 0 so output hex stays neutral.
+  List<String> _centroidsToHex(
+    List<_Lab> centroids, {
+    double grayChromaThreshold = 4.0,
+  }) {
+    return centroids.map((_Lab c) {
+      final double chroma = sqrt(c.a * c.a + c.b * c.b);
+      final _Lab cleaned = chroma < grayChromaThreshold ? _Lab(c.l, 0, 0) : c;
+      return _labToRgb(cleaned).toHex();
+    }).toList();
   }
 
   /// Extracts a palette from a cropped region defined by [bbox].
@@ -49,8 +77,10 @@ class ColorExtractionService {
     }
     if (fullImage == null) return <String>[];
 
-    final int imgW = fullImage.width;
-    final int imgH = fullImage.height;
+    final img.Image rgb = _normalizeToRgb(fullImage);
+
+    final int imgW = rgb.width;
+    final int imgH = rgb.height;
 
     // Convert 0-1000 normalized bbox to pixel coordinates.
     final int px1 = (bbox[1] / 1000 * imgW).round().clamp(0, imgW - 1);
@@ -61,7 +91,7 @@ class ColorExtractionService {
     if (px2 <= px1 || py2 <= py1) return <String>[];
 
     final img.Image region = img.copyCrop(
-      fullImage,
+      rgb,
       x: px1,
       y: py1,
       width: px2 - px1,
@@ -72,7 +102,7 @@ class ColorExtractionService {
     if (labPixels.isEmpty) return <String>[];
 
     final List<_Lab> centroids = _kMeansLab(labPixels, colorCount);
-    return centroids.map((_Lab c) => _labToRgb(c).toHex()).toList();
+    return _centroidsToHex(centroids);
   }
 
   // ===========================================================================
@@ -80,8 +110,18 @@ class ColorExtractionService {
   // ===========================================================================
 
   /// Samples pixels from an image, skipping every Nth pixel for performance.
-  /// Converts directly to Lab space.
-  List<_Lab> _samplePixelsAsLab(img.Image image) {
+  /// Converts directly to Lab space and snaps near-gray pixels onto the neutral
+  /// axis to suppress JPEG chroma noise.
+  ///
+  /// Grayscale images stored as RGB JPEGs carry residual color in their chroma
+  /// channels (chroma subsampling, decode dithering). k-means++ deliberately
+  /// seeds on the farthest points, so without cleaning these tinted pixels would
+  /// become centroids and report spurious reds/blues. Pixels whose Lab chroma
+  /// [√(a²+b²)] is below [grayChromaThreshold] get a/b forced to 0.
+  List<_Lab> _samplePixelsAsLab(
+    img.Image image, {
+    double grayChromaThreshold = 8.0,
+  }) {
     final int total = image.width * image.height;
     final int step = max(1, total ~/ 5000);
     final List<_Lab> pixels = <_Lab>[];
@@ -91,9 +131,11 @@ class ColorExtractionService {
         if ((y * image.width + x) % step != 0) continue;
         final img.Pixel pixel = image.getPixel(x, y);
         if (pixel.a < 128) continue;
-        pixels.add(
-          _rgbToLab(_Rgb(pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt())),
+        final _Lab lab = _rgbToLab(
+          _Rgb(pixel.r.toInt(), pixel.g.toInt(), pixel.b.toInt()),
         );
+        final double chroma = sqrt(lab.a * lab.a + lab.b * lab.b);
+        pixels.add(chroma < grayChromaThreshold ? _Lab(lab.l, 0, 0) : lab);
       }
     }
     return pixels;
@@ -275,10 +317,16 @@ class ColorExtractionService {
         ? fz * fz * fz
         : (116.0 * fz - 16.0) / _labKappa;
 
+    // Denormalize from D65 white point (xr,yr,zr are X/Xn, Y/Yn, Z/Zn — the
+    // forward transform divided by these, so the inverse must multiply back).
+    final double x = xr * 0.95047;
+    final double y = yr * 1.00000;
+    final double z = zr * 1.08883;
+
     // XYZ → linear RGB (D65).
-    final double lr = 3.2404542 * xr - 1.5371385 * yr - 0.4985314 * zr;
-    final double lg = -0.9692660 * xr + 1.8760108 * yr + 0.0415560 * zr;
-    final double lb = 0.0556434 * xr - 0.2040259 * yr + 1.0572252 * zr;
+    final double lr = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z;
+    final double lg = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z;
+    final double lb = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z;
 
     return _Rgb(_linearToSrgb(lr), _linearToSrgb(lg), _linearToSrgb(lb));
   }

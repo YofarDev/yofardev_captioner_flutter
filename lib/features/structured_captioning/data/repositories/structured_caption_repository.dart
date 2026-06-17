@@ -49,6 +49,7 @@ class StructuredCaptionRepository {
     required void Function(String step) onProgress,
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
+    bool disableSam = false,
   }) async {
     // Step 1: Global color palette.
     onProgress('Extracting color palette...');
@@ -71,10 +72,15 @@ class StructuredCaptionRepository {
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
 
     // Step 3: SAM3 detection (skip group elements — SAM detects individuals).
+    // When [disableSam] is set, the SAM refinement step is skipped entirely
+    // and the VLM-provided bboxes are used directly.
     final List<int> samIndices = <int>[];
     final List<String> samNames = <String>[];
     for (int i = 0; i < analysis.objects.length; i++) {
       final VlmObject obj = analysis.objects[i];
+      if (disableSam) {
+        continue;
+      }
       if (isLikelyGroup(obj.name, obj.desc)) {
         _logger.fine('Skipping SAM for group element: "${obj.name}"');
       } else {
@@ -83,15 +89,15 @@ class StructuredCaptionRepository {
       }
     }
 
-    onProgress(
-      'Running SAM detection for ${samNames.length} individual objects…',
-    );
     final List<VlmObjectBboxPair> vlmBboxes = analysis.objects
         .map((VlmObject o) => VlmObjectBboxPair(name: o.name, bbox: o.bbox))
         .toList();
 
     List<SamDetection> detections = <SamDetection>[];
     if (samNames.isNotEmpty) {
+      onProgress(
+        'Running SAM detection for ${samNames.length} individual objects…',
+      );
       try {
         detections = await _samProcessService.detectObjects(
           imageFile.path,
@@ -100,6 +106,8 @@ class StructuredCaptionRepository {
       } catch (e) {
         _logger.warning('SAM detection failed, using VLM bboxes: $e');
       }
+    } else if (disableSam) {
+      _logger.info('SAM detection disabled — using VLM bboxes');
     }
 
     // Step 4: Greedy bbox matching (SAM detections only for individual objects).
@@ -232,25 +240,24 @@ class StructuredCaptionRepository {
           '${debugDir.path}/${stem.split('/').last}_bbox_selection.txt',
         ).writeAsString(selectionLog.toString());
 
-        // VLM-only overlay.
-        final img.Image vlmImage = source.clone();
-        for (final VlmObject obj in vlmObjects) {
+        // VLM-only overlay. Photo is faded 50% over white so the colored
+        // bboxes pop. Each object gets a distinct palette color and the same
+        // color is reused in the SAM image for cross-reference.
+        final img.Image vlmImage = _fadeOnWhite(source, imgW, imgH);
+        for (int i = 0; i < vlmObjects.length; i++) {
+          final VlmObject obj = vlmObjects[i];
           if (obj.bbox == null) continue;
-          _drawBboxOutline(
-            vlmImage,
-            obj.bbox!,
-            img.ColorRgb8(100, 150, 255),
-            imgW,
-            imgH,
-          );
-          _drawLabel(vlmImage, obj.name, obj.bbox!, imgW, imgH);
+          final img.Color color = _bboxColor(i);
+          _drawBboxOutline(vlmImage, obj.bbox!, color, imgW, imgH);
+          _drawLabel(vlmImage, obj.name, obj.bbox!, imgW, imgH, color: color);
         }
         await File(
           '${debugDir.path}/${stem.split('/').last}_vlm_bboxes.png',
         ).writeAsBytes(img.encodePng(vlmImage));
 
-        // SAM-only overlay (only genuine SAM refinements).
-        final img.Image samImage = source.clone();
+        // SAM-only overlay (only genuine SAM refinements), faded 50% on
+        // white. Color matches the same object's color in the VLM image.
+        final img.Image samImage = _fadeOnWhite(source, imgW, imgH);
         for (int i = 0; i < detections.length; i++) {
           final SamDetection det = detections[i];
           if (det.bbox == null) continue;
@@ -258,14 +265,16 @@ class StructuredCaptionRepository {
               ? vlmObjects[i].bbox
               : null;
           if (vlmBbox != null && _bboxesEqual(det.bbox, vlmBbox)) continue;
-          _drawBboxOutline(
+          final img.Color color = _bboxColor(i);
+          _drawBboxOutline(samImage, det.bbox!, color, imgW, imgH);
+          _drawLabel(
             samImage,
+            '${det.name} (SAM)',
             det.bbox!,
-            img.ColorRgb8(100, 255, 100),
             imgW,
             imgH,
+            color: color,
           );
-          _drawLabel(samImage, '${det.name} (SAM)', det.bbox!, imgW, imgH);
         }
         await File(
           '${debugDir.path}/${stem.split('/').last}_sam_bboxes.png',
@@ -281,6 +290,39 @@ class StructuredCaptionRepository {
     ).writeAsString(caption.toJsonString());
   }
 
+  /// High-contrast palette of distinguishable colors used to color-code
+  /// bboxes per object so overlapping boxes stay readable.
+  static final List<img.ColorRgb8> _bboxPalette = <img.ColorRgb8>[
+    img.ColorRgb8(255, 64, 64), // red
+    img.ColorRgb8(64, 200, 255), // cyan
+    img.ColorRgb8(255, 220, 0), // yellow
+    img.ColorRgb8(180, 80, 255), // purple
+    img.ColorRgb8(0, 220, 120), // green
+    img.ColorRgb8(255, 140, 0), // orange
+    img.ColorRgb8(255, 0, 200), // magenta
+    img.ColorRgb8(0, 160, 255), // blue
+    img.ColorRgb8(150, 255, 0), // lime
+    img.ColorRgb8(255, 100, 160), // pink
+  ];
+
+  /// Returns a palette color for the object at [index], cycling when there
+  /// are more objects than palette entries.
+  img.Color _bboxColor(int index) => _bboxPalette[index % _bboxPalette.length];
+
+  /// Returns a copy of [source] composited at 50% opacity over a solid white
+  /// background, so overlaid colored bboxes stand out.
+  img.Image _fadeOnWhite(img.Image source, int imgW, int imgH) {
+    final img.Image base = img.Image(width: imgW, height: imgH);
+    img.fill(base, color: img.ColorRgb8(255, 255, 255));
+    // Composite the photo at half alpha: clone then halve the alpha channel.
+    final img.Image faded = source.clone();
+    for (final img.Pixel p in faded) {
+      p.a = (p.a * 0.5).round().clamp(0, 255);
+    }
+    img.compositeImage(base, faded);
+    return base;
+  }
+
   /// Draws a colored bbox outline on [image] using [y1, x1, y2, x2]
   /// normalized 0-1000 coordinates.
   void _drawBboxOutline(
@@ -294,22 +336,33 @@ class StructuredCaptionRepository {
     final int x1 = (bbox[1] / 1000 * imgW).round().clamp(0, imgW - 1);
     final int y2 = (bbox[2] / 1000 * imgH).round().clamp(y1 + 1, imgH);
     final int x2 = (bbox[3] / 1000 * imgW).round().clamp(x1 + 1, imgW);
-    img.drawRect(image, x1: x1, y1: y1, x2: x2, y2: y2, color: color);
+    img.drawRect(
+      image,
+      x1: x1,
+      y1: y1,
+      x2: x2,
+      y2: y2,
+      color: color,
+      thickness: 3,
+    );
   }
 
-  /// Draws the [label] text at the top-left corner of [bbox] with a
-  /// black shadow for readability.
+  /// Draws the [label] text at the top-left corner of [bbox]. The text is
+  /// drawn in [color] (defaulting to white) with a black drop shadow for
+  /// readability against any background.
   void _drawLabel(
     img.Image image,
     String label,
     List<int> bbox,
     int imgW,
-    int imgH,
-  ) {
+    int imgH, {
+    img.Color? color,
+  }) {
     final int y1 = (bbox[0] / 1000 * imgH).round().clamp(0, imgH - 1);
     final int x1 = (bbox[1] / 1000 * imgW).round().clamp(0, imgW - 1);
     final int labelX = (x1 + 2).clamp(0, imgW - 1);
     final int labelY = (y1 + 2).clamp(0, (imgH - 14).clamp(0, imgH));
+    final img.Color text = color ?? img.ColorRgb8(255, 255, 255);
     // Drop shadow for readability.
     img.drawString(
       image,
@@ -325,7 +378,7 @@ class StructuredCaptionRepository {
       font: img.arial14,
       x: labelX,
       y: labelY,
-      color: img.ColorRgb8(255, 255, 255),
+      color: text,
     );
   }
 

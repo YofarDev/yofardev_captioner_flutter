@@ -120,7 +120,7 @@ class HeaderWidget extends StatelessWidget {
                 const TextSpan(text: ' ('),
                 TextSpan(
                   text: activeCategory,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: lightPink,
                     fontWeight: FontWeight.bold,
                   ),

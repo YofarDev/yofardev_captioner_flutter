@@ -97,6 +97,8 @@ class ElementDetailSection extends StatelessWidget {
                 const SizedBox(height: 4),
                 _ElementField(
                   value: element.text ?? '',
+                  maxLines: null,
+                  minLines: 2,
                   onChanged: (String v) =>
                       cubit.updateElementText(v.isEmpty ? null : v),
                 ),
@@ -199,10 +201,12 @@ class _ElementField extends StatefulWidget {
     required this.value,
     required this.onChanged,
     this.maxLines = 1,
+    this.minLines,
   });
 
   final String value;
-  final int maxLines;
+  final int? maxLines;
+  final int? minLines;
   final ValueChanged<String> onChanged;
 
   @override
@@ -240,6 +244,7 @@ class _ElementFieldState extends State<_ElementField> {
     return TextField(
       controller: _controller,
       maxLines: widget.maxLines,
+      minLines: widget.minLines,
       style: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 13,

@@ -29,35 +29,45 @@ class _CaptionControlsState extends State<CaptionControls> {
           _selectedOption = value!;
         });
       },
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            const Text(
-              "Caption: ",
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  const Text(
+                    "Caption: ",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildRadioButton(
+                    label: 'This image',
+                    option: CaptionOptions.current,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildRadioButton(
+                    label: 'Missing captions',
+                    option: CaptionOptions.missing,
+                  ),
+                  const SizedBox(width: 12),
+                  _buildRadioButton(
+                    label: 'All images',
+                    option: CaptionOptions.all,
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
-            _buildRadioButton(
-              label: 'This image',
-              option: CaptionOptions.current,
-            ),
-            const SizedBox(width: 12),
-            _buildRadioButton(
-              label: 'Missing captions',
-              option: CaptionOptions.missing,
-            ),
-            const SizedBox(width: 12),
-            _buildRadioButton(label: 'All images', option: CaptionOptions.all),
-            const SizedBox(width: 20),
-            _buildRunButton(),
-          ],
-        ),
+          ),
+          const SizedBox(width: 20),
+          _buildRunButton(),
+        ],
       ),
     );
   }
@@ -232,6 +242,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                                       .structuredBatchOverrides
                                 : null,
                             debugMode: configState.llmConfigs.debugMode,
+                            disableSam: configState.llmConfigs.disableSam,
                           );
                     } else {
                       context.read<CaptioningCubit>().runCaptioner(
@@ -244,7 +255,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                 : null,
           ),
         ),
-        if (isInProgress)
+        if (isInProgress) ...<Widget>[
           Container(
             margin: const EdgeInsets.only(left: 12),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -274,56 +285,34 @@ class _CaptionControlsState extends State<CaptionControls> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Tooltip(
-                  message: isCancelling
-                      ? 'Waiting for last job...'
-                      : 'Cancel captioning',
-                  child: InkWell(
-                    onTap: isCancelling
-                        ? null
-                        : () {
-                            if (isIdeogram) {
-                              context
-                                  .read<StructuredCaptioningCubit>()
-                                  .cancelStructuredCaptioning();
-                            } else {
-                              context
-                                  .read<CaptioningCubit>()
-                                  .cancelCaptioning();
-                            }
-                          },
-                    borderRadius: BorderRadius.circular(4),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: isCancelling
-                            ? Colors.white.withAlpha(10)
-                            : Colors.white.withAlpha(30),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: isCancelling
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 16,
-                            ),
+                if (isCancelling) ...<Widget>[
+                  const SizedBox(width: 8),
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
+          const SizedBox(width: 10),
+          _StopButton(
+            isCancelling: isCancelling,
+            onTap: () {
+              if (isIdeogram) {
+                context
+                    .read<StructuredCaptioningCubit>()
+                    .cancelStructuredCaptioning();
+              } else {
+                context.read<CaptioningCubit>().cancelCaptioning();
+              }
+            },
+          ),
+        ],
         if (error != null && error.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(left: 8.0),
@@ -353,6 +342,144 @@ class _CaptionControlsState extends State<CaptionControls> {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Danger-style interrupt control. Squared stop glyph + danger glow,
+/// lifts on hover, pulses while waiting for the in-flight job to settle.
+class _StopButton extends StatefulWidget {
+  const _StopButton({required this.onTap, required this.isCancelling});
+
+  final VoidCallback onTap;
+  final bool isCancelling;
+
+  @override
+  State<_StopButton> createState() => _StopButtonState();
+}
+
+class _StopButtonState extends State<_StopButton>
+    with SingleTickerProviderStateMixin {
+  bool _hover = false;
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  @override
+  void didUpdateWidget(covariant _StopButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isCancelling && !_pulse.isAnimating) {
+      _pulse.repeat(reverse: true);
+    } else if (!widget.isCancelling && _pulse.isAnimating) {
+      _pulse
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bool enabled = !widget.isCancelling;
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      child: GestureDetector(
+        onTap: enabled ? widget.onTap : null,
+        child: AnimatedScale(
+          scale: _hover && enabled ? 1.035 : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[
+                  const Color(
+                    0xFFE5484D,
+                  ).withAlpha(_hover && enabled ? 255 : 232),
+                  const Color(
+                    0xFFB32217,
+                  ).withAlpha(_hover && enabled ? 245 : 214),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withAlpha(_hover && enabled ? 95 : 38),
+              ),
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: const Color(
+                    0xFFE5484D,
+                  ).withAlpha(_hover && enabled ? 130 : 72),
+                  blurRadius: _hover ? 22 : 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                if (widget.isCancelling)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 11,
+                    height: 11,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(enabled ? 255 : 170),
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
+                  ),
+                const SizedBox(width: 9),
+                Text(
+                  widget.isCancelling ? 'Stopping' : 'Stop',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
+                    fontFamily: 'Orbitron',
+                  ),
+                ),
+                if (widget.isCancelling) ...<Widget>[
+                  const SizedBox(width: 8),
+                  FadeTransition(
+                    opacity: _pulse,
+                    child: Container(
+                      width: 5,
+                      height: 5,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

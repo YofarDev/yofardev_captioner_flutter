@@ -37,6 +37,25 @@ class CaptionService {
     }
   }
 
+  /// Rewrites an existing caption text-only (no image is sent). The model
+  /// returns the full rewritten caption.
+  ///
+  /// Only remote (API) providers are supported: local MLX (`mlx_vlm`) is
+  /// vision-only and cannot do text completion. Single-image use case only;
+  /// batch rewrite is a possible future extension.
+  Future<String> rewriteCaption(
+    LlmConfig config,
+    String currentCaption,
+    String instructions,
+  ) {
+    if (config.providerType == LlmProviderType.localMlx) {
+      throw ApiException(
+        'Caption rewrite requires a remote (API) provider; local MLX is vision-only.',
+      );
+    }
+    return _getRemoteRewrite(config, currentCaption, instructions);
+  }
+
   Future<String> _getLocalCaption(
     LlmConfig config,
     File image,
@@ -149,19 +168,7 @@ class CaptionService {
       );
 
       if (response.statusCode == 200) {
-        try {
-          final CaptionResponse captionResponse = CaptionResponse.fromJson(
-            jsonDecode(response.body) as Map<String, dynamic>,
-          );
-          if (captionResponse.choices.isNotEmpty) {
-            return captionResponse.choices.first.message.content;
-          } else {
-            throw ApiException('Invalid response format: ${response.body}');
-          }
-        } catch (e) {
-          _logger.severe('Error decoding response: $e');
-          throw ApiException('Failed to decode response: $e');
-        }
+        return _parseChatResponse(response);
       } else {
         _logger.severe('Error response: ${response.body}');
         throw ApiException(
@@ -172,6 +179,79 @@ class CaptionService {
       if (imageToSend != null && imageToSend.path != image.path) {
         imageToSend.delete();
       }
+    }
+  }
+
+  Future<String> _getRemoteRewrite(
+    LlmConfig config,
+    String currentCaption,
+    String instructions,
+  ) async {
+    if (config.url == null || config.apiKey == null) {
+      throw ApiException('URL and API Key are required for remote providers.');
+    }
+
+    const String systemPrompt =
+        'You are a caption rewriting assistant. Rewrite the given caption '
+        'according to the user instructions. Output ONLY the full rewritten '
+        'caption — no explanations, no preface, no quotes. Preserve the '
+        'language, tone and formatting style of the original unless the '
+        'instructions say otherwise.';
+
+    final String userPrompt =
+        '$instructions\n\n'
+        'Caption to rewrite:\n$currentCaption';
+
+    final CaptionRequest request = CaptionRequest(
+      model: config.model,
+      messages: <Message>[
+        Message(
+          role: 'system',
+          content: <Content>[Content(type: 'text', text: systemPrompt)],
+        ),
+        Message(
+          role: 'user',
+          content: <Content>[Content(type: 'text', text: userPrompt)],
+        ),
+      ],
+    );
+
+    final String url = buildUrl(config.url!);
+
+    final http.Response response = await _httpClient.post(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == 200) {
+      return _parseChatResponse(response);
+    } else {
+      _logger.severe('Error response: ${response.body}');
+      throw ApiException(
+        'Failed to rewrite caption (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
+  /// Parses a chat completions 200 response into the assistant message text.
+  String _parseChatResponse(http.Response response) {
+    try {
+      final CaptionResponse captionResponse = CaptionResponse.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
+      if (captionResponse.choices.isNotEmpty) {
+        return captionResponse.choices.first.message.content;
+      } else {
+        throw ApiException('Invalid response format: ${response.body}');
+      }
+    } catch (e) {
+      _logger.severe('Error decoding response: $e');
+      throw ApiException('Failed to decode response: $e');
     }
   }
 

@@ -26,7 +26,7 @@ class AppButton extends StatelessWidget {
       ),
       onPressed: onTap,
       child: isLoading
-          ? SizedBox(
+          ? const SizedBox(
               width: 16,
               height: 16,
               child: CircularProgressIndicator(color: lightPink),

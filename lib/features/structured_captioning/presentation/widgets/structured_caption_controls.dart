@@ -158,6 +158,8 @@ class _StructuredCaptionControlsState extends State<StructuredCaptionControls> {
                                         .llmConfigs
                                         .structuredBatchOverrides,
                                     debugMode: configState.llmConfigs.debugMode,
+                                    disableSam:
+                                        configState.llmConfigs.disableSam,
                                   );
                             }
                           : null,

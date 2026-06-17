@@ -1,11 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
+import '../../../core/config/service_locator.dart';
+import '../../captioning/data/models/caption_entry.dart';
+import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
 import '../data/models/ideogram_caption.dart';
+import '../data/services/color_extraction_service.dart';
 
 part 'structured_editor_state.dart';
 
@@ -25,6 +31,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
        );
 
   final ImageListCubit _imageListCubit;
+  final Logger _logger = locator<Logger>();
+  final ColorExtractionService _colorExtractionService =
+      ColorExtractionService();
   Timer? _debounceTimer;
   bool _isDirty = false;
 
@@ -207,6 +216,104 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     _emitUpdatedElements(elements);
   }
 
+  // -- Color palette re-extraction (TEMP debug helper) --
+
+  /// Re-runs color palette extraction on the current image and overwrites the
+  /// style palette. If an element is selected and has a bbox, also re-extracts
+  /// that element's regional palette.
+  ///
+  /// Temporary button for validating the chroma-snap fix in
+  /// [ColorExtractionService].
+  Future<void> rerunColorPaletteExtraction() async {
+    try {
+      final List<String> globalPalette = await _colorExtractionService
+          .extractPalette(state.imageFile);
+      emit(
+        state.copyWith(
+          caption: state.caption.copyWith(
+            styleDescription: state.caption.styleDescription.copyWith(
+              colorPalette: globalPalette,
+            ),
+          ),
+        ),
+      );
+      _scheduleSave();
+
+      final int? selected = state.selectedElementIndex;
+      if (selected != null &&
+          selected <
+              state.caption.compositionalDeconstruction.elements.length) {
+        final List<int>? bbox =
+            state.caption.compositionalDeconstruction.elements[selected].bbox;
+        if (bbox != null) {
+          final List<String> elementPalette = await _colorExtractionService
+              .extractPaletteFromRegion(state.imageFile, bbox);
+          updateElementColorPalette(elementPalette);
+        }
+      }
+    } catch (e) {
+      _logger.warning('Palette re-extraction failed: $e');
+    }
+  }
+
+  /// Re-runs color palette extraction across EVERY displayed image, writing
+  /// each result back to its own caption file. Skips images whose active-
+  /// category caption isn't parseable Ideogram JSON.
+  ///
+  /// Temporary batch helper for validating the chroma-snap fix at scale. Does
+  /// not touch the current selection — writes directly via [updateImage].
+  Future<void> rerunColorPaletteExtractionAll() async {
+    final String category = state.activeCategory;
+    final List<AppImage> images = _imageListCubit.displayedImages;
+    int processed = 0;
+    for (final AppImage img in images) {
+      final String raw = img.captions[category]?.text ?? '';
+      if (raw.isEmpty) continue;
+      try {
+        final IdeogramCaption caption = IdeogramCaption.fromJson(
+          jsonDecode(raw) as Map<String, dynamic>,
+        );
+        final List<String> globalPalette = await _colorExtractionService
+            .extractPalette(img.image);
+        final IdeogramStyleDescription style = caption.styleDescription
+            .copyWith(colorPalette: globalPalette);
+        final List<IdeogramElement> elements = List<IdeogramElement>.from(
+          caption.compositionalDeconstruction.elements,
+        );
+        for (int i = 0; i < elements.length; i++) {
+          final List<int>? bbox = elements[i].bbox;
+          if (bbox == null) continue;
+          final List<String> elementPalette = await _colorExtractionService
+              .extractPaletteFromRegion(img.image, bbox);
+          elements[i] = elements[i].copyWith(colorPalette: elementPalette);
+        }
+        final IdeogramCaption updated = caption.copyWith(
+          styleDescription: style,
+          compositionalDeconstruction: caption.compositionalDeconstruction
+              .copyWith(elements: elements),
+        );
+
+        final Map<String, CaptionEntry> updatedCaptions =
+            Map<String, CaptionEntry>.from(img.captions);
+        final CaptionEntry? existing = updatedCaptions[category];
+        updatedCaptions[category] = CaptionEntry(
+          text: updated.toJsonString(),
+          model: existing?.model,
+          timestamp: DateTime.now(),
+          isEdited: true,
+        );
+        await _imageListCubit.updateImage(
+          image: img.copyWith(captions: updatedCaptions),
+        );
+        processed++;
+        _logger.info('Palette re-extracted for ${img.id} ($processed)');
+      } catch (e) {
+        _logger.warning('Palette re-extraction failed for ${img.id}: $e');
+      }
+    }
+    _logger.info('Batch palette re-extraction done: $processed images');
+  }
+
   // -- Element CRUD --
 
   void addElement({String type = 'obj', List<int>? bbox}) {
@@ -263,6 +370,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
               .copyWith(elements: elements),
         ),
         selectedElementIndex: newSelection,
+        clearSelection: newSelection == null,
         hiddenElementIndices: newHidden,
       ),
     );
@@ -282,6 +390,18 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   // -- Auto-save --
+
+  /// Immediately persists any pending (debounced) changes.
+  ///
+  /// Call this before navigating to another image: [updateCaption] writes to
+  /// the image list's *current* image, so flushing first ensures edits land on
+  /// the image they belong to rather than the next one.
+  Future<void> flushSave() async {
+    _debounceTimer?.cancel();
+    if (_isDirty) {
+      await _save();
+    }
+  }
 
   void _scheduleSave() {
     _isDirty = true;

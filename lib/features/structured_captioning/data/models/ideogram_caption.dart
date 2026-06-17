@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:equatable/equatable.dart';
 
 /// Ideogram4-compatible structured caption model.
@@ -40,6 +42,19 @@ class IdeogramCaption extends Equatable {
       compositionalDeconstruction:
           compositionalDeconstruction ?? this.compositionalDeconstruction,
     );
+  }
+
+  /// Checks whether a string is a valid Ideogram JSON caption.
+  static bool isIdeogramJson(String text) {
+    if (!text.trimLeft().startsWith('{')) return false;
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(text) as Map<String, dynamic>;
+      return data.containsKey('high_level_description') &&
+          data.containsKey('compositional_deconstruction');
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Produces compact JSON matching Ideogram4 schema.

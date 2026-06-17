@@ -342,6 +342,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
     required void Function(String)? onProgress,
     _i11.StructuredBatchOverrides? overrides,
     bool? debugMode = false,
+    bool? disableSam = false,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -351,6 +352,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #onProgress: onProgress,
                 #overrides: overrides,
                 #debugMode: debugMode,
+                #disableSam: disableSam,
               },
             ),
             returnValue: _i6.Future<_i3.IdeogramCaption>.value(
@@ -363,6 +365,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                     #onProgress: onProgress,
                     #overrides: overrides,
                     #debugMode: debugMode,
+                    #disableSam: disableSam,
                   },
                 ),
               ),

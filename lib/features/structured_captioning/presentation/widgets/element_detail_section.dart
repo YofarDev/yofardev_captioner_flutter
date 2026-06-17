@@ -53,7 +53,7 @@ class ElementDetailSection extends StatelessWidget {
                     icon: const Icon(
                       Icons.delete_outline,
                       size: 18,
-                      color: Colors.redAccent,
+                      color: destructive,
                     ),
                     tooltip: 'Delete element',
                     onPressed: () => cubit.removeElement(idx),

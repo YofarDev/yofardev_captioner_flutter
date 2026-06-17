@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../data/models/app_tab.dart';
 import '../../logic/tab_manager_cubit.dart';
 
@@ -13,7 +14,7 @@ class TabBarWidget extends StatelessWidget {
       builder: (BuildContext context, TabManagerState state) {
         return Container(
           height: 36,
-          color: const Color(0xFF1A1A2E),
+          color: tabBarBg,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -65,7 +66,13 @@ class _TabItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF16213E) : Colors.transparent,
+          color: isActive ? tabActiveBg : tabInactiveBg,
+          border: Border(
+            bottom: BorderSide(
+              width: 2,
+              color: isActive ? tabActiveAccent : Colors.transparent,
+            ),
+          ),
           borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
         ),
         constraints: const BoxConstraints(maxWidth: 180),
@@ -77,7 +84,7 @@ class _TabItem extends StatelessWidget {
                 tab.displayName,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: isActive ? Colors.white : Colors.white54,
+                  color: isActive ? tabActiveFg : tabInactiveFg,
                   fontSize: 12,
                   fontFamily: 'Inter',
                 ),
@@ -87,7 +94,7 @@ class _TabItem extends StatelessWidget {
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: onClose,
-                child: const Icon(Icons.close, size: 14, color: Colors.white38),
+                child: const Icon(Icons.close, size: 14, color: tabInactiveFg),
               ),
             ],
           ],
@@ -108,7 +115,7 @@ class _AddTabButton extends StatelessWidget {
       onTap: onPressed,
       child: const Padding(
         padding: EdgeInsets.symmetric(horizontal: 8),
-        child: Center(child: Icon(Icons.add, size: 16, color: Colors.white38)),
+        child: Center(child: Icon(Icons.add, size: 16, color: tabInactiveFg)),
       ),
     );
   }

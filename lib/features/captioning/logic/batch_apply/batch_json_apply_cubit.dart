@@ -23,8 +23,7 @@ class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
     final List<AppImage> allImages = _imageListCubit.state.images;
 
     final List<AppImage> targetImages = allImages.where((AppImage img) {
-      final String category =
-          _imageListCubit.state.activeCategory ?? 'default';
+      final String category = _imageListCubit.state.activeCategory ?? 'default';
       final String text = img.captions[category]?.text ?? '';
       if (text.isEmpty) return true;
       return IdeogramCaption.isIdeogramJson(text);
@@ -47,11 +46,13 @@ class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
         return;
       }
 
-      emit(BatchJsonApplyInProgress(
-        processedImages: processed,
-        totalImages: total,
-        currentImageName: image.image.path,
-      ));
+      emit(
+        BatchJsonApplyInProgress(
+          processedImages: processed,
+          totalImages: total,
+          currentImageName: image.image.path,
+        ),
+      );
 
       try {
         final String category =
@@ -90,9 +91,11 @@ class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
     }
 
     if (errors.isNotEmpty) {
-      emit(BatchJsonApplyError(
-        message: '${errors.length} error(s): ${errors.join('; ')}',
-      ));
+      emit(
+        BatchJsonApplyError(
+          message: '${errors.length} error(s): ${errors.join('; ')}',
+        ),
+      );
     } else {
       emit(const BatchJsonApplyCompleted());
     }

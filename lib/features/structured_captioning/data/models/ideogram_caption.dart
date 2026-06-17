@@ -57,6 +57,20 @@ class IdeogramCaption extends Equatable {
     }
   }
 
+  /// Returns true if the text is valid Ideogram JSON but its
+  /// high_level_description is null or empty.
+  static bool hasEmptyHighLevelDescription(String text) {
+    if (!isIdeogramJson(text)) return false;
+    try {
+      final Map<String, dynamic> data =
+          jsonDecode(text) as Map<String, dynamic>;
+      final String? hld = data['high_level_description'] as String?;
+      return hld == null || hld.isEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Produces compact JSON matching Ideogram4 schema.
   String toJsonString() => _compactJson(toJson());
 

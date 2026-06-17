@@ -69,7 +69,7 @@ class _ImageListItemState extends State<ImageListItem> {
             context.read<ImageListCubit>().onImageSelected(widget.image.id),
         child: ColoredBox(
           color: widget.image.error != null
-              ? Colors.red.withAlpha(20)
+              ? destructive.withAlpha(20)
               : Colors.transparent,
           child: ColoredBox(
             color: _getBackgroundColor(),
@@ -83,7 +83,7 @@ class _ImageListItemState extends State<ImageListItem> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: !hasPresetRatio
-                              ? Border.all(color: Colors.red[400]!, width: 2)
+                              ? Border.all(color: destructive, width: 2)
                               : null,
                           borderRadius: BorderRadius.circular(12),
                         ),

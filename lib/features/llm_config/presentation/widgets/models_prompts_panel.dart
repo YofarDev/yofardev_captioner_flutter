@@ -425,12 +425,9 @@ class _PromptCardState extends State<_PromptCard> {
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     _IconBtn(
-                      icon: _expanded
-                          ? Icons.expand_less
-                          : Icons.expand_more,
+                      icon: _expanded ? Icons.expand_less : Icons.expand_more,
                       tooltip: _expanded ? 'Collapse' : 'Expand',
-                      onTap: () =>
-                          setState(() => _expanded = !_expanded),
+                      onTap: () => setState(() => _expanded = !_expanded),
                     ),
                     _HoverActions(
                       onEdit: widget.onEdit,
@@ -548,7 +545,7 @@ class _IconBtnState extends State<_IconBtn> {
             decoration: BoxDecoration(
               color: _hovered
                   ? (widget.destructive
-                        ? Colors.red.withValues(alpha: 0.16)
+                        ? destructive.withValues(alpha: 0.16)
                         : lightPink.withValues(alpha: 0.14))
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(6),
@@ -557,7 +554,7 @@ class _IconBtnState extends State<_IconBtn> {
               widget.icon,
               size: 17,
               color: _hovered
-                  ? (widget.destructive ? Colors.redAccent[200] : lightPink)
+                  ? (widget.destructive ? destructive.withValues(alpha: 0.7) : lightPink)
                   : textSecondary,
             ),
           ),

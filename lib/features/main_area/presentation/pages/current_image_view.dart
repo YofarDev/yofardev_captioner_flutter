@@ -57,8 +57,8 @@ class CurrentImageView extends StatelessWidget {
                   ImageUtils.openImageWithDefaultApp(currentImage.image.path),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: MediaQuery.of(context).size.height * 0.5,
-                  maxHeight: MediaQuery.of(context).size.height * 0.5,
+                  minHeight: MediaQuery.of(context).size.height * 0.4,
+                  maxHeight: MediaQuery.of(context).size.height * 0.4,
                 ),
                 child: Stack(
                   fit: StackFit.expand,

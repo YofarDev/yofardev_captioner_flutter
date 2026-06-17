@@ -5,7 +5,9 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 
 class SearchAndReplaceWidget extends StatefulWidget {
-  const SearchAndReplaceWidget({super.key});
+  final bool outlined;
+  const SearchAndReplaceWidget({super.key, this.outlined = false});
+
   @override
   State<SearchAndReplaceWidget> createState() => _SearchAndReplaceWidgetState();
 }
@@ -13,6 +15,7 @@ class SearchAndReplaceWidget extends StatefulWidget {
 class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _replaceController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     return Tooltip(
@@ -20,6 +23,7 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
       child: AppButton(
         text: "Search and Replace",
         iconAssetPath: 'assets/icons/search.png',
+        isOutline: widget.outlined,
         onTap: () {
           showDialog(
             context: context,
@@ -49,7 +53,7 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
                               ),
                               if (state.occurrencesCount > 0)
                                 Padding(
-                                  padding: const EdgeInsets.only(top: 8.0),
+                                  padding: const EdgeInsets.only(top: 8),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
@@ -88,13 +92,50 @@ class _SearchAndReplaceWidgetState extends State<SearchAndReplaceWidget> {
                         ),
                         TextButton(
                           child: const Text('Replace'),
-                          onPressed: () {
+                          onPressed: () async {
+                            final ImageListState st = context
+                                .read<ImageListCubit>()
+                                .state;
+                            if (st.occurrencesCount > 1) {
+                              final bool? confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (BuildContext ctx) {
+                                  return AlertDialog(
+                                    title: const Text('Confirm Replace'),
+                                    content: Text(
+                                      'This will replace '
+                                      '${st.occurrencesCount} occurrence(s) '
+                                      'of "${_searchController.text}" in '
+                                      '${st.occurrenceFileNames.length} '
+                                      'file(s). This action cannot be undone.',
+                                    ),
+                                    actions: <Widget>[
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(true),
+                                        child: const Text('Replace'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              if (confirmed != true || !context.mounted) {
+                                return;
+                              }
+                            }
                             context.read<ImageListCubit>().searchAndReplace(
                               _searchController.text,
                               _replaceController.text,
                             );
                             context.read<ImageListCubit>().countOccurrences('');
-                            Navigator.of(context).pop();
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
                           },
                         ),
                       ],

@@ -23,8 +23,11 @@ class BatchJsonApplyInProgress extends BatchJsonApplyState {
   });
 
   @override
-  List<Object?> get props =>
-      <Object?>[processedImages, totalImages, currentImageName];
+  List<Object?> get props => <Object?>[
+    processedImages,
+    totalImages,
+    currentImageName,
+  ];
 }
 
 class BatchJsonApplyCompleted extends BatchJsonApplyState {

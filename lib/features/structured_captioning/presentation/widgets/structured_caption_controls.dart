@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../captioning/data/models/caption_options.dart';
@@ -263,12 +264,12 @@ class _StructuredCaptionControlsState extends State<StructuredCaptionControls> {
                           child: Container(
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
-                              color: Colors.red.withAlpha(100),
+                              color: destructive.withAlpha(100),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              color: destructive,
                               size: 18,
                             ),
                           ),

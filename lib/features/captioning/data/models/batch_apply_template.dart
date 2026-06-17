@@ -35,9 +35,7 @@ class BatchApplyTemplate {
         aesthetics: aesthetics ?? style.aesthetics,
         lighting: lighting ?? style.lighting,
         medium: resolvedMedium,
-        photo: resolvedMedium == 'photograph'
-            ? (photo ?? style.photo)
-            : null,
+        photo: resolvedMedium == 'photograph' ? (photo ?? style.photo) : null,
         artStyle: resolvedMedium != 'photograph'
             ? (artStyle ?? style.artStyle)
             : null,

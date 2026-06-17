@@ -24,11 +24,13 @@ class _RewriteCaptionDialogState extends State<RewriteCaptionDialog> {
   final TextEditingController _instructionsController = TextEditingController();
   final FocusNode _instructionsFocus = FocusNode();
   bool _isRewriting = false;
+  String? _selectedConfigId;
 
   @override
   void initState() {
     super.initState();
-    // Autofocus the instructions field once the frame is built.
+    final LlmConfigsState configState = context.read<LlmConfigsCubit>().state;
+    _selectedConfigId = configState.llmConfigs.selectedConfigId;
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _instructionsFocus.requestFocus(),
     );
@@ -47,23 +49,22 @@ class _RewriteCaptionDialogState extends State<RewriteCaptionDialog> {
       NotificationOverlay.show(
         context,
         message: 'Enter rewrite instructions',
-        backgroundColor: Colors.red.shade800,
+        backgroundColor: destructive,
       );
       return;
     }
 
     final LlmConfigsState configState = context.read<LlmConfigsCubit>().state;
-    final String? selectedId = configState.llmConfigs.selectedConfigId;
-    if (selectedId == null) {
+    if (_selectedConfigId == null) {
       NotificationOverlay.show(
         context,
         message: 'Select an LLM configuration first',
-        backgroundColor: Colors.red.shade800,
+        backgroundColor: destructive,
       );
       return;
     }
     final LlmConfig llm = configState.llmConfigs.configs.firstWhere(
-      (LlmConfig c) => c.id == selectedId,
+      (LlmConfig c) => c.id == _selectedConfigId,
     );
 
     setState(() => _isRewriting = true);
@@ -85,115 +86,223 @@ class _RewriteCaptionDialogState extends State<RewriteCaptionDialog> {
       NotificationOverlay.show(
         context,
         message: 'Rewrite failed: $e',
-        backgroundColor: Colors.red.shade800,
+        backgroundColor: destructive,
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: darkGrey,
-      title: const Row(
-        children: <Widget>[
-          Icon(Icons.auto_fix_high, color: lightPink, size: 22),
-          SizedBox(width: 10),
-          Text(
-            'Rewrite caption',
-            style: TextStyle(
-              fontFamily: 'Orbitron',
-              fontSize: 18,
-              color: Colors.white,
-            ),
+    return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+      builder: (BuildContext context, LlmConfigsState configState) {
+        final List<LlmConfig> configs = configState.llmConfigs.configs;
+
+        if (_selectedConfigId != null &&
+            !configs.any((LlmConfig c) => c.id == _selectedConfigId)) {
+          _selectedConfigId = configs.isNotEmpty ? configs.first.id : null;
+        }
+
+        return AlertDialog(
+          backgroundColor: darkGrey,
+          title: const Row(
+            children: <Widget>[
+              Icon(Icons.auto_fix_high, color: lightPink, size: 22),
+              SizedBox(width: 10),
+              Text(
+                'Rewrite caption',
+                style: TextStyle(
+                  fontFamily: 'Orbitron',
+                  fontSize: 18,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      content: SizedBox(
-        width: 520,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            const Text(
-              'Current caption',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 160),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: lightGrey,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: SingleChildScrollView(
-                child: SelectableText(
-                  widget.currentCaption.trim().isEmpty
-                      ? '(empty)'
-                      : widget.currentCaption,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    height: 1.4,
-                    color: Colors.white70,
+          content: SizedBox(
+            width: 520,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const Text(
+                  'Current caption',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white54,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 18),
-            const Text(
-              'Instructions',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white54,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            TextField(
-              controller: _instructionsController,
-              focusNode: _instructionsFocus,
-              enabled: !_isRewriting,
-              minLines: 3,
-              maxLines: 6,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 14,
-                color: Colors.white,
-              ),
-              decoration: InputDecoration(
-                hintText: 'e.g. make the person a young woman',
-                hintStyle: const TextStyle(color: Colors.white38),
-                filled: true,
-                fillColor: lightGrey,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide.none,
+                const SizedBox(height: 6),
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 120),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: lightGrey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SingleChildScrollView(
+                    child: SelectableText(
+                      widget.currentCaption.trim().isEmpty
+                          ? '(empty)'
+                          : widget.currentCaption,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        height: 1.4,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Instructions',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white54,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: _instructionsController,
+                  focusNode: _instructionsFocus,
+                  enabled: !_isRewriting,
+                  minLines: 3,
+                  maxLines: 5,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Colors.white,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. make the person a young woman',
+                    hintStyle: const TextStyle(color: Colors.white38),
+                    filled: true,
+                    fillColor: lightGrey,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                  onSubmitted: (_) => _submit(),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: <Widget>[
+                    const Text(
+                      'Model / Provider',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (configs.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(left: 8),
+                        child: Text(
+                          '(no configs — add one in Settings)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: destructive,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: lightGrey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: DropdownButton<String>(
+                    value: _selectedConfigId,
+                    isExpanded: true,
+                    dropdownColor: Colors.grey[850],
+                    underline: const SizedBox.shrink(),
+                    hint: const Text(
+                      'Select a model...',
+                      style: TextStyle(color: Colors.white38, fontSize: 14),
+                    ),
+                    onChanged: _isRewriting
+                        ? null
+                        : (String? id) {
+                            setState(() => _selectedConfigId = id);
+                          },
+                    items: configs.map<DropdownMenuItem<String>>((
+                      LlmConfig config,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: config.id,
+                        child: Text(
+                          config.name,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(8),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: Colors.white.withAlpha(120),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Text-only — no vision model needed. '
+                          'Only the caption text is sent to the API.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withAlpha(150),
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: _isRewriting
+                  ? null
+                  : () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(color: Colors.white70),
               ),
-              onSubmitted: (_) => _submit(),
+            ),
+            AppButton(
+              text: 'Rewrite',
+              isLoading: _isRewriting,
+              backgroundColor: lightPink.withAlpha(220),
+              onTap: _isRewriting ? null : _submit,
             ),
           ],
-        ),
-      ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: _isRewriting
-              ? null
-              : () => Navigator.of(context).pop(false),
-          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
-        ),
-        AppButton(
-          text: 'Rewrite',
-          isLoading: _isRewriting,
-          backgroundColor: lightPink.withAlpha(220),
-          onTap: _isRewriting ? null : _submit,
-        ),
-      ],
+        );
+      },
     );
   }
 }

@@ -562,10 +562,7 @@ class _OverrideRow extends StatelessWidget {
               _PinkSwitch(value: enabled, onChanged: onToggle),
             ],
           ),
-          if (enabled) ...<Widget>[
-            const SizedBox(height: 12),
-            child,
-          ],
+          if (enabled) ...<Widget>[const SizedBox(height: 12), child],
         ],
       ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 /// Dialog wrapper around Flutter's built-in color picker.
 ///
 /// Returns the selected color as a hex string (e.g. "#FF0000") or null if
@@ -14,10 +16,10 @@ Future<String?> showColorPickerDialog(
     context: context,
     builder: (BuildContext dialogContext) {
       return AlertDialog(
-        backgroundColor: const Color(0xFF434343),
+        backgroundColor: lightGrey,
         title: const Text(
           'Pick a color',
-          style: TextStyle(color: Colors.white, fontFamily: 'Inter'),
+          style: TextStyle(color: textPrimary, fontFamily: 'Inter'),
         ),
         content: StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {

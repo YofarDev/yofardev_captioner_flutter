@@ -23,11 +23,13 @@ void main() {
       expect(state.props, <Object?>[2, 10, 'test.jpg']);
       expect(
         state,
-        equals(const BatchJsonApplyInProgress(
-          processedImages: 2,
-          totalImages: 10,
-          currentImageName: 'test.jpg',
-        )),
+        equals(
+          const BatchJsonApplyInProgress(
+            processedImages: 2,
+            totalImages: 10,
+            currentImageName: 'test.jpg',
+          ),
+        ),
       );
     });
 
@@ -52,10 +54,7 @@ void main() {
       const BatchJsonApplyError state = BatchJsonApplyError(message: 'error');
       expect(state.message, 'error');
       expect(state.props, <Object?>['error']);
-      expect(
-        state,
-        equals(const BatchJsonApplyError(message: 'error')),
-      );
+      expect(state, equals(const BatchJsonApplyError(message: 'error')));
     });
 
     test('inequality between different states', () {
@@ -65,10 +64,11 @@ void main() {
       );
       expect(
         const BatchJsonApplyInProgress(processedImages: 1, totalImages: 5),
-        isNot(equals(const BatchJsonApplyInProgress(
-          processedImages: 2,
-          totalImages: 5,
-        ))),
+        isNot(
+          equals(
+            const BatchJsonApplyInProgress(processedImages: 2, totalImages: 5),
+          ),
+        ),
       );
     });
   });

@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../data/models/crop_image.dart';
@@ -94,7 +95,7 @@ class _CropImageScreenState extends State<CropImageScreen> {
                       NotificationOverlay.show(
                         context,
                         message: cropResult.cause.toString(),
-                        backgroundColor: Colors.red.withAlpha(200),
+                        backgroundColor: destructive.withAlpha(200),
                       );
                       return;
                     }

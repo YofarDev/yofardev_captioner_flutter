@@ -191,12 +191,26 @@ class CaptionService {
       throw ApiException('URL and API Key are required for remote providers.');
     }
 
-    const String systemPrompt =
-        'You are a caption rewriting assistant. Rewrite the given caption '
-        'according to the user instructions. Output ONLY the full rewritten '
-        'caption — no explanations, no preface, no quotes. Preserve the '
-        'language, tone and formatting style of the original unless the '
-        'instructions say otherwise.';
+    final bool isJson = _looksLikeJson(currentCaption);
+
+    final String systemPrompt;
+    if (isJson) {
+      systemPrompt =
+          'You are a caption rewriting assistant. The caption you receive is '
+          'in JSON format with a specific schema. Rewrite the caption '
+          'according to the user instructions while preserving the exact '
+          'JSON structure and all original fields. Only modify the text '
+          'values inside the JSON — never change keys, remove fields, or '
+          'alter the schema. Output ONLY the full rewritten JSON caption — '
+          'no explanations, no preface, no markdown formatting.';
+    } else {
+      systemPrompt =
+          'You are a caption rewriting assistant. Rewrite the given caption '
+          'according to the user instructions. Output ONLY the full rewritten '
+          'caption — no explanations, no preface, no quotes. Preserve the '
+          'language, tone and formatting style of the original unless the '
+          'instructions say otherwise.';
+    }
 
     final String userPrompt =
         '$instructions\n\n'
@@ -252,6 +266,18 @@ class CaptionService {
     } catch (e) {
       _logger.severe('Error decoding response: $e');
       throw ApiException('Failed to decode response: $e');
+    }
+  }
+
+  /// Checks whether [text] looks like a JSON object (starts with `{`).
+  bool _looksLikeJson(String text) {
+    try {
+      final String trimmed = text.trim();
+      if (!trimmed.startsWith('{')) return false;
+      jsonDecode(trimmed);
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../structured_captioning/presentation/widgets/color_palette_editor.dart';
 import '../../data/models/batch_apply_template.dart';
 
 class BatchJsonApplyDialog extends StatefulWidget {
@@ -16,11 +15,12 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
   final TextEditingController _highLevelDescCtrl = TextEditingController();
   final TextEditingController _aestheticsCtrl = TextEditingController();
   final TextEditingController _lightingCtrl = TextEditingController();
-  final TextEditingController _mediumCtrl = TextEditingController(text: 'photograph');
+  final TextEditingController _mediumCtrl = TextEditingController();
   final TextEditingController _photoCtrl = TextEditingController();
   final TextEditingController _artStyleCtrl = TextEditingController();
   final TextEditingController _backgroundCtrl = TextEditingController();
-  List<String> _colorPalette = <String>[];
+
+  bool _isPhoto = true;
 
   @override
   void dispose() {
@@ -35,29 +35,24 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
   }
 
   BatchApplyTemplate _buildTemplate() {
+    final String medium = _isPhoto ? 'photograph' : _mediumCtrl.text;
     return BatchApplyTemplate(
-      highLevelDescription:
-          _highLevelDescCtrl.text.isNotEmpty ? _highLevelDescCtrl.text : null,
-      aesthetics:
-          _aestheticsCtrl.text.isNotEmpty ? _aestheticsCtrl.text : null,
-      lighting: _lightingCtrl.text.isNotEmpty ? _lightingCtrl.text : null,
-      medium: _mediumCtrl.text.isNotEmpty ? _mediumCtrl.text : null,
-      photo: _mediumCtrl.text == 'photograph' && _photoCtrl.text.isNotEmpty
-          ? _photoCtrl.text
+      highLevelDescription: _highLevelDescCtrl.text.isNotEmpty
+          ? _highLevelDescCtrl.text
           : null,
-      artStyle: _mediumCtrl.text != 'photograph' && _artStyleCtrl.text.isNotEmpty
+      aesthetics: _aestheticsCtrl.text.isNotEmpty ? _aestheticsCtrl.text : null,
+      lighting: _lightingCtrl.text.isNotEmpty ? _lightingCtrl.text : null,
+      medium: medium.isNotEmpty ? medium : null,
+      photo: _isPhoto && _photoCtrl.text.isNotEmpty ? _photoCtrl.text : null,
+      artStyle: !_isPhoto && _artStyleCtrl.text.isNotEmpty
           ? _artStyleCtrl.text
           : null,
-      colorPalette: _colorPalette.isNotEmpty ? _colorPalette : null,
-      background:
-          _backgroundCtrl.text.isNotEmpty ? _backgroundCtrl.text : null,
+      background: _backgroundCtrl.text.isNotEmpty ? _backgroundCtrl.text : null,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isPhoto = _mediumCtrl.text == 'photograph';
-
     return Dialog(
       backgroundColor: lightGrey,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -89,23 +84,14 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: <Widget>[
-                      _field('High-level description', _highLevelDescCtrl,
-                          maxLines: 3),
-                      const SizedBox(height: 12),
-                      _field('Aesthetics', _aestheticsCtrl),
-                      const SizedBox(height: 12),
-                      _field('Lighting', _lightingCtrl),
-                      const SizedBox(height: 12),
-                      _field('Medium', _mediumCtrl,
-                          onChanged: (_) => setState(() {})),
-                      const SizedBox(height: 12),
-                      if (isPhoto)
-                        _field('Photo details', _photoCtrl)
-                      else
-                        _field('Art style', _artStyleCtrl),
+                      _field(
+                        'High-level description',
+                        _highLevelDescCtrl,
+                        maxLines: 3,
+                      ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Color Palette',
+                        'Type',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -113,11 +99,48 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      ColorPaletteEditor(
-                        colors: _colorPalette,
-                        onChanged: (List<String> v) =>
-                            setState(() => _colorPalette = v),
+                      ToggleButtons(
+                        isSelected: <bool>[_isPhoto, !_isPhoto],
+                        onPressed: (int index) {
+                          setState(() {
+                            _isPhoto = index == 0;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        selectedColor: Colors.white,
+                        fillColor: Colors.teal.withAlpha(180),
+                        color: Colors.white60,
+                        constraints: const BoxConstraints(
+                          minHeight: 36,
+                          minWidth: 120,
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        children: const <Widget>[
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('Photo'),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16),
+                            child: Text('Art Style'),
+                          ),
+                        ],
                       ),
+                      const SizedBox(height: 12),
+                      if (_isPhoto)
+                        _field('Camera', _photoCtrl)
+                      else ...<Widget>[
+                        _field('Medium', _mediumCtrl),
+                        const SizedBox(height: 12),
+                        _field('Art style', _artStyleCtrl),
+                      ],
+                      const SizedBox(height: 12),
+                      _field('Aesthetics', _aestheticsCtrl),
+                      const SizedBox(height: 12),
+                      _field('Lighting', _lightingCtrl),
                       const SizedBox(height: 12),
                       _field('Background', _backgroundCtrl, maxLines: 3),
                     ],
@@ -130,8 +153,10 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
                 children: <Widget>[
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cancel',
-                        style: TextStyle(color: Colors.white60)),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(color: Colors.white60),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   AppButton(
@@ -151,8 +176,12 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
     );
   }
 
-  Widget _field(String label, TextEditingController ctrl,
-      {int maxLines = 1, ValueChanged<String>? onChanged}) {
+  Widget _field(
+    String label,
+    TextEditingController ctrl, {
+    int maxLines = 1,
+    ValueChanged<String>? onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -178,7 +207,9 @@ class _BatchJsonApplyDialogState extends State<BatchJsonApplyDialog> {
               borderSide: BorderSide(color: Colors.white.withAlpha(30)),
             ),
             contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 10),
+              horizontal: 12,
+              vertical: 10,
+            ),
             isDense: true,
           ),
         ),

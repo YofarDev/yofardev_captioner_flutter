@@ -63,15 +63,18 @@ class IdeogramCaptionSummaryCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         // High-level description (truncated)
-        Text(
-          caption.highLevelDescription,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 14,
-            height: 1.5,
-            color: Colors.white,
+        SizedBox(
+          width: double.infinity,
+          child: Text(
+            caption.highLevelDescription,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14,
+              height: 1.5,
+              color: Colors.white,
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -89,15 +92,18 @@ class IdeogramCaptionSummaryCard extends StatelessWidget {
         const SizedBox(height: 10),
 
         // Background
-        Text(
-          caption.compositionalDeconstruction.background,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 13,
-            height: 1.4,
-            color: Colors.white60,
+        SizedBox(
+          width: double.infinity,
+          child: Text(
+            caption.compositionalDeconstruction.background,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 13,
+              height: 1.4,
+              color: Colors.white60,
+            ),
           ),
         ),
         const SizedBox(height: 10),

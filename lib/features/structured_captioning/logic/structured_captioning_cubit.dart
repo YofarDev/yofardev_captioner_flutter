@@ -63,12 +63,12 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       case CaptionOptions.missing:
         final String category =
             _imageListCubit.state.activeCategory ?? 'default';
-        imagesToProcess = allImages
-            .where(
-              (AppImage image) =>
-                  (image.captions[category]?.text ?? '').isEmpty,
-            )
-            .toList();
+        imagesToProcess = allImages.where((AppImage image) {
+          final String text = image.captions[category]?.text ?? '';
+          return text.isEmpty ||
+              !IdeogramCaption.isIdeogramJson(text) ||
+              IdeogramCaption.hasEmptyHighLevelDescription(text);
+        }).toList();
       case CaptionOptions.all:
         imagesToProcess = allImages
             .where((AppImage image) => !image.isCaptionEdited)

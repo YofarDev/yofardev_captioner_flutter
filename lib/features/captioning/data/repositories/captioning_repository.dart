@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../models/caption_entry.dart';
@@ -48,6 +50,7 @@ class CaptioningRepository {
       currentCaption,
       instructions,
     );
+    _validateRewrittenJson(currentCaption, rewritten);
     final DateTime timestamp = DateTime.now();
     return image.copyWith(
       captions: <String, CaptionEntry>{
@@ -61,5 +64,21 @@ class CaptioningRepository {
       },
       lastModified: timestamp,
     );
+  }
+
+  /// If the original caption was JSON, validates the rewritten result is also
+  /// valid JSON so the JSON structure is not corrupted.
+  void _validateRewrittenJson(String original, String rewritten) {
+    if (!original.trim().startsWith('{')) return;
+    try {
+      jsonDecode(rewritten);
+    } catch (_) {
+      throw Exception(
+        'The rewritten caption is no longer valid JSON. '
+        'The original caption appears to be structured JSON but the '
+        'rewrite returned plain text. Try different rewrite instructions '
+        'or rephrase them to preserve the JSON structure.',
+      );
+    }
   }
 }

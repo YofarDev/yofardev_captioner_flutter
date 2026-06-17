@@ -147,11 +147,11 @@ class CategoryTabBar extends StatelessWidget {
                   ListTile(
                     leading: const Icon(
                       Icons.delete_outline,
-                      color: Colors.redAccent,
+                      color: destructive,
                     ),
                     title: const Text(
                       'Delete category',
-                      style: TextStyle(color: Colors.redAccent),
+                      style: TextStyle(color: destructive),
                     ),
                     onTap: () {
                       Navigator.pop(sheetContext);
@@ -223,7 +223,7 @@ class CategoryTabBar extends StatelessWidget {
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent,
+                backgroundColor: destructive,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

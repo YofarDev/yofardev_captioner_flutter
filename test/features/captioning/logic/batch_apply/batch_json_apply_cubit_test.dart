@@ -18,8 +18,9 @@ void main() {
 
   setUp(() {
     mockImageListCubit = MockImageListCubit();
-    when(mockImageListCubit.updateImage(image: anyNamed('image')))
-        .thenAnswer((_) async {});
+    when(
+      mockImageListCubit.updateImage(image: anyNamed('image')),
+    ).thenAnswer((_) async {});
   });
 
   group('BatchJsonApplyCubit', () {
@@ -29,63 +30,67 @@ void main() {
         when(mockImageListCubit.state).thenReturn(const ImageListState());
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (BatchJsonApplyCubit cubit) => cubit.apply(const BatchApplyTemplate(aesthetics: 'test')),
+      act: (BatchJsonApplyCubit cubit) =>
+          cubit.apply(const BatchApplyTemplate(aesthetics: 'test')),
       expect: () => <dynamic>[isA<BatchJsonApplyCompleted>()],
     );
 
     blocTest<BatchJsonApplyCubit, BatchJsonApplyState>(
       'processes JSON caption images',
       build: () {
-        when(mockImageListCubit.state).thenReturn(ImageListState(
-          images: <AppImage>[
-            AppImage(
-              id: '1',
-              image: File('/fake/img.jpg'),
-              captions: const <String, CaptionEntry>{
-                'default': CaptionEntry(
-                  text:
-                      '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
-                ),
-              },
-              size: 100,
-            ),
-          ],
-        ));
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(
+            images: <AppImage>[
+              AppImage(
+                id: '1',
+                image: File('/fake/img.jpg'),
+                captions: const <String, CaptionEntry>{
+                  'default': CaptionEntry(
+                    text:
+                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
+                  ),
+                },
+                size: 100,
+              ),
+            ],
+          ),
+        );
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (BatchJsonApplyCubit cubit) => cubit.apply(
-        const BatchApplyTemplate(aesthetics: 'new_aes'),
-      ),
+      act: (BatchJsonApplyCubit cubit) =>
+          cubit.apply(const BatchApplyTemplate(aesthetics: 'new_aes')),
       expect: () => <dynamic>[
         isA<BatchJsonApplyInProgress>(),
         isA<BatchJsonApplyCompleted>(),
       ],
       verify: (_) {
-        verify(mockImageListCubit.updateImage(image: anyNamed('image')))
-            .called(1);
+        verify(
+          mockImageListCubit.updateImage(image: anyNamed('image')),
+        ).called(1);
       },
     );
 
     blocTest<BatchJsonApplyCubit, BatchJsonApplyState>(
       'skips plain text captions',
       build: () {
-        when(mockImageListCubit.state).thenReturn(ImageListState(
-          images: <AppImage>[
-            AppImage(
-              id: '1',
-              image: File('/fake/img.jpg'),
-              captions: const <String, CaptionEntry>{
-                'default': CaptionEntry(text: 'plain text'),
-              },
-              size: 100,
-            ),
-          ],
-        ));
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(
+            images: <AppImage>[
+              AppImage(
+                id: '1',
+                image: File('/fake/img.jpg'),
+                captions: const <String, CaptionEntry>{
+                  'default': CaptionEntry(text: 'plain text'),
+                },
+                size: 100,
+              ),
+            ],
+          ),
+        );
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (BatchJsonApplyCubit cubit) => cubit.apply(
-        const BatchApplyTemplate(aesthetics: 'new_aes'),
-      ),
+      act: (BatchJsonApplyCubit cubit) =>
+          cubit.apply(const BatchApplyTemplate(aesthetics: 'new_aes')),
       expect: () => <dynamic>[isA<BatchJsonApplyCompleted>()],
       verify: (_) {
         verifyNever(mockImageListCubit.updateImage(image: anyNamed('image')));
@@ -95,18 +100,20 @@ void main() {
     blocTest<BatchJsonApplyCubit, BatchJsonApplyState>(
       'creates minimal JSON for empty captions',
       build: () {
-        when(mockImageListCubit.state).thenReturn(ImageListState(
-          images: <AppImage>[
-            AppImage(
-              id: '1',
-              image: File('/fake/img.jpg'),
-              captions: const <String, CaptionEntry>{
-                'default': CaptionEntry(text: ''),
-              },
-              size: 100,
-            ),
-          ],
-        ));
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(
+            images: <AppImage>[
+              AppImage(
+                id: '1',
+                image: File('/fake/img.jpg'),
+                captions: const <String, CaptionEntry>{
+                  'default': CaptionEntry(text: ''),
+                },
+                size: 100,
+              ),
+            ],
+          ),
+        );
         return BatchJsonApplyCubit(mockImageListCubit);
       },
       act: (BatchJsonApplyCubit cubit) => cubit.apply(
@@ -117,27 +124,33 @@ void main() {
         isA<BatchJsonApplyCompleted>(),
       ],
       verify: (_) {
-        verify(mockImageListCubit.updateImage(image: anyNamed('image')))
-            .called(1);
+        verify(
+          mockImageListCubit.updateImage(image: anyNamed('image')),
+        ).called(1);
       },
     );
 
     blocTest<BatchJsonApplyCubit, BatchJsonApplyState>(
       'supports cancellation',
       build: () {
-        when(mockImageListCubit.state).thenReturn(ImageListState(
-          images: List<AppImage>.generate(3, (int i) => AppImage(
-            id: '$i',
-            image: File('/fake/img$i.jpg'),
-            captions: const <String, CaptionEntry>{
-              'default': CaptionEntry(
-                text:
-                    '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(
+            images: List<AppImage>.generate(
+              3,
+              (int i) => AppImage(
+                id: '$i',
+                image: File('/fake/img$i.jpg'),
+                captions: const <String, CaptionEntry>{
+                  'default': CaptionEntry(
+                    text:
+                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
+                  ),
+                },
+                size: 100,
               ),
-            },
-            size: 100,
-          )),
-        ));
+            ),
+          ),
+        );
         return BatchJsonApplyCubit(mockImageListCubit);
       },
       act: (BatchJsonApplyCubit cubit) {

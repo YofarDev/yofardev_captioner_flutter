@@ -9,7 +9,8 @@ import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
 
 class ExportButton extends StatelessWidget {
-  const ExportButton({super.key});
+  final bool outlined;
+  const ExportButton({super.key, this.outlined = false});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +20,7 @@ class ExportButton extends StatelessWidget {
         onTap: () => _showExportDialog(context),
         text: 'Export as Archive',
         iconAssetPath: 'assets/icons/archive.png',
+        isOutline: outlined,
       ),
     );
   }
@@ -53,7 +55,6 @@ class _ExportCategoryDialogState extends State<_ExportCategoryDialog> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize with active category when dependencies change
     final ImageListState state = context.read<ImageListCubit>().state;
     if (selectedCategory == null && state.activeCategory != null) {
       selectedCategory = state.activeCategory;
@@ -204,18 +205,63 @@ class _ExportCategoryDialogState extends State<_ExportCategoryDialog> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  context.read<ImageOperationsCubit>().exportAsArchive(
-                    state.folderPath!,
-                    state.images,
-                    selectedCategory!,
-                  );
-                  Navigator.pop(context);
-                },
+                onPressed: () => _confirmExport(context, state),
                 child: const Text(
                   'Export',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmExport(BuildContext context, ImageListState state) {
+    final int totalImages = state.images.length;
+    showDialog(
+      context: context,
+      builder: (BuildContext ctx) {
+        return AlertDialog(
+          backgroundColor: darkGrey,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+          title: const Text(
+            'Confirm Export',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: Text(
+            'Create archive of $totalImages images with captions in '
+            'category "$selectedCategory"?',
+            style: const TextStyle(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: lightPink,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                context.read<ImageOperationsCubit>().exportAsArchive(
+                  state.folderPath!,
+                  state.images,
+                  selectedCategory!,
+                );
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Export',
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ],

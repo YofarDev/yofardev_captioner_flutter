@@ -5,9 +5,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
+import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_operations/presentation/widgets/controls_widgets.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../llm_config/presentation/pages/llm_config_widget.dart';
+import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
 import '../../data/models/batch_apply_template.dart';
 import '../../data/models/caption_options.dart';
@@ -18,61 +22,90 @@ import '../widgets/batch_json_apply_dialog.dart';
 
 class CaptionControls extends StatefulWidget {
   const CaptionControls({super.key});
+
   @override
   State<CaptionControls> createState() => _CaptionControlsState();
 }
 
 class _CaptionControlsState extends State<CaptionControls> {
   CaptionOptions _selectedOption = CaptionOptions.values.first;
+
   @override
   Widget build(BuildContext context) {
-    return RadioGroup<CaptionOptions>(
-      groupValue: _selectedOption,
-      onChanged: (CaptionOptions? value) {
-        setState(() {
-          _selectedOption = value!;
-        });
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Flexible(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
+    final ImageListState imageState = context.read<ImageListCubit>().state;
+    final int totalImages = imageState.images.length;
+
+    return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+      builder: (BuildContext context, LlmConfigsState configState) {
+        final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
+        final int missingCount = imageState.images.where((AppImage img) {
+          final String text =
+              img.captions[imageState.activeCategory]?.text ?? '';
+          if (ideogramMode) {
+            return text.isEmpty ||
+                !IdeogramCaption.isIdeogramJson(text) ||
+                IdeogramCaption.hasEmptyHighLevelDescription(text);
+          }
+          return text.isEmpty;
+        }).length;
+
+        return RadioGroup<CaptionOptions>(
+          groupValue: _selectedOption,
+          onChanged: (CaptionOptions? value) {
+            setState(() {
+              _selectedOption = value!;
+            });
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
                 children: <Widget>[
-                  const Text(
-                    "Caption: ",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                  const SettingsButton(),
+                  const LlmConfigWidget(),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const Text(
+                            "Caption: ",
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildRadioButton(
+                            label: 'This image',
+                            option: CaptionOptions.current,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildRadioButton(
+                            label: 'Missing captions ($missingCount)',
+                            option: CaptionOptions.missing,
+                          ),
+                          const SizedBox(width: 12),
+                          _buildRadioButton(
+                            label: 'All ($totalImages)',
+                            option: CaptionOptions.all,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildRadioButton(
-                    label: 'This image',
-                    option: CaptionOptions.current,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildRadioButton(
-                    label: 'Missing captions',
-                    option: CaptionOptions.missing,
-                  ),
-                  const SizedBox(width: 12),
-                  _buildRadioButton(
-                    label: 'All images',
-                    option: CaptionOptions.all,
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
+              _buildRunButton(count: totalImages),
+            ],
           ),
-          const SizedBox(width: 20),
-          _buildRunButton(),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -132,13 +165,14 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
-  Widget _buildRunButton() => BlocBuilder<ImageListCubit, ImageListState>(
+  Widget _buildRunButton({
+    required int count,
+  }) => BlocBuilder<ImageListCubit, ImageListState>(
     builder: (BuildContext context, ImageListState imageListState) {
       return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
         builder: (BuildContext context, LlmConfigsState configState) {
           final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
 
-          // Listen to the active cubit's state.
           if (ideogramMode) {
             return BlocBuilder<
               StructuredCaptioningCubit,
@@ -162,6 +196,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                       stepLabel: structuredState.stepLabel,
                       error: structuredState.error,
                       isIdeogram: true,
+                      imageCount: count,
                     );
                   },
             );
@@ -181,6 +216,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                 stepLabel: null,
                 error: captioningState.error,
                 isIdeogram: false,
+                imageCount: count,
               );
             },
           );
@@ -200,6 +236,7 @@ class _CaptionControlsState extends State<CaptionControls> {
     required String? stepLabel,
     required String? error,
     required bool isIdeogram,
+    required int imageCount,
   }) {
     final Color accentColor = isIdeogram
         ? Colors.teal.withAlpha(220)
@@ -210,57 +247,67 @@ class _CaptionControlsState extends State<CaptionControls> {
     final Color progressFg = isIdeogram ? Colors.teal : Colors.green;
 
     return Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
-        Tooltip(
-          message: isIdeogram
-              ? 'Run Ideogram JSON structured pipeline'
-              : 'Run Vision model with current settings',
-          child: AppButton(
-            text: isIdeogram ? "▶  JSON Run" : "▶  Run",
-            isLoading: isInProgress,
-            backgroundColor: accentColor,
-            onTap:
-                imageListState.images.isNotEmpty &&
-                    configState.llmConfigs.selectedConfigId != null &&
-                    !isInProgress
-                ? () {
-                    final LlmConfig llm = configState.llmConfigs.configs
-                        .firstWhere(
-                          (LlmConfig c) =>
-                              c.id == configState.llmConfigs.selectedConfigId,
-                        );
-                    if (isIdeogram) {
-                      context
-                          .read<StructuredCaptioningCubit>()
-                          .runStructuredCaptioner(
-                            llm: llm,
-                            option: _selectedOption,
-                            overrides:
-                                configState
-                                    .llmConfigs
-                                    .structuredBatchOverrides
-                                    .enabled
-                                ? configState
+        GestureDetector(
+          onSecondaryTap: () {
+            if (!isInProgress) {
+              context.read<LlmConfigsCubit>().setIdeogramJsonEnabled(
+                !isIdeogram,
+              );
+            }
+          },
+          child: Tooltip(
+            message: isIdeogram
+                ? 'Run AI structured captioning (right-click to toggle mode)'
+                : 'Run AI caption generation (right-click to toggle mode)',
+            child: AppButton(
+              text: isIdeogram ? "▶  JSON Run" : "▶  Run",
+              isLoading: isInProgress,
+              backgroundColor: accentColor,
+              onTap:
+                  imageListState.images.isNotEmpty &&
+                      configState.llmConfigs.selectedConfigId != null &&
+                      !isInProgress
+                  ? () {
+                      final LlmConfig llm = configState.llmConfigs.configs
+                          .firstWhere(
+                            (LlmConfig c) =>
+                                c.id == configState.llmConfigs.selectedConfigId,
+                          );
+                      if (isIdeogram) {
+                        context
+                            .read<StructuredCaptioningCubit>()
+                            .runStructuredCaptioner(
+                              llm: llm,
+                              option: _selectedOption,
+                              overrides:
+                                  configState
                                       .llmConfigs
                                       .structuredBatchOverrides
-                                : null,
-                            debugMode: configState.llmConfigs.debugMode,
-                            disableSam: configState.llmConfigs.disableSam,
-                          );
-                    } else {
-                      context.read<CaptioningCubit>().runCaptioner(
-                        llm: llm,
-                        prompt: configState.llmConfigs.selectedPrompt!,
-                        option: _selectedOption,
-                      );
+                                      .enabled
+                                  ? configState
+                                        .llmConfigs
+                                        .structuredBatchOverrides
+                                  : null,
+                              debugMode: configState.llmConfigs.debugMode,
+                              disableSam: configState.llmConfigs.disableSam,
+                            );
+                      } else {
+                        context.read<CaptioningCubit>().runCaptioner(
+                          llm: llm,
+                          prompt: configState.llmConfigs.selectedPrompt!,
+                          option: _selectedOption,
+                        );
+                      }
                     }
-                  }
-                : null,
+                  : null,
+            ),
           ),
         ),
         if (isIdeogram) const SizedBox(width: 8),
-        if (isIdeogram) _buildBatchApplyButton(context),
+        if (isIdeogram)
+          _buildBatchApplyButton(context, configState, imageCount),
         if (isInProgress) ...<Widget>[
           Container(
             margin: const EdgeInsets.only(left: 12),
@@ -335,12 +382,12 @@ class _CaptionControlsState extends State<CaptionControls> {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.red.withAlpha(100),
+                    color: destructive.withAlpha(100),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.error_outline,
-                    color: Colors.red,
+                    color: destructive,
                     size: 18,
                   ),
                 ),
@@ -351,7 +398,11 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
-  Widget _buildBatchApplyButton(BuildContext context) {
+  Widget _buildBatchApplyButton(
+    BuildContext context,
+    LlmConfigsState configState,
+    int imageCount,
+  ) {
     return BlocBuilder<BatchJsonApplyCubit, BatchJsonApplyState>(
       builder: (BuildContext context, BatchJsonApplyState state) {
         final bool isInProgress = state is BatchJsonApplyInProgress;
@@ -361,13 +412,71 @@ class _CaptionControlsState extends State<CaptionControls> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Tooltip(
-              message: 'Batch apply structured fields to all images',
+              message:
+                  'Overwrite captions for selected images using a '
+                  'structured JSON template',
               child: AppButton(
                 text: 'Batch Apply',
-                backgroundColor: const Color(0xFF7B68EE).withAlpha(220),
+                isOutline: true,
+                backgroundColor: accentPink,
+                foregroundColor: accentPink,
                 onTap: isInProgress
                     ? null
                     : () async {
+                        if (_selectedOption == CaptionOptions.all &&
+                            imageCount > 1) {
+                          final bool? confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (BuildContext ctx) {
+                              return AlertDialog(
+                                backgroundColor: panelRaised,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                title: const Row(
+                                  children: <Widget>[
+                                    Icon(
+                                      Icons.warning_amber_rounded,
+                                      color: amberWarn,
+                                      size: 22,
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      'Confirm Batch Apply',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                                content: Text(
+                                  'This will overwrite captions for '
+                                  '$imageCount images. '
+                                  'This action cannot be undone.',
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(false),
+                                    child: const Text('Cancel'),
+                                  ),
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: amberWarn,
+                                      foregroundColor: Colors.black,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.of(ctx).pop(true),
+                                    child: const Text('Continue'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                          if (confirmed != true || !context.mounted) return;
+                        }
                         final BatchApplyTemplate? template =
                             await showDialog<BatchApplyTemplate>(
                               context: context,
@@ -375,9 +484,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                                   const BatchJsonApplyDialog(),
                             );
                         if (template != null && context.mounted) {
-                          context
-                              .read<BatchJsonApplyCubit>()
-                              .apply(template);
+                          context.read<BatchJsonApplyCubit>().apply(template);
                         }
                       },
               ),
@@ -390,13 +497,13 @@ class _CaptionControlsState extends State<CaptionControls> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF7B68EE).withAlpha(100),
+                  color: accentPink.withAlpha(50),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   '${state.processedImages}/${state.totalImages}',
                   style: const TextStyle(
-                    color: Color(0xFF7B68EE),
+                    color: accentPink,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -405,8 +512,7 @@ class _CaptionControlsState extends State<CaptionControls> {
               const SizedBox(width: 8),
               _StopButton(
                 isCancelling: false,
-                onTap: () =>
-                    context.read<BatchJsonApplyCubit>().cancel(),
+                onTap: () => context.read<BatchJsonApplyCubit>().cancel(),
               ),
             ],
             if (hasError)
@@ -417,12 +523,12 @@ class _CaptionControlsState extends State<CaptionControls> {
                   child: Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.red.withAlpha(100),
+                      color: destructive.withAlpha(100),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.error_outline,
-                      color: Colors.red,
+                      color: destructive,
                       size: 18,
                     ),
                   ),

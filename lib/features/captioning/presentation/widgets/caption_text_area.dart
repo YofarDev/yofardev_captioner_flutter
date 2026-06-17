@@ -227,23 +227,32 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         ),
                                       ),
                                     ),
-                                    if (!isIdeogram &&
-                                        captionText
-                                            .trim()
-                                            .isNotEmpty) ...<Widget>[
+                                    if (captionText
+                                        .trim()
+                                        .isNotEmpty) ...<Widget>[
                                       const SizedBox(width: 8),
                                       Tooltip(
                                         message: 'Rewrite caption with AI',
                                         child: InkWell(
                                           onTap: () {
+                                            final CaptioningCubit cubit =
+                                                context.read<CaptioningCubit>();
                                             showDialog<bool>(
                                               context: context,
                                               builder:
                                                   (
                                                     BuildContext dialogContext,
-                                                  ) => RewriteCaptionDialog(
-                                                    currentCaption: captionText,
-                                                  ),
+                                                  ) =>
+                                                      BlocProvider<
+                                                        CaptioningCubit
+                                                      >.value(
+                                                        value: cubit,
+                                                        child:
+                                                            RewriteCaptionDialog(
+                                                              currentCaption:
+                                                                  captionText,
+                                                            ),
+                                                      ),
                                             );
                                           },
                                           borderRadius: BorderRadius.circular(

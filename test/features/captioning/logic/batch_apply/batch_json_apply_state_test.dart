@@ -12,7 +12,7 @@ void main() {
     });
 
     test('BatchJsonApplyInProgress props and equality', () {
-      final state = const BatchJsonApplyInProgress(
+      const BatchJsonApplyInProgress state = BatchJsonApplyInProgress(
         processedImages: 2,
         totalImages: 10,
         currentImageName: 'test.jpg',
@@ -32,10 +32,9 @@ void main() {
     });
 
     test('BatchJsonApplyInProgress null currentImageName', () {
-      final state = const BatchJsonApplyInProgress(
+      const BatchJsonApplyInProgress state = BatchJsonApplyInProgress(
         processedImages: 0,
         totalImages: 5,
-        currentImageName: null,
       );
       expect(state.currentImageName, isNull);
       expect(state.props, <Object?>[0, 5, null]);
@@ -50,7 +49,7 @@ void main() {
     });
 
     test('BatchJsonApplyError props and equality', () {
-      final state = const BatchJsonApplyError(message: 'error');
+      const BatchJsonApplyError state = BatchJsonApplyError(message: 'error');
       expect(state.message, 'error');
       expect(state.props, <Object?>['error']);
       expect(

@@ -29,7 +29,7 @@ void main() {
         when(mockImageListCubit.state).thenReturn(const ImageListState());
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (cubit) => cubit.apply(const BatchApplyTemplate(aesthetics: 'test')),
+      act: (BatchJsonApplyCubit cubit) => cubit.apply(const BatchApplyTemplate(aesthetics: 'test')),
       expect: () => <dynamic>[isA<BatchJsonApplyCompleted>()],
     );
 
@@ -41,8 +41,8 @@ void main() {
             AppImage(
               id: '1',
               image: File('/fake/img.jpg'),
-              captions: <String, CaptionEntry>{
-                'default': const CaptionEntry(
+              captions: const <String, CaptionEntry>{
+                'default': CaptionEntry(
                   text:
                       '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
                 ),
@@ -53,7 +53,7 @@ void main() {
         ));
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (cubit) => cubit.apply(
+      act: (BatchJsonApplyCubit cubit) => cubit.apply(
         const BatchApplyTemplate(aesthetics: 'new_aes'),
       ),
       expect: () => <dynamic>[
@@ -74,8 +74,8 @@ void main() {
             AppImage(
               id: '1',
               image: File('/fake/img.jpg'),
-              captions: <String, CaptionEntry>{
-                'default': const CaptionEntry(text: 'plain text'),
+              captions: const <String, CaptionEntry>{
+                'default': CaptionEntry(text: 'plain text'),
               },
               size: 100,
             ),
@@ -83,7 +83,7 @@ void main() {
         ));
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (cubit) => cubit.apply(
+      act: (BatchJsonApplyCubit cubit) => cubit.apply(
         const BatchApplyTemplate(aesthetics: 'new_aes'),
       ),
       expect: () => <dynamic>[isA<BatchJsonApplyCompleted>()],
@@ -100,8 +100,8 @@ void main() {
             AppImage(
               id: '1',
               image: File('/fake/img.jpg'),
-              captions: <String, CaptionEntry>{
-                'default': const CaptionEntry(text: ''),
+              captions: const <String, CaptionEntry>{
+                'default': CaptionEntry(text: ''),
               },
               size: 100,
             ),
@@ -109,7 +109,7 @@ void main() {
         ));
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (cubit) => cubit.apply(
+      act: (BatchJsonApplyCubit cubit) => cubit.apply(
         const BatchApplyTemplate(aesthetics: 'new_aes', lighting: 'soft'),
       ),
       expect: () => <dynamic>[
@@ -129,8 +129,8 @@ void main() {
           images: List<AppImage>.generate(3, (int i) => AppImage(
             id: '$i',
             image: File('/fake/img$i.jpg'),
-            captions: <String, CaptionEntry>{
-              'default': const CaptionEntry(
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(
                 text:
                     '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
               ),
@@ -140,7 +140,7 @@ void main() {
         ));
         return BatchJsonApplyCubit(mockImageListCubit);
       },
-      act: (cubit) async {
+      act: (BatchJsonApplyCubit cubit) {
         cubit.apply(const BatchApplyTemplate(aesthetics: 'a'));
         cubit.cancel();
       },

@@ -5,12 +5,12 @@ import 'package:yofardev_captioner/features/structured_captioning/data/models/id
 void main() {
   group('BatchApplyTemplate', () {
     test('mergeInto overwrites specified fields, keeps others', () {
-      final template = BatchApplyTemplate(
+      const BatchApplyTemplate template = BatchApplyTemplate(
         highLevelDescription: 'new description',
         aesthetics: 'cinematic',
       );
 
-      final existing = IdeogramCaption(
+      const IdeogramCaption existing = IdeogramCaption(
         highLevelDescription: 'old description',
         styleDescription: IdeogramStyleDescription(
           aesthetics: 'ethereal',
@@ -25,7 +25,7 @@ void main() {
         ),
       );
 
-      final result = template.mergeInto(existing);
+      final IdeogramCaption result = template.mergeInto(existing);
 
       expect(result.highLevelDescription, 'new description');
       expect(result.styleDescription.aesthetics, 'cinematic');
@@ -34,9 +34,9 @@ void main() {
     });
 
     test('mergeInto does not touch null template fields', () {
-      final template = BatchApplyTemplate();
+      const BatchApplyTemplate template = BatchApplyTemplate();
 
-      final existing = IdeogramCaption(
+      const IdeogramCaption existing = IdeogramCaption(
         highLevelDescription: 'desc',
         styleDescription: IdeogramStyleDescription(
           aesthetics: 'aes',
@@ -51,7 +51,7 @@ void main() {
         ),
       );
 
-      final result = template.mergeInto(existing);
+      final IdeogramCaption result = template.mergeInto(existing);
 
       expect(result.highLevelDescription, 'desc');
       expect(result.styleDescription.aesthetics, 'aes');
@@ -61,12 +61,12 @@ void main() {
     });
 
     test('toMinimalCaption creates caption with only template fields', () {
-      final template = BatchApplyTemplate(
+      const BatchApplyTemplate template = BatchApplyTemplate(
         highLevelDescription: 'desc',
         aesthetics: 'cinematic',
       );
 
-      final result = template.toMinimalCaption();
+      final IdeogramCaption result = template.toMinimalCaption();
 
       expect(result.highLevelDescription, 'desc');
       expect(result.styleDescription.aesthetics, 'cinematic');
@@ -74,7 +74,7 @@ void main() {
     });
 
     test('toMinimalCaption with all fields', () {
-      final template = BatchApplyTemplate(
+      const BatchApplyTemplate template = BatchApplyTemplate(
         highLevelDescription: 'desc',
         aesthetics: 'ethereal',
         lighting: 'soft',
@@ -83,7 +83,7 @@ void main() {
         background: 'a forest',
       );
 
-      final result = template.toMinimalCaption();
+      final IdeogramCaption result = template.toMinimalCaption();
 
       expect(result.highLevelDescription, 'desc');
       expect(result.styleDescription.aesthetics, 'ethereal');

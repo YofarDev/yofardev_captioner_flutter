@@ -213,13 +213,28 @@ void main() {
 
       test('clamps out-of-bounds coordinates to the nearest edge pixel', () {
         final img.Image image = img.Image(width: 2, height: 2);
-        image.setPixel(0, 0, img.ColorRgb8(1, 2, 3));
-        image.setPixel(1, 0, img.ColorRgb8(1, 2, 3));
-        image.setPixel(0, 1, img.ColorRgb8(1, 2, 3));
-        image.setPixel(1, 1, img.ColorRgb8(1, 2, 3));
+        image.setPixel(0, 0, img.ColorRgb8(10, 10, 10)); // top-left
+        image.setPixel(1, 0, img.ColorRgb8(20, 20, 20)); // top-right
+        image.setPixel(0, 1, img.ColorRgb8(30, 30, 30)); // bottom-left
+        image.setPixel(1, 1, img.ColorRgb8(40, 40, 40)); // bottom-right
 
-        // (-5, 99) clamps to (0, 1).
-        expect(service.hexAt(image, -5, 99), '#010203');
+        // (-5, 99) clamps to (0, 1) → bottom-left = #1E1E1E.
+        expect(service.hexAt(image, -5, 99), '#1E1E1E');
+        // (99, -5) clamps to (1, 0) → top-right = #141414.
+        expect(service.hexAt(image, 99, -5), '#141414');
+      });
+
+      test('normalizes grayscale images to a proper RGB triplet', () {
+        // Single-channel image: luminance stored only in `r` (g/b read as 0).
+        // Without normalization this would misread as (200, 0, 0) = #C80000.
+        final img.Image gray = img.Image(width: 2, height: 2, numChannels: 1);
+        for (int y = 0; y < 2; y++) {
+          for (int x = 0; x < 2; x++) {
+            gray.setPixelR(x, y, 200);
+          }
+        }
+
+        expect(service.hexAt(gray, 0, 0), '#C8C8C8');
       });
     });
   });

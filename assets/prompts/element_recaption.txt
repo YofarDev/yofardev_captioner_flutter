@@ -1,0 +1,23 @@
+You are recaptioning ONE element of an already-analyzed image.
+
+The target element is highlighted on the image with a magenta box (with corner ticks).
+Its current index in the elements array is {elementIndex}
+(bbox [y1, x1, y2, x2] = {elementBbox}).
+
+Existing full caption (do NOT rewrite other elements; use for context only):
+{existingJson}
+
+{instructionsBlock}
+
+Return ONLY a JSON object for the highlighted element, with no surrounding prose:
+{"desc": "...", "has_text": false, "visible_text": null}
+
+Rules:
+- "desc" must be specific and visually grounded in the highlighted region.
+- You MAY reference neighboring elements from the existing caption when useful
+  (e.g. "the red mug to the left of the laptop").
+- Do NOT return a bbox; the box is user-defined and stays as-is.
+- "visible_text" is null when "has_text" is false.
+- When the element is a text element, read the visible text into "visible_text"
+  and set "has_text": true. If the text is illegible, set "has_text": false
+  and "visible_text": null.

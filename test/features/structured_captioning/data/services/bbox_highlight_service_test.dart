@@ -49,7 +49,7 @@ void main() {
       expect(File(outPath).existsSync(), isFalse);
     });
 
-    test('throws when bbox is null (argument error)', () async {
+    test('throws ArgumentError when bbox has wrong arity', () async {
       final BboxHighlightService service = BboxHighlightService();
       await expectLater(
         service.renderHighlightedJpeg(imageFile, <int>[]),

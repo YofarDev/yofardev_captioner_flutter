@@ -13,6 +13,7 @@ import '../../../structured_captioning/presentation/widgets/ideogram_caption_sum
 import '../../logic/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
+import 'paste_json_dialog.dart';
 import 'rewrite_caption_dialog.dart';
 
 class CaptionTextArea extends StatefulWidget {
@@ -223,6 +224,46 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                             color: captionText.trim().isEmpty
                                                 ? Colors.white.withAlpha(50)
                                                 : Colors.white70,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Tooltip(
+                                      message: 'Paste raw Ideogram JSON caption',
+                                      child: InkWell(
+                                        onTap: isThisImageBeingCaptioned
+                                            ? null
+                                            : () {
+                                                final ImageListCubit
+                                                    imageListCubit = context
+                                                        .read<ImageListCubit>();
+                                                showDialog<void>(
+                                                  context: context,
+                                                  builder: (BuildContext _) =>
+                                                      BlocProvider<
+                                                          ImageListCubit>.value(
+                                                    value: imageListCubit,
+                                                    child: const PasteJsonDialog(),
+                                                  ),
+                                                );
+                                              },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: isThisImageBeingCaptioned
+                                                ? Colors.white.withAlpha(20)
+                                                : lightPink.withAlpha(40),
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                          child: Icon(
+                                            Icons.data_object,
+                                            size: 16,
+                                            color: isThisImageBeingCaptioned
+                                                ? Colors.white.withAlpha(50)
+                                                : lightPink,
                                           ),
                                         ),
                                       ),

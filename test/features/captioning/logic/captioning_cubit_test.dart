@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
@@ -260,6 +261,93 @@ void main() {
       expect(captioningCubit.state.error, contains('API error'));
       expect(captioningCubit.state.processedImages, 0);
     });
+
+    test(
+      'runCaptioner keeps using the start category after the active tab changes',
+      () async {
+        final AppImage image1 = AppImage(
+          id: '1',
+          image: File('img1.jpg'),
+          captions: const <String, CaptionEntry>{},
+        );
+        final AppImage image2 = AppImage(
+          id: '2',
+          image: File('img2.jpg'),
+          captions: const <String, CaptionEntry>{},
+        );
+
+        String activeCategory = 'caption1';
+        when(mockImageListCubit.state).thenAnswer(
+          (_) => ImageListState(
+            images: <AppImage>[image1, image2],
+            folderPath: '/tmp',
+            activeCategory: activeCategory,
+          ),
+        );
+
+        final List<String> categoriesPassed = <String>[];
+        final Completer<AppImage> call1 = Completer<AppImage>();
+        final Completer<AppImage> call2 = Completer<AppImage>();
+        int callIndex = 0;
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+          ),
+        ).thenAnswer((Invocation inv) {
+          categoriesPassed
+              .add(inv.namedArguments[const Symbol('category')] as String);
+          final Completer<AppImage> c = callIndex == 0 ? call1 : call2;
+          callIndex++;
+          return c.future;
+        });
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        final Future<void> run = captioningCubit.runCaptioner(
+          llm: llmConfig,
+          prompt: 'Prompt',
+          option: CaptionOptions.all,
+        );
+
+        // Let the run reach the first captionImage await.
+        await Future<void>.delayed(Duration.zero);
+        expect(categoriesPassed, <String>['caption1']);
+
+        // User switches category tab mid-run.
+        activeCategory = 'caption2';
+
+        call1.complete(
+          image1.copyWith(
+            captions: const <String, CaptionEntry>{
+              'caption1': CaptionEntry(text: 'c1'),
+            },
+          ),
+        );
+        await Future<void>.delayed(Duration.zero);
+
+        // Second image must STILL use the start category (caption1).
+        expect(categoriesPassed, <String>['caption1', 'caption1']);
+
+        call2.complete(
+          image2.copyWith(
+            captions: const <String, CaptionEntry>{
+              'caption1': CaptionEntry(text: 'c2'),
+            },
+          ),
+        );
+        await run;
+
+        expect(captioningCubit.state.status, CaptioningStatus.success);
+      },
+    );
 
     test('cancelCaptioning sets isCancelling', () {
       captioningCubit.cancelCaptioning();

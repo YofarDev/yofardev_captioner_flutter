@@ -16,10 +16,11 @@ void main() {
       cubit = ImageListCubit(fileUtils: mockFileUtils);
     });
 
-    test('adds new category', () {
+    test('adds new category and activates it', () {
       cubit.addCategory('tags');
 
       expect(cubit.state.categories, contains('tags'));
+      expect(cubit.state.activeCategory, equals('tags'));
     });
 
     test('prevents duplicate category names', () {

@@ -5,7 +5,7 @@ import 'package:yofardev_captioner/features/structured_captioning/data/models/id
 void main() {
   // Sample Ideogram JSON for testing
   const String sampleIdeogramJson =
-      '{"high_level_description":"A cat sitting on a forest path at sunset","style_description":{"aesthetics":"minimalist","lighting":"golden hour","medium":"photograph","photo":"Canon EOS R5","color_palette":["#8B4513","#228B22","#FFD700"]},"compositional_deconstruction":{"background":"dense forest with tall trees","elements":[{"type":"obj","bbox":[100,200,500,600],"desc":"orange tabby cat sitting","color_palette":["#FF8C00"]},{"type":"text","bbox":[50,50,150,300],"desc":"a sign saying hello","text":"hello"},{"type":"obj","desc":"a rock on the path"}]}}';
+      '{"high_level_description":"A cat sitting on a forest path at sunset","style_description":{"aesthetics":"minimalist","lighting":"golden hour","photo":"Canon EOS R5","medium":"photograph","color_palette":["#8B4513","#228B22","#FFD700"]},"compositional_deconstruction":{"background":"dense forest with tall trees","elements":[{"type":"obj","bbox":[100,200,500,600],"desc":"orange tabby cat sitting","color_palette":["#FF8C00"]},{"type":"text","bbox":[50,50,150,300],"desc":"a sign saying hello","text":"hello"},{"type":"obj","desc":"a rock on the path"}]}}';
 
   const String plainTextCaption = 'A beautiful sunset over the ocean';
 
@@ -46,6 +46,124 @@ void main() {
       const String noBboxJson =
           '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","desc":"thing"}]}}';
       expect(filter.evaluate(noBboxJson), isFalse);
+    });
+  });
+
+  group('DuplicateBboxFilter', () {
+    // Two identical bboxes — IoU = 1.0
+    const String identicalBboxesJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[100,100,500,500],"desc":"a"},{"type":"obj","bbox":[100,100,500,500],"desc":"b"}]}}';
+
+    // Two near-duplicate bboxes (slightly offset) — IoU ≈ 0.82
+    const String nearDuplicateBboxesJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[100,100,500,500],"desc":"a"},{"type":"obj","bbox":[120,120,520,520],"desc":"b"}]}}';
+
+    // Two moderately overlapping bboxes — IoU ≈ 0.39
+    const String moderateOverlapBboxesJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[100,100,500,500],"desc":"a"},{"type":"obj","bbox":[200,200,600,600],"desc":"b"}]}}';
+
+    // Two slightly overlapping bboxes — IoU ≈ 0.059
+    const String slightlyOverlappingBboxesJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[0,0,300,300],"desc":"a"},{"type":"obj","bbox":[200,200,500,500],"desc":"b"}]}}';
+
+    // Two non-overlapping bboxes — IoU = 0
+    const String disjointBboxesJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[0,0,100,100],"desc":"a"},{"type":"obj","bbox":[500,500,600,600],"desc":"b"}]}}';
+
+    // Only one bbox
+    const String singleBboxJson =
+        '{"high_level_description":"test","style_description":{"aesthetics":"a","lighting":"b","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"bg","elements":[{"type":"obj","bbox":[100,100,500,500],"desc":"a"}]}}';
+
+    test('matches identical bboxes', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(identicalBboxesJson), isTrue);
+    });
+
+    test('matches near-duplicate bboxes (IoU > default 0.7)', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(nearDuplicateBboxesJson), isTrue);
+    });
+
+    test('does not match moderate overlap (IoU < default 0.7)', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(moderateOverlapBboxesJson), isFalse);
+    });
+
+    test('matches moderate overlap with lower threshold', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter(threshold: 0.3);
+      expect(filter.evaluate(moderateOverlapBboxesJson), isTrue);
+    });
+
+    test('does not match slightly overlapping bboxes (IoU < default 0.7)', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(slightlyOverlappingBboxesJson), isFalse);
+    });
+
+    test('matches slightly overlapping bboxes with lower threshold', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter(threshold: 0.05);
+      expect(filter.evaluate(slightlyOverlappingBboxesJson), isTrue);
+    });
+
+    test('does not match disjoint bboxes', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(disjointBboxesJson), isFalse);
+    });
+
+    test('does not match when only one bbox', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(singleBboxJson), isFalse);
+    });
+
+    test('does not match plain text', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(plainTextCaption), isFalse);
+    });
+
+    test('does not match empty string', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.evaluate(''), isFalse);
+    });
+
+    test('iou() returns 1.0 for identical boxes', () {
+      expect(
+        DuplicateBboxFilter.iou(<int>[100, 100, 500, 500], <int>[
+          100,
+          100,
+          500,
+          500,
+        ]),
+        equals(1.0),
+      );
+    });
+
+    test('iou() returns 0.0 for disjoint boxes', () {
+      expect(
+        DuplicateBboxFilter.iou(<int>[0, 0, 100, 100], <int>[
+          500,
+          500,
+          600,
+          600,
+        ]),
+        equals(0.0),
+      );
+    });
+
+    test('iou() handles touching (zero-area intersection) boxes', () {
+      // Adjacent, no overlap — interY2 == interY1
+      expect(
+        DuplicateBboxFilter.iou(<int>[0, 0, 100, 100], <int>[
+          100,
+          0,
+          200,
+          100,
+        ]),
+        equals(0.0),
+      );
+    });
+
+    test('default threshold is 0.7', () {
+      const DuplicateBboxFilter filter = DuplicateBboxFilter();
+      expect(filter.threshold, equals(0.7));
     });
   });
 

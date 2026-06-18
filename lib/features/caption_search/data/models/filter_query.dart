@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 
@@ -87,6 +88,72 @@ class HasBboxFilter extends FilterExpression {
 
   @override
   List<Object?> get props => <Object?>[];
+}
+
+/// Matches captions where at least two element bboxes overlap by at least
+/// [threshold] (intersection-over-union). Useful for finding duplicate
+/// detections of the same item that VLMs sometimes emit.
+///
+/// Examples: `:dupbbox:` (default [defaultDuplicateBboxThreshold]),
+/// `:dupbbox:0.5:`
+class DuplicateBboxFilter extends FilterExpression {
+  const DuplicateBboxFilter({this.threshold = defaultDuplicateBboxThreshold});
+
+  /// Default IoU threshold used by `:dupbbox:` (flag form).
+  static const double defaultDuplicateBboxThreshold = 0.7;
+
+  /// Minimum IoU for two bboxes to count as duplicates.
+  /// `1.0` = identical, `0.0` = no overlap.
+  final double threshold;
+
+  @override
+  bool evaluate(String captionText) {
+    final IdeogramCaption? caption = FilterExpression.tryParseCaption(
+      captionText,
+    );
+    if (caption == null) return false;
+
+    final List<List<int>> bboxes = caption
+        .compositionalDeconstruction.elements
+        .where(
+          (IdeogramElement e) => e.bbox != null && e.bbox!.length == 4,
+        )
+        .map((IdeogramElement e) => e.bbox!)
+        .toList();
+
+    if (bboxes.length < 2) return false;
+
+    for (int i = 0; i < bboxes.length; i++) {
+      for (int j = i + 1; j < bboxes.length; j++) {
+        if (iou(bboxes[i], bboxes[j]) >= threshold) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Computes intersection-over-union for two bboxes stored as
+  /// `[y1, x1, y2, x2]` in 0-1000 normalized coordinates.
+  static double iou(List<int> a, List<int> b) {
+    final int interY1 = math.max(a[0], b[0]);
+    final int interX1 = math.max(a[1], b[1]);
+    final int interY2 = math.min(a[2], b[2]);
+    final int interX2 = math.min(a[3], b[3]);
+
+    if (interY2 <= interY1 || interX2 <= interX1) return 0.0;
+
+    final int intersection = (interY2 - interY1) * (interX2 - interX1);
+    final int areaA = (a[2] - a[0]) * (a[3] - a[1]);
+    final int areaB = (b[2] - b[0]) * (b[3] - b[1]);
+    final int union = areaA + areaB - intersection;
+
+    if (union <= 0) return 0.0;
+    return intersection / union;
+  }
+
+  @override
+  List<Object?> get props => <Object?>[threshold];
 }
 
 /// Matches captions with a specific number of compositional elements.

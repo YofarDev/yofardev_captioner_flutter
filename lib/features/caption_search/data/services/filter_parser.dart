@@ -19,6 +19,7 @@ class FilterParser {
     'structured',
     'plain',
     'nocaption',
+    'dupbbox',
   };
 
   /// Flag-only filters (no arguments between name and closing `:`).
@@ -100,6 +101,11 @@ class FilterParser {
       }
       // Unknown has arg — not a valid filter
       return null;
+    }
+
+    // :dupbbox: or :dupbbox:threshold: — optional IoU threshold argument
+    if (name == 'dupbbox') {
+      return _parseDuplicateBbox(query, nameEnd);
     }
 
     // :elements:N: or :elements:>N: or :elements:>=N:
@@ -198,6 +204,46 @@ class FilterParser {
     }
 
     return null;
+  }
+
+  /// Parses `:dupbbox:` (flag form) or `:dupbbox:N:` (threshold form).
+  ///
+  /// [nameEnd] is the index of the `:` following the `dupbbox` name.
+  /// Returns `null` only when the closing `:` is missing entirely; an invalid
+  /// threshold falls back to the default-threshold flag form.
+  static _ParseResult? _parseDuplicateBbox(String query, int nameEnd) {
+    // Flag form: `:dupbbox:` — nothing valid follows the closing `:`.
+    if (nameEnd + 1 >= query.length || query[nameEnd + 1] == ':') {
+      return _ParseResult(
+        filter: const DuplicateBboxFilter(),
+        endIndex: nameEnd + 1,
+      );
+    }
+
+    // Argument form: look for `:dupbbox:VALUE:` and try to parse VALUE.
+    final int argEnd = _indexOf(query, ':', nameEnd + 1);
+    if (argEnd == -1) {
+      // No closing `:` — treat as flag form, leave the rest as plain text.
+      return _ParseResult(
+        filter: const DuplicateBboxFilter(),
+        endIndex: nameEnd + 1,
+      );
+    }
+
+    final String arg = query.substring(nameEnd + 1, argEnd).trim();
+    final double? threshold = double.tryParse(arg);
+    if (threshold != null && threshold > 0 && threshold <= 1) {
+      return _ParseResult(
+        filter: DuplicateBboxFilter(threshold: threshold),
+        endIndex: argEnd + 1,
+      );
+    }
+
+    // Invalid threshold — fall back to flag form, consume just `:dupbbox:`.
+    return _ParseResult(
+      filter: const DuplicateBboxFilter(),
+      endIndex: nameEnd + 1,
+    );
   }
 
   /// Finds the index of [char] in [str] starting at [from].

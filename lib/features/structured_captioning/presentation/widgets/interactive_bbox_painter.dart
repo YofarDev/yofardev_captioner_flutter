@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -25,17 +26,29 @@ class InteractiveBboxPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Draw each visible element bbox
+    // Draw non-selected bboxes first.
     for (int i = 0; i < elements.length; i++) {
       if (hiddenIndices.contains(i)) continue;
+      if (i == selectedIndex) continue; // selected drawn last (on top)
       final IdeogramElement el = elements[i];
       if (el.bbox == null) continue;
 
       final Rect rect = bboxToRect(el.bbox!, paintedRect);
-      final bool isSelected = i == selectedIndex;
       final Color color = boxColors[i % boxColors.length];
+      _drawBbox(canvas, rect, color, el, false);
+    }
 
-      _drawBbox(canvas, rect, color, el, isSelected);
+    // Draw the selected bbox last so it and its label sit on top.
+    final int? selected = selectedIndex;
+    if (selected != null &&
+        !hiddenIndices.contains(selected) &&
+        selected < elements.length) {
+      final IdeogramElement el = elements[selected];
+      if (el.bbox != null) {
+        final Rect rect = bboxToRect(el.bbox!, paintedRect);
+        final Color color = boxColors[selected % boxColors.length];
+        _drawBbox(canvas, rect, color, el, true);
+      }
     }
 
     // Draw the new-bbox drawing rect (dashed)
@@ -57,20 +70,20 @@ class InteractiveBboxPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth;
 
-    // Draw filled background
+    // Draw filled background — stronger fill on selected to highlight area.
     final Paint fillPaint = Paint()
-      ..color = color.withAlpha(isSelected ? 30 : 15)
+      ..color = color.withValues(alpha: isSelected ? 0.3 : 0.06)
       ..style = PaintingStyle.fill;
 
     final RRect rrect = RRect.fromRectAndRadius(rect, const Radius.circular(3));
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, paint);
 
-    // Label
+    // Label: full description when selected, first sentence otherwise.
     final String label = element.type == 'text'
         ? '"${element.text ?? 'text'}"'
-        : element.desc.split('.').first;
-    _drawLabel(canvas, rect, label, color);
+        : (isSelected ? element.desc : element.desc.split('.').first);
+    _drawLabel(canvas, rect, label, color, expanded: isSelected);
 
     // Corner handles for selected element
     if (isSelected) {
@@ -78,40 +91,76 @@ class InteractiveBboxPainter extends CustomPainter {
     }
   }
 
-  void _drawLabel(Canvas canvas, Rect rect, String label, Color bgColor) {
+  void _drawLabel(
+    Canvas canvas,
+    Rect rect,
+    String label,
+    Color bgColor, {
+    bool expanded = false,
+  }) {
     if (label.isEmpty) return;
 
-    final TextSpan span = TextSpan(
-      text: label.length > 30 ? '${label.substring(0, 30)}...' : label,
-      style: TextStyle(
-        fontSize: 9,
-        fontWeight: FontWeight.w600,
-        fontFamily: 'Inter',
-        color: getContrastColor(bgColor),
-      ),
+    const double padW = 4.0;
+    const double padH = 4.0;
+    final double availW = rect.width - padW;
+    final double availH = rect.height - padH;
+
+    // Skip when the bbox is too small to hold a readable label.
+    if (availW < 12 || availH < 8) return;
+
+    final String displayText = expanded
+        ? label
+        : (label.length > 30 ? '${label.substring(0, 30)}...' : label);
+    final double fontSize = expanded ? 10 : 9;
+    final int maxDesiredLines = expanded ? 6 : 1;
+
+    final TextStyle style = TextStyle(
+      fontSize: fontSize,
+      fontWeight: FontWeight.w600,
+      fontFamily: 'Inter',
+      color: getContrastColor(bgColor),
     );
-    final TextPainter tp = TextPainter(
-      text: span,
+
+    // Measure a single line so we can compute how many complete lines fit
+    // inside the bbox height without expanding it.
+    final TextPainter probe = TextPainter(
+      text: TextSpan(text: displayText, style: style),
       textDirection: TextDirection.ltr,
       maxLines: 1,
-    )..layout(maxWidth: rect.width - 4);
+      ellipsis: '…',
+    )..layout(maxWidth: availW);
+    final double lineHeight = probe.height > 0 ? probe.height : fontSize * 1.3;
+    int linesThatFit = (availH / lineHeight).floor();
+    if (linesThatFit < 1) linesThatFit = 1;
+    if (linesThatFit > maxDesiredLines) linesThatFit = maxDesiredLines;
 
-    // Label background
+    final TextPainter tp = TextPainter(
+      text: TextSpan(text: displayText, style: style),
+      textDirection: TextDirection.ltr,
+      maxLines: linesThatFit,
+      ellipsis: '…',
+    )..layout(maxWidth: availW);
+
+    // Label background — clamped to the bbox bounds.
     final Rect labelRect = Rect.fromLTWH(
       rect.left,
       rect.top,
-      tp.width + 8,
-      tp.height + 4,
+      math.min(tp.width + padW, rect.width),
+      math.min(tp.height + padH, rect.height),
     );
     final Paint labelBg = Paint()
       ..color = bgColor
       ..style = PaintingStyle.fill;
+
+    // Clip to the bbox so neither text nor background can overflow it.
+    canvas.save();
+    canvas.clipRect(rect);
     canvas.drawRRect(
       RRect.fromRectAndRadius(labelRect, const Radius.circular(2)),
       labelBg,
     );
-
-    tp.paint(canvas, Offset(rect.left + 4, rect.top + 2));
+    tp.paint(canvas, Offset(rect.left + padW / 2, rect.top + padH / 2));
+    canvas.restore();
   }
 
   void _drawCornerHandles(Canvas canvas, Rect rect, Color color) {

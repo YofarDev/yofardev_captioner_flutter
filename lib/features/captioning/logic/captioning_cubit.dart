@@ -40,6 +40,9 @@ class CaptioningCubit extends Cubit<CaptioningState> {
 
     List<AppImage> imagesToCaption = <AppImage>[];
     final List<AppImage> allImages = _imageListCubit.state.images;
+    // Capture the active category ONCE at the start so switching category tabs
+    // mid-run doesn't redirect later captions into a different category.
+    final String category = _imageListCubit.state.activeCategory ?? 'default';
 
     switch (option) {
       case CaptionOptions.current:
@@ -55,8 +58,6 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         }
         imagesToCaption = <AppImage>[currentImage];
       case CaptionOptions.missing:
-        final String category =
-            _imageListCubit.state.activeCategory ?? 'default';
         imagesToCaption = allImages
             .where(
               (AppImage image) =>
@@ -102,8 +103,6 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
-        final String category =
-            _imageListCubit.state.activeCategory ?? 'default';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,

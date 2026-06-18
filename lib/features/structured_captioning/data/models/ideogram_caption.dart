@@ -152,10 +152,11 @@ class IdeogramStyleDescription extends Equatable {
     };
     if (medium == 'photograph') {
       json['photo'] = photo ?? '';
+      json['medium'] = medium;
     } else {
+      json['medium'] = medium;
       json['art_style'] = artStyle ?? '';
     }
-    json['medium'] = medium;
     json['color_palette'] = colorPalette;
     return json;
   }

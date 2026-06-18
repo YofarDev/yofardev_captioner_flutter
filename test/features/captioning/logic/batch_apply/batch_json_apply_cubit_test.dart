@@ -47,7 +47,7 @@ void main() {
                 captions: const <String, CaptionEntry>{
                   'default': CaptionEntry(
                     text:
-                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
+                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","photo":"","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
                   ),
                 },
                 size: 100,
@@ -143,7 +143,7 @@ void main() {
                 captions: const <String, CaptionEntry>{
                   'default': CaptionEntry(
                     text:
-                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","medium":"photograph","photo":"","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
+                        '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","photo":"","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}',
                   ),
                 },
                 size: 100,

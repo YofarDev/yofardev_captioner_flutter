@@ -11,11 +11,13 @@ class ImageListItem extends StatefulWidget {
   const ImageListItem({
     required this.image,
     required this.isSelected,
+    required this.activeCategory,
     super.key,
   });
 
   final AppImage image;
   final bool isSelected;
+  final String activeCategory;
 
   @override
   State<ImageListItem> createState() => _ImageListItemState();
@@ -138,7 +140,9 @@ class _ImageListItemState extends State<ImageListItem> {
                         ],
                       ),
                     ),
-                    if (widget.image.caption.trim().isEmpty)
+                    if ((widget.image.captions[widget.activeCategory]?.text ?? '')
+                        .trim()
+                        .isEmpty)
                       Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: Tooltip(

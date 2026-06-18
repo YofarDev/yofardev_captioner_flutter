@@ -76,6 +76,10 @@ class FilterHelpDialog extends StatelessWidget {
                   '3+ elements with bounding boxes',
                 ),
                 _buildExample(
+                  ':dupbbox:',
+                  'Likely duplicate detections (overlapping bboxes)',
+                ),
+                _buildExample(
                   ':bg:forest: :element:cat:',
                   'Forest background with a cat element',
                 ),
@@ -111,6 +115,8 @@ class FilterHelpDialog extends StatelessWidget {
         _filterRow(':has:text:', 'Has at least one text element'),
         _filterRow(':has:obj:', 'Has at least one object element'),
         _filterRow(':has:bbox:', 'Has elements with bounding boxes'),
+        _filterRow(':dupbbox:', 'Has overlapping bboxes (IoU >= 0.7)'),
+        _filterRow(':dupbbox:N:', 'Overlapping bboxes with IoU >= N (0-1)'),
         _filterRow(':elements:N:', 'Exactly N elements'),
         _filterRow(':elements:>N:', 'More than N elements'),
         _filterRow(':elements:>=N:', 'N or more elements'),

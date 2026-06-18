@@ -525,7 +525,12 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     final List<String> updatedCategories = List<String>.from(state.categories)
       ..add(name);
-    emit(state.copyWith(categories: updatedCategories));
+    emit(
+      state.copyWith(
+        categories: updatedCategories,
+        activeCategory: name,
+      ),
+    );
 
     await _saveDb();
   }

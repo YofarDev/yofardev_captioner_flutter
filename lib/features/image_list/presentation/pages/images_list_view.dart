@@ -33,6 +33,7 @@ class ImagesListView extends StatelessWidget {
                     key: ValueKey<String>(image.image.path),
                     image: image,
                     isSelected: image.id == state.currentImageId,
+                    activeCategory: state.activeCategory ?? 'default',
                   );
                 },
               ),

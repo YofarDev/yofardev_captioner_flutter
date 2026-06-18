@@ -45,6 +45,86 @@ void main() {
       });
     });
 
+    group(':dupbbox: filter', () {
+      test(':dupbbox: parses as flag with default threshold', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:');
+        expect(result.filters, hasLength(1));
+        expect(result.filters.first, isA<DuplicateBboxFilter>());
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.7));
+        expect(result.plainTextQuery, isEmpty);
+      });
+
+      test(':dupbbox:0.5: parses custom threshold', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:0.5:');
+        expect(result.filters, hasLength(1));
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.5));
+      });
+
+      test(':dupbbox:1: parses threshold of 1.0 (exact duplicates)', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:1:');
+        expect(result.filters, hasLength(1));
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(1.0));
+      });
+
+      test(':dupbbox:0.05: parses small threshold', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:0.05:');
+        expect(result.filters, hasLength(1));
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.05));
+      });
+
+      test('invalid threshold falls back to default', () {
+        // Threshold out of range (> 1)
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:2:');
+        expect(result.filters, hasLength(1));
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.7));
+      });
+
+      test('non-numeric threshold falls back to default', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox:abc:');
+        expect(result.filters, hasLength(1));
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.7));
+      });
+
+      test('combines with other filters', () {
+        final ParsedFilterQuery result = FilterParser.parse(
+          ':dupbbox: :has:text:',
+        );
+        expect(result.filters, hasLength(2));
+        expect(result.filters[0], isA<DuplicateBboxFilter>());
+        expect(result.filters[1], isA<HasTypeFilter>());
+        expect(result.plainTextQuery, isEmpty);
+      });
+
+      test('combines with plain text', () {
+        final ParsedFilterQuery result = FilterParser.parse(
+          'cat :dupbbox:0.5:',
+        );
+        expect(result.filters, hasLength(1));
+        expect(result.plainTextQuery, 'cat');
+        final DuplicateBboxFilter filter =
+            result.filters.first as DuplicateBboxFilter;
+        expect(filter.threshold, equals(0.5));
+      });
+
+      test('incomplete :dupbbox (no trailing colon) is plain text', () {
+        final ParsedFilterQuery result = FilterParser.parse(':dupbbox');
+        expect(result.filters, isEmpty);
+        expect(result.plainTextQuery, ':dupbbox');
+      });
+    });
+
     group(':elements: filter', () {
       test(':elements:3: parses exact count', () {
         final ParsedFilterQuery result = FilterParser.parse(':elements:3:');

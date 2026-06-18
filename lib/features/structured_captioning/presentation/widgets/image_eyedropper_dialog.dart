@@ -55,11 +55,14 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
   Future<void> _decode() async {
     try {
       final Uint8List bytes = await widget.imageFile.readAsBytes();
-      final img.Image? decoded = img.decodeImage(bytes);
+      img.Image? decoded = img.decodeImage(bytes);
       if (decoded == null) {
         if (mounted) setState(() => _error = 'Could not load image');
         return;
       }
+      // Bake EXIF orientation so sampled pixels match how Flutter renders the
+      // image (Image.file applies EXIF rotation; img.decodeImage does not).
+      decoded = img.bakeOrientation(decoded);
       final img.Image rgb =
           decoded.numChannels >= 3 ? decoded : decoded.convert(numChannels: 3);
       if (mounted) {

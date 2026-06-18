@@ -10,7 +10,9 @@ import '../../../core/config/service_locator.dart';
 import '../../captioning/data/models/caption_entry.dart';
 import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
+import '../../llm_config/data/models/llm_config.dart';
 import '../data/models/ideogram_caption.dart';
+import '../data/repositories/structured_caption_repository.dart';
 import '../data/services/color_extraction_service.dart';
 
 part 'structured_editor_state.dart';
@@ -21,21 +23,25 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required File imageFile,
     required String activeCategory,
     required ImageListCubit imageListCubit,
+    StructuredCaptionRepository? repository,
   }) : _imageListCubit = imageListCubit,
+       _repository = repository ?? StructuredCaptionRepository(),
        super(
-         StructuredEditorState(
-           caption: initialCaption,
-           imageFile: imageFile,
-           activeCategory: activeCategory,
-         ),
-       );
+          StructuredEditorState(
+            caption: initialCaption,
+            imageFile: imageFile,
+            activeCategory: activeCategory,
+          ),
+        );
 
   final ImageListCubit _imageListCubit;
+  final StructuredCaptionRepository _repository;
   final Logger _logger = locator<Logger>();
   final ColorExtractionService _colorExtractionService =
       ColorExtractionService();
   Timer? _debounceTimer;
   bool _isDirty = false;
+  Future<void>? _recaptionInFlight;
 
   // -- Description --
 
@@ -314,6 +320,68 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     _logger.info('Batch palette re-extraction done: $processed images');
   }
 
+  // -- Single-element recaption --
+
+  /// Recaptions the currently selected element via one VLM call.
+  ///
+  /// No-op if no element is selected or another recaption is in flight.
+  /// Emits `status: recaptioning` + `recaptioningElementIndex` while awaiting.
+  /// On success, atomically swaps the updated element in and triggers
+  /// debounced save. On error, emits `status: error` and leaves the original
+  /// element untouched.
+  Future<void> recaptionSelectedElement({
+    required LlmConfig config,
+    String? instructions,
+  }) async {
+    final int? selected = state.selectedElementIndex;
+    if (selected == null) return;
+    if (_recaptionInFlight != null) return;
+
+    final Completer<void> inflight = Completer<void>();
+    _recaptionInFlight = inflight.future;
+
+    emit(
+      state.copyWith(
+        status: StructuredEditorStatus.recaptioning,
+        recaptioningElementIndex: selected,
+        clearError: true,
+      ),
+    );
+
+    try {
+      final IdeogramElement updated = await _repository.recaptionElement(
+        config: config,
+        imageFile: state.imageFile,
+        currentCaption: state.caption,
+        elementIndex: selected,
+        instructions: instructions,
+      );
+      final List<IdeogramElement> elements = List<IdeogramElement>.from(
+        state.caption.compositionalDeconstruction.elements,
+      );
+      elements[selected] = updated;
+      _emitUpdatedElements(elements);
+      emit(
+        state.copyWith(
+          status: StructuredEditorStatus.saved,
+          clearRecaptioning: true,
+        ),
+      );
+    } catch (e) {
+      _logger.warning('recaptionSelectedElement failed: $e');
+      emit(
+        state.copyWith(
+          status: StructuredEditorStatus.error,
+          error: e.toString(),
+          clearRecaptioning: true,
+        ),
+      );
+    } finally {
+      inflight.complete();
+      _recaptionInFlight = null;
+    }
+  }
+
   // -- Element CRUD --
 
   void addElement({String type = 'obj', List<int>? bbox}) {
@@ -395,8 +463,14 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   ///
   /// Call this before navigating to another image: [updateCaption] writes to
   /// the image list's *current* image, so flushing first ensures edits land on
-  /// the image they belong to rather than the next one.
+  /// the image they belong to rather than the next one. Also awaits any
+  /// in-flight recaption so its result lands on the correct element before
+  /// the cubit is disposed/rebuilt.
   Future<void> flushSave() async {
+    final Future<void>? pending = _recaptionInFlight;
+    if (pending != null) {
+      await pending;
+    }
     _debounceTimer?.cancel();
     if (_isDirty) {
       await _save();
@@ -416,14 +490,18 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       final String json = state.caption.toJsonString();
       await _imageListCubit.updateCaption(caption: json);
       _isDirty = false;
-      emit(state.copyWith(status: StructuredEditorStatus.saved));
+      if (!isClosed) {
+        emit(state.copyWith(status: StructuredEditorStatus.saved));
+      }
     } catch (e) {
-      emit(
-        state.copyWith(
-          status: StructuredEditorStatus.error,
-          error: e.toString(),
-        ),
-      );
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: StructuredEditorStatus.error,
+            error: e.toString(),
+          ),
+        );
+      }
     }
   }
 

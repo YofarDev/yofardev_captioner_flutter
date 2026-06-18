@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -6,12 +7,15 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/config/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
 
 import 'structured_editor_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit])
+@GenerateMocks(<Type>[ImageListCubit, StructuredCaptionRepository])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -262,5 +266,189 @@ void main() {
         );
       });
     });
+
+    group('recaptionSelectedElement', () {
+      late MockStructuredCaptionRepository mockRepo;
+      late Completer<IdeogramElement> recaptionCompleter;
+
+      IdeogramCaption withSelection({required bool withBbox}) =>
+          baseCaption().copyWith(
+            compositionalDeconstruction:
+                baseCaption().compositionalDeconstruction.copyWith(
+                      elements: <IdeogramElement>[
+                        IdeogramElement(
+                          type: 'obj',
+                          desc: 'first',
+                          bbox: withBbox ? <int>[10, 10, 90, 90] : null,
+                        ),
+                        IdeogramElement(type: 'obj', desc: 'second'),
+                      ],
+                    ),
+          );
+
+      setUp(() {
+        mockRepo = MockStructuredCaptionRepository();
+        recaptionCompleter = Completer<IdeogramElement>();
+      });
+
+      StructuredEditorCubit buildCubit({required bool withBbox}) {
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: withSelection(withBbox: withBbox),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+          repository: mockRepo,
+        );
+        c.selectElement(0);
+        return c;
+      }
+
+      test('no-ops when no element is selected', () async {
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: baseCaption(),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+          repository: mockRepo,
+        );
+        await c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: null,
+        );
+        expect(c.state.status, isNot(StructuredEditorStatus.recaptioning));
+        verifyNever(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        ));
+        await c.close();
+      });
+
+      test('emits error when selected element has no bbox', () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: false);
+        when(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).thenThrow(StateError('Target element has no bbox; cannot highlight.'));
+
+        await c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: null,
+        );
+
+        expect(c.state.status, StructuredEditorStatus.error);
+        expect(c.state.error, contains('bbox'));
+        expect(
+          c.state.caption.compositionalDeconstruction.elements[0].desc,
+          'first',
+        );
+        await c.close();
+      });
+
+      test('recaptioning status then element update on success', () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: true);
+        final IdeogramElement updated = c
+            .state.caption.compositionalDeconstruction.elements[0]
+            .copyWith(desc: 'fresh');
+
+        when(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).thenAnswer((_) async => updated);
+
+        final Future<void> done = c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: 'focus on branding',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(c.state.status, StructuredEditorStatus.recaptioning);
+        expect(c.state.recaptioningElementIndex, 0);
+
+        await done;
+
+        expect(
+          c.state.caption.compositionalDeconstruction.elements[0].desc,
+          'fresh',
+        );
+        expect(c.state.recaptioningElementIndex, isNull);
+        await c.close();
+      });
+
+      test('original element byte-identical on repo error', () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: true);
+        final IdeogramElement original = c
+            .state.caption.compositionalDeconstruction.elements[0];
+        when(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).thenThrow(Exception('boom'));
+
+        await c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: null,
+        );
+
+        expect(c.state.status, StructuredEditorStatus.error);
+        final IdeogramElement after =
+            c.state.caption.compositionalDeconstruction.elements[0];
+        expect(after, original);
+        await c.close();
+      });
+
+      test('concurrent call is a no-op while one is in flight', () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: true);
+        when(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).thenAnswer((_) => recaptionCompleter.future);
+
+        final Future<void> first = c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: null,
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        await c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: null,
+        );
+
+        verify(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).called(1);
+
+        recaptionCompleter.complete(
+          c.state.caption.compositionalDeconstruction.elements[0]
+              .copyWith(desc: 'done'),
+        );
+        await first;
+        await c.close();
+      });
+    });
   });
 }
+
+LlmConfig _dummyConfig() => LlmConfig(
+      id: 'cfg',
+      name: 'cfg',
+      model: 'vlm',
+      providerType: LlmProviderType.remote,
+    );

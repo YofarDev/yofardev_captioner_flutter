@@ -323,6 +323,7 @@ void main() {
           elementIndex: anyNamed('elementIndex'),
           instructions: anyNamed('instructions'),
         ));
+        await c.flushSave();
         await c.close();
       });
 
@@ -347,14 +348,14 @@ void main() {
           c.state.caption.compositionalDeconstruction.elements[0].desc,
           'first',
         );
+        await c.flushSave();
         await c.close();
       });
 
       test('recaptioning status then element update on success', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
-        final IdeogramElement updated = c
-            .state.caption.compositionalDeconstruction.elements[0]
-            .copyWith(desc: 'fresh');
+        final Completer<IdeogramElement> completer =
+            Completer<IdeogramElement>();
 
         when(mockRepo.recaptionElement(
           config: anyNamed('config'),
@@ -362,16 +363,23 @@ void main() {
           currentCaption: anyNamed('currentCaption'),
           elementIndex: anyNamed('elementIndex'),
           instructions: anyNamed('instructions'),
-        )).thenAnswer((_) async => updated);
+        )).thenAnswer((_) => completer.future);
 
+        // Kick off; don't await — the mock is genuinely suspended.
         final Future<void> done = c.recaptionSelectedElement(
           config: _dummyConfig(),
           instructions: 'focus on branding',
         );
+        // Let the pre-call emits settle.
         await Future<void>.delayed(const Duration(milliseconds: 5));
         expect(c.state.status, StructuredEditorStatus.recaptioning);
         expect(c.state.recaptioningElementIndex, 0);
 
+        // Complete the suspended VLM call.
+        completer.complete(
+          c.state.caption.compositionalDeconstruction.elements[0]
+              .copyWith(desc: 'fresh'),
+        );
         await done;
 
         expect(
@@ -379,6 +387,7 @@ void main() {
           'fresh',
         );
         expect(c.state.recaptioningElementIndex, isNull);
+        await c.flushSave();
         await c.close();
       });
 
@@ -403,6 +412,7 @@ void main() {
         final IdeogramElement after =
             c.state.caption.compositionalDeconstruction.elements[0];
         expect(after, original);
+        await c.flushSave();
         await c.close();
       });
 
@@ -440,6 +450,7 @@ void main() {
               .copyWith(desc: 'done'),
         );
         await first;
+        await c.flushSave();
         await c.close();
       });
     });

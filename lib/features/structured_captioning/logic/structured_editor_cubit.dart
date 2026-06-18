@@ -490,18 +490,14 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       final String json = state.caption.toJsonString();
       await _imageListCubit.updateCaption(caption: json);
       _isDirty = false;
-      if (!isClosed) {
-        emit(state.copyWith(status: StructuredEditorStatus.saved));
-      }
+      emit(state.copyWith(status: StructuredEditorStatus.saved));
     } catch (e) {
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: StructuredEditorStatus.error,
-            error: e.toString(),
-          ),
-        );
-      }
+      emit(
+        state.copyWith(
+          status: StructuredEditorStatus.error,
+          error: e.toString(),
+        ),
+      );
     }
   }
 

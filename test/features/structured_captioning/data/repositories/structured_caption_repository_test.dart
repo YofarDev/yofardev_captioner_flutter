@@ -1,11 +1,27 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/services/bbox_highlight_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart';
 
+import 'structured_caption_repository_test.mocks.dart';
+
+@GenerateMocks(<Type>[
+  CaptionService,
+  BboxHighlightService,
+  StructuredPromptLoader,
+])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -529,6 +545,273 @@ void main() {
           isNull,
         );
       });
+    });
+  });
+
+  group('recaptionElement', () {
+    late MockCaptionService mockCaption;
+    late MockBboxHighlightService mockHighlight;
+    late MockStructuredPromptLoader mockLoader;
+    late StructuredCaptionRepository repo;
+
+    final LlmConfig config = LlmConfig(
+      id: 'cfg',
+      name: 'cfg',
+      model: 'vlm',
+      providerType: LlmProviderType.remote,
+    );
+
+    const IdeogramCaption caption = IdeogramCaption(
+      highLevelDescription: 'a desk',
+      styleDescription: IdeogramStyleDescription(
+        aesthetics: 'a',
+        lighting: 'l',
+        medium: 'photograph',
+        colorPalette: <String>['#000000'],
+      ),
+      compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+        background: 'wall',
+        elements: <IdeogramElement>[
+          IdeogramElement(
+            type: 'obj',
+            bbox: <int>[100, 100, 400, 400],
+            desc: 'old desc',
+            colorPalette: <String>['#111111'],
+          ),
+        ],
+      ),
+    );
+
+    setUp(() {
+      mockCaption = MockCaptionService();
+      mockHighlight = MockBboxHighlightService();
+      mockLoader = MockStructuredPromptLoader();
+      when(mockLoader.loadElementRecaptionPrompt()).thenAnswer(
+          (_) async => 'PROMPT {elementIndex} {elementBbox} {existingJson} {instructionsBlock}');
+      when(mockHighlight.renderHighlightedJpeg(any, any))
+          .thenAnswer((_) async => '/tmp/highlight.jpg');
+      when(mockHighlight.cleanup(any)).thenAnswer((_) async {});
+      repo = StructuredCaptionRepository(
+        captionService: mockCaption,
+        bboxHighlightService: mockHighlight,
+        promptLoader: mockLoader,
+      );
+    });
+
+    test('updates desc, preserves bbox/type/colorPalette for obj element', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"desc": "fresh desc", "has_text": false, "visible_text": null}',
+      );
+
+      final IdeogramElement updated = await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+        elementIndex: 0,
+      );
+
+      expect(updated.desc, 'fresh desc');
+      expect(updated.bbox, <int>[100, 100, 400, 400]);
+      expect(updated.type, 'obj');
+      expect(updated.colorPalette, <String>['#111111']);
+      expect(updated.text, isNull);
+    });
+
+    test('overwrites text for text element when has_text true', () async {
+      const IdeogramCaption textCaption = IdeogramCaption(
+        highLevelDescription: 'h',
+        styleDescription: IdeogramStyleDescription(
+          aesthetics: '',
+          lighting: '',
+          medium: 'photograph',
+          colorPalette: <String>[],
+        ),
+        compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+          background: '',
+          elements: <IdeogramElement>[
+            IdeogramElement(type: 'text', desc: 'old', bbox: <int>[0, 0, 50, 50]),
+          ],
+        ),
+      );
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"desc": "a sign", "has_text": true, "visible_text": "HELLO"}',
+      );
+
+      final IdeogramElement updated = await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: textCaption,
+        elementIndex: 0,
+      );
+
+      expect(updated.desc, 'a sign');
+      expect(updated.text, 'HELLO');
+      expect(updated.type, 'text');
+    });
+
+    test('clears text when VLM says has_text false on a text element', () async {
+      const IdeogramCaption textCaption = IdeogramCaption(
+        highLevelDescription: 'h',
+        styleDescription: IdeogramStyleDescription(
+          aesthetics: '',
+          lighting: '',
+          medium: 'photograph',
+          colorPalette: <String>[],
+        ),
+        compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+          background: '',
+          elements: <IdeogramElement>[
+            IdeogramElement(
+              type: 'text',
+              desc: 'old',
+              bbox: <int>[0, 0, 50, 50],
+              text: 'OLDTEXT',
+            ),
+          ],
+        ),
+      );
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"desc": "illegible scrawl", "has_text": false, "visible_text": null}',
+      );
+
+      final IdeogramElement updated = await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: textCaption,
+        elementIndex: 0,
+      );
+
+      expect(updated.desc, 'illegible scrawl');
+      expect(updated.text, '');
+    });
+
+    test('throws FormatException when VLM returns desc missing/empty', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"has_text": false, "visible_text": null}',
+      );
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 0,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('parses fenced / prose-wrapped JSON', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '```json\n{"desc": "ok", "has_text": false, "visible_text": null}\n```',
+      );
+      final IdeogramElement updated = await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+        elementIndex: 0,
+      );
+      expect(updated.desc, 'ok');
+    });
+
+    test('propagates CaptionService errors and cleans up temp file', () async {
+      when(mockCaption.getCaption(any, any, any)).thenThrow(Exception('network down'));
+
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 0,
+        ),
+        throwsA(isA<Exception>()),
+      );
+
+      verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
+    });
+
+    test('substitutes template tokens including instructions block', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"desc": "x", "has_text": false, "visible_text": null}',
+      );
+      await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+        elementIndex: 0,
+        instructions: 'focus on the branding',
+      );
+
+      final String capturedPrompt = verify(mockCaption.getCaption(
+        any,
+        any,
+        captureAny,
+      )).captured.single as String;
+
+      expect(capturedPrompt, contains('0'));
+      expect(capturedPrompt, contains('[100, 100, 400, 400]'));
+      expect(capturedPrompt, contains('high_level_description'));
+      expect(capturedPrompt, contains('focus on the branding'));
+    });
+
+    test('omits instructions block when instructions is null', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async => '{"desc": "x", "has_text": false, "visible_text": null}',
+      );
+      await repo.recaptionElement(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+        elementIndex: 0,
+      );
+
+      final String capturedPrompt = verify(mockCaption.getCaption(
+        any,
+        any,
+        captureAny,
+      )).captured.single as String;
+
+      expect(capturedPrompt, isNot(contains('Additional instructions')));
+    });
+
+    test('throws RangeError when elementIndex is out of range', () async {
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 99,
+        ),
+        throwsA(isA<RangeError>()),
+      );
+      verifyNever(mockHighlight.renderHighlightedJpeg(any, any));
+    });
+
+    test('throws StateError when target element has no bbox', () async {
+      const IdeogramCaption noBbox = IdeogramCaption(
+        highLevelDescription: 'h',
+        styleDescription: IdeogramStyleDescription(
+          aesthetics: '',
+          lighting: '',
+          medium: 'photograph',
+          colorPalette: <String>[],
+        ),
+        compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+          background: '',
+          elements: <IdeogramElement>[
+            IdeogramElement(type: 'obj', desc: 'no box'),
+          ],
+        ),
+      );
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: noBbox,
+          elementIndex: 0,
+        ),
+        throwsA(isA<StateError>()),
+      );
+      verifyNever(mockHighlight.renderHighlightedJpeg(any, any));
     });
   });
 }

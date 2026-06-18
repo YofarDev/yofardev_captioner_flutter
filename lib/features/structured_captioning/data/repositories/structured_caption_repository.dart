@@ -13,6 +13,7 @@ import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/data/models/structured_batch_overrides.dart';
 import '../models/ideogram_caption.dart';
 import '../models/vlm_analysis.dart';
+import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
 import '../services/sam_process_service.dart';
 import '../services/structured_prompt_loader.dart';
@@ -26,17 +27,21 @@ class StructuredCaptionRepository {
   final SamProcessService _samProcessService;
   final ColorExtractionService _colorExtractionService;
   final StructuredPromptLoader _promptLoader;
+  final BboxHighlightService _bboxHighlightService;
 
   StructuredCaptionRepository({
     CaptionService? captionService,
     SamProcessService? samProcessService,
     ColorExtractionService? colorExtractionService,
     StructuredPromptLoader? promptLoader,
+    BboxHighlightService? bboxHighlightService,
   }) : _captionService = captionService ?? CaptionService(),
        _samProcessService = samProcessService ?? SamProcessService(),
        _colorExtractionService =
            colorExtractionService ?? ColorExtractionService(),
-       _promptLoader = promptLoader ?? StructuredPromptLoader();
+       _promptLoader = promptLoader ?? StructuredPromptLoader(),
+       _bboxHighlightService =
+           bboxHighlightService ?? BboxHighlightService();
 
   /// Runs the full pipeline on a single image.
   ///
@@ -181,6 +186,106 @@ class StructuredCaptionRepository {
     }
 
     return caption;
+  }
+
+  /// Recaptions a single element via one VLM call.
+  ///
+  /// Sends the full image with the target bbox drawn on it (Approach C),
+  /// plus the existing caption JSON for context, plus optional [instructions].
+  ///
+  /// Returns a NEW [IdeogramElement] with `desc` (and `text` for text elements)
+  /// updated. `bbox`, `type`, and `colorPalette` are preserved.
+  ///
+  /// Throws [RangeError] if [elementIndex] is out of range.
+  /// Throws [StateError] if the target element has no bbox.
+  /// Throws [FormatException] if the VLM response is missing `desc` or is
+  /// unparseable.
+  /// Re-throws any error from [CaptionService]; the temp highlight file is
+  /// always cleaned up.
+  Future<IdeogramElement> recaptionElement({
+    required LlmConfig config,
+    required File imageFile,
+    required IdeogramCaption currentCaption,
+    required int elementIndex,
+    String? instructions,
+  }) async {
+    final List<IdeogramElement> elements =
+        currentCaption.compositionalDeconstruction.elements;
+    if (elementIndex < 0 || elementIndex >= elements.length) {
+      throw RangeError('elementIndex $elementIndex out of range');
+    }
+    final IdeogramElement target = elements[elementIndex];
+    final List<int>? bbox = target.bbox;
+    if (bbox == null) {
+      throw StateError('Target element has no bbox; cannot highlight.');
+    }
+
+    final String highlightPath = await _bboxHighlightService
+        .renderHighlightedJpeg(imageFile, bbox);
+
+    try {
+      final String template = await _promptLoader.loadElementRecaptionPrompt();
+      final String prompt = _buildRecaptionPrompt(
+        template: template,
+        currentCaption: currentCaption,
+        elementIndex: elementIndex,
+        bbox: bbox,
+        instructions: instructions,
+      );
+
+      final String raw = await _captionService.getCaption(
+        config,
+        File(highlightPath),
+        prompt,
+      );
+
+      return _parseRecaptionResponse(raw, target);
+    } finally {
+      await _bboxHighlightService.cleanup(highlightPath);
+    }
+  }
+
+  String _buildRecaptionPrompt({
+    required String template,
+    required IdeogramCaption currentCaption,
+    required int elementIndex,
+    required List<int> bbox,
+    required String? instructions,
+  }) {
+    final String instructionsBlock =
+        (instructions == null || instructions.isEmpty)
+            ? ''
+            : 'Additional instructions from the user:\n$instructions\n';
+    return template
+        .replaceAll('{elementIndex}', elementIndex.toString())
+        .replaceAll('{elementBbox}', _fmtBbox(bbox))
+        .replaceAll('{existingJson}', currentCaption.toJsonString())
+        .replaceAll('{instructionsBlock}', instructionsBlock);
+  }
+
+  IdeogramElement _parseRecaptionResponse(
+    String raw,
+    IdeogramElement target,
+  ) {
+    final String cleaned = _stripMarkdownFences(raw);
+    final Map<String, dynamic> json =
+        jsonDecode(cleaned) as Map<String, dynamic>;
+
+    final String desc = (json['desc'] as String?)?.trim() ?? '';
+    if (desc.isEmpty) {
+      _logger.warning('Recaption response missing desc. Raw: $raw');
+      throw const FormatException('Recaption response missing "desc"');
+    }
+    final bool hasText = (json['has_text'] as bool?) ?? false;
+    final String? visibleText = json['visible_text'] as String?;
+
+    if (target.type == 'text') {
+      return target.copyWith(
+        desc: desc,
+        text: hasText ? (visibleText ?? '') : '',
+      );
+    }
+    return target.copyWith(desc: desc);
   }
 
   /// Saves debug artifacts alongside the image in a `debug/` subfolder.

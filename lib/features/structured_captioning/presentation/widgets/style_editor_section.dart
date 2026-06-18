@@ -72,6 +72,7 @@ class StyleEditorSection extends StatelessWidget {
             ColorPaletteEditor(
               colors: style.colorPalette,
               onChanged: cubit.updateStyleColorPalette,
+              imageFile: state.imageFile,
             ),
           ],
         );

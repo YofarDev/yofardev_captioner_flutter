@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
+import '../utils/bbox_utils.dart';
 import 'color_palette_editor.dart';
 
 /// Detail editor for the currently selected element.
@@ -21,12 +22,15 @@ class ElementDetailSection extends StatelessWidget {
 
         final int idx = state.selectedElementIndex!;
 
+        // Match the card to the selected layer's bbox color.
+        final Color layerColor = kBboxColors[idx % kBboxColors.length];
+
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: lightGrey,
+            color: layerColor.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.teal.withAlpha(80)),
+            border: Border.all(color: layerColor.withValues(alpha: 0.8)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,6 +122,8 @@ class ElementDetailSection extends StatelessWidget {
               ColorPaletteEditor(
                 colors: element.colorPalette ?? <String>[],
                 onChanged: cubit.updateElementColorPalette,
+                imageFile: state.imageFile,
+                elementBbox: element.bbox,
               ),
             ],
           ),

@@ -1,6 +1,6 @@
 part of 'structured_editor_cubit.dart';
 
-enum StructuredEditorStatus { initial, saved, error }
+enum StructuredEditorStatus { initial, saved, error, recaptioning }
 
 class StructuredEditorState extends Equatable {
   const StructuredEditorState({
@@ -11,6 +11,7 @@ class StructuredEditorState extends Equatable {
     this.hiddenElementIndices = const <int>{},
     this.status = StructuredEditorStatus.initial,
     this.error,
+    this.recaptioningElementIndex,
   });
 
   /// The mutable working copy of the caption.
@@ -30,6 +31,10 @@ class StructuredEditorState extends Equatable {
 
   final StructuredEditorStatus status;
   final String? error;
+
+  /// Index of the element currently being recaptioned, or null. Drives the
+  /// per-element spinner in the UI.
+  final int? recaptioningElementIndex;
 
   // Derived getters
 
@@ -53,6 +58,8 @@ class StructuredEditorState extends Equatable {
     StructuredEditorStatus? status,
     String? error,
     bool clearError = false,
+    int? recaptioningElementIndex,
+    bool clearRecaptioning = false,
   }) {
     return StructuredEditorState(
       caption: caption ?? this.caption,
@@ -64,17 +71,21 @@ class StructuredEditorState extends Equatable {
       hiddenElementIndices: hiddenElementIndices ?? this.hiddenElementIndices,
       status: status ?? this.status,
       error: clearError ? null : (error ?? this.error),
+      recaptioningElementIndex: clearRecaptioning
+          ? null
+          : (recaptioningElementIndex ?? this.recaptioningElementIndex),
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
-    caption,
-    imageFile,
-    activeCategory,
-    selectedElementIndex,
-    hiddenElementIndices,
-    status,
-    error,
-  ];
+        caption,
+        imageFile,
+        activeCategory,
+        selectedElementIndex,
+        hiddenElementIndices,
+        status,
+        error,
+        recaptioningElementIndex,
+      ];
 }

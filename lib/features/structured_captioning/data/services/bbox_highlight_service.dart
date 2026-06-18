@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math' show Random;
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
@@ -109,7 +110,7 @@ class BboxHighlightService {
     );
 
     // Encode JPEG, shrinking quality until under the size limit.
-    List<int> encoded = img.encodeJpg(work, quality: 90);
+    Uint8List encoded = img.encodeJpg(work, quality: 90);
     int quality = 90;
     while (encoded.length > _maxFileSize && quality > 20) {
       quality -= 10;
@@ -119,7 +120,7 @@ class BboxHighlightService {
     final Directory tempDir = Directory.systemTemp;
     final String outPath = p.join(
       tempDir.path,
-      'bbox_highlight_${DateTime.now().microsecondsSinceEpoch}.jpg',
+      'bbox_highlight_${DateTime.now().microsecondsSinceEpoch}_${Random().nextInt(1 << 32)}.jpg',
     );
     final File outFile = File(outPath);
     await outFile.writeAsBytes(encoded);

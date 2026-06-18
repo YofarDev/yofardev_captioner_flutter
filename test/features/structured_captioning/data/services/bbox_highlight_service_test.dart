@@ -81,5 +81,42 @@ void main() {
       expect(decoded!.width, lessThanOrEqualTo(1024));
       await service.cleanup(outPath);
     });
+
+    test('cleanup is idempotent (safe to call twice)', () async {
+      final BboxHighlightService service = BboxHighlightService();
+      final String outPath = await service.renderHighlightedJpeg(
+        imageFile,
+        <int>[250, 250, 750, 750],
+      );
+      await service.cleanup(outPath);
+      // Second call must not throw.
+      await service.cleanup(outPath);
+      expect(File(outPath).existsSync(), isFalse);
+    });
+
+    test('cleanup ignores a path that never existed', () async {
+      final BboxHighlightService service = BboxHighlightService();
+      // Must not throw.
+      await service.cleanup('/nonexistent/path/nope_${DateTime.now().microsecondsSinceEpoch}.jpg');
+    });
+
+    test('handles portrait orientation (height > width)', () async {
+      // 100x1500 portrait image.
+      final img.Image portrait = img.Image(width: 100, height: 1500);
+      img.fill(portrait, color: img.ColorRgb8(0, 128, 255));
+      final String path = p.join(tmpDir.path, 'portrait.png');
+      await File(path).writeAsBytes(img.encodePng(portrait));
+      final BboxHighlightService service = BboxHighlightService();
+      final String outPath = await service.renderHighlightedJpeg(
+        File(path),
+        <int>[100, 100, 900, 900],
+      );
+      final Uint8List bytes = await File(outPath).readAsBytes();
+      final img.Image? decoded = img.decodeImage(bytes);
+      expect(decoded, isNotNull);
+      expect(decoded!.height, lessThanOrEqualTo(1024));
+      expect(decoded.width, lessThanOrEqualTo(1024));
+      await service.cleanup(outPath);
+    });
   });
 }

@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../llm_config/data/models/llm_config.dart';
+import '../../../llm_config/data/models/llm_provider_type.dart';
+import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
 import 'color_palette_editor.dart';
+import 'recaption_element_dialog.dart';
 
 /// Detail editor for the currently selected element.
 class ElementDetailSection extends StatelessWidget {
@@ -69,6 +73,9 @@ class ElementDetailSection extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 10),
+
+              _RecaptionButton(elementIndex: idx, element: element),
               const SizedBox(height: 10),
 
               // Description
@@ -267,6 +274,120 @@ class _ElementFieldState extends State<_ElementField> {
         isDense: true,
       ),
       onChanged: widget.onChanged,
+    );
+  }
+}
+
+/// Resolves the [LlmConfigsCubit] ancestor if one exists, or null when none
+/// is found. Equivalent to `context.maybeRead<LlmConfigsCubit>()` (not
+/// available with the pinned provider version).
+LlmConfigsCubit? _maybeReadLlmConfigsCubit(BuildContext context) {
+  try {
+    return context.read<LlmConfigsCubit>();
+  } on Object {
+    return null;
+  }
+}
+
+class _RecaptionButton extends StatelessWidget {
+  const _RecaptionButton({
+    required this.elementIndex,
+    required this.element,
+  });
+
+  final int elementIndex;
+  final IdeogramElement element;
+
+  @override
+  Widget build(BuildContext context) {
+    final StructuredEditorCubit cubit = context.read<StructuredEditorCubit>();
+
+    // Resolve the active config safely. Returns null when no LlmConfigsCubit
+    // ancestor exists (defensive; the app provides one at the root).
+    final LlmConfigsCubit? llmCubit = _maybeReadLlmConfigsCubit(context);
+    final LlmConfig? config = llmCubit?.state.llmConfigs.selectedConfig;
+
+    final bool isLocalMlx = config?.providerType == LlmProviderType.localMlx;
+    final bool canRecaption =
+        config != null && !isLocalMlx && element.bbox != null;
+
+    return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
+      buildWhen: (StructuredEditorState prev, StructuredEditorState next) =>
+          prev.recaptioningElementIndex != next.recaptioningElementIndex ||
+          prev.status != next.status,
+      builder: (BuildContext context, StructuredEditorState state) {
+        final bool isBusy = state.recaptioningElementIndex == elementIndex;
+        final String? error =
+            state.status == StructuredEditorStatus.error ? state.error : null;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            FilledButton.icon(
+              key: const Key('recaptionButton'),
+              onPressed: (isBusy || !canRecaption)
+                  ? null
+                  : () => _onRecaption(context, cubit, config),
+              icon: isBusy
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.auto_awesome, size: 16),
+              label: Text(isBusy ? 'Recaptioning…' : 'Recaption'),
+            ),
+            if (element.bbox == null)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Draw a bbox to enable recaption.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              )
+            else if (config == null)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Select a remote VLM config to enable recaption.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              )
+            else if (isLocalMlx)
+              const Padding(
+                padding: EdgeInsets.only(top: 4),
+                child: Text(
+                  'Local MLX configs are not supported for recaption.',
+                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                ),
+              ),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  error,
+                  style: const TextStyle(color: destructive, fontSize: 11),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _onRecaption(
+    BuildContext context,
+    StructuredEditorCubit cubit,
+    LlmConfig config,
+  ) async {
+    final String? instructions = await showRecaptionElementDialog(context);
+    if (instructions == null) return; // user cancelled
+    await cubit.recaptionSelectedElement(
+      config: config,
+      instructions: instructions,
     );
   }
 }

@@ -202,5 +202,25 @@ void main() {
         expect(palette, isEmpty);
       });
     });
+
+    group('hexAt', () {
+      test('returns #RRGGBB of the pixel at (x, y)', () {
+        final img.Image image = img.Image(width: 3, height: 3);
+        image.setPixel(1, 1, img.ColorRgb8(255, 0, 128));
+
+        expect(service.hexAt(image, 1, 1), '#FF0080');
+      });
+
+      test('clamps out-of-bounds coordinates to the nearest edge pixel', () {
+        final img.Image image = img.Image(width: 2, height: 2);
+        image.setPixel(0, 0, img.ColorRgb8(1, 2, 3));
+        image.setPixel(1, 0, img.ColorRgb8(1, 2, 3));
+        image.setPixel(0, 1, img.ColorRgb8(1, 2, 3));
+        image.setPixel(1, 1, img.ColorRgb8(1, 2, 3));
+
+        // (-5, 99) clamps to (0, 1).
+        expect(service.hexAt(image, -5, 99), '#010203');
+      });
+    });
   });
 }

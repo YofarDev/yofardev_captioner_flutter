@@ -105,6 +105,24 @@ class ColorExtractionService {
     return _centroidsToHex(centroids);
   }
 
+  /// Returns the "#RRGGBB" hex string of the pixel at ([x], [y]) in [image].
+  ///
+  /// Reuses [_normalizeToRgb] so grayscale / palettized images read as a proper
+  /// RGB triplet instead of (luminance, 0, 0). Coordinates are clamped to the
+  /// image bounds so callers can pass raw (possibly off-edge) pointer math.
+  String hexAt(img.Image image, int x, int y) {
+    final img.Image rgb = _normalizeToRgb(image);
+    final int px = x.clamp(0, rgb.width - 1);
+    final int py = y.clamp(0, rgb.height - 1);
+    final img.Pixel pixel = rgb.getPixel(px, py);
+    final int r = pixel.r.toInt();
+    final int g = pixel.g.toInt();
+    final int b = pixel.b.toInt();
+    return '#${r.toRadixString(16).padLeft(2, '0').toUpperCase()}'
+        '${g.toRadixString(16).padLeft(2, '0').toUpperCase()}'
+        '${b.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+  }
+
   // ===========================================================================
   // Pixel sampling
   // ===========================================================================

@@ -259,19 +259,26 @@ class StructuredCaptionRepository {
     return template
         .replaceAll('{elementIndex}', elementIndex.toString())
         .replaceAll('{elementBbox}', _fmtBbox(bbox))
-        .replaceAll('{existingJson}', currentCaption.toJsonString())
-        .replaceAll('{instructionsBlock}', instructionsBlock);
+        .replaceAll('{instructionsBlock}', instructionsBlock)
+        .replaceAll('{existingJson}', currentCaption.toJsonString());
   }
 
   IdeogramElement _parseRecaptionResponse(
     String raw,
     IdeogramElement target,
   ) {
-    final String cleaned = _stripMarkdownFences(raw);
-    final Map<String, dynamic> json =
-        jsonDecode(cleaned) as Map<String, dynamic>;
+    final Map<String, dynamic> json;
+    final String desc;
+    try {
+      final String cleaned = _stripMarkdownFences(raw);
+      json = jsonDecode(cleaned) as Map<String, dynamic>;
+      desc = (json['desc'] as String?)?.trim() ?? '';
+    } catch (e) {
+      _logger.warning('Failed to parse recaption response: $e');
+      _logger.fine('Raw response was: $raw');
+      throw FormatException('Failed to parse recaption JSON response: $e');
+    }
 
-    final String desc = (json['desc'] as String?)?.trim() ?? '';
     if (desc.isEmpty) {
       _logger.warning('Recaption response missing desc. Raw: $raw');
       throw const FormatException('Recaption response missing "desc"');

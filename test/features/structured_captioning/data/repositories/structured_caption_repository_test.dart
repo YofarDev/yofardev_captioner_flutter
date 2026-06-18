@@ -610,11 +610,14 @@ void main() {
         elementIndex: 0,
       );
 
+      final IdeogramElement original =
+          caption.compositionalDeconstruction.elements.first;
       expect(updated.desc, 'fresh desc');
-      expect(updated.bbox, <int>[100, 100, 400, 400]);
-      expect(updated.type, 'obj');
-      expect(updated.colorPalette, <String>['#111111']);
+      expect(updated.bbox, original.bbox);
+      expect(updated.type, original.type);
+      expect(updated.colorPalette, original.colorPalette);
       expect(updated.text, isNull);
+      expect(identical(updated, original), isFalse);
     });
 
     test('overwrites text for text element when has_text true', () async {
@@ -698,9 +701,41 @@ void main() {
         ),
         throwsA(isA<FormatException>()),
       );
+      verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
     });
 
-    test('parses fenced / prose-wrapped JSON', () async {
+    test('throws FormatException on unparseable response', () async {
+      when(mockCaption.getCaption(any, any, any))
+          .thenAnswer((_) async => 'not json at all');
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 0,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+      // Cleanup must still fire on parse failure.
+      verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
+    });
+
+    test('throws FormatException when response is a JSON array, not object',
+        () async {
+      when(mockCaption.getCaption(any, any, any))
+          .thenAnswer((_) async => '[{"desc": "x"}]');
+      await expectLater(
+        repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 0,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('parses fenced JSON', () async {
       when(mockCaption.getCaption(any, any, any)).thenAnswer(
         (_) async => '```json\n{"desc": "ok", "has_text": false, "visible_text": null}\n```',
       );
@@ -747,7 +782,7 @@ void main() {
         captureAny,
       )).captured.single as String;
 
-      expect(capturedPrompt, contains('0'));
+      expect(capturedPrompt, contains('PROMPT 0 [100, 100, 400, 400]'));
       expect(capturedPrompt, contains('[100, 100, 400, 400]'));
       expect(capturedPrompt, contains('high_level_description'));
       expect(capturedPrompt, contains('focus on the branding'));

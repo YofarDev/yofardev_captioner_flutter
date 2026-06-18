@@ -1,17 +1,29 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import 'color_picker_dialog.dart';
+import 'image_eyedropper_dialog.dart';
 
 /// Editable row of color swatches with add/remove/pick.
 class ColorPaletteEditor extends StatelessWidget {
   const ColorPaletteEditor({
     required this.colors,
     required this.onChanged,
+    required this.imageFile,
+    this.elementBbox,
     super.key,
   });
 
   final List<String> colors;
   final ValueChanged<List<String>> onChanged;
+
+  /// Image used as the source for the eyedropper when adding a color.
+  final File imageFile;
+
+  /// Optional Ideogram `[y1, x1, y2, x2]` (0-1000) of the element whose palette
+  /// is being edited; drawn as a highlight inside the eyedropper.
+  final List<int>? elementBbox;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +56,19 @@ class ColorPaletteEditor extends StatelessWidget {
   }
 
   Future<void> _addColor(BuildContext context) async {
-    final String? newColor = await showColorPickerDialog(context);
-    if (newColor != null) {
-      final List<String> updated = List<String>.from(colors)..add(newColor);
+    final String? picked = await showImageEyedropperDialog(
+      context,
+      imageFile: imageFile,
+      elementBbox: elementBbox,
+    );
+    if (picked == null) return; // user cancelled the eyedropper
+    if (!context.mounted) return;
+    final String? refined = await showColorPickerDialog(
+      context,
+      initialColor: picked,
+    );
+    if (refined != null) {
+      final List<String> updated = List<String>.from(colors)..add(refined);
       onChanged(updated);
     }
   }

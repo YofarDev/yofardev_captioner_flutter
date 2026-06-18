@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 /// Shared bounding-box coordinate utilities.
@@ -74,4 +76,21 @@ List<int> rectToBbox(Rect rect, Rect paintedRect) {
 Color getContrastColor(Color bg) {
   final double luminance = bg.computeLuminance();
   return luminance > 0.5 ? Colors.black87 : Colors.white;
+}
+
+/// Converts a screen-space [local] point within [paintedRect] to the
+/// corresponding image-pixel coordinate, clamped to image bounds [imageSize].
+///
+/// Complements [getContainRect]: given the painted rect that [BoxFit.contain]
+/// produces, this maps a pointer position back to the source pixel.
+Point<int> localToImagePixel(Offset local, Rect paintedRect, Size imageSize) {
+  final int px = ((local.dx - paintedRect.left) / paintedRect.width *
+          imageSize.width)
+      .round()
+      .clamp(0, imageSize.width.toInt() - 1);
+  final int py = ((local.dy - paintedRect.top) / paintedRect.height *
+          imageSize.height)
+      .round()
+      .clamp(0, imageSize.height.toInt() - 1);
+  return Point<int>(px, py);
 }

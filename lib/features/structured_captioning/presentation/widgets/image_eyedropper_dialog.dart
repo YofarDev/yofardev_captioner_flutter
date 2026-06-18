@@ -1,8 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
+import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
 
 import '../../data/services/color_extraction_service.dart';
@@ -74,29 +75,38 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Pick a color from the image',
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'Inter',
-            fontSize: 14,
+    return Focus(
+      autofocus: true,
+      child: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.escape):
+              () => Navigator.of(context).pop(),
+        },
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            title: const Text(
+              'Pick a color from the image',
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Inter',
+                fontSize: 14,
+              ),
+            ),
+            actions: <Widget>[
+              IconButton(
+                tooltip: 'Cancel',
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
+          body: _buildBody(),
         ),
-        actions: <Widget>[
-          IconButton(
-            tooltip: 'Cancel',
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ],
       ),
-      body: _buildBody(),
     );
   }
 
@@ -170,15 +180,10 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
   void _pick(Offset local, Rect paintedRect) {
     if (!paintedRect.contains(local)) return; // ignore letterbox taps
     final img.Image image = _image!;
-    final int px = ((local.dx - paintedRect.left) / paintedRect.width *
-            image.width)
-        .round()
-        .clamp(0, image.width - 1);
-    final int py = ((local.dy - paintedRect.top) / paintedRect.height *
-            image.height)
-        .round()
-        .clamp(0, image.height - 1);
-    Navigator.of(context).pop(ColorExtractionService().hexAt(image, px, py));
+    final Point<int> pixel =
+        localToImagePixel(local, paintedRect, _imageSize!);
+    Navigator.of(context)
+        .pop(ColorExtractionService().hexAt(image, pixel.x, pixel.y));
   }
 }
 
@@ -218,24 +223,26 @@ class _LoupePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final int cx = ((cursor.dx - paintedRect.left) / paintedRect.width *
-            image.width)
-        .round()
-        .clamp(0, image.width - 1);
-    final int cy = ((cursor.dy - paintedRect.top) / paintedRect.height *
-            image.height)
-        .round()
-        .clamp(0, image.height - 1);
+    final Point<int> center = localToImagePixel(
+      cursor,
+      paintedRect,
+      Size(image.width.toDouble(), image.height.toDouble()),
+    );
+    final int cx = center.x;
+    final int cy = center.y;
 
     const double loupe = (_half * 2 + 1) * _cell;
     final Offset topLeft = _placeLoupe(cursor, loupe, size);
 
     // Sampled pixels.
+    final Paint cellPaint = Paint();
     for (int dy = -_half; dy <= _half; dy++) {
       for (int dx = -_half; dx <= _half; dx++) {
         final int px = (cx + dx).clamp(0, image.width - 1);
         final int py = (cy + dy).clamp(0, image.height - 1);
         final img.Pixel p = image.getPixel(px, py);
+        cellPaint.color =
+            Color.fromARGB(255, p.r.toInt(), p.g.toInt(), p.b.toInt());
         canvas.drawRect(
           Rect.fromLTWH(
             topLeft.dx + (dx + _half) * _cell,
@@ -243,8 +250,7 @@ class _LoupePainter extends CustomPainter {
             _cell,
             _cell,
           ),
-          Paint()
-            ..color = Color.fromARGB(255, p.r.toInt(), p.g.toInt(), p.b.toInt()),
+          cellPaint,
         );
       }
     }
@@ -316,5 +322,7 @@ class _LoupePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _LoupePainter old) =>
-      old.cursor != cursor || old.image != image;
+      old.cursor != cursor ||
+      old.image != image ||
+      old.paintedRect != paintedRect;
 }

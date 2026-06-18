@@ -14,12 +14,24 @@ File _solidPng(int w, int h, img.ColorRgb8 color) {
     }
   }
   final Directory tmp = Directory.systemTemp.createTempSync('eyedropper_test_');
+  _tempDirs.add(tmp);
   final File file = File('${tmp.path}/solid.png');
   file.writeAsBytesSync(img.encodePng(image));
   return file;
 }
 
+/// Temp dirs created during tests; cleaned up in [tearDown].
+final List<Directory> _tempDirs = <Directory>[];
+
 void main() {
+  tearDown(() {
+    for (final Directory d in _tempDirs) {
+      try {
+        d.deleteSync(recursive: true);
+      } catch (_) {}
+    }
+    _tempDirs.clear();
+  });
   testWidgets('tap on the image returns the center pixel hex',
       (WidgetTester tester) async {
     final File file = _solidPng(200, 200, img.ColorRgb8(255, 0, 0));
@@ -110,6 +122,7 @@ void main() {
   testWidgets('shows an error message when the image cannot be decoded',
       (WidgetTester tester) async {
     final Directory tmp = Directory.systemTemp.createTempSync('eyedropper_bad_');
+    _tempDirs.add(tmp);
     final File bad = File('${tmp.path}/not-an-image.png');
     bad.writeAsBytesSync(<int>[0, 1, 2, 3]); // garbage bytes
 
@@ -143,5 +156,56 @@ void main() {
     });
 
     expect(closed, isNull);
+  });
+
+  testWidgets('renders with an elementBbox highlight and still picks',
+      (WidgetTester tester) async {
+    final File file = _solidPng(200, 200, img.ColorRgb8(0, 0, 255));
+
+    late BuildContext capturedCtx;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (BuildContext c) {
+            capturedCtx = c;
+            return const SizedBox.expand();
+          },
+        ),
+      ),
+    );
+
+    // Same runAsync/pump pattern as the pick test above (real dart:io decode),
+    // but with an [elementBbox] supplied so the _BboxHighlightPainter path is
+    // exercised during build. The image is solid blue, so any pick → #0000FF.
+    String? picked;
+    await tester.runAsync(() async {
+      final Future<String?> result = showImageEyedropperDialog(
+        capturedCtx,
+        imageFile: file,
+        elementBbox: <int>[100, 150, 600, 700], // [y1, x1, y2, x2] 0-1000
+      );
+      await tester.pump(); // mount dialog → initState kicks off _decode()
+      await Future<void>.delayed(
+        const Duration(milliseconds: 100),
+      ); // let real I/O + decode finish
+      await tester.pump(); // rebuild after the post-decode setState
+      await tester.pump(const Duration(milliseconds: 10));
+
+      // The bbox highlight painter must not have thrown during build.
+      expect(
+        find.byKey(const ValueKey<String>('eyedropper-body')),
+        findsOneWidget,
+      );
+
+      final Offset center = tester.getCenter(
+        find.byKey(const ValueKey<String>('eyedropper-body')),
+      );
+      await tester.tapAt(center);
+      await tester.pumpAndSettle(); // dialog dismissed
+
+      picked = await result;
+    });
+
+    expect(picked, '#0000FF');
   });
 }

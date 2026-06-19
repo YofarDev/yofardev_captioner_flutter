@@ -27,6 +27,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     required LlmConfig llm,
     required String prompt,
     required CaptionOptions option,
+    bool scopeToFiltered = false,
   }) async {
     // Reset or create cancel completer
     _cancelCompleter = Completer<void>();
@@ -39,7 +40,11 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     );
 
     List<AppImage> imagesToCaption = <AppImage>[];
-    final List<AppImage> allImages = _imageListCubit.state.images;
+    // Capture the base set ONCE: filtered list when scoped, otherwise everything.
+    // Re-reading filteredImages mid-run would be unsafe if the search changes.
+    final List<AppImage> baseImages = scopeToFiltered
+        ? _imageListCubit.filteredImages
+        : _imageListCubit.state.images;
     // Capture the active category ONCE at the start so switching category tabs
     // mid-run doesn't redirect later captions into a different category.
     final String category = _imageListCubit.state.activeCategory ?? 'default';
@@ -58,16 +63,20 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         }
         imagesToCaption = <AppImage>[currentImage];
       case CaptionOptions.missing:
-        imagesToCaption = allImages
+        imagesToCaption = baseImages
             .where(
               (AppImage image) =>
                   (image.captions[category]?.text ?? '').isEmpty,
             )
             .toList();
       case CaptionOptions.all:
-        imagesToCaption = allImages
-            .where((AppImage image) => !image.isCaptionEdited)
-            .toList();
+        // When scoped, force re-caption every filtered image (drop the
+        // isCaptionEdited guard). Unscoped: preserve current skip-edited behavior.
+        imagesToCaption = scopeToFiltered
+            ? baseImages.toList()
+            : baseImages
+                .where((AppImage image) => !image.isCaptionEdited)
+                .toList();
     }
 
     final int totalImagesCount = imagesToCaption.length;

@@ -621,10 +621,16 @@ class _StopButton extends StatefulWidget {
 class _StopButtonState extends State<_StopButton>
     with SingleTickerProviderStateMixin {
   bool _hover = false;
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 900),
-  );
+  late final AnimationController _pulse;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulse = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+  }
 
   @override
   void didUpdateWidget(covariant _StopButton oldWidget) {

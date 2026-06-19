@@ -29,11 +29,16 @@ class CaptionService {
        _httpClient = httpClient ?? http.Client(),
        _imageResizer = imageResizer ?? const ImageResizer();
 
-  Future<String> getCaption(LlmConfig config, File image, String prompt) {
+  Future<String> getCaption(
+    LlmConfig config,
+    File image,
+    String prompt, {
+    int? maxTokens,
+  }) {
     if (config.providerType == LlmProviderType.localMlx) {
-      return _getLocalCaption(config, image, prompt);
+      return _getLocalCaption(config, image, prompt, maxTokens: maxTokens);
     } else {
-      return _getRemoteCaption(config, image, prompt);
+      return _getRemoteCaption(config, image, prompt, maxTokens: maxTokens);
     }
   }
 
@@ -59,19 +64,23 @@ class CaptionService {
   Future<String> _getLocalCaption(
     LlmConfig config,
     File image,
-    String prompt,
-  ) async {
+    String prompt, {
+    int? maxTokens,
+  }) async {
     File? imageToSend;
     try {
       imageToSend = await _imageResizer.resizeImageIfNecessary(image);
 
+      // Default to 4096 (enough for the structured deconstruction JSON) when
+      // the caller doesn't override — the model default is often too small.
+      final int effectiveMaxTokens = maxTokens ?? 4096;
       final List<String> arguments = <String>[
         '--model',
         config.model,
         '--temperature',
         '0.0',
         '--max-tokens',
-        '4096',
+        effectiveMaxTokens.toString(),
         '--prompt',
         prompt,
         '--image',
@@ -126,8 +135,9 @@ class CaptionService {
   Future<String> _getRemoteCaption(
     LlmConfig config,
     File image,
-    String prompt,
-  ) async {
+    String prompt, {
+    int? maxTokens,
+  }) async {
     File? imageToSend;
     try {
       if (config.url == null || config.apiKey == null) {
@@ -143,6 +153,7 @@ class CaptionService {
 
       final CaptionRequest request = CaptionRequest(
         model: config.model,
+        maxTokens: maxTokens,
         messages: <Message>[
           Message(
             role: 'user',

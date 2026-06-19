@@ -8,6 +8,7 @@ import 'dart:io' as _i10;
 
 import 'package:flutter_bloc/flutter_bloc.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
     as _i5;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
@@ -23,7 +24,7 @@ import 'package:yofardev_captioner/features/structured_captioning/data/models/vl
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
     as _i8;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
-    as _i12;
+    as _i13;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -52,8 +53,14 @@ class _FakeIdeogramCaption_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeVlmAnalysis_2 extends _i1.SmartFake implements _i4.VlmAnalysis {
-  _FakeVlmAnalysis_2(Object parent, Invocation parentInvocation)
+class _FakeIdeogramElement_2 extends _i1.SmartFake
+    implements _i3.IdeogramElement {
+  _FakeIdeogramElement_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeVlmAnalysis_3 extends _i1.SmartFake implements _i4.VlmAnalysis {
+  _FakeVlmAnalysis_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -374,10 +381,57 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as _i6.Future<_i3.IdeogramCaption>);
 
   @override
+  _i6.Future<_i3.IdeogramElement> recaptionElement({
+    required _i9.LlmConfig? config,
+    required _i10.File? imageFile,
+    required _i3.IdeogramCaption? currentCaption,
+    required int? elementIndex,
+    String? instructions,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#recaptionElement, [], {
+              #config: config,
+              #imageFile: imageFile,
+              #currentCaption: currentCaption,
+              #elementIndex: elementIndex,
+              #instructions: instructions,
+            }),
+            returnValue: _i6.Future<_i3.IdeogramElement>.value(
+              _FakeIdeogramElement_2(
+                this,
+                Invocation.method(#recaptionElement, [], {
+                  #config: config,
+                  #imageFile: imageFile,
+                  #currentCaption: currentCaption,
+                  #elementIndex: elementIndex,
+                  #instructions: instructions,
+                }),
+              ),
+            ),
+          )
+          as _i6.Future<_i3.IdeogramElement>);
+
+  @override
+  String computeAspectRatio(int? width, int? height) =>
+      (super.noSuchMethod(
+            Invocation.method(#computeAspectRatio, [width, height]),
+            returnValue: _i12.dummyValue<String>(
+              this,
+              Invocation.method(#computeAspectRatio, [width, height]),
+            ),
+          )
+          as String);
+
+  @override
+  String? extractJsonObject(String? raw) =>
+      (super.noSuchMethod(Invocation.method(#extractJsonObject, [raw]))
+          as String?);
+
+  @override
   _i4.VlmAnalysis parseAnalysisJson(Map<String, dynamic>? json) =>
       (super.noSuchMethod(
             Invocation.method(#parseAnalysisJson, [json]),
-            returnValue: _FakeVlmAnalysis_2(
+            returnValue: _FakeVlmAnalysis_3(
               this,
               Invocation.method(#parseAnalysisJson, [json]),
             ),
@@ -385,8 +439,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as _i4.VlmAnalysis);
 
   @override
-  List<_i12.SamDetection> matchDetectionsToObjects(
-    List<_i12.SamDetection>? detections,
+  List<_i13.SamDetection> matchDetectionsToObjects(
+    List<_i13.SamDetection>? detections,
     List<_i8.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
@@ -394,15 +448,15 @@ class MockStructuredCaptionRepository extends _i1.Mock
               detections,
               vlmObjects,
             ]),
-            returnValue: <_i12.SamDetection>[],
+            returnValue: <_i13.SamDetection>[],
           )
-          as List<_i12.SamDetection>);
+          as List<_i13.SamDetection>);
 
   @override
   _i3.IdeogramCaption buildIdeogramCaption(
     List<String>? globalPalette,
     _i4.VlmAnalysis? analysis,
-    List<_i12.SamDetection>? detections,
+    List<_i13.SamDetection>? detections,
     Map<int, List<String>>? elementPalettes,
     _i11.StructuredBatchOverrides? overrides,
   ) =>
@@ -434,4 +488,12 @@ class MockStructuredCaptionRepository extends _i1.Mock
             returnValue: false,
           )
           as bool);
+
+  @override
+  double computeIou(List<int>? a, List<int>? b) =>
+      (super.noSuchMethod(
+            Invocation.method(#computeIou, [a, b]),
+            returnValue: 0.0,
+          )
+          as double);
 }

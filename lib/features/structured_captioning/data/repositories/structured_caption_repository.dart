@@ -67,11 +67,14 @@ class StructuredCaptionRepository {
 
     // Step 2: VLM analysis.
     onProgress('Analyzing image with VLM...');
-    final String prompt = await _promptLoader.loadVisionAnalysisPrompt();
+    final String prompt = await _buildVisionPrompt(imageFile);
     final String vlmRawResponse = await _captionService.getCaption(
       config,
       imageFile,
       prompt,
+      // The deconstruction JSON is long; a low provider default would
+      // truncate it into malformed JSON. Enforce a sane floor.
+      maxTokens: 4096,
     );
     final VlmAnalysis analysis = _parseVlmResponse(vlmRawResponse);
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
@@ -104,9 +107,17 @@ class StructuredCaptionRepository {
         'Running SAM detection for ${samNames.length} individual objects…',
       );
       try {
+        // Pass each SAM-eligible object's VLM bbox as a box prompt so SAM3
+        // refines the indicated region instead of running a free-form text
+        // search (which can latch onto a wrong same-concept object). A null
+        // entry means the VLM supplied no bbox for that object → text-only.
+        final List<List<int>?> samBoxHints = samIndices
+            .map((int i) => vlmBboxes[i].bbox)
+            .toList();
         detections = await _samProcessService.detectObjects(
           imageFile.path,
           samNames,
+          vlmBboxes: samBoxHints,
         );
       } catch (e) {
         _logger.warning('SAM detection failed, using VLM bboxes: $e');
@@ -261,6 +272,54 @@ class StructuredCaptionRepository {
         .replaceAll('{elementBbox}', _fmtBbox(bbox))
         .replaceAll('{instructionsBlock}', instructionsBlock)
         .replaceAll('{existingJson}', currentCaption.toJsonString());
+  }
+
+  /// Builds the vision-analysis prompt, injecting the image's real aspect
+  /// ratio so the VLM sizes bboxes correctly (a `[0,0,500,500]` box is square
+  /// only on a square frame).
+  Future<String> _buildVisionPrompt(File imageFile) async {
+    final String template = await _promptLoader.loadVisionAnalysisPrompt();
+    final String aspectRatio = await _aspectRatioOfFile(imageFile);
+    return template.replaceAll('{{aspect_ratio}}', aspectRatio);
+  }
+
+  /// Computes a clean `W:H` aspect-ratio string for [imageFile], snapped to a
+  /// small denominator (≤16) so it matches the generator's ratio distribution
+  /// instead of ugly fractions like `1023:768`. Returns `1:1` on failure.
+  @visibleForTesting
+  String computeAspectRatio(int width, int height) {
+    if (width <= 0 || height <= 0) return '1:1';
+    final int g = width.gcd(height);
+    final int rw = width ~/ g;
+    final int rh = height ~/ g;
+    if (rw <= 16 && rh <= 16) return '$rw:$rh';
+    // Snap to the closest p:q with q ≤ 16.
+    const int maxDenom = 16;
+    final double target = width / height;
+    int bestP = 1;
+    int bestQ = 1;
+    double bestErr = double.infinity;
+    for (int q = 1; q <= maxDenom; q++) {
+      final int p = max(1, (target * q).round());
+      final double err = (p / q - target).abs();
+      if (err < bestErr) {
+        bestErr = err;
+        bestP = p;
+        bestQ = q;
+      }
+    }
+    return '$bestP:$bestQ';
+  }
+
+  Future<String> _aspectRatioOfFile(File imageFile) async {
+    try {
+      final Uint8List bytes = await imageFile.readAsBytes();
+      final img.Image? decoded = img.decodeImage(bytes);
+      if (decoded == null) return '1:1';
+      return computeAspectRatio(decoded.width, decoded.height);
+    } catch (_) {
+      return '1:1';
+    }
   }
 
   IdeogramElement _parseRecaptionResponse(
@@ -513,20 +572,56 @@ class StructuredCaptionRepository {
 
   /// Parses the VLM response string into a [VlmAnalysis].
   ///
-  /// Strips markdown code fences and handles common JSON formatting issues.
-  /// Makes 2 attempts — on first failure, tries a simplified prompt.
+  /// Strips markdown code fences and handles common JSON formatting issues
+  /// (stray preamble, trailing prose). On total failure throws so the caller
+  /// can retry with a simplified prompt.
   VlmAnalysis _parseVlmResponse(String raw) {
-    final String cleaned = _stripMarkdownFences(raw);
-
+    final String? jsonStr = _extractJsonObject(raw);
+    if (jsonStr == null) {
+      _logger.warning('Failed to parse VLM response: no JSON object found');
+      _logger.fine('Raw response was: $raw');
+      throw const FormatException(
+        'Failed to parse VLM JSON response: no JSON object found',
+      );
+    }
     try {
       final Map<String, dynamic> json =
-          jsonDecode(cleaned) as Map<String, dynamic>;
+          jsonDecode(jsonStr) as Map<String, dynamic>;
       return parseAnalysisJson(json);
     } catch (e) {
       _logger.warning('Failed to parse VLM response: $e');
       _logger.fine('Raw response was: $raw');
       throw FormatException('Failed to parse VLM JSON response: $e');
     }
+  }
+
+  /// Extracts the JSON object string from a raw VLM response.
+  ///
+  /// Handles: surrounding whitespace, prose preamble/postamble, and
+  /// ```json fenced blocks. Falls back to the outermost `{...}` span when the
+  /// fenced/trimmed content still won't parse. Returns null when no object is
+  /// found.
+  @visibleForTesting
+  String? extractJsonObject(String raw) => _extractJsonObject(raw);
+
+  String? _extractJsonObject(String raw) {
+    final String s = _stripMarkdownFences(raw);
+    // Fast path: already a clean JSON object.
+    final String trimmed = s.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        jsonDecode(trimmed);
+        return trimmed;
+      } catch (_) {
+        // Fall through to span extraction.
+      }
+    }
+    // Fallback: pull the outermost {...} span to tolerate stray prose and
+    // nested fences the model may add around the object.
+    final int start = s.indexOf('{');
+    final int end = s.lastIndexOf('}');
+    if (start == -1 || end == -1 || end <= start) return null;
+    return s.substring(start, end + 1);
   }
 
   String _stripMarkdownFences(String input) {
@@ -545,6 +640,47 @@ class StructuredCaptionRepository {
     return s;
   }
 
+  /// Normalizes a raw VLM bbox into the Ideogram `[y1, x1, y2, x2]` 0-1000
+  /// format, or returns null when the box is missing/malformed/degenerate.
+  ///
+  /// VLMs emit `[x1, y1, x2, y2]` regardless of prompt instructions and
+  /// occasionally produce out-of-range or inverted coordinates. This rounds,
+  /// clamps to [0, 1000], orders the corners, swaps to `[y1, x1, y2, x2]`,
+  /// and drops boxes with zero area so downstream SAM box-prompts, palette
+  /// extraction, and overlays never receive garbage.
+  @visibleForTesting
+  List<int>? normalizeBbox(dynamic raw) {
+    if (raw is! List || raw.length != 4) return null;
+    final List<int> v;
+    try {
+      v = raw
+          .map((dynamic e) => (e as num).round().clamp(0, 1000))
+          .toList();
+    } catch (_) {
+      // Non-numeric entries — not a usable bbox.
+      return null;
+    }
+    int x1 = v[0];
+    int y1 = v[1];
+    int x2 = v[2];
+    int y2 = v[3];
+    if (x2 < x1) {
+      final int t = x1;
+      x1 = x2;
+      x2 = t;
+    }
+    if (y2 < y1) {
+      final int t = y1;
+      y1 = y2;
+      y2 = t;
+    }
+    // Drop zero-area boxes (clamp may have collapsed them to a line/point).
+    if (x2 <= x1 || y2 <= y1) return null;
+    return <int>[y1, x1, y2, x2];
+  }
+
+  List<int>? _normalizeBbox(dynamic raw) => normalizeBbox(raw);
+
   @visibleForTesting
   VlmAnalysis parseAnalysisJson(Map<String, dynamic> json) {
     // Parse style.
@@ -562,22 +698,22 @@ class StructuredCaptionRepository {
         json['objects'] as List<dynamic>? ?? <dynamic>[];
     final List<VlmObject> objects = objectsJson.map((dynamic o) {
       final Map<String, dynamic> obj = o as Map<String, dynamic>;
-      List<int>? bbox;
-      final dynamic rawBbox = obj['bbox'];
-      if (rawBbox is List && rawBbox.length == 4) {
-        // VLMs return [x1, y1, x2, y2] regardless of prompt instructions.
-        // Swap to Ideogram [y1, x1, y2, x2] format.
-        final List<int> raw = rawBbox
-            .map((dynamic v) => (v as num).round())
-            .toList();
-        bbox = <int>[raw[1], raw[0], raw[3], raw[2]];
+      // Prefer the explicit `type` field (official schema). Fall back to the
+      // legacy `has_text` flag so older responses still parse.
+      String type = (obj['type'] as String?)?.toLowerCase() ?? '';
+      if (type != 'text' && type != 'obj') {
+        type = (obj['has_text'] as bool?) == true ? 'text' : 'obj';
       }
       return VlmObject(
         name: obj['name'] as String? ?? '',
         desc: obj['desc'] as String? ?? '',
-        hasText: obj['has_text'] as bool? ?? false,
-        visibleText: obj['visible_text'] as String?,
-        bbox: bbox,
+        type: type,
+        text: (obj['text'] as String?) ?? (obj['visible_text'] as String?),
+        // VLMs return [x1, y1, x2, y2] regardless of prompt instructions.
+        // Normalize: round, clamp to [0,1000], enforce ordering, swap to the
+        // Ideogram [y1, x1, y2, x2] format. Degenerate boxes become null so
+        // they don't poison SAM box-prompts, palette extraction, or overlays.
+        bbox: _normalizeBbox(obj['bbox']),
       );
     }).toList();
 
@@ -648,7 +784,15 @@ class StructuredCaptionRepository {
             bestIdx = vi;
           }
         }
-        results[vlmIndices[bestIdx]] = samDets[0];
+        // IoU gate: reject SAM detections that landed away from the chosen
+        // VLM region (e.g. SAM latched onto a different same-text object).
+        // A rejected slot falls through to the VLM-bbox fallback below.
+        if (_samMatchesVlm(
+          samDets[0].bbox,
+          vlmObjects[vlmIndices[bestIdx]].bbox,
+        )) {
+          results[vlmIndices[bestIdx]] = samDets[0];
+        }
       } else {
         // Greedy matching by ascending center distance.
         final List<_MatchPair> pairs = <_MatchPair>[];
@@ -673,6 +817,13 @@ class StructuredCaptionRepository {
         final Set<int> usedVlm = <int>{};
         for (final _MatchPair pair in pairs) {
           if (usedSam.contains(pair.samIdx) || usedVlm.contains(pair.vlmIdx)) {
+            continue;
+          }
+          // IoU gate: skip SAM detections that don't overlap the VLM region.
+          if (!_samMatchesVlm(
+            samDets[pair.samIdx].bbox,
+            vlmObjects[vlmIndices[pair.vlmIdx]].bbox,
+          )) {
             continue;
           }
           results[vlmIndices[pair.vlmIdx]] = samDets[pair.samIdx];
@@ -772,13 +923,13 @@ class StructuredCaptionRepository {
       final List<int>? bbox = det?.bbox ?? obj.bbox;
       final List<String>? elemPalette = elementPalettes[i];
 
-      if (obj.hasText) {
+      if (obj.type == 'text') {
         elements.add(
           IdeogramElement(
             type: 'text',
             bbox: bbox,
             desc: obj.desc,
-            text: obj.visibleText ?? '',
+            text: obj.text ?? '',
             colorPalette: elemPalette,
           ),
         );
@@ -849,6 +1000,49 @@ class StructuredCaptionRepository {
   static double _distance(Point<double>? a, Point<double>? b) {
     if (a == null || b == null) return double.infinity;
     return a.squaredDistanceTo(b);
+  }
+
+  /// IoU threshold below which a SAM detection is considered to have landed
+  /// on the wrong region and is rejected in favour of the VLM bbox. SAM is
+  /// meant to *refine* the VLM bbox, so a real match overlaps substantially;
+  /// a near-zero overlap means SAM segmented a different object.
+  static const double _samIouThreshold = 0.1;
+
+  /// Intersection-over-union of two [y1, x1, y2, x2] bboxes in 0-1000
+  /// normalized coordinates. Returns 0 for null or malformed input.
+  @visibleForTesting
+  double computeIou(List<int>? a, List<int>? b) {
+    if (a == null || b == null || a.length != 4 || b.length != 4) {
+      return 0.0;
+    }
+    final double ay1 = a[0].toDouble();
+    final double ax1 = a[1].toDouble();
+    final double ay2 = a[2].toDouble();
+    final double ax2 = a[3].toDouble();
+    final double by1 = b[0].toDouble();
+    final double bx1 = b[1].toDouble();
+    final double by2 = b[2].toDouble();
+    final double bx2 = b[3].toDouble();
+    final double interY1 = max(ay1, by1);
+    final double interX1 = max(ax1, bx1);
+    final double interY2 = min(ay2, by2);
+    final double interX2 = min(ax2, bx2);
+    final double interH = (interY2 - interY1).clamp(0.0, double.infinity);
+    final double interW = (interX2 - interX1).clamp(0.0, double.infinity);
+    final double inter = interH * interW;
+    final double areaA = (ay2 - ay1) * (ax2 - ax1);
+    final double areaB = (by2 - by1) * (bx2 - bx1);
+    final double union = areaA + areaB - inter;
+    if (union <= 0) return 0.0;
+    return inter / union;
+  }
+
+  /// Returns true if [samBbox] is a plausible refinement of [vlmBbox].
+  /// When [vlmBbox] is null there is no spatial hint to validate against,
+  /// so the SAM detection is accepted as-is.
+  bool _samMatchesVlm(List<int>? samBbox, List<int>? vlmBbox) {
+    if (vlmBbox == null) return true;
+    return computeIou(samBbox, vlmBbox) >= _samIouThreshold;
   }
 }
 

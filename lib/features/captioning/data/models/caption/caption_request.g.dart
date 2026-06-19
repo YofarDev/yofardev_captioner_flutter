@@ -13,6 +13,7 @@ CaptionRequest _$CaptionRequestFromJson(Map<String, dynamic> json) =>
       messages: (json['messages'] as List<dynamic>)
           .map((e) => Message.fromJson(e as Map<String, dynamic>))
           .toList(),
+      maxTokens: (json['max_tokens'] as num?)?.toInt(),
     );
 
 Map<String, dynamic> _$CaptionRequestToJson(CaptionRequest instance) =>
@@ -20,4 +21,5 @@ Map<String, dynamic> _$CaptionRequestToJson(CaptionRequest instance) =>
       'model': instance.model,
       'stream': instance.stream,
       'messages': instance.messages,
+      'max_tokens': ?instance.maxTokens,
     };

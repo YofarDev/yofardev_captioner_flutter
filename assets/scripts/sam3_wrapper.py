@@ -24,7 +24,6 @@ Note:
 import argparse
 import json
 import sys
-from collections import Counter
 
 def xyxy_to_ideogram(bbox, img_width, img_height):
     """Convert [x1, y1, x2, y2] pixel coords to [y1, x1, y2, x2] 0-1000 normalized."""
@@ -37,6 +36,17 @@ def xyxy_to_ideogram(bbox, img_width, img_height):
     ]
 
 
+def ideogram_to_xyxy(bbox, img_width, img_height):
+    """Convert [y1, x1, y2, x2] 0-1000 normalized to [x1, y1, x2, y2] pixel coords."""
+    y1, x1, y2, x2 = bbox
+    return [
+        x1 * img_width / 1000.0,
+        y1 * img_height / 1000.0,
+        x2 * img_width / 1000.0,
+        y2 * img_height / 1000.0,
+    ]
+
+
 def main():
     parser = argparse.ArgumentParser(description="SAM3 object detection wrapper")
     parser.add_argument("--image", required=True, help="Path to input image")
@@ -46,6 +56,15 @@ def main():
         help='JSON array of object name strings, e.g. \'["cat","dog"]\'',
     )
     parser.add_argument(
+        "--boxes",
+        default=None,
+        help='Optional JSON array parallel to --objects. Each entry is a '
+        '[y1, x1, y2, x2] 0-1000 normalized box hint or null. When provided, '
+        'SAM3 is guided to that region (box prompt) instead of running a '
+        'free-form text search over the whole image — this prevents SAM from '
+        'latching onto a different same-concept object.',
+    )
+    parser.add_argument(
         "--model",
         default="mlx-community/sam3.1-bf16",
         help="SAM3 model ID (default: mlx-community/sam3.1-bf16)",
@@ -53,6 +72,12 @@ def main():
     args = parser.parse_args()
 
     object_names = json.loads(args.objects)
+    # Box hints parallel to object_names; null entry = no hint for that object.
+    object_boxes = json.loads(args.boxes) if args.boxes else []
+    if len(object_boxes) < len(object_names):
+        object_boxes += [None] * (len(object_names) - len(object_boxes))
+    elif len(object_boxes) > len(object_names):
+        object_boxes = object_boxes[: len(object_names)]
 
     try:
         from PIL import Image
@@ -91,50 +116,59 @@ def main():
     predictor = Sam3Predictor(model, processor, score_threshold=0.3)
 
     image = Image.open(args.image).convert("RGB")
+    img_w, img_h = image.size
 
-    # Deduplicate names — call SAM once per unique name and take top-N
-    # detections where N is how many times that name appears in the input.
-    name_counts = Counter(object_names)
+    def top_bboxes_for_text(name, count):
+        """Free-form text search: return up to `count` bboxes, best score first."""
+        result = predictor.predict(image, text_prompt=name)
+        if result.scores is None or len(result.scores) == 0:
+            return []
+        order = sorted(
+            range(len(result.scores)),
+            key=lambda i: result.scores[i],
+            reverse=True,
+        )
+        return [
+            xyxy_to_ideogram(result.boxes[i].tolist(), img_w, img_h)
+            for i in order[:count]
+        ]
 
-    # Per-name queues of SAM bboxes (top-N by score).
-    per_name_bboxes: dict[str, list] = {}
-    for name in name_counts:
-        count = name_counts[name]
+    def box_guided_bbox(name, box_hint):
+        """Box-guided search: return the single best bbox for the concept near
+        the hint. The box acts as a positive visual exemplar so SAM3 looks in
+        the right region instead of searching the whole image."""
+        xyxy = ideogram_to_xyxy(box_hint, img_w, img_h)
+        result = predictor.predict(image, text_prompt=name, boxes=[xyxy])
+        if result.scores is None or len(result.scores) == 0:
+            return None
+        best = max(range(len(result.scores)), key=lambda i: result.scores[i])
+        return xyxy_to_ideogram(result.boxes[best].tolist(), img_w, img_h)
+
+    # Cache free-form text detections per name so duplicate names without box
+    # hints each get a distinct (next-best) bbox. Text encoding is cached
+    # inside the predictor, so repeated prompts are cheap.
+    text_cache = {}
+    consumed = {}
+
+    results = []
+    for name, box_hint in zip(object_names, object_boxes):
+        bbox_out = None
         try:
-            result = predictor.predict(image, text_prompt=name)
-            if result.scores is not None and len(result.scores) > 0:
-                # Sort indices by score descending, take top `count`.
-                sorted_idx = sorted(
-                    range(len(result.scores)),
-                    key=lambda i: result.scores[i],
-                    reverse=True,
-                )
-                top_idx = sorted_idx[:count]
-                bboxes = []
-                for idx in top_idx:
-                    bbox = xyxy_to_ideogram(
-                        result.boxes[idx].tolist(), image.width, image.height
-                    )
-                    bboxes.append(bbox)
-                per_name_bboxes[name] = bboxes
+            if box_hint is not None:
+                bbox_out = box_guided_bbox(name, box_hint)
             else:
-                per_name_bboxes[name] = []
+                if name not in text_cache:
+                    text_cache[name] = top_bboxes_for_text(
+                        name, object_names.count(name)
+                    )
+                queue = text_cache[name]
+                idx = consumed.get(name, 0)
+                if idx < len(queue):
+                    bbox_out = queue[idx]
+                consumed[name] = idx + 1
         except Exception as e:
             print(f"SAM detection failed for '{name}': {e}", file=sys.stderr)
-            per_name_bboxes[name] = []
-
-    # Expand back to original order, popping from each name's queue.
-    # Track how many we've consumed per name so far.
-    consumed: dict[str, int] = {name: 0 for name in name_counts}
-    results = []
-    for name in object_names:
-        queue = per_name_bboxes.get(name, [])
-        idx = consumed[name]
-        if idx < len(queue):
-            results.append({"name": name, "bbox": queue[idx]})
-        else:
-            results.append({"name": name, "bbox": None})
-        consumed[name] = idx + 1
+        results.append({"name": name, "bbox": bbox_out})
 
     print(json.dumps(results))
 

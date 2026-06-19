@@ -40,8 +40,8 @@ Map<String, dynamic> _$VlmStyleToJson(VlmStyle instance) => <String, dynamic>{
 VlmObject _$VlmObjectFromJson(Map<String, dynamic> json) => VlmObject(
   name: json['name'] as String,
   desc: json['desc'] as String,
-  hasText: json['has_text'] as bool,
-  visibleText: json['visible_text'] as String?,
+  type: json['type'] as String? ?? 'obj',
+  text: json['text'] as String?,
   bbox: (json['bbox'] as List<dynamic>?)
       ?.map((e) => (e as num).toInt())
       .toList(),
@@ -50,7 +50,7 @@ VlmObject _$VlmObjectFromJson(Map<String, dynamic> json) => VlmObject(
 Map<String, dynamic> _$VlmObjectToJson(VlmObject instance) => <String, dynamic>{
   'name': instance.name,
   'desc': instance.desc,
-  'has_text': instance.hasText,
-  'visible_text': instance.visibleText,
+  'type': instance.type,
+  'text': instance.text,
   'bbox': instance.bbox,
 };

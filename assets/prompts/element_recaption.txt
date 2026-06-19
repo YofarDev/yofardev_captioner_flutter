@@ -21,3 +21,14 @@ Rules:
 - When the element is a text element, read the visible text into "visible_text"
   and set "has_text": true. If the text is illegible, set "has_text": false
   and "visible_text": null.
+- For text elements, "desc" must describe the sign as if to someone who CANNOT
+  READ the language — they see shape, color, material, font style, and
+  position, but never the letters. So describe the PHYSICAL OBJECT and its
+  STYLE only (font, color, size, logo style, position relative to neighbors).
+  The literal characters live ONLY in "visible_text"; "desc" must never quote,
+  paraphrase, or reference them (no "reads '...'", "says '...'", "the text
+  '...'", "containing '...'"). Keep it to ~10-25 words.
+- SELF-CHECK before output: if ANY character from "visible_text" appears in
+  "desc" — even partly, even paraphrased or quoted — rewrite "desc" to remove
+  it. Example — visible_text "Nyon": GOOD "Blue rectangular metal road sign
+  with white sans-serif characters on a pole." BAD "A blue sign reading 'Nyon'."

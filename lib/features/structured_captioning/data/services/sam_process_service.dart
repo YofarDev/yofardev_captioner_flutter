@@ -99,25 +99,39 @@ class SamProcessService {
 
   /// Runs SAM3 detection for each object name via the Python wrapper script.
   ///
+  /// [vlmBboxes] is an optional list parallel to [objectNames]: each entry is
+  /// the VLM-provided bbox `[y1, x1, y2, x2]` (0-1000 normalized) for that
+  /// object, or `null` when the VLM supplied none. When present, the wrapper
+  /// passes each bbox to SAM3 as a box prompt so detection is guided to the
+  /// right region instead of searching the whole image.
+  ///
   /// Returns an empty list (triggering VLM-bbox fallback) if the subprocess
   /// fails or Python/mlx_vlm is not installed.
   Future<List<SamDetection>> detectObjects(
     String imagePath,
-    List<String> objectNames,
-  ) async {
+    List<String> objectNames, {
+    List<List<int>?>? vlmBboxes,
+  }) async {
     final String objectsJson = jsonEncode(objectNames);
 
     try {
       final String scriptPath = await _ensureScriptExtracted();
       final String python = await findSamPythonForTest();
 
-      final ProcessResult result = await _processRunner.run(python, <String>[
+      final List<String> args = <String>[
         scriptPath,
         '--image',
         imagePath,
         '--objects',
         objectsJson,
-      ]);
+      ];
+      // Only forward box hints when provided, keeping the call
+      // backwards-compatible for callers that have none.
+      if (vlmBboxes != null) {
+        args.addAll(<String>['--boxes', jsonEncode(vlmBboxes)]);
+      }
+
+      final ProcessResult result = await _processRunner.run(python, args);
 
       if (result.exitCode != 0) {
         _logger.warning(

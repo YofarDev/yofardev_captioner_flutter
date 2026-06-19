@@ -173,11 +173,46 @@ void main() {
 
         final VlmAnalysis analysis = repo.parseAnalysisJson(json);
         expect(analysis.objects[0].bbox, isNull);
-        expect(analysis.objects[0].visibleText, isNull);
+        expect(analysis.objects[0].type, 'obj'); // default when type absent
+        expect(analysis.objects[0].text, isNull);
         expect(analysis.style.medium, 'photograph'); // default
       });
 
-      test('parses text objects correctly', () {
+      test('parses explicit type/text fields', () {
+        final Map<String, dynamic> json = <String, dynamic>{
+          'high_level_description': '',
+          'style': <String, dynamic>{
+            'medium': 'photograph',
+            'aesthetics': '',
+            'lighting': '',
+            'photo_or_art': '',
+          },
+          'background': '',
+          'objects': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'name': 'Sign',
+              'desc': 'a stop sign',
+              'type': 'text',
+              'text': 'STOP',
+              'bbox': <int>[100, 100, 300, 300],
+            },
+            <String, dynamic>{
+              'name': 'Car',
+              'desc': 'a red car',
+              'type': 'obj',
+              'bbox': <int>[200, 100, 600, 400],
+            },
+          ],
+        };
+
+        final VlmAnalysis analysis = repo.parseAnalysisJson(json);
+        expect(analysis.objects[0].type, 'text');
+        expect(analysis.objects[0].text, 'STOP');
+        expect(analysis.objects[1].type, 'obj');
+        expect(analysis.objects[1].text, isNull);
+      });
+
+      test('falls back to has_text when type is absent (backwards compat)', () {
         final Map<String, dynamic> json = <String, dynamic>{
           'high_level_description': '',
           'style': <String, dynamic>{
@@ -193,14 +228,146 @@ void main() {
               'desc': 'a stop sign',
               'has_text': true,
               'visible_text': 'STOP',
-              'bbox': <int>[100, 100, 300, 300],
+            },
+            <String, dynamic>{'name': 'Car', 'desc': 'a car', 'has_text': false},
+          ],
+        };
+
+        final VlmAnalysis analysis = repo.parseAnalysisJson(json);
+        // Legacy has_text:true → derived type 'text', text from visible_text.
+        expect(analysis.objects[0].type, 'text');
+        expect(analysis.objects[0].text, 'STOP');
+        // Legacy has_text:false → derived type 'obj'.
+        expect(analysis.objects[1].type, 'obj');
+      });
+
+      test('drops malformed and degenerate bboxes during parse', () {
+        final Map<String, dynamic> json = <String, dynamic>{
+          'high_level_description': '',
+          'style': <String, dynamic>{
+            'medium': 'photograph',
+            'aesthetics': '',
+            'lighting': '',
+            'photo_or_art': '',
+          },
+          'background': '',
+          'objects': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'name': 'A',
+              'desc': '',
+              'has_text': false,
+              'bbox': <int>[100, 200, 300, 400], // valid x1,y1,x2,y2
+            },
+            <String, dynamic>{
+              'name': 'B',
+              'desc': '',
+              'has_text': false,
+              'bbox': <int>[50, 60], // wrong length → null
+            },
+            <String, dynamic>{
+              'name': 'C',
+              'desc': '',
+              'has_text': false,
+              'bbox': <String>['x', 'y', 'z', 'w'], // non-numeric → throws → null
+            },
+            <String, dynamic>{
+              'name': 'D',
+              'desc': '',
+              'has_text': false,
+              'bbox': <int>[-50, 200, 5000, 400], // out of range → clamped
             },
           ],
         };
 
         final VlmAnalysis analysis = repo.parseAnalysisJson(json);
-        expect(analysis.objects[0].hasText, isTrue);
-        expect(analysis.objects[0].visibleText, 'STOP');
+        expect(analysis.objects[0].bbox, <int>[200, 100, 400, 300]); // A valid
+        expect(analysis.objects[1].bbox, isNull); // B wrong length
+        expect(analysis.objects[2].bbox, isNull); // C non-numeric
+        expect(analysis.objects[3].bbox, <int>[200, 0, 400, 1000]); // D clamped
+      });
+    });
+
+    // =========================================================================
+    // normalizeBbox
+    // =========================================================================
+
+    group('normalizeBbox', () {
+      test('swaps [x1,y1,x2,y2] to [y1,x1,y2,x2]', () {
+        expect(repo.normalizeBbox(<int>[100, 200, 300, 400]),
+            <int>[200, 100, 400, 300]);
+      });
+
+      test('clamps out-of-range values to [0,1000]', () {
+        expect(repo.normalizeBbox(<int>[-50, 200, 1500, 400]),
+            <int>[200, 0, 400, 1000]);
+      });
+
+      test('orders inverted corners', () {
+        // Given as [x2,y2,x1,y1] effectively → still normalized correctly.
+        expect(repo.normalizeBbox(<int>[300, 400, 100, 200]),
+            <int>[200, 100, 400, 300]);
+      });
+
+      test('returns null for zero-area / line boxes', () {
+        expect(repo.normalizeBbox(<int>[100, 100, 100, 400]), isNull); // zero width
+        expect(repo.normalizeBbox(<int>[100, 200, 300, 200]), isNull); // zero height
+      });
+
+      test('returns null for malformed input', () {
+        expect(repo.normalizeBbox(null), isNull);
+        expect(repo.normalizeBbox(<int>[1, 2, 3]), isNull);
+        expect(repo.normalizeBbox('notabox'), isNull);
+      });
+    });
+
+    // =========================================================================
+    // computeAspectRatio
+    // =========================================================================
+
+    group('computeAspectRatio', () {
+      test('reduces clean ratios by gcd', () {
+        expect(repo.computeAspectRatio(1920, 1080), '16:9');
+        expect(repo.computeAspectRatio(1024, 1024), '1:1');
+        expect(repo.computeAspectRatio(1080, 1920), '9:16');
+        expect(repo.computeAspectRatio(1500, 500), '3:1');
+      });
+
+      test('snaps ugly fractions to a small-denominator ratio', () {
+        // 1023x768 ≈ 1.330 → 4:3 (1.333) is the closest with denom ≤ 16.
+        expect(repo.computeAspectRatio(1023, 768), '4:3');
+      });
+
+      test('returns 1:1 for non-positive dimensions', () {
+        expect(repo.computeAspectRatio(0, 0), '1:1');
+        expect(repo.computeAspectRatio(-10, 100), '1:1');
+      });
+    });
+
+    // =========================================================================
+    // extractJsonObject
+    // =========================================================================
+
+    group('extractJsonObject', () {
+      test('returns clean object as-is', () {
+        const String raw = '{"a": 1}';
+        expect(repo.extractJsonObject(raw), raw);
+      });
+
+      test('strips markdown fences', () {
+        const String raw = '```json\n{"a": 1}\n```';
+        expect(repo.extractJsonObject(raw), '{"a": 1}');
+      });
+
+      test('falls back to outermost braces with prose around it', () {
+        const String raw = 'Here is the caption:\n{"high_level_description": "x"}\nDone.';
+        expect(
+          repo.extractJsonObject(raw),
+          '{"high_level_description": "x"}',
+        );
+      });
+
+      test('returns null when no object is present', () {
+        expect(repo.extractJsonObject('no json here at all'), isNull);
       });
     });
 
@@ -326,6 +493,98 @@ void main() {
         expect(result[0].bbox, isNull); // Sky: no bbox anywhere
         expect(result[1].bbox, <int>[210, 210, 290, 290]); // Bird: SAM
       });
+
+      test('rejects SAM detection that landed on a different region (IoU gate)',
+          () {
+        // Mirrors the real failure: SAM returned the Nyon-sign bbox for BOTH
+        // the "Nyon Sign" and "Text Banner" prompts. The Text-Banner SAM bbox
+        // does not overlap the VLM's top-banner bbox at all (IoU = 0), so it
+        // must fall back to the VLM bbox instead of duplicating Nyon Sign.
+        final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
+          const VlmObjectBboxPair(
+            name: 'Nyon Sign',
+            bbox: <int>[356, 756, 492, 988],
+          ),
+          const VlmObjectBboxPair(
+            name: 'Text Banner',
+            bbox: <int>[0, 0, 88, 998],
+          ),
+        ];
+
+        final List<SamDetection> samDetections = <SamDetection>[
+          // SAM correctly refines Nyon Sign.
+          const SamDetection(name: 'Nyon Sign', bbox: <int>[353, 735, 504, 1000]),
+          // SAM wrongly returns the Nyon-sign region again for "Text Banner".
+          const SamDetection(
+            name: 'Text Banner',
+            bbox: <int>[353, 735, 505, 1000],
+          ),
+        ];
+
+        final List<SamDetection> result = repo.matchDetectionsToObjects(
+          samDetections,
+          vlmObjects,
+        );
+
+        expect(result, hasLength(2));
+        // Nyon Sign: SAM overlaps VLM well (IoU ~0.79) → kept.
+        expect(result[0].bbox, <int>[353, 735, 504, 1000]);
+        // Text Banner: SAM overlaps VLM with IoU 0 → rejected, VLM bbox used.
+        expect(result[1].bbox, <int>[0, 0, 88, 998]);
+      });
+
+      test('keeps SAM detection that overlaps the VLM region (IoU gate)', () {
+        final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
+          const VlmObjectBboxPair(name: 'Cat', bbox: <int>[100, 100, 300, 300]),
+        ];
+        final List<SamDetection> samDetections = <SamDetection>[
+          // Slightly larger but mostly overlapping — IoU well above 0.1.
+          const SamDetection(name: 'Cat', bbox: <int>[90, 90, 320, 320]),
+        ];
+
+        final List<SamDetection> result = repo.matchDetectionsToObjects(
+          samDetections,
+          vlmObjects,
+        );
+
+        expect(result[0].bbox, <int>[90, 90, 320, 320]);
+      });
+
+      test('accepts SAM detection when VLM bbox is null (no spatial hint)', () {
+        final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
+          const VlmObjectBboxPair(name: 'Sky'), // no bbox
+        ];
+        final List<SamDetection> samDetections = <SamDetection>[
+          const SamDetection(name: 'Sky', bbox: <int>[0, 0, 500, 500]),
+        ];
+
+        final List<SamDetection> result = repo.matchDetectionsToObjects(
+          samDetections,
+          vlmObjects,
+        );
+
+        expect(result[0].bbox, <int>[0, 0, 500, 500]);
+      });
+
+      test('1:N assignment respects IoU gate (rejects far SAM)', () {
+        // Two same-name VLM objects; the only SAM detection is near neither.
+        final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
+          const VlmObjectBboxPair(name: 'Cat', bbox: <int>[100, 100, 200, 200]),
+          const VlmObjectBboxPair(name: 'Cat', bbox: <int>[700, 700, 800, 800]),
+        ];
+        final List<SamDetection> samDetections = <SamDetection>[
+          const SamDetection(name: 'Cat', bbox: <int>[400, 400, 500, 500]),
+        ];
+
+        final List<SamDetection> result = repo.matchDetectionsToObjects(
+          samDetections,
+          vlmObjects,
+        );
+
+        // Neither VLM cat overlaps the SAM detection → both fall back to VLM.
+        expect(result[0].bbox, <int>[100, 100, 200, 200]);
+        expect(result[1].bbox, <int>[700, 700, 800, 800]);
+      });
     });
 
     // =========================================================================
@@ -344,8 +603,8 @@ void main() {
           ),
           background: 'clear blue sky',
           objects: <VlmObject>[
-            VlmObject(name: 'Tree', desc: 'oak tree', hasText: false),
-            VlmObject(name: 'Bench', desc: 'wooden park bench', hasText: false),
+            VlmObject(name: 'Tree', desc: 'oak tree'),
+            VlmObject(name: 'Bench', desc: 'wooden park bench'),
           ],
         );
 
@@ -402,8 +661,8 @@ void main() {
           ),
           background: 'white wall',
           objects: <VlmObject>[
-            VlmObject(name: 'Chair', desc: 'red chair', hasText: false),
-            VlmObject(name: 'Chair', desc: 'blue chair', hasText: false),
+            VlmObject(name: 'Chair', desc: 'red chair'),
+            VlmObject(name: 'Chair', desc: 'blue chair'),
           ],
         );
 
@@ -447,7 +706,7 @@ void main() {
         );
       });
 
-      test('builds text elements for objects with hasText=true', () {
+      test('builds text elements for objects with type=text', () {
         const VlmAnalysis analysis = VlmAnalysis(
           highLevelDescription: '',
           style: VlmStyle(
@@ -461,8 +720,8 @@ void main() {
             VlmObject(
               name: 'Sign',
               desc: 'stop sign',
-              hasText: true,
-              visibleText: 'STOP',
+              type: 'text',
+              text: 'STOP',
             ),
           ],
         );
@@ -495,7 +754,6 @@ void main() {
             VlmObject(
               name: 'Cat',
               desc: 'tabby',
-              hasText: false,
               bbox: <int>[100, 100, 300, 300],
             ),
           ],
@@ -528,7 +786,7 @@ void main() {
           ),
           background: '',
           objects: <VlmObject>[
-            VlmObject(name: 'Rock', desc: 'grey rock', hasText: false),
+            VlmObject(name: 'Rock', desc: 'grey rock'),
           ],
         );
 
@@ -544,6 +802,57 @@ void main() {
           caption.compositionalDeconstruction.elements[0].colorPalette,
           isNull,
         );
+      });
+    });
+
+    // =========================================================================
+    // computeIou
+    // =========================================================================
+
+    group('computeIou', () {
+      test('returns 1.0 for identical bboxes', () {
+        expect(
+          repo.computeIou(<int>[100, 100, 300, 300], <int>[100, 100, 300, 300]),
+          1.0,
+        );
+      });
+
+      test('returns 0 for non-overlapping bboxes', () {
+        expect(
+          repo.computeIou(<int>[0, 0, 50, 50], <int>[60, 60, 100, 100]),
+          0.0,
+        );
+      });
+
+      test('returns 0 for null or malformed input', () {
+        expect(repo.computeIou(null, <int>[0, 0, 10, 10]), 0.0);
+        expect(repo.computeIou(<int>[0, 0], <int>[0, 0, 10, 10]), 0.0);
+      });
+
+      test('computes partial overlap', () {
+        // a = 100x100 = 10000, b = 100x100 = 10000, intersection = 50x50 = 2500
+        // union = 10000 + 10000 - 2500 = 17500 → IoU = 2500/17500 ≈ 0.1429.
+        final double iou = repo.computeIou(
+          <int>[0, 0, 100, 100],
+          <int>[50, 50, 150, 150],
+        );
+        expect(iou, closeTo(0.1429, 0.001));
+      });
+
+      test('Nyon Sign VLM vs SAM bbox has high IoU (~0.79)', () {
+        final double iou = repo.computeIou(
+          <int>[356, 756, 492, 988],
+          <int>[353, 735, 504, 1000],
+        );
+        expect(iou, closeTo(0.79, 0.02));
+      });
+
+      test('Text Banner VLM vs wrong SAM bbox has IoU 0', () {
+        final double iou = repo.computeIou(
+          <int>[0, 0, 88, 998],
+          <int>[353, 735, 505, 1000],
+        );
+        expect(iou, 0.0);
       });
     });
   });

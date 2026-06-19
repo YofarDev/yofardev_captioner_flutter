@@ -235,6 +235,81 @@ void main() {
         expect(results[1].bbox, isNull);
         expect(results[2].bbox, isNotNull);
       });
+
+      test('forwards --boxes when vlmBboxes is provided', () async {
+        // ignore: invalid_use_of_visible_for_testing_member
+        SamProcessService.cachedPythonPath = 'python3.11';
+
+        const String imagePath = '/tmp/img.jpg';
+        const List<String> objectNames = <String>['cat', 'dog'];
+        final List<List<int>?> vlmBboxes = <List<int>?>[
+          <int>[100, 200, 300, 400],
+          null, // dog has no VLM bbox → text-only inside the wrapper
+        ];
+
+        final List<Map<String, dynamic>> samOutput = <Map<String, dynamic>>[
+          <String, dynamic>{
+            'name': 'cat',
+            'bbox': <int>[110, 210, 290, 390],
+          },
+          <String, dynamic>{'name': 'dog', 'bbox': null},
+        ];
+
+        when(
+          mockRunner.run(
+            'python3.11',
+            argThat(
+              containsAll(<String>[
+                '--image',
+                imagePath,
+                '--objects',
+                jsonEncode(objectNames),
+                '--boxes',
+                jsonEncode(vlmBboxes),
+              ]),
+            ),
+          ),
+        ).thenAnswer(
+          (_) async => ProcessResult(0, 0, jsonEncode(samOutput), ''),
+        );
+
+        final List<SamDetection> results = await service.detectObjects(
+          imagePath,
+          objectNames,
+          vlmBboxes: vlmBboxes,
+        );
+
+        expect(results, hasLength(2));
+        expect(results[0].bbox, <int>[110, 210, 290, 390]);
+        expect(results[1].bbox, isNull);
+      });
+
+      test('omits --boxes when vlmBboxes is null (backwards compatible)',
+          () async {
+        // ignore: invalid_use_of_visible_for_testing_member
+        SamProcessService.cachedPythonPath = 'python3.11';
+
+        when(
+          mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
+        ).thenAnswer(
+          (_) async => ProcessResult(
+            0,
+            0,
+            jsonEncode(
+              <Map<String, dynamic>>[
+                <String, dynamic>{'name': 'cat', 'bbox': null},
+              ],
+            ),
+            '',
+          ),
+        );
+
+        await service.detectObjects('/tmp/img.jpg', <String>['cat']);
+
+        verify(
+          mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
+        ).called(1);
+      });
     });
   });
 }

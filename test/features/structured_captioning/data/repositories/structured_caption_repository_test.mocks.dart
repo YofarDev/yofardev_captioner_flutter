@@ -44,14 +44,23 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
   _i3.Future<String> getCaption(
     _i4.LlmConfig? config,
     _i5.File? image,
-    String? prompt,
-  ) =>
+    String? prompt, {
+    int? maxTokens,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#getCaption, [config, image, prompt]),
+            Invocation.method(
+              #getCaption,
+              [config, image, prompt],
+              {#maxTokens: maxTokens},
+            ),
             returnValue: _i3.Future<String>.value(
               _i6.dummyValue<String>(
                 this,
-                Invocation.method(#getCaption, [config, image, prompt]),
+                Invocation.method(
+                  #getCaption,
+                  [config, image, prompt],
+                  {#maxTokens: maxTokens},
+                ),
               ),
             ),
           )

@@ -66,8 +66,8 @@ class VlmObject extends Equatable {
   const VlmObject({
     required this.name,
     required this.desc,
-    required this.hasText,
-    this.visibleText,
+    this.type = 'obj',
+    this.text,
     this.bbox,
   });
 
@@ -77,11 +77,16 @@ class VlmObject extends Equatable {
   final String name;
   final String desc;
 
-  @JsonKey(name: 'has_text')
-  final bool hasText;
+  /// Element type: `"obj"` or `"text"`. Mirrors the Ideogram4 schema's `type`
+  /// field. The VLM classifies directly — an object that merely bears
+  /// incidental text (a car with a license plate) is `"obj"`, while a text
+  /// artifact (a sign, banner, logo-as-text) is `"text"`.
+  @JsonKey(defaultValue: 'obj')
+  final String type;
 
-  @JsonKey(name: 'visible_text')
-  final String? visibleText;
+  /// Literal characters, only meaningful when [type] is `"text"`. Mirrors the
+  /// Ideogram4 `text` field.
+  final String? text;
 
   /// Bounding box as [y1, x1, y2, x2] in 0-1000 normalized coordinates.
   final List<int>? bbox;
@@ -89,5 +94,5 @@ class VlmObject extends Equatable {
   Map<String, dynamic> toJson() => _$VlmObjectToJson(this);
 
   @override
-  List<Object?> get props => <Object?>[name, desc, hasText, visibleText, bbox];
+  List<Object?> get props => <Object?>[name, desc, type, text, bbox];
 }

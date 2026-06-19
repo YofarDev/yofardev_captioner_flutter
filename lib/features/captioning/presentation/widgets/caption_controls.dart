@@ -304,6 +304,8 @@ class _CaptionControlsState extends State<CaptionControls> {
         ? Colors.teal.withAlpha(100)
         : Colors.green.withAlpha(100);
     final Color progressFg = isIdeogram ? Colors.teal : Colors.green;
+    final bool scoped =
+        _scopeToFiltered && imageListState.searchQuery.isNotEmpty;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -351,14 +353,14 @@ class _CaptionControlsState extends State<CaptionControls> {
                                   : null,
                               debugMode: configState.llmConfigs.debugMode,
                               disableSam: configState.llmConfigs.disableSam,
-                              scopeToFiltered: _scopeToFiltered,
+                              scopeToFiltered: scoped,
                             );
                       } else {
                         context.read<CaptioningCubit>().runCaptioner(
                           llm: llm,
                           prompt: configState.llmConfigs.selectedPrompt!,
                           option: _selectedOption,
-                          scopeToFiltered: _scopeToFiltered,
+                          scopeToFiltered: scoped,
                         );
                       }
                     }

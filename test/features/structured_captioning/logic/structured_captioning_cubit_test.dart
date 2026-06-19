@@ -380,5 +380,99 @@ void main() {
       onProgress('unknown step');
       expect(cubit.state.currentStep, StructuredCaptionStep.idle);
     });
+
+    test('runStructuredCaptioner scoped captions only filtered images', () async {
+      final AppImage image1 = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final AppImage image2 = AppImage(
+        id: '2',
+        image: File('img2.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+
+      when(mockImageListCubit.state).thenReturn(
+        ImageListState(images: <AppImage>[image1, image2], folderPath: '/tmp'),
+      );
+      when(mockImageListCubit.filteredImages).thenReturn(<AppImage>[image1]);
+
+      when(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      ).thenAnswer((_) async => fakeCaption());
+
+      await cubit.runStructuredCaptioner(
+        llm: llmConfig(),
+        option: CaptionOptions.all,
+        scopeToFiltered: true,
+      );
+
+      verify(
+        mockRepository.generateStructuredCaption(
+          any,
+          argThat(equals(image1.image)),
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      ).called(1);
+      verifyNever(
+        mockRepository.generateStructuredCaption(
+          any,
+          argThat(equals(image2.image)),
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      );
+    });
+
+    test('runStructuredCaptioner scoped + all re-captions edited images', () async {
+      final AppImage editedImage = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+        isCaptionEdited: true,
+      );
+
+      when(mockImageListCubit.state).thenReturn(
+        ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
+      );
+      when(mockImageListCubit.filteredImages)
+          .thenReturn(<AppImage>[editedImage]);
+
+      when(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      ).thenAnswer((_) async => fakeCaption());
+
+      await cubit.runStructuredCaptioner(
+        llm: llmConfig(),
+        option: CaptionOptions.all,
+        scopeToFiltered: true,
+      );
+
+      verify(
+        mockRepository.generateStructuredCaption(
+          any,
+          argThat(equals(editedImage.image)),
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      ).called(1);
+    });
   });
 }

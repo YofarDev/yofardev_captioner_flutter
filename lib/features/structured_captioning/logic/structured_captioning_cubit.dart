@@ -33,6 +33,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
+    bool scopeToFiltered = false,
   }) async {
     _cancelCompleter = Completer<void>();
     emit(
@@ -45,7 +46,10 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     );
 
     List<AppImage> imagesToProcess = <AppImage>[];
-    final List<AppImage> allImages = _imageListCubit.state.images;
+    // Capture the base set ONCE: filtered list when scoped, otherwise everything.
+    final List<AppImage> baseImages = scopeToFiltered
+        ? _imageListCubit.filteredImages
+        : _imageListCubit.state.images;
 
     switch (option) {
       case CaptionOptions.current:
@@ -63,16 +67,19 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       case CaptionOptions.missing:
         final String category =
             _imageListCubit.state.activeCategory ?? 'default';
-        imagesToProcess = allImages.where((AppImage image) {
+        imagesToProcess = baseImages.where((AppImage image) {
           final String text = image.captions[category]?.text ?? '';
           return text.isEmpty ||
               !IdeogramCaption.isIdeogramJson(text) ||
               IdeogramCaption.hasEmptyHighLevelDescription(text);
         }).toList();
       case CaptionOptions.all:
-        imagesToProcess = allImages
-            .where((AppImage image) => !image.isCaptionEdited)
-            .toList();
+        // When scoped, force re-caption every filtered image (drop guard).
+        imagesToProcess = scopeToFiltered
+            ? baseImages.toList()
+            : baseImages
+                .where((AppImage image) => !image.isCaptionEdited)
+                .toList();
     }
 
     final int total = imagesToProcess.length;

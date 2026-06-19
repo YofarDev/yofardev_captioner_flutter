@@ -75,13 +75,14 @@ void main() {
   Future<void> pumpSection(
     WidgetTester tester, {
     required _FakeLlmConfigsCubit llmCubit,
+    IdeogramCaption initialCaption = caption,
   }) async {
     final MockImageListCubit mockImageList = MockImageListCubit();
     when(mockImageList.updateCaption(caption: anyNamed('caption')))
         .thenAnswer((_) async {});
 
     final StructuredEditorCubit editorCubit = StructuredEditorCubit(
-      initialCaption: caption,
+      initialCaption: initialCaption,
       imageFile: File('x.png'),
       activeCategory: 'default',
       imageListCubit: mockImageList,
@@ -141,5 +142,39 @@ void main() {
       find.byKey(const Key('recaptionButton')),
     );
     expect(widget.onPressed, isNotNull);
+  });
+
+  testWidgets('disables Recaption when element has no bbox',
+      (WidgetTester tester) async {
+    const IdeogramCaption noBboxCaption = IdeogramCaption(
+      highLevelDescription: 'h',
+      styleDescription: IdeogramStyleDescription(
+        aesthetics: '',
+        lighting: '',
+        medium: 'photograph',
+        colorPalette: <String>[],
+      ),
+      compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+        background: '',
+        elements: <IdeogramElement>[
+          IdeogramElement(type: 'obj', desc: 'no box'),
+        ],
+      ),
+    );
+    final LlmConfig remote = LlmConfig(
+      id: 'r2',
+      name: 'remote',
+      model: 'gpt-4o',
+      providerType: LlmProviderType.remote,
+    );
+    await pumpSection(
+      tester,
+      llmCubit: configsCubit(selected: remote),
+      initialCaption: noBboxCaption,
+    );
+    final FilledButton widget = tester.widget<FilledButton>(
+      find.byKey(const Key('recaptionButton')),
+    );
+    expect(widget.onPressed, isNull);
   });
 }

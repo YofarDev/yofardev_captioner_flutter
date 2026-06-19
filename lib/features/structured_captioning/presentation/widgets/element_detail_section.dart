@@ -278,13 +278,17 @@ class _ElementFieldState extends State<_ElementField> {
   }
 }
 
-/// Resolves the [LlmConfigsCubit] ancestor if one exists, or null when none
-/// is found. Equivalent to `context.maybeRead<LlmConfigsCubit>()` (not
-/// available with the pinned provider version).
-LlmConfigsCubit? _maybeReadLlmConfigsCubit(BuildContext context) {
+/// Resolves the active [LlmConfig], subscribing to [LlmConfigsCubit] so the
+/// button rebuilds when the user switches config. Returns null when no
+/// [LlmConfigsCubit] is present in the tree (defensive for tests).
+LlmConfig? _maybeWatchSelectedConfig(BuildContext context) {
   try {
-    return context.read<LlmConfigsCubit>();
-  } on Object {
+    return context
+        .watch<LlmConfigsCubit>()
+        .state
+        .llmConfigs
+        .selectedConfig;
+  } on ProviderNotFoundException {
     return null;
   }
 }
@@ -304,8 +308,7 @@ class _RecaptionButton extends StatelessWidget {
 
     // Resolve the active config safely. Returns null when no LlmConfigsCubit
     // ancestor exists (defensive; the app provides one at the root).
-    final LlmConfigsCubit? llmCubit = _maybeReadLlmConfigsCubit(context);
-    final LlmConfig? config = llmCubit?.state.llmConfigs.selectedConfig;
+    final LlmConfig? config = _maybeWatchSelectedConfig(context);
 
     final bool isLocalMlx = config?.providerType == LlmProviderType.localMlx;
     final bool canRecaption =
@@ -314,7 +317,8 @@ class _RecaptionButton extends StatelessWidget {
     return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
       buildWhen: (StructuredEditorState prev, StructuredEditorState next) =>
           prev.recaptioningElementIndex != next.recaptioningElementIndex ||
-          prev.status != next.status,
+          prev.status != next.status ||
+          prev.error != next.error,
       builder: (BuildContext context, StructuredEditorState state) {
         final bool isBusy = state.recaptioningElementIndex == elementIndex;
         final String? error =
@@ -330,8 +334,8 @@ class _RecaptionButton extends StatelessWidget {
                   : () => _onRecaption(context, cubit, config),
               icon: isBusy
                   ? const SizedBox(
-                      width: 14,
-                      height: 14,
+                      width: 16,
+                      height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
                         color: Colors.white,

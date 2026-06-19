@@ -356,17 +356,30 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         elementIndex: selected,
         instructions: instructions,
       );
-      final List<IdeogramElement> elements = List<IdeogramElement>.from(
-        state.caption.compositionalDeconstruction.elements,
-      );
-      elements[selected] = updated;
-      _emitUpdatedElements(elements);
-      emit(
-        state.copyWith(
-          status: StructuredEditorStatus.saved,
-          clearRecaptioning: true,
-        ),
-      );
+      final List<IdeogramElement> currentElements =
+          state.caption.compositionalDeconstruction.elements;
+      if (selected >= currentElements.length) {
+        _logger.info(
+          'recaptionSelectedElement: element $selected no longer exists; discarding result.',
+        );
+        emit(
+          state.copyWith(
+            status: StructuredEditorStatus.saved,
+            clearRecaptioning: true,
+          ),
+        );
+      } else {
+        final List<IdeogramElement> elements =
+            List<IdeogramElement>.from(currentElements);
+        elements[selected] = updated;
+        _emitUpdatedElements(elements);
+        emit(
+          state.copyWith(
+            status: StructuredEditorStatus.saved,
+            clearRecaptioning: true,
+          ),
+        );
+      }
     } catch (e) {
       _logger.warning('recaptionSelectedElement failed: $e');
       emit(

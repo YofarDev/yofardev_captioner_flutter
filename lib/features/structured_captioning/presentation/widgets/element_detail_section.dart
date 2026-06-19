@@ -26,6 +26,8 @@ class ElementDetailSection extends StatelessWidget {
 
         final int idx = state.selectedElementIndex!;
 
+        final bool anyRecaptioning = state.recaptioningElementIndex != null;
+
         // Match the card to the selected layer's bbox color.
         final Color layerColor = kBboxColors[idx % kBboxColors.length];
 
@@ -64,7 +66,7 @@ class ElementDetailSection extends StatelessWidget {
                       color: destructive,
                     ),
                     tooltip: 'Delete element',
-                    onPressed: () => cubit.removeElement(idx),
+                    onPressed: anyRecaptioning ? null : () => cubit.removeElement(idx),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 28,
@@ -91,6 +93,7 @@ class ElementDetailSection extends StatelessWidget {
               _ElementField(
                 value: element.desc,
                 maxLines: 3,
+                enabled: !anyRecaptioning,
                 onChanged: cubit.updateElementDesc,
               ),
               const SizedBox(height: 10),
@@ -110,6 +113,7 @@ class ElementDetailSection extends StatelessWidget {
                   value: element.text ?? '',
                   maxLines: null,
                   minLines: 2,
+                  enabled: !anyRecaptioning,
                   onChanged: (String v) =>
                       cubit.updateElementText(v.isEmpty ? null : v),
                 ),
@@ -215,12 +219,14 @@ class _ElementField extends StatefulWidget {
     required this.onChanged,
     this.maxLines = 1,
     this.minLines,
+    this.enabled = true,
   });
 
   final String value;
   final int? maxLines;
   final int? minLines;
   final ValueChanged<String> onChanged;
+  final bool enabled;
 
   @override
   State<_ElementField> createState() => _ElementFieldState();
@@ -258,6 +264,7 @@ class _ElementFieldState extends State<_ElementField> {
       controller: _controller,
       maxLines: widget.maxLines,
       minLines: widget.minLines,
+      enabled: widget.enabled,
       style: const TextStyle(
         fontFamily: 'Inter',
         fontSize: 13,

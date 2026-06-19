@@ -448,6 +448,45 @@ void main() {
         await c.flushSave();
         await c.close();
       });
+
+      test('flushSave awaits an in-flight recaption before saving',
+          () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: true);
+        final Completer<IdeogramElement> completer =
+            Completer<IdeogramElement>();
+
+        when(mockRepo.recaptionElement(
+          config: anyNamed('config'),
+          imageFile: anyNamed('imageFile'),
+          currentCaption: anyNamed('currentCaption'),
+          elementIndex: anyNamed('elementIndex'),
+          instructions: anyNamed('instructions'),
+        )).thenAnswer((_) => completer.future);
+
+        final Future<void> recaptionFuture = c.recaptionSelectedElement(
+          config: _dummyConfig(),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        bool flushDone = false;
+        final Future<void> flush = c.flushSave().then((_) {
+          flushDone = true;
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(flushDone, isFalse,
+            reason: 'flushSave must wait for the in-flight recaption');
+
+        completer.complete(
+          c.state.caption.compositionalDeconstruction.elements[0]
+              .copyWith(desc: 'done'),
+        );
+        await recaptionFuture;
+        await flush;
+        expect(flushDone, isTrue);
+
+        await c.flushSave();
+        await c.close();
+      });
     });
   });
 }

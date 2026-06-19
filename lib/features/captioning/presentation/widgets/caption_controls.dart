@@ -95,8 +95,6 @@ class _CaptionControlsState extends State<CaptionControls> {
                             label: 'All ($totalImages)',
                             option: CaptionOptions.all,
                           ),
-                          const SizedBox(width: 12),
-                          _buildScopeToFilteredCheckbox(imageState),
                         ],
                       ),
                     ),
@@ -310,6 +308,10 @@ class _CaptionControlsState extends State<CaptionControls> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: <Widget>[
+        if (imageListState.searchQuery.isNotEmpty) ...<Widget>[
+          _buildScopeToFilteredCheckbox(imageListState),
+          const SizedBox(width: 12),
+        ],
         GestureDetector(
           onSecondaryTap: () {
             if (!isInProgress) {

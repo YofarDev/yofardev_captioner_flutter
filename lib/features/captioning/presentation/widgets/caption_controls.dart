@@ -209,7 +209,8 @@ class _CaptionControlsState extends State<CaptionControls> {
               Text(
                 'Limit to search results ($filteredCount)',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
                   color: Colors.white.withAlpha(220),
                   decoration: disabledForCurrent
                       ? TextDecoration.lineThrough

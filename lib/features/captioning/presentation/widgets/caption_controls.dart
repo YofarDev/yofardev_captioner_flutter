@@ -29,6 +29,7 @@ class CaptionControls extends StatefulWidget {
 
 class _CaptionControlsState extends State<CaptionControls> {
   CaptionOptions _selectedOption = CaptionOptions.values.first;
+  bool _scopeToFiltered = false;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +95,8 @@ class _CaptionControlsState extends State<CaptionControls> {
                             label: 'All ($totalImages)',
                             option: CaptionOptions.all,
                           ),
+                          const SizedBox(width: 12),
+                          _buildScopeToFilteredCheckbox(imageState),
                         ],
                       ),
                     ),
@@ -160,6 +163,61 @@ class _CaptionControlsState extends State<CaptionControls> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScopeToFilteredCheckbox(ImageListState imageState) {
+    final bool hasActiveSearch = imageState.searchQuery.isNotEmpty;
+    if (!hasActiveSearch) {
+      return const SizedBox.shrink();
+    }
+    final ImageListCubit cubit = context.read<ImageListCubit>();
+    final int filteredCount = cubit.filteredImages.length;
+    final bool disabledForCurrent =
+        _selectedOption == CaptionOptions.current;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Opacity(
+        opacity: disabledForCurrent ? 0.4 : 1.0,
+        child: AbsorbPointer(
+          absorbing: disabledForCurrent,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Theme(
+                data: Theme.of(context).copyWith(
+                  unselectedWidgetColor: lightPink.withAlpha(120),
+                ),
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: Checkbox(
+                    value: _scopeToFiltered,
+                    onChanged: (bool? value) {
+                      setState(() {
+                        _scopeToFiltered = value ?? false;
+                      });
+                    },
+                    activeColor: lightPink,
+                    checkColor: Colors.black,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Limit to search results ($filteredCount)',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.white.withAlpha(220),
+                  decoration: disabledForCurrent
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -292,12 +350,14 @@ class _CaptionControlsState extends State<CaptionControls> {
                                   : null,
                               debugMode: configState.llmConfigs.debugMode,
                               disableSam: configState.llmConfigs.disableSam,
+                              scopeToFiltered: _scopeToFiltered,
                             );
                       } else {
                         context.read<CaptioningCubit>().runCaptioner(
                           llm: llm,
                           prompt: configState.llmConfigs.selectedPrompt!,
                           option: _selectedOption,
+                          scopeToFiltered: _scopeToFiltered,
                         );
                       }
                     }

@@ -281,7 +281,7 @@ void main() {
                           desc: 'first',
                           bbox: withBbox ? <int>[10, 10, 90, 90] : null,
                         ),
-                        IdeogramElement(type: 'obj', desc: 'second'),
+                        const IdeogramElement(type: 'obj', desc: 'second'),
                       ],
                     ),
           );
@@ -313,7 +313,6 @@ void main() {
         );
         await c.recaptionSelectedElement(
           config: _dummyConfig(),
-          instructions: null,
         );
         expect(c.state.status, isNot(StructuredEditorStatus.recaptioning));
         verifyNever(mockRepo.recaptionElement(
@@ -339,7 +338,6 @@ void main() {
 
         await c.recaptionSelectedElement(
           config: _dummyConfig(),
-          instructions: null,
         );
 
         expect(c.state.status, StructuredEditorStatus.error);
@@ -405,7 +403,6 @@ void main() {
 
         await c.recaptionSelectedElement(
           config: _dummyConfig(),
-          instructions: null,
         );
 
         expect(c.state.status, StructuredEditorStatus.error);
@@ -428,13 +425,11 @@ void main() {
 
         final Future<void> first = c.recaptionSelectedElement(
           config: _dummyConfig(),
-          instructions: null,
         );
         await Future<void>.delayed(const Duration(milliseconds: 5));
 
         await c.recaptionSelectedElement(
           config: _dummyConfig(),
-          instructions: null,
         );
 
         verify(mockRepo.recaptionElement(

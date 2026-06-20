@@ -390,6 +390,7 @@ class ImageListCubit extends Cubit<ImageListState> {
             filename: p.basename(img.image.path),
             captions: img.captions,
             lastModified: img.lastModified,
+            tags: img.tags,
           ),
         )
         .toList();

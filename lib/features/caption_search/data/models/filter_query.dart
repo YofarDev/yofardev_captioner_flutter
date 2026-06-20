@@ -402,3 +402,34 @@ class NoCaptionFilter extends FilterExpression {
   @override
   List<Object?> get props => <Object?>[];
 }
+
+/// Matches images whose tags contain [tag] (case-insensitive).
+///
+/// Example: `:tag:sunset:`
+class TagFilter extends FilterExpression {
+  const TagFilter({required this.tag});
+
+  final String tag;
+
+  @override
+  bool evaluate(FilterContext ctx) {
+    final String lower = tag.toLowerCase();
+    return ctx.tags.any((String t) => t.toLowerCase() == lower);
+  }
+
+  @override
+  List<Object?> get props => <Object?>[tag];
+}
+
+/// Matches images that have no tags.
+///
+/// Example: `:notag:`
+class NoTagFilter extends FilterExpression {
+  const NoTagFilter();
+
+  @override
+  bool evaluate(FilterContext ctx) => ctx.tags.isEmpty;
+
+  @override
+  List<Object?> get props => <Object?>[];
+}

@@ -384,4 +384,63 @@ void main() {
       expect(caption, isNull);
     });
   });
+
+  group('TagFilter', () {
+    test('matches when tags contain the value (case-insensitive)', () {
+      const TagFilter filter = TagFilter(tag: 'sunset');
+      expect(
+        filter.evaluate(FilterContext(
+          captionText: '',
+          tags: <String>['Sunset', 'landscape'],
+        )),
+        isTrue,
+      );
+    });
+
+    test('no match when tags lack the value', () {
+      const TagFilter filter = TagFilter(tag: 'sunset');
+      expect(
+        filter.evaluate(const FilterContext(
+          captionText: '',
+          tags: <String>['landscape'],
+        )),
+        isFalse,
+      );
+    });
+
+    test('no match when tags empty', () {
+      const TagFilter filter = TagFilter(tag: 'sunset');
+      expect(
+        filter.evaluate(const FilterContext(
+          captionText: '',
+          tags: <String>[],
+        )),
+        isFalse,
+      );
+    });
+  });
+
+  group('NoTagFilter', () {
+    test('matches when tags empty', () {
+      const NoTagFilter filter = NoTagFilter();
+      expect(
+        filter.evaluate(const FilterContext(
+          captionText: '',
+          tags: <String>[],
+        )),
+        isTrue,
+      );
+    });
+
+    test('no match when tags present', () {
+      const NoTagFilter filter = NoTagFilter();
+      expect(
+        filter.evaluate(const FilterContext(
+          captionText: '',
+          tags: <String>['sunset'],
+        )),
+        isFalse,
+      );
+    });
+  });
 }

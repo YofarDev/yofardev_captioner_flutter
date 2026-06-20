@@ -39,8 +39,9 @@ void main() {
     expect(await completer.future, isNull);
   });
 
-  testWidgets('returns empty string when recaptioning with no instructions',
-      (WidgetTester tester) async {
+  testWidgets('returns empty string when recaptioning with no instructions', (
+    WidgetTester tester,
+  ) async {
     final Completer<String?> completer = await pumpHarness(tester);
     await tester.tap(find.text('Recaption'));
     await tester.pumpAndSettle();

@@ -10,9 +10,9 @@ import 'package:yofardev_captioner/features/image_list/presentation/widgets/head
 
 /// Helper to locate the header's caption-count RichText.
 RichText _findCountRichText(WidgetTester tester) {
-  return tester.widgetList<RichText>(find.byType(RichText)).firstWhere(
-        (RichText rt) => rt.text.toPlainText().contains('captions'),
-      );
+  return tester
+      .widgetList<RichText>(find.byType(RichText))
+      .firstWhere((RichText rt) => rt.text.toPlainText().contains('captions'));
 }
 
 void main() {
@@ -67,12 +67,16 @@ void main() {
 
     tearDown(() => cubit.close());
 
-    testWidgets('shows correct count for default category', (WidgetTester tester) async {
+    testWidgets('shows correct count for default category', (
+      WidgetTester tester,
+    ) async {
       await pumpHeader(tester, cubit);
       expect(_findCountRichText(tester).text.toPlainText(), contains('1 / 2'));
     });
 
-    testWidgets('updates count when switching to empty category', (WidgetTester tester) async {
+    testWidgets('updates count when switching to empty category', (
+      WidgetTester tester,
+    ) async {
       await pumpHeader(tester, cubit);
       expect(_findCountRichText(tester).text.toPlainText(), contains('1 / 2'));
 

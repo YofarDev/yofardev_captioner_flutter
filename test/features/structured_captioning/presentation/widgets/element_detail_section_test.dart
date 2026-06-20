@@ -78,8 +78,9 @@ void main() {
     IdeogramCaption initialCaption = caption,
   }) async {
     final MockImageListCubit mockImageList = MockImageListCubit();
-    when(mockImageList.updateCaption(caption: anyNamed('caption')))
-        .thenAnswer((_) async {});
+    when(
+      mockImageList.updateCaption(caption: anyNamed('caption')),
+    ).thenAnswer((_) async {});
 
     final StructuredEditorCubit editorCubit = StructuredEditorCubit(
       initialCaption: initialCaption,
@@ -105,8 +106,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('shows a disabled Recaption button when no config selected',
-      (WidgetTester tester) async {
+  testWidgets('shows a disabled Recaption button when no config selected', (
+    WidgetTester tester,
+  ) async {
     await pumpSection(tester, llmCubit: configsCubit());
     final Finder btn = find.byKey(const Key('recaptionButton'));
     expect(btn, findsOneWidget);
@@ -114,8 +116,9 @@ void main() {
     expect(widget.onPressed, isNull);
   });
 
-  testWidgets('disables Recaption for a localMlx config',
-      (WidgetTester tester) async {
+  testWidgets('disables Recaption for a localMlx config', (
+    WidgetTester tester,
+  ) async {
     final LlmConfig mlx = LlmConfig(
       id: 'm',
       name: 'mlx',
@@ -129,8 +132,9 @@ void main() {
     expect(widget.onPressed, isNull);
   });
 
-  testWidgets('enables Recaption for a remote config',
-      (WidgetTester tester) async {
+  testWidgets('enables Recaption for a remote config', (
+    WidgetTester tester,
+  ) async {
     final LlmConfig remote = LlmConfig(
       id: 'r',
       name: 'remote',
@@ -144,8 +148,9 @@ void main() {
     expect(widget.onPressed, isNotNull);
   });
 
-  testWidgets('disables Recaption when element has no bbox',
-      (WidgetTester tester) async {
+  testWidgets('disables Recaption when element has no bbox', (
+    WidgetTester tester,
+  ) async {
     const IdeogramCaption noBboxCaption = IdeogramCaption(
       highLevelDescription: 'h',
       styleDescription: IdeogramStyleDescription(

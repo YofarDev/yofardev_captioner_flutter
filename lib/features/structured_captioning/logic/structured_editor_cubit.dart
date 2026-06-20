@@ -27,12 +27,12 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }) : _imageListCubit = imageListCubit,
        _repository = repository ?? StructuredCaptionRepository(),
        super(
-          StructuredEditorState(
-            caption: initialCaption,
-            imageFile: imageFile,
-            activeCategory: activeCategory,
-          ),
-        );
+         StructuredEditorState(
+           caption: initialCaption,
+           imageFile: imageFile,
+           activeCategory: activeCategory,
+         ),
+       );
 
   final ImageListCubit _imageListCubit;
   final StructuredCaptionRepository _repository;
@@ -369,8 +369,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
           ),
         );
       } else {
-        final List<IdeogramElement> elements =
-            List<IdeogramElement>.from(currentElements);
+        final List<IdeogramElement> elements = List<IdeogramElement>.from(
+          currentElements,
+        );
         elements[selected] = updated;
         _emitUpdatedElements(elements);
         emit(

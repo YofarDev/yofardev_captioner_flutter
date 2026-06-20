@@ -14,16 +14,13 @@ void main() {
           colorPalette: <String>['#FFFFFF'],
         );
 
-        expect(
-          style.toJson().keys.toList(),
-          <String>[
-            'aesthetics',
-            'lighting',
-            'photo',
-            'medium',
-            'color_palette',
-          ],
-        );
+        expect(style.toJson().keys.toList(), <String>[
+          'aesthetics',
+          'lighting',
+          'photo',
+          'medium',
+          'color_palette',
+        ]);
       },
     );
 
@@ -38,16 +35,13 @@ void main() {
           colorPalette: <String>['#1A1A1A'],
         );
 
-        expect(
-          style.toJson().keys.toList(),
-          <String>[
-            'aesthetics',
-            'lighting',
-            'medium',
-            'art_style',
-            'color_palette',
-          ],
-        );
+        expect(style.toJson().keys.toList(), <String>[
+          'aesthetics',
+          'lighting',
+          'medium',
+          'art_style',
+          'color_palette',
+        ]);
       },
     );
   });
@@ -61,10 +55,12 @@ void main() {
         colorPalette: <String>['#FF0000'],
       );
 
-      expect(
-        element.toJson().keys.toList(),
-        <String>['type', 'bbox', 'desc', 'color_palette'],
-      );
+      expect(element.toJson().keys.toList(), <String>[
+        'type',
+        'bbox',
+        'desc',
+        'color_palette',
+      ]);
     });
 
     test('text element emits type, bbox, text, desc, color_palette', () {
@@ -76,10 +72,13 @@ void main() {
         colorPalette: <String>['#FF0000'],
       );
 
-      expect(
-        element.toJson().keys.toList(),
-        <String>['type', 'bbox', 'text', 'desc', 'color_palette'],
-      );
+      expect(element.toJson().keys.toList(), <String>[
+        'type',
+        'bbox',
+        'text',
+        'desc',
+        'color_palette',
+      ]);
     });
   });
 }

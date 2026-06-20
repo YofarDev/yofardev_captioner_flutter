@@ -75,8 +75,8 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         imagesToCaption = scopeToFiltered
             ? baseImages.toList()
             : baseImages
-                .where((AppImage image) => !image.isCaptionEdited)
-                .toList();
+                  .where((AppImage image) => !image.isCaptionEdited)
+                  .toList();
     }
 
     final int totalImagesCount = imagesToCaption.length;

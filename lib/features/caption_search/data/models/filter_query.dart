@@ -113,11 +113,8 @@ class DuplicateBboxFilter extends FilterExpression {
     );
     if (caption == null) return false;
 
-    final List<List<int>> bboxes = caption
-        .compositionalDeconstruction.elements
-        .where(
-          (IdeogramElement e) => e.bbox != null && e.bbox!.length == 4,
-        )
+    final List<List<int>> bboxes = caption.compositionalDeconstruction.elements
+        .where((IdeogramElement e) => e.bbox != null && e.bbox!.length == 4)
         .map((IdeogramElement e) => e.bbox!)
         .toList();
 

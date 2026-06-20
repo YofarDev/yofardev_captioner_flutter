@@ -229,7 +229,11 @@ void main() {
               'has_text': true,
               'visible_text': 'STOP',
             },
-            <String, dynamic>{'name': 'Car', 'desc': 'a car', 'has_text': false},
+            <String, dynamic>{
+              'name': 'Car',
+              'desc': 'a car',
+              'has_text': false,
+            },
           ],
         };
 
@@ -268,7 +272,12 @@ void main() {
               'name': 'C',
               'desc': '',
               'has_text': false,
-              'bbox': <String>['x', 'y', 'z', 'w'], // non-numeric → throws → null
+              'bbox': <String>[
+                'x',
+                'y',
+                'z',
+                'w',
+              ], // non-numeric → throws → null
             },
             <String, dynamic>{
               'name': 'D',
@@ -293,24 +302,42 @@ void main() {
 
     group('normalizeBbox', () {
       test('swaps [x1,y1,x2,y2] to [y1,x1,y2,x2]', () {
-        expect(repo.normalizeBbox(<int>[100, 200, 300, 400]),
-            <int>[200, 100, 400, 300]);
+        expect(repo.normalizeBbox(<int>[100, 200, 300, 400]), <int>[
+          200,
+          100,
+          400,
+          300,
+        ]);
       });
 
       test('clamps out-of-range values to [0,1000]', () {
-        expect(repo.normalizeBbox(<int>[-50, 200, 1500, 400]),
-            <int>[200, 0, 400, 1000]);
+        expect(repo.normalizeBbox(<int>[-50, 200, 1500, 400]), <int>[
+          200,
+          0,
+          400,
+          1000,
+        ]);
       });
 
       test('orders inverted corners', () {
         // Given as [x2,y2,x1,y1] effectively → still normalized correctly.
-        expect(repo.normalizeBbox(<int>[300, 400, 100, 200]),
-            <int>[200, 100, 400, 300]);
+        expect(repo.normalizeBbox(<int>[300, 400, 100, 200]), <int>[
+          200,
+          100,
+          400,
+          300,
+        ]);
       });
 
       test('returns null for zero-area / line boxes', () {
-        expect(repo.normalizeBbox(<int>[100, 100, 100, 400]), isNull); // zero width
-        expect(repo.normalizeBbox(<int>[100, 200, 300, 200]), isNull); // zero height
+        expect(
+          repo.normalizeBbox(<int>[100, 100, 100, 400]),
+          isNull,
+        ); // zero width
+        expect(
+          repo.normalizeBbox(<int>[100, 200, 300, 200]),
+          isNull,
+        ); // zero height
       });
 
       test('returns null for malformed input', () {
@@ -359,11 +386,9 @@ void main() {
       });
 
       test('falls back to outermost braces with prose around it', () {
-        const String raw = 'Here is the caption:\n{"high_level_description": "x"}\nDone.';
-        expect(
-          repo.extractJsonObject(raw),
-          '{"high_level_description": "x"}',
-        );
+        const String raw =
+            'Here is the caption:\n{"high_level_description": "x"}\nDone.';
+        expect(repo.extractJsonObject(raw), '{"high_level_description": "x"}');
       });
 
       test('returns null when no object is present', () {
@@ -494,44 +519,49 @@ void main() {
         expect(result[1].bbox, <int>[210, 210, 290, 290]); // Bird: SAM
       });
 
-      test('rejects SAM detection that landed on a different region (IoU gate)',
-          () {
-        // Mirrors the real failure: SAM returned the Nyon-sign bbox for BOTH
-        // the "Nyon Sign" and "Text Banner" prompts. The Text-Banner SAM bbox
-        // does not overlap the VLM's top-banner bbox at all (IoU = 0), so it
-        // must fall back to the VLM bbox instead of duplicating Nyon Sign.
-        final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
-          const VlmObjectBboxPair(
-            name: 'Nyon Sign',
-            bbox: <int>[356, 756, 492, 988],
-          ),
-          const VlmObjectBboxPair(
-            name: 'Text Banner',
-            bbox: <int>[0, 0, 88, 998],
-          ),
-        ];
+      test(
+        'rejects SAM detection that landed on a different region (IoU gate)',
+        () {
+          // Mirrors the real failure: SAM returned the Nyon-sign bbox for BOTH
+          // the "Nyon Sign" and "Text Banner" prompts. The Text-Banner SAM bbox
+          // does not overlap the VLM's top-banner bbox at all (IoU = 0), so it
+          // must fall back to the VLM bbox instead of duplicating Nyon Sign.
+          final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
+            const VlmObjectBboxPair(
+              name: 'Nyon Sign',
+              bbox: <int>[356, 756, 492, 988],
+            ),
+            const VlmObjectBboxPair(
+              name: 'Text Banner',
+              bbox: <int>[0, 0, 88, 998],
+            ),
+          ];
 
-        final List<SamDetection> samDetections = <SamDetection>[
-          // SAM correctly refines Nyon Sign.
-          const SamDetection(name: 'Nyon Sign', bbox: <int>[353, 735, 504, 1000]),
-          // SAM wrongly returns the Nyon-sign region again for "Text Banner".
-          const SamDetection(
-            name: 'Text Banner',
-            bbox: <int>[353, 735, 505, 1000],
-          ),
-        ];
+          final List<SamDetection> samDetections = <SamDetection>[
+            // SAM correctly refines Nyon Sign.
+            const SamDetection(
+              name: 'Nyon Sign',
+              bbox: <int>[353, 735, 504, 1000],
+            ),
+            // SAM wrongly returns the Nyon-sign region again for "Text Banner".
+            const SamDetection(
+              name: 'Text Banner',
+              bbox: <int>[353, 735, 505, 1000],
+            ),
+          ];
 
-        final List<SamDetection> result = repo.matchDetectionsToObjects(
-          samDetections,
-          vlmObjects,
-        );
+          final List<SamDetection> result = repo.matchDetectionsToObjects(
+            samDetections,
+            vlmObjects,
+          );
 
-        expect(result, hasLength(2));
-        // Nyon Sign: SAM overlaps VLM well (IoU ~0.79) → kept.
-        expect(result[0].bbox, <int>[353, 735, 504, 1000]);
-        // Text Banner: SAM overlaps VLM with IoU 0 → rejected, VLM bbox used.
-        expect(result[1].bbox, <int>[0, 0, 88, 998]);
-      });
+          expect(result, hasLength(2));
+          // Nyon Sign: SAM overlaps VLM well (IoU ~0.79) → kept.
+          expect(result[0].bbox, <int>[353, 735, 504, 1000]);
+          // Text Banner: SAM overlaps VLM with IoU 0 → rejected, VLM bbox used.
+          expect(result[1].bbox, <int>[0, 0, 88, 998]);
+        },
+      );
 
       test('keeps SAM detection that overlaps the VLM region (IoU gate)', () {
         final List<VlmObjectBboxPair> vlmObjects = <VlmObjectBboxPair>[
@@ -785,9 +815,7 @@ void main() {
             photoOrArt: '',
           ),
           background: '',
-          objects: <VlmObject>[
-            VlmObject(name: 'Rock', desc: 'grey rock'),
-          ],
+          objects: <VlmObject>[VlmObject(name: 'Rock', desc: 'grey rock')],
         );
 
         final IdeogramCaption caption = repo.buildIdeogramCaption(
@@ -896,9 +924,12 @@ void main() {
       mockHighlight = MockBboxHighlightService();
       mockLoader = MockStructuredPromptLoader();
       when(mockLoader.loadElementRecaptionPrompt()).thenAnswer(
-          (_) async => 'PROMPT {elementIndex} {elementBbox} {existingJson} {instructionsBlock}');
-      when(mockHighlight.renderHighlightedJpeg(any, any))
-          .thenAnswer((_) async => '/tmp/highlight.jpg');
+        (_) async =>
+            'PROMPT {elementIndex} {elementBbox} {existingJson} {instructionsBlock}',
+      );
+      when(
+        mockHighlight.renderHighlightedJpeg(any, any),
+      ).thenAnswer((_) async => '/tmp/highlight.jpg');
       when(mockHighlight.cleanup(any)).thenAnswer((_) async {});
       repo = StructuredCaptionRepository(
         captionService: mockCaption,
@@ -907,27 +938,31 @@ void main() {
       );
     });
 
-    test('updates desc, preserves bbox/type/colorPalette for obj element', () async {
-      when(mockCaption.getCaption(any, any, any)).thenAnswer(
-        (_) async => '{"desc": "fresh desc", "has_text": false, "visible_text": null}',
-      );
+    test(
+      'updates desc, preserves bbox/type/colorPalette for obj element',
+      () async {
+        when(mockCaption.getCaption(any, any, any)).thenAnswer(
+          (_) async =>
+              '{"desc": "fresh desc", "has_text": false, "visible_text": null}',
+        );
 
-      final IdeogramElement updated = await repo.recaptionElement(
-        config: config,
-        imageFile: File('img.png'),
-        currentCaption: caption,
-        elementIndex: 0,
-      );
+        final IdeogramElement updated = await repo.recaptionElement(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+          elementIndex: 0,
+        );
 
-      final IdeogramElement original =
-          caption.compositionalDeconstruction.elements.first;
-      expect(updated.desc, 'fresh desc');
-      expect(updated.bbox, original.bbox);
-      expect(updated.type, original.type);
-      expect(updated.colorPalette, original.colorPalette);
-      expect(updated.text, isNull);
-      expect(identical(updated, original), isFalse);
-    });
+        final IdeogramElement original =
+            caption.compositionalDeconstruction.elements.first;
+        expect(updated.desc, 'fresh desc');
+        expect(updated.bbox, original.bbox);
+        expect(updated.type, original.type);
+        expect(updated.colorPalette, original.colorPalette);
+        expect(updated.text, isNull);
+        expect(identical(updated, original), isFalse);
+      },
+    );
 
     test('overwrites text for text element when has_text true', () async {
       const IdeogramCaption textCaption = IdeogramCaption(
@@ -941,12 +976,17 @@ void main() {
         compositionalDeconstruction: IdeogramCompositionalDeconstruction(
           background: '',
           elements: <IdeogramElement>[
-            IdeogramElement(type: 'text', desc: 'old', bbox: <int>[0, 0, 50, 50]),
+            IdeogramElement(
+              type: 'text',
+              desc: 'old',
+              bbox: <int>[0, 0, 50, 50],
+            ),
           ],
         ),
       );
       when(mockCaption.getCaption(any, any, any)).thenAnswer(
-        (_) async => '{"desc": "a sign", "has_text": true, "visible_text": "HELLO"}',
+        (_) async =>
+            '{"desc": "a sign", "has_text": true, "visible_text": "HELLO"}',
       );
 
       final IdeogramElement updated = await repo.recaptionElement(
@@ -983,7 +1023,8 @@ void main() {
         ),
       );
       when(mockCaption.getCaption(any, any, any)).thenAnswer(
-        (_) async => '{"desc": "illegible scrawl", "has_text": false, "visible_text": null}',
+        (_) async =>
+            '{"desc": "illegible scrawl", "has_text": false, "visible_text": null}',
       );
 
       final IdeogramElement updated = await repo.recaptionElement(
@@ -997,25 +1038,29 @@ void main() {
       expect(updated.text, '');
     });
 
-    test('throws FormatException when VLM returns desc missing/empty', () async {
-      when(mockCaption.getCaption(any, any, any)).thenAnswer(
-        (_) async => '{"has_text": false, "visible_text": null}',
-      );
-      await expectLater(
-        repo.recaptionElement(
-          config: config,
-          imageFile: File('img.png'),
-          currentCaption: caption,
-          elementIndex: 0,
-        ),
-        throwsA(isA<FormatException>()),
-      );
-      verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
-    });
+    test(
+      'throws FormatException when VLM returns desc missing/empty',
+      () async {
+        when(
+          mockCaption.getCaption(any, any, any),
+        ).thenAnswer((_) async => '{"has_text": false, "visible_text": null}');
+        await expectLater(
+          repo.recaptionElement(
+            config: config,
+            imageFile: File('img.png'),
+            currentCaption: caption,
+            elementIndex: 0,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+        verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
+      },
+    );
 
     test('throws FormatException on unparseable response', () async {
-      when(mockCaption.getCaption(any, any, any))
-          .thenAnswer((_) async => 'not json at all');
+      when(
+        mockCaption.getCaption(any, any, any),
+      ).thenAnswer((_) async => 'not json at all');
       await expectLater(
         repo.recaptionElement(
           config: config,
@@ -1029,24 +1074,28 @@ void main() {
       verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
     });
 
-    test('throws FormatException when response is a JSON array, not object',
-        () async {
-      when(mockCaption.getCaption(any, any, any))
-          .thenAnswer((_) async => '[{"desc": "x"}]');
-      await expectLater(
-        repo.recaptionElement(
-          config: config,
-          imageFile: File('img.png'),
-          currentCaption: caption,
-          elementIndex: 0,
-        ),
-        throwsA(isA<FormatException>()),
-      );
-    });
+    test(
+      'throws FormatException when response is a JSON array, not object',
+      () async {
+        when(
+          mockCaption.getCaption(any, any, any),
+        ).thenAnswer((_) async => '[{"desc": "x"}]');
+        await expectLater(
+          repo.recaptionElement(
+            config: config,
+            imageFile: File('img.png'),
+            currentCaption: caption,
+            elementIndex: 0,
+          ),
+          throwsA(isA<FormatException>()),
+        );
+      },
+    );
 
     test('parses fenced JSON', () async {
       when(mockCaption.getCaption(any, any, any)).thenAnswer(
-        (_) async => '```json\n{"desc": "ok", "has_text": false, "visible_text": null}\n```',
+        (_) async =>
+            '```json\n{"desc": "ok", "has_text": false, "visible_text": null}\n```',
       );
       final IdeogramElement updated = await repo.recaptionElement(
         config: config,
@@ -1058,7 +1107,9 @@ void main() {
     });
 
     test('propagates CaptionService errors and cleans up temp file', () async {
-      when(mockCaption.getCaption(any, any, any)).thenThrow(Exception('network down'));
+      when(
+        mockCaption.getCaption(any, any, any),
+      ).thenThrow(Exception('network down'));
 
       await expectLater(
         repo.recaptionElement(
@@ -1085,11 +1136,9 @@ void main() {
         instructions: 'focus on the branding',
       );
 
-      final String capturedPrompt = verify(mockCaption.getCaption(
-        any,
-        any,
-        captureAny,
-      )).captured.single as String;
+      final String capturedPrompt =
+          verify(mockCaption.getCaption(any, any, captureAny)).captured.single
+              as String;
 
       expect(capturedPrompt, contains('PROMPT 0 [100, 100, 400, 400]'));
       expect(capturedPrompt, contains('[100, 100, 400, 400]'));
@@ -1108,11 +1157,9 @@ void main() {
         elementIndex: 0,
       );
 
-      final String capturedPrompt = verify(mockCaption.getCaption(
-        any,
-        any,
-        captureAny,
-      )).captured.single as String;
+      final String capturedPrompt =
+          verify(mockCaption.getCaption(any, any, captureAny)).captured.single
+              as String;
 
       expect(capturedPrompt, isNot(contains('Additional instructions')));
     });

@@ -67,13 +67,20 @@ void main() {
 
     tearDown(() => cubit.close());
 
-    testWidgets('hides indicator when active category has caption', (WidgetTester tester) async {
+    testWidgets('hides indicator when active category has caption', (
+      WidgetTester tester,
+    ) async {
       await pumpItem(tester, cubit, image);
-      expect(find.byIcon(Icons.edit_off), findsNothing,
-          reason: 'default category has a caption');
+      expect(
+        find.byIcon(Icons.edit_off),
+        findsNothing,
+        reason: 'default category has a caption',
+      );
     });
 
-    testWidgets('shows indicator when switched to empty category', (WidgetTester tester) async {
+    testWidgets('shows indicator when switched to empty category', (
+      WidgetTester tester,
+    ) async {
       await pumpItem(tester, cubit, image);
       expect(find.byIcon(Icons.edit_off), findsNothing);
 
@@ -81,8 +88,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.byIcon(Icons.edit_off), findsOne,
-          reason: 'tags category has no caption for this image');
+      expect(
+        find.byIcon(Icons.edit_off),
+        findsOne,
+        reason: 'tags category has no caption for this image',
+      );
     });
   });
 }

@@ -126,24 +126,20 @@ void main() {
 
     test('iou() returns 1.0 for identical boxes', () {
       expect(
-        DuplicateBboxFilter.iou(<int>[100, 100, 500, 500], <int>[
-          100,
-          100,
-          500,
-          500,
-        ]),
+        DuplicateBboxFilter.iou(
+          <int>[100, 100, 500, 500],
+          <int>[100, 100, 500, 500],
+        ),
         equals(1.0),
       );
     });
 
     test('iou() returns 0.0 for disjoint boxes', () {
       expect(
-        DuplicateBboxFilter.iou(<int>[0, 0, 100, 100], <int>[
-          500,
-          500,
-          600,
-          600,
-        ]),
+        DuplicateBboxFilter.iou(
+          <int>[0, 0, 100, 100],
+          <int>[500, 500, 600, 600],
+        ),
         equals(0.0),
       );
     });
@@ -151,12 +147,7 @@ void main() {
     test('iou() handles touching (zero-area intersection) boxes', () {
       // Adjacent, no overlap — interY2 == interY1
       expect(
-        DuplicateBboxFilter.iou(<int>[0, 0, 100, 100], <int>[
-          100,
-          0,
-          200,
-          100,
-        ]),
+        DuplicateBboxFilter.iou(<int>[0, 0, 100, 100], <int>[100, 0, 200, 100]),
         equals(0.0),
       );
     });

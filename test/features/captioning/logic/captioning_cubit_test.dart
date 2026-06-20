@@ -297,8 +297,9 @@ void main() {
             category: anyNamed('category'),
           ),
         ).thenAnswer((Invocation inv) {
-          categoriesPassed
-              .add(inv.namedArguments[const Symbol('category')] as String);
+          categoriesPassed.add(
+            inv.namedArguments[const Symbol('category')] as String,
+          );
           final Completer<AppImage> c = callIndex == 0 ? call1 : call2;
           callIndex++;
           return c.future;
@@ -584,56 +585,65 @@ void main() {
       },
     );
 
-    test('runCaptioner with scopeToFiltered true captions only filtered images', () {
-      fakeAsync((FakeAsync async) {
-        final AppImage image1 = AppImage(
-          id: '1',
-          image: File('path/to/img1.jpg'),
-          captions: const <String, CaptionEntry>{},
-        );
-        final AppImage image2 = AppImage(
-          id: '2',
-          image: File('path/to/img2.jpg'),
-          captions: const <String, CaptionEntry>{},
-        );
-        final List<AppImage> allImages = <AppImage>[image1, image2];
+    test(
+      'runCaptioner with scopeToFiltered true captions only filtered images',
+      () {
+        fakeAsync((FakeAsync async) {
+          final AppImage image1 = AppImage(
+            id: '1',
+            image: File('path/to/img1.jpg'),
+            captions: const <String, CaptionEntry>{},
+          );
+          final AppImage image2 = AppImage(
+            id: '2',
+            image: File('path/to/img2.jpg'),
+            captions: const <String, CaptionEntry>{},
+          );
+          final List<AppImage> allImages = <AppImage>[image1, image2];
 
-        when(mockImageListCubit.state).thenReturn(
-          ImageListState(images: allImages, folderPath: '/tmp'),
-        );
-        // Stub the filteredImages getter: only image1 is in the filtered set.
-        when(mockImageListCubit.filteredImages).thenReturn(<AppImage>[image1]);
+          when(
+            mockImageListCubit.state,
+          ).thenReturn(ImageListState(images: allImages, folderPath: '/tmp'));
+          // Stub the filteredImages getter: only image1 is in the filtered set.
+          when(
+            mockImageListCubit.filteredImages,
+          ).thenReturn(<AppImage>[image1]);
 
-        when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
-        );
+          when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+            (Invocation invocation) async =>
+                invocation.positionalArguments[1] as AppImage,
+          );
 
-        final LlmConfig llmConfig = LlmConfig(
-          id: '1',
-          name: 'Test LLM',
-          model: 'gpt-4',
-          providerType: LlmProviderType.remote,
-          apiKey: 'key',
-        );
+          final LlmConfig llmConfig = LlmConfig(
+            id: '1',
+            name: 'Test LLM',
+            model: 'gpt-4',
+            providerType: LlmProviderType.remote,
+            apiKey: 'key',
+          );
 
-        captioningCubit.runCaptioner(
-          llm: llmConfig,
-          prompt: 'Test Prompt',
-          option: CaptionOptions.all,
-          scopeToFiltered: true,
-        );
+          captioningCubit.runCaptioner(
+            llm: llmConfig,
+            prompt: 'Test Prompt',
+            option: CaptionOptions.all,
+            scopeToFiltered: true,
+          );
 
-        async.flushMicrotasks();
+          async.flushMicrotasks();
 
-        verify(mockCaptioningRepository.captionImage(
-          llmConfig, image1, 'Test Prompt',
-        )).called(1);
-        verifyNever(mockCaptioningRepository.captionImage(
-          llmConfig, image2, any,
-        ));
-      });
-    });
+          verify(
+            mockCaptioningRepository.captionImage(
+              llmConfig,
+              image1,
+              'Test Prompt',
+            ),
+          ).called(1);
+          verifyNever(
+            mockCaptioningRepository.captionImage(llmConfig, image2, any),
+          );
+        });
+      },
+    );
 
     test('runCaptioner scoped + all re-captions edited images (drops guard)', () {
       fakeAsync((FakeAsync async) {
@@ -647,8 +657,9 @@ void main() {
         when(mockImageListCubit.state).thenReturn(
           ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
         );
-        when(mockImageListCubit.filteredImages)
-            .thenReturn(<AppImage>[editedImage]);
+        when(
+          mockImageListCubit.filteredImages,
+        ).thenReturn(<AppImage>[editedImage]);
 
         when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
           (Invocation invocation) async =>
@@ -673,9 +684,13 @@ void main() {
         async.flushMicrotasks();
 
         // Edited image MUST be captioned when scoped (proves the guard was dropped).
-        verify(mockCaptioningRepository.captionImage(
-          llmConfig, editedImage, 'Test Prompt',
-        )).called(1);
+        verify(
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            editedImage,
+            'Test Prompt',
+          ),
+        ).called(1);
       });
     });
 
@@ -714,9 +729,9 @@ void main() {
 
         async.flushMicrotasks();
 
-        verifyNever(mockCaptioningRepository.captionImage(
-          llmConfig, editedImage, any,
-        ));
+        verifyNever(
+          mockCaptioningRepository.captionImage(llmConfig, editedImage, any),
+        );
       });
     });
   });

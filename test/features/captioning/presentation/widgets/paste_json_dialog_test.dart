@@ -12,11 +12,11 @@ const String _validJson =
     '{"high_level_description":"a cat","compositional_deconstruction":{"background":"sky","elements":[]}}';
 
 AppImage _seedImage() => AppImage(
-      id: 'img-1',
-      image: File('/tmp/img-1.png'),
-      captions: const <String, CaptionEntry>{},
-      size: 100,
-    );
+  id: 'img-1',
+  image: File('/tmp/img-1.png'),
+  captions: const <String, CaptionEntry>{},
+  size: 100,
+);
 
 Future<void> _pumpDialog(WidgetTester tester, ImageListCubit cubit) async {
   await tester.pumpWidget(
@@ -50,7 +50,9 @@ void main() {
 
   tearDown(() => cubit.close());
 
-  testWidgets('Apply disabled while input is invalid', (WidgetTester tester) async {
+  testWidgets('Apply disabled while input is invalid', (
+    WidgetTester tester,
+  ) async {
     await _pumpDialog(tester, cubit);
 
     await tester.enterText(find.byType(TextField), 'not json');
@@ -62,8 +64,11 @@ void main() {
         matching: find.byType(ElevatedButton),
       ),
     );
-    expect(apply.onPressed, isNull,
-        reason: 'Apply must be disabled for invalid input');
+    expect(
+      apply.onPressed,
+      isNull,
+      reason: 'Apply must be disabled for invalid input',
+    );
 
     expect(
       cubit.state.images.first.captions['default']?.text ?? '',
@@ -72,16 +77,20 @@ void main() {
     );
   });
 
-  testWidgets('Apply writes normalized JSON for current image', (WidgetTester tester) async {
+  testWidgets('Apply writes normalized JSON for current image', (
+    WidgetTester tester,
+  ) async {
     await _pumpDialog(tester, cubit);
 
     await tester.enterText(find.byType(TextField), _validJson);
     await tester.pump();
 
-    await tester.tap(find.ancestor(
-      of: find.text('Apply'),
-      matching: find.byType(ElevatedButton),
-    ));
+    await tester.tap(
+      find.ancestor(
+        of: find.text('Apply'),
+        matching: find.byType(ElevatedButton),
+      ),
+    );
     // Let the async updateCaption + dialog close run.
     await tester.pump();
     // Advance past NotificationOverlay's auto-hide Future.delayed timer.
@@ -91,7 +100,10 @@ void main() {
         cubit.state.images.first.captions['default']?.text ?? '';
     expect(stored, isNotEmpty);
     expect(stored, contains('"high_level_description":"a cat"'));
-    expect(find.byType(PasteJsonDialog), findsNothing,
-        reason: 'Dialog should close after applying');
+    expect(
+      find.byType(PasteJsonDialog),
+      findsNothing,
+      reason: 'Dialog should close after applying',
+    );
   });
 }

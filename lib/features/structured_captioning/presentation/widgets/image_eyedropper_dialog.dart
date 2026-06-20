@@ -23,10 +23,8 @@ Future<String?> showImageEyedropperDialog(
   return showDialog<String>(
     context: context,
     barrierColor: Colors.black,
-    builder: (BuildContext _) => _EyedropperDialog(
-      imageFile: imageFile,
-      elementBbox: elementBbox,
-    ),
+    builder: (BuildContext _) =>
+        _EyedropperDialog(imageFile: imageFile, elementBbox: elementBbox),
   );
 }
 
@@ -63,8 +61,9 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
       // Bake EXIF orientation so sampled pixels match how Flutter renders the
       // image (Image.file applies EXIF rotation; img.decodeImage does not).
       decoded = img.bakeOrientation(decoded);
-      final img.Image rgb =
-          decoded.numChannels >= 3 ? decoded : decoded.convert(numChannels: 3);
+      final img.Image rgb = decoded.numChannels >= 3
+          ? decoded
+          : decoded.convert(numChannels: 3);
       if (mounted) {
         setState(() {
           _image = rgb;
@@ -82,8 +81,8 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
       autofocus: true,
       child: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.escape):
-              () => Navigator.of(context).pop(),
+          const SingleActivator(LogicalKeyboardKey.escape): () =>
+              Navigator.of(context).pop(),
         },
         child: Scaffold(
           backgroundColor: Colors.black,
@@ -119,7 +118,11 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            const Icon(Icons.broken_image_outlined, color: Colors.white54, size: 48),
+            const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white54,
+              size: 48,
+            ),
             const SizedBox(height: 12),
             Text(_error!, style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 16),
@@ -132,12 +135,17 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
       );
     }
     if (_image == null || _imageSize == null) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      );
     }
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final Size container = Size(constraints.maxWidth, constraints.maxHeight);
+        final Size container = Size(
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
         final Rect paintedRect = getContainRect(container, _imageSize!);
         return GestureDetector(
           key: const ValueKey<String>('eyedropper-body'),
@@ -183,10 +191,10 @@ class _EyedropperDialogState extends State<_EyedropperDialog> {
   void _pick(Offset local, Rect paintedRect) {
     if (!paintedRect.contains(local)) return; // ignore letterbox taps
     final img.Image image = _image!;
-    final Point<int> pixel =
-        localToImagePixel(local, paintedRect, _imageSize!);
-    Navigator.of(context)
-        .pop(ColorExtractionService().hexAt(image, pixel.x, pixel.y));
+    final Point<int> pixel = localToImagePixel(local, paintedRect, _imageSize!);
+    Navigator.of(
+      context,
+    ).pop(ColorExtractionService().hexAt(image, pixel.x, pixel.y));
   }
 }
 
@@ -244,8 +252,12 @@ class _LoupePainter extends CustomPainter {
         final int px = (cx + dx).clamp(0, image.width - 1);
         final int py = (cy + dy).clamp(0, image.height - 1);
         final img.Pixel p = image.getPixel(px, py);
-        cellPaint.color =
-            Color.fromARGB(255, p.r.toInt(), p.g.toInt(), p.b.toInt());
+        cellPaint.color = Color.fromARGB(
+          255,
+          p.r.toInt(),
+          p.g.toInt(),
+          p.b.toInt(),
+        );
         canvas.drawRect(
           Rect.fromLTWH(
             topLeft.dx + (dx + _half) * _cell,

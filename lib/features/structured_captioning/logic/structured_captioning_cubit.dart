@@ -78,8 +78,8 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         imagesToProcess = scopeToFiltered
             ? baseImages.toList()
             : baseImages
-                .where((AppImage image) => !image.isCaptionEdited)
-                .toList();
+                  .where((AppImage image) => !image.isCaptionEdited)
+                  .toList();
     }
 
     final int total = imagesToProcess.length;

@@ -173,8 +173,7 @@ class _CaptionControlsState extends State<CaptionControls> {
     }
     final ImageListCubit cubit = context.read<ImageListCubit>();
     final int filteredCount = cubit.filteredImages.length;
-    final bool disabledForCurrent =
-        _selectedOption == CaptionOptions.current;
+    final bool disabledForCurrent = _selectedOption == CaptionOptions.current;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Opacity(
@@ -185,9 +184,9 @@ class _CaptionControlsState extends State<CaptionControls> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               Theme(
-                data: Theme.of(context).copyWith(
-                  unselectedWidgetColor: lightPink.withAlpha(120),
-                ),
+                data: Theme.of(
+                  context,
+                ).copyWith(unselectedWidgetColor: lightPink.withAlpha(120)),
                 child: SizedBox(
                   width: 24,
                   height: 24,

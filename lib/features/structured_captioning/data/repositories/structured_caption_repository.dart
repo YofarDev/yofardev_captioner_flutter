@@ -40,8 +40,7 @@ class StructuredCaptionRepository {
        _colorExtractionService =
            colorExtractionService ?? ColorExtractionService(),
        _promptLoader = promptLoader ?? StructuredPromptLoader(),
-       _bboxHighlightService =
-           bboxHighlightService ?? BboxHighlightService();
+       _bboxHighlightService = bboxHighlightService ?? BboxHighlightService();
 
   /// Runs the full pipeline on a single image.
   ///
@@ -265,8 +264,8 @@ class StructuredCaptionRepository {
   }) {
     final String instructionsBlock =
         (instructions == null || instructions.isEmpty)
-            ? ''
-            : 'Additional instructions from the user:\n$instructions\n';
+        ? ''
+        : 'Additional instructions from the user:\n$instructions\n';
     return template
         .replaceAll('{elementIndex}', elementIndex.toString())
         .replaceAll('{elementBbox}', _fmtBbox(bbox))
@@ -322,10 +321,7 @@ class StructuredCaptionRepository {
     }
   }
 
-  IdeogramElement _parseRecaptionResponse(
-    String raw,
-    IdeogramElement target,
-  ) {
+  IdeogramElement _parseRecaptionResponse(String raw, IdeogramElement target) {
     final Map<String, dynamic> json;
     final String desc;
     try {
@@ -653,9 +649,7 @@ class StructuredCaptionRepository {
     if (raw is! List || raw.length != 4) return null;
     final List<int> v;
     try {
-      v = raw
-          .map((dynamic e) => (e as num).round().clamp(0, 1000))
-          .toList();
+      v = raw.map((dynamic e) => (e as num).round().clamp(0, 1000)).toList();
     } catch (_) {
       // Non-numeric entries — not a usable bbox.
       return null;

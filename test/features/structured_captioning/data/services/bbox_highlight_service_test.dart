@@ -97,7 +97,9 @@ void main() {
     test('cleanup ignores a path that never existed', () async {
       final BboxHighlightService service = BboxHighlightService();
       // Must not throw.
-      await service.cleanup('/nonexistent/path/nope_${DateTime.now().microsecondsSinceEpoch}.jpg');
+      await service.cleanup(
+        '/nonexistent/path/nope_${DateTime.now().microsecondsSinceEpoch}.jpg',
+      );
     });
 
     test('handles portrait orientation (height > width)', () async {

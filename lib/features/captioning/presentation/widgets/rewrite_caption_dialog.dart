@@ -203,10 +203,7 @@ class _RewriteCaptionDialogState extends State<RewriteCaptionDialog> {
                         padding: EdgeInsets.only(left: 8),
                         child: Text(
                           '(no configs — add one in Settings)',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: destructive,
-                          ),
+                          style: TextStyle(fontSize: 11, color: destructive),
                         ),
                       ),
                   ],

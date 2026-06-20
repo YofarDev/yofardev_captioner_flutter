@@ -28,10 +28,7 @@ class BboxHighlightService {
   ///
   /// Throws [ArgumentError] if [bbox] does not have exactly 4 entries or
   /// represents a zero-area region.
-  Future<String> renderHighlightedJpeg(
-    File imageFile,
-    List<int> bbox,
-  ) async {
+  Future<String> renderHighlightedJpeg(File imageFile, List<int> bbox) async {
     if (bbox.length != 4) {
       throw ArgumentError('bbox must have exactly 4 entries [y1,x1,y2,x2]');
     }

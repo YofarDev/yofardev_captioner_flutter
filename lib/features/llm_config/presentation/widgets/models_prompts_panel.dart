@@ -554,7 +554,9 @@ class _IconBtnState extends State<_IconBtn> {
               widget.icon,
               size: 17,
               color: _hovered
-                  ? (widget.destructive ? destructive.withValues(alpha: 0.7) : lightPink)
+                  ? (widget.destructive
+                        ? destructive.withValues(alpha: 0.7)
+                        : lightPink)
                   : textSecondary,
             ),
           ),

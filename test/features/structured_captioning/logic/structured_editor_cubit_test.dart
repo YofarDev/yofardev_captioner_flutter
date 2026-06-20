@@ -273,17 +273,18 @@ void main() {
 
       IdeogramCaption withSelection({required bool withBbox}) =>
           baseCaption().copyWith(
-            compositionalDeconstruction:
-                baseCaption().compositionalDeconstruction.copyWith(
-                      elements: <IdeogramElement>[
-                        IdeogramElement(
-                          type: 'obj',
-                          desc: 'first',
-                          bbox: withBbox ? <int>[10, 10, 90, 90] : null,
-                        ),
-                        const IdeogramElement(type: 'obj', desc: 'second'),
-                      ],
+            compositionalDeconstruction: baseCaption()
+                .compositionalDeconstruction
+                .copyWith(
+                  elements: <IdeogramElement>[
+                    IdeogramElement(
+                      type: 'obj',
+                      desc: 'first',
+                      bbox: withBbox ? <int>[10, 10, 90, 90] : null,
                     ),
+                    const IdeogramElement(type: 'obj', desc: 'second'),
+                  ],
+                ),
           );
 
       setUp(() {
@@ -311,34 +312,36 @@ void main() {
           imageListCubit: mockImageListCubit,
           repository: mockRepo,
         );
-        await c.recaptionSelectedElement(
-          config: _dummyConfig(),
-        );
+        await c.recaptionSelectedElement(config: _dummyConfig());
         expect(c.state.status, isNot(StructuredEditorStatus.recaptioning));
-        verifyNever(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        ));
+        verifyNever(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        );
         await c.flushSave();
         await c.close();
       });
 
       test('emits error when selected element has no bbox', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: false);
-        when(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).thenThrow(StateError('Target element has no bbox; cannot highlight.'));
-
-        await c.recaptionSelectedElement(
-          config: _dummyConfig(),
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenThrow(
+          StateError('Target element has no bbox; cannot highlight.'),
         );
+
+        await c.recaptionSelectedElement(config: _dummyConfig());
 
         expect(c.state.status, StructuredEditorStatus.error);
         expect(c.state.error, contains('bbox'));
@@ -355,13 +358,15 @@ void main() {
         final Completer<IdeogramElement> completer =
             Completer<IdeogramElement>();
 
-        when(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).thenAnswer((_) => completer.future);
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenAnswer((_) => completer.future);
 
         // Kick off; don't await — the mock is genuinely suspended.
         final Future<void> done = c.recaptionSelectedElement(
@@ -375,8 +380,9 @@ void main() {
 
         // Complete the suspended VLM call.
         completer.complete(
-          c.state.caption.compositionalDeconstruction.elements[0]
-              .copyWith(desc: 'fresh'),
+          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+            desc: 'fresh',
+          ),
         );
         await done;
 
@@ -391,19 +397,19 @@ void main() {
 
       test('original element byte-identical on repo error', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
-        final IdeogramElement original = c
-            .state.caption.compositionalDeconstruction.elements[0];
-        when(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).thenThrow(Exception('boom'));
+        final IdeogramElement original =
+            c.state.caption.compositionalDeconstruction.elements[0];
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenThrow(Exception('boom'));
 
-        await c.recaptionSelectedElement(
-          config: _dummyConfig(),
-        );
+        await c.recaptionSelectedElement(config: _dummyConfig());
 
         expect(c.state.status, StructuredEditorStatus.error);
         final IdeogramElement after =
@@ -415,53 +421,57 @@ void main() {
 
       test('concurrent call is a no-op while one is in flight', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
-        when(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).thenAnswer((_) => recaptionCompleter.future);
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenAnswer((_) => recaptionCompleter.future);
 
         final Future<void> first = c.recaptionSelectedElement(
           config: _dummyConfig(),
         );
         await Future<void>.delayed(const Duration(milliseconds: 5));
 
-        await c.recaptionSelectedElement(
-          config: _dummyConfig(),
-        );
+        await c.recaptionSelectedElement(config: _dummyConfig());
 
-        verify(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).called(1);
+        verify(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).called(1);
 
         recaptionCompleter.complete(
-          c.state.caption.compositionalDeconstruction.elements[0]
-              .copyWith(desc: 'done'),
+          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+            desc: 'done',
+          ),
         );
         await first;
         await c.flushSave();
         await c.close();
       });
 
-      test('flushSave awaits an in-flight recaption before saving',
-          () async {
+      test('flushSave awaits an in-flight recaption before saving', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
         final Completer<IdeogramElement> completer =
             Completer<IdeogramElement>();
 
-        when(mockRepo.recaptionElement(
-          config: anyNamed('config'),
-          imageFile: anyNamed('imageFile'),
-          currentCaption: anyNamed('currentCaption'),
-          elementIndex: anyNamed('elementIndex'),
-          instructions: anyNamed('instructions'),
-        )).thenAnswer((_) => completer.future);
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenAnswer((_) => completer.future);
 
         final Future<void> recaptionFuture = c.recaptionSelectedElement(
           config: _dummyConfig(),
@@ -473,12 +483,16 @@ void main() {
           flushDone = true;
         });
         await Future<void>.delayed(const Duration(milliseconds: 5));
-        expect(flushDone, isFalse,
-            reason: 'flushSave must wait for the in-flight recaption');
+        expect(
+          flushDone,
+          isFalse,
+          reason: 'flushSave must wait for the in-flight recaption',
+        );
 
         completer.complete(
-          c.state.caption.compositionalDeconstruction.elements[0]
-              .copyWith(desc: 'done'),
+          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+            desc: 'done',
+          ),
         );
         await recaptionFuture;
         await flush;
@@ -492,8 +506,8 @@ void main() {
 }
 
 LlmConfig _dummyConfig() => LlmConfig(
-      id: 'cfg',
-      name: 'cfg',
-      model: 'vlm',
-      providerType: LlmProviderType.remote,
-    );
+  id: 'cfg',
+  name: 'cfg',
+  model: 'vlm',
+  providerType: LlmProviderType.remote,
+);

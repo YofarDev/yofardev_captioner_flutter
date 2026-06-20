@@ -20,8 +20,9 @@ class PasteJsonDialog extends StatefulWidget {
 class _PasteJsonDialogState extends State<PasteJsonDialog> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focus = FocusNode();
-  IdeogramJsonResult _result =
-      const IdeogramJsonResult.failure('Input is empty.');
+  IdeogramJsonResult _result = const IdeogramJsonResult.failure(
+    'Input is empty.',
+  );
 
   @override
   void initState() {
@@ -76,7 +77,11 @@ class _PasteJsonDialogState extends State<PasteJsonDialog> {
             const Text(
               'Paste a raw Ideogram caption JSON. It will be validated and '
               'applied to the current image in the active category.',
-              style: TextStyle(fontSize: 12, color: Colors.white54, height: 1.4),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white54,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 12),
             TextField(
@@ -90,7 +95,8 @@ class _PasteJsonDialogState extends State<PasteJsonDialog> {
                 color: Colors.white,
               ),
               decoration: InputDecoration(
-                hintText: '{"high_level_description": ..., '
+                hintText:
+                    '{"high_level_description": ..., '
                     '"compositional_deconstruction": {...}}',
                 hintStyle: const TextStyle(color: Colors.white38),
                 filled: true,
@@ -109,8 +115,11 @@ class _PasteJsonDialogState extends State<PasteJsonDialog> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    Icon(Icons.error_outline,
-                        size: 14, color: destructive.withAlpha(200)),
+                    Icon(
+                      Icons.error_outline,
+                      size: 14,
+                      color: destructive.withAlpha(200),
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(

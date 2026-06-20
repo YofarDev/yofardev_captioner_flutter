@@ -140,7 +140,8 @@ class _ImageListItemState extends State<ImageListItem> {
                         ],
                       ),
                     ),
-                    if ((widget.image.captions[widget.activeCategory]?.text ?? '')
+                    if ((widget.image.captions[widget.activeCategory]?.text ??
+                            '')
                         .trim()
                         .isEmpty)
                       Padding(

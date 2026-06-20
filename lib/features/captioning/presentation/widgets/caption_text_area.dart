@@ -230,22 +230,25 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                     ),
                                     const SizedBox(width: 8),
                                     Tooltip(
-                                      message: 'Paste raw Ideogram JSON caption',
+                                      message:
+                                          'Paste raw Ideogram JSON caption',
                                       child: InkWell(
                                         onTap: isThisImageBeingCaptioned
                                             ? null
                                             : () {
                                                 final ImageListCubit
-                                                    imageListCubit = context
-                                                        .read<ImageListCubit>();
+                                                imageListCubit = context
+                                                    .read<ImageListCubit>();
                                                 showDialog<void>(
                                                   context: context,
                                                   builder: (BuildContext _) =>
                                                       BlocProvider<
-                                                          ImageListCubit>.value(
-                                                    value: imageListCubit,
-                                                    child: const PasteJsonDialog(),
-                                                  ),
+                                                        ImageListCubit
+                                                      >.value(
+                                                        value: imageListCubit,
+                                                        child:
+                                                            const PasteJsonDialog(),
+                                                      ),
                                                 );
                                               },
                                         borderRadius: BorderRadius.circular(8),
@@ -255,8 +258,9 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                             color: isThisImageBeingCaptioned
                                                 ? Colors.white.withAlpha(20)
                                                 : lightPink.withAlpha(40),
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: Icon(
                                             Icons.data_object,

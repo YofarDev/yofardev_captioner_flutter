@@ -284,32 +284,32 @@ void main() {
         expect(results[1].bbox, isNull);
       });
 
-      test('omits --boxes when vlmBboxes is null (backwards compatible)',
-          () async {
-        // ignore: invalid_use_of_visible_for_testing_member
-        SamProcessService.cachedPythonPath = 'python3.11';
+      test(
+        'omits --boxes when vlmBboxes is null (backwards compatible)',
+        () async {
+          // ignore: invalid_use_of_visible_for_testing_member
+          SamProcessService.cachedPythonPath = 'python3.11';
 
-        when(
-          mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
-        ).thenAnswer(
-          (_) async => ProcessResult(
-            0,
-            0,
-            jsonEncode(
-              <Map<String, dynamic>>[
+          when(
+            mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
+          ).thenAnswer(
+            (_) async => ProcessResult(
+              0,
+              0,
+              jsonEncode(<Map<String, dynamic>>[
                 <String, dynamic>{'name': 'cat', 'bbox': null},
-              ],
+              ]),
+              '',
             ),
-            '',
-          ),
-        );
+          );
 
-        await service.detectObjects('/tmp/img.jpg', <String>['cat']);
+          await service.detectObjects('/tmp/img.jpg', <String>['cat']);
 
-        verify(
-          mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
-        ).called(1);
-      });
+          verify(
+            mockRunner.run('python3.11', argThat(isNot(contains('--boxes')))),
+          ).called(1);
+        },
+      );
     });
   });
 }

@@ -79,13 +79,13 @@ class StructuredEditorState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        caption,
-        imageFile,
-        activeCategory,
-        selectedElementIndex,
-        hiddenElementIndices,
-        status,
-        error,
-        recaptioningElementIndex,
-      ];
+    caption,
+    imageFile,
+    activeCategory,
+    selectedElementIndex,
+    hiddenElementIndices,
+    status,
+    error,
+    recaptioningElementIndex,
+  ];
 }

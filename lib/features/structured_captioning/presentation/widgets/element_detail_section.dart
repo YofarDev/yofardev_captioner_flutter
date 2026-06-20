@@ -66,7 +66,9 @@ class ElementDetailSection extends StatelessWidget {
                       color: destructive,
                     ),
                     tooltip: 'Delete element',
-                    onPressed: anyRecaptioning ? null : () => cubit.removeElement(idx),
+                    onPressed: anyRecaptioning
+                        ? null
+                        : () => cubit.removeElement(idx),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(
                       minWidth: 28,
@@ -290,21 +292,14 @@ class _ElementFieldState extends State<_ElementField> {
 /// [LlmConfigsCubit] is present in the tree (defensive for tests).
 LlmConfig? _maybeWatchSelectedConfig(BuildContext context) {
   try {
-    return context
-        .watch<LlmConfigsCubit>()
-        .state
-        .llmConfigs
-        .selectedConfig;
+    return context.watch<LlmConfigsCubit>().state.llmConfigs.selectedConfig;
   } on ProviderNotFoundException {
     return null;
   }
 }
 
 class _RecaptionButton extends StatelessWidget {
-  const _RecaptionButton({
-    required this.elementIndex,
-    required this.element,
-  });
+  const _RecaptionButton({required this.elementIndex, required this.element});
 
   final int elementIndex;
   final IdeogramElement element;
@@ -328,8 +323,9 @@ class _RecaptionButton extends StatelessWidget {
           prev.error != next.error,
       builder: (BuildContext context, StructuredEditorState state) {
         final bool isBusy = state.recaptioningElementIndex == elementIndex;
-        final String? error =
-            state.status == StructuredEditorStatus.error ? state.error : null;
+        final String? error = state.status == StructuredEditorStatus.error
+            ? state.error
+            : null;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

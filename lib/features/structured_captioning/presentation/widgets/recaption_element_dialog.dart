@@ -74,8 +74,7 @@ class _RecaptionElementDialogState extends State<_RecaptionElementDialog> {
           child: const Text('Cancel'),
         ),
         FilledButton.icon(
-          onPressed: () =>
-              Navigator.of(context).pop(_controller.text.trim()),
+          onPressed: () => Navigator.of(context).pop(_controller.text.trim()),
           icon: const Icon(Icons.auto_awesome, size: 16),
           label: const Text('Recaption'),
         ),

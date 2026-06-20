@@ -55,8 +55,6 @@ IdeogramJsonResult parseIdeogramCaptionJson(String text) {
     final IdeogramCaption caption = IdeogramCaption.fromJson(data);
     return IdeogramJsonResult.success(caption.toJsonString());
   } catch (e) {
-    return IdeogramJsonResult.failure(
-      'Could not parse Ideogram caption: $e',
-    );
+    return IdeogramJsonResult.failure('Could not parse Ideogram caption: $e');
   }
 }

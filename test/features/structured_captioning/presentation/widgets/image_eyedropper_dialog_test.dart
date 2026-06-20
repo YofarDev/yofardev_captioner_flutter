@@ -32,8 +32,9 @@ void main() {
     }
     _tempDirs.clear();
   });
-  testWidgets('tap on the image returns the center pixel hex',
-      (WidgetTester tester) async {
+  testWidgets('tap on the image returns the center pixel hex', (
+    WidgetTester tester,
+  ) async {
     final File file = _solidPng(200, 200, img.ColorRgb8(255, 0, 0));
 
     late BuildContext capturedCtx;
@@ -57,8 +58,10 @@ void main() {
     // indefinite animation never settles.
     String? picked;
     await tester.runAsync(() async {
-      final Future<String?> result =
-          showImageEyedropperDialog(capturedCtx, imageFile: file);
+      final Future<String?> result = showImageEyedropperDialog(
+        capturedCtx,
+        imageFile: file,
+      );
       await tester.pump(); // mount dialog → initState kicks off _decode()
       await Future<void>.delayed(
         const Duration(milliseconds: 100),
@@ -80,8 +83,9 @@ void main() {
     expect(picked, '#FF0000');
   });
 
-  testWidgets('tap in the letterbox is ignored (no pick)',
-      (WidgetTester tester) async {
+  testWidgets('tap in the letterbox is ignored (no pick)', (
+    WidgetTester tester,
+  ) async {
     final File file = _solidPng(200, 200, img.ColorRgb8(0, 255, 0));
 
     late BuildContext capturedCtx;
@@ -119,9 +123,12 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('shows an error message when the image cannot be decoded',
-      (WidgetTester tester) async {
-    final Directory tmp = Directory.systemTemp.createTempSync('eyedropper_bad_');
+  testWidgets('shows an error message when the image cannot be decoded', (
+    WidgetTester tester,
+  ) async {
+    final Directory tmp = Directory.systemTemp.createTempSync(
+      'eyedropper_bad_',
+    );
     _tempDirs.add(tmp);
     final File bad = File('${tmp.path}/not-an-image.png');
     bad.writeAsBytesSync(<int>[0, 1, 2, 3]); // garbage bytes
@@ -140,8 +147,10 @@ void main() {
 
     String? closed;
     await tester.runAsync(() async {
-      final Future<String?> result =
-          showImageEyedropperDialog(capturedCtx, imageFile: bad);
+      final Future<String?> result = showImageEyedropperDialog(
+        capturedCtx,
+        imageFile: bad,
+      );
       await tester.pump();
       await Future<void>.delayed(const Duration(milliseconds: 100));
       await tester.pump();
@@ -158,8 +167,9 @@ void main() {
     expect(closed, isNull);
   });
 
-  testWidgets('renders with an elementBbox highlight and still picks',
-      (WidgetTester tester) async {
+  testWidgets('renders with an elementBbox highlight and still picks', (
+    WidgetTester tester,
+  ) async {
     final File file = _solidPng(200, 200, img.ColorRgb8(0, 0, 255));
 
     late BuildContext capturedCtx;

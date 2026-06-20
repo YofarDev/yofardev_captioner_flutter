@@ -125,10 +125,12 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                   : <BoxShadow>[],
                             ),
                             child: isIdeogram
-                                ? IdeogramCaptionSummaryCard(
-                                    jsonString: captionText,
-                                    imageFile: currentImage.image,
-                                    activeCategory: category,
+                                ? SizedBox.expand(
+                                    child: IdeogramCaptionSummaryCard(
+                                      jsonString: captionText,
+                                      imageFile: currentImage.image,
+                                      activeCategory: category,
+                                    ),
                                   )
                                 : TextField(
                                     focusNode: _focusNode,

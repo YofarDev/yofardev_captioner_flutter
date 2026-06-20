@@ -9,6 +9,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/presentation/widgets/tag_editor.dart';
 import '../../../image_operations/data/utils/image_utils.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
 import '../../../structured_captioning/presentation/widgets/bbox_overlay.dart';
@@ -121,10 +122,11 @@ class CurrentImageView extends StatelessWidget {
                   if (currentImage.captionModel != null &&
                       currentImage.captionTimestamp != null)
                     _buildTimestamp(context, currentImage),
+                  const SizedBox(width: 8),
+                  const TagEditor(),
                   const Spacer(),
 
                   _buildSizeInfos(currentImage),
-                  const SizedBox(width: 8),
                   Tooltip(
                     message: 'Crop this image',
                     child: IconButton(

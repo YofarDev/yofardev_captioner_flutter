@@ -9,8 +9,7 @@ import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.da
 import 'package:yofardev_captioner/features/image_list/presentation/widgets/tag_editor.dart';
 
 class _FakeImageListCubit extends ImageListCubit {
-  _FakeImageListCubit(AppImage image)
-      : super() {
+  _FakeImageListCubit(AppImage image) : super() {
     emit(ImageListState(
       images: <AppImage>[image],
       currentImageId: image.id,
@@ -19,7 +18,27 @@ class _FakeImageListCubit extends ImageListCubit {
 }
 
 void main() {
-  testWidgets('renders chips for existing tags', (WidgetTester tester) async {
+  testWidgets('shows +Tags button when image has no tags',
+      (WidgetTester tester) async {
+    final AppImage image = AppImage(
+      id: 'img-1',
+      image: File('a.jpg'),
+      captions: <String, CaptionEntry>{},
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<ImageListCubit>.value(
+          value: _FakeImageListCubit(image),
+          child: const Scaffold(body: TagEditor()),
+        ),
+      ),
+    );
+
+    expect(find.text('+Tags'), findsOneWidget);
+  });
+
+  testWidgets('shows +Tags (N) button when image has tags',
+      (WidgetTester tester) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
@@ -35,16 +54,38 @@ void main() {
       ),
     );
 
-    expect(find.text('sunset'), findsOneWidget);
-    expect(find.text('landscape'), findsOneWidget);
+    expect(find.text('+Tags (2)'), findsOneWidget);
   });
 
-  testWidgets('Enter in the field calls addTag', (WidgetTester tester) async {
+  testWidgets('button opens dialog with existing tags',
+      (WidgetTester tester) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
       captions: <String, CaptionEntry>{},
-      tags: const <String>[],
+      tags: const <String>['sunset'],
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<ImageListCubit>.value(
+          value: _FakeImageListCubit(image),
+          child: const Scaffold(body: TagEditor()),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('+Tags (1)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('sunset'), findsOneWidget);
+  });
+
+  testWidgets('dialog can add and save tags',
+      (WidgetTester tester) async {
+    final AppImage image = AppImage(
+      id: 'img-1',
+      image: File('a.jpg'),
+      captions: <String, CaptionEntry>{},
     );
     final _FakeImageListCubit cubit = _FakeImageListCubit(image);
     await tester.pumpWidget(
@@ -56,18 +97,21 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byType(TextField), 'wide-angle');
-    await tester.testTextInput.receiveAction(TextInputAction.done);
-    await tester.pump();
+    await tester.tap(find.text('+Tags'));
+    await tester.pumpAndSettle();
 
-    expect(
-      cubit.state.images.first.tags,
-      <String>['wide-angle'],
-    );
+    await tester.enterText(find.byType(TextField), 'wide-angle');
+    await tester.tap(find.text('Add'));
+    await tester.pump();
     expect(find.text('wide-angle'), findsOneWidget);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(cubit.state.images.first.tags, <String>['wide-angle']);
   });
 
-  testWidgets('tapping a chip X calls removeTag', (WidgetTester tester) async {
+  testWidgets('dialog remove chip works', (WidgetTester tester) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
@@ -84,9 +128,15 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('sunset'));
-    await tester.pump();
+    await tester.tap(find.text('+Tags (1)'));
+    await tester.pumpAndSettle();
 
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pump();
+    expect(find.text('sunset'), findsNothing);
+
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
     expect(cubit.state.images.first.tags, <String>[]);
   });
 
@@ -102,6 +152,6 @@ void main() {
       ),
     );
 
-    expect(find.byType(TextField), findsNothing);
+    expect(find.text('+Tags'), findsNothing);
   });
 }

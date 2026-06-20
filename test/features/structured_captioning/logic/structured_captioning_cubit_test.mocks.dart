@@ -300,6 +300,33 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
+  _i6.Future<void> addTag(String? rawTag) =>
+      (super.noSuchMethod(
+            Invocation.method(#addTag, [rawTag]),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> removeTag(String? tag) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeTag, [tag]),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> setTags(List<String>? rawTags) =>
+      (super.noSuchMethod(
+            Invocation.method(#setTags, [rawTags]),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
   void emit(_i2.ImageListState? state) => super.noSuchMethod(
     Invocation.method(#emit, [state]),
     returnValueForMissingStub: null,

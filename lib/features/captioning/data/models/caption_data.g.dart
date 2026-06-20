@@ -15,6 +15,8 @@ CaptionData _$CaptionDataFromJson(Map<String, dynamic> json) => CaptionData(
   lastModified: json['lastModified'] == null
       ? null
       : DateTime.parse(json['lastModified'] as String),
+  tags:
+      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ?? [],
 );
 
 Map<String, dynamic> _$CaptionDataToJson(CaptionData instance) =>
@@ -23,4 +25,5 @@ Map<String, dynamic> _$CaptionDataToJson(CaptionData instance) =>
       'filename': instance.filename,
       'captions': instance.captions.map((k, e) => MapEntry(k, e.toJson())),
       'lastModified': instance.lastModified?.toIso8601String(),
+      'tags': instance.tags,
     };

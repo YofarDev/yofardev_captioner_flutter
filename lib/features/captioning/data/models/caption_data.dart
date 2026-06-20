@@ -10,12 +10,15 @@ class CaptionData {
   String filename;
   final Map<String, CaptionEntry> captions; // Changed from single fields
   final DateTime? lastModified;
+  @JsonKey(defaultValue: <String>[])
+  final List<String> tags;
 
   CaptionData({
     required this.id,
     required this.filename,
     required this.captions,
     this.lastModified,
+    this.tags = const <String>[],
   });
 
   factory CaptionData.fromJson(Map<String, dynamic> json) =>

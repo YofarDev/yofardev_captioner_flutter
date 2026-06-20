@@ -58,7 +58,11 @@ class ImageListCubit extends Cubit<ImageListState> {
 
       // Structured filter expressions (AND logic)
       for (final FilterExpression filter in parsedQuery.filters) {
-        if (!filter.evaluate(captionText)) return false;
+        if (!filter.evaluate(
+          FilterContext(captionText: captionText, tags: image.tags),
+        )) {
+          return false;
+        }
       }
 
       return true;

@@ -24,6 +24,20 @@ class ParsedFilterQuery extends Equatable {
   List<Object?> get props => <Object?>[filters, plainTextQuery];
 }
 
+/// Context passed to [FilterExpression.evaluate].
+class FilterContext extends Equatable {
+  const FilterContext({
+    required this.captionText,
+    this.tags = const <String>[],
+  });
+
+  final String captionText;
+  final List<String> tags;
+
+  @override
+  List<Object?> get props => <Object?>[captionText, tags];
+}
+
 /// Base class for all structured caption filter expressions.
 sealed class FilterExpression extends Equatable {
   const FilterExpression();
@@ -31,7 +45,7 @@ sealed class FilterExpression extends Equatable {
   /// Evaluates this filter against a raw caption string.
   ///
   /// Returns `true` if the caption matches this filter's criteria.
-  bool evaluate(String captionText);
+  bool evaluate(FilterContext ctx);
 
   /// Parses the caption as an [IdeogramCaption] if it is valid JSON,
   /// otherwise returns `null`.
@@ -55,9 +69,9 @@ class HasTypeFilter extends FilterExpression {
   final String elementType;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     return caption.compositionalDeconstruction.elements.any(
@@ -76,9 +90,9 @@ class HasBboxFilter extends FilterExpression {
   const HasBboxFilter();
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     return caption.compositionalDeconstruction.elements.any(
@@ -107,9 +121,9 @@ class DuplicateBboxFilter extends FilterExpression {
   final double threshold;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
 
@@ -166,9 +180,9 @@ class ElementCountFilter extends FilterExpression {
   final String operator;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     final int actual = caption.compositionalDeconstruction.elements.length;
@@ -197,9 +211,9 @@ class MediumFilter extends FilterExpression {
   final String medium;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     return caption.styleDescription.medium.toLowerCase() ==
@@ -219,9 +233,9 @@ class DescriptionFilter extends FilterExpression {
   final String pattern;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     return caption.highLevelDescription.toLowerCase().contains(
@@ -242,9 +256,9 @@ class StyleFilter extends FilterExpression {
   final String pattern;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     final String lowerPattern = pattern.toLowerCase();
@@ -269,9 +283,9 @@ class BackgroundFilter extends FilterExpression {
   final String pattern;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     return caption.compositionalDeconstruction.background
@@ -292,9 +306,9 @@ class ElementDescFilter extends FilterExpression {
   final String pattern;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     final String lowerPattern = pattern.toLowerCase();
@@ -319,9 +333,9 @@ class ColorFilter extends FilterExpression {
   final String hexColor;
 
   @override
-  bool evaluate(String captionText) {
+  bool evaluate(FilterContext ctx) {
     final IdeogramCaption? caption = FilterExpression.tryParseCaption(
-      captionText,
+      ctx.captionText,
     );
     if (caption == null) return false;
     final String normalized = hexColor.toUpperCase();
@@ -350,8 +364,8 @@ class IsStructuredFilter extends FilterExpression {
   const IsStructuredFilter();
 
   @override
-  bool evaluate(String captionText) {
-    return IdeogramCaptionSummaryCard.isIdeogramJson(captionText);
+  bool evaluate(FilterContext ctx) {
+    return IdeogramCaptionSummaryCard.isIdeogramJson(ctx.captionText);
   }
 
   @override
@@ -365,9 +379,9 @@ class IsPlainFilter extends FilterExpression {
   const IsPlainFilter();
 
   @override
-  bool evaluate(String captionText) {
-    if (captionText.trim().isEmpty) return false;
-    return !IdeogramCaptionSummaryCard.isIdeogramJson(captionText);
+  bool evaluate(FilterContext ctx) {
+    if (ctx.captionText.trim().isEmpty) return false;
+    return !IdeogramCaptionSummaryCard.isIdeogramJson(ctx.captionText);
   }
 
   @override
@@ -381,8 +395,8 @@ class NoCaptionFilter extends FilterExpression {
   const NoCaptionFilter();
 
   @override
-  bool evaluate(String captionText) {
-    return captionText.trim().isEmpty;
+  bool evaluate(FilterContext ctx) {
+    return ctx.captionText.trim().isEmpty;
   }
 
   @override

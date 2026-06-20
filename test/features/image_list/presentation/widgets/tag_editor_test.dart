@@ -37,7 +37,6 @@ void main() {
 
     expect(find.text('sunset'), findsOneWidget);
     expect(find.text('landscape'), findsOneWidget);
-    expect(find.text('Tags'), findsOneWidget);
   });
 
   testWidgets('Enter in the field calls addTag', (WidgetTester tester) async {
@@ -85,7 +84,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byIcon(Icons.close));
+    await tester.tap(find.text('sunset'));
     await tester.pump();
 
     expect(cubit.state.images.first.tags, <String>[]);
@@ -103,6 +102,6 @@ void main() {
       ),
     );
 
-    expect(find.text('Tags'), findsNothing);
+    expect(find.byType(TextField), findsNothing);
   });
 }

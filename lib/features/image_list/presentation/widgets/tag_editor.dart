@@ -58,64 +58,56 @@ class _TagEditorState extends State<TagEditor> {
         final List<String> tags = image.tags;
 
         return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: panelDark,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          height: 26,
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          decoration: const BoxDecoration(
+            border: Border(
+              top: BorderSide(color: hairline, width: 0.5),
+            ),
+          ),
+          child: Row(
             children: <Widget>[
-              const Text(
-                'Tags',
-                style: TextStyle(
-                  fontFamily: 'Orbitron',
-                  fontSize: 12,
-                  color: textSecondary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 6),
               if (tags.isNotEmpty)
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  children: <Widget>[
-                    for (final String tag in tags)
-                      _TagChip(
+                Expanded(
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: tags.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 2),
+                    itemBuilder: (BuildContext context, int index) {
+                      final String tag = tags[index];
+                      return _TagChip(
                         label: tag,
                         onRemoved: () =>
                             context.read<ImageListCubit>().removeTag(tag),
-                      ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              const SizedBox(height: 6),
+              if (tags.isNotEmpty) const SizedBox(width: 4),
               SizedBox(
-                height: 32,
+                width: 100,
+                height: 20,
                 child: TextField(
                   controller: _controller,
                   focusNode: _focusNode,
                   style: const TextStyle(
-                    color: textPrimary,
-                    fontSize: 13,
+                    color: textMuted,
+                    fontSize: 11,
                     fontFamily: 'Inter',
+                    height: 1.3,
                   ),
                   decoration: InputDecoration(
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
+                    contentPadding: EdgeInsets.zero,
+                    hintText: tags.isEmpty ? 'add tag\u2026' : '+',
+                    hintStyle: TextStyle(
+                      color: textMuted.withAlpha(60),
+                      fontSize: 11,
+                      fontFamily: 'Inter',
                     ),
-                    hintText: 'Add a tag\u2026',
-                    hintStyle: const TextStyle(
-                      color: textMuted,
-                      fontSize: 13,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: hairline),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: accentPink),
-                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                   ),
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _submit(),
@@ -129,44 +121,62 @@ class _TagEditorState extends State<TagEditor> {
   }
 }
 
-class _TagChip extends StatelessWidget {
+class _TagChip extends StatefulWidget {
   const _TagChip({required this.label, required this.onRemoved});
 
   final String label;
   final VoidCallback onRemoved;
 
   @override
+  State<_TagChip> createState() => _TagChipState();
+}
+
+class _TagChipState extends State<_TagChip> {
+  bool _hovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.only(left: 8),
-      decoration: BoxDecoration(
-        color: panelRaised,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: hairline),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Text(
-            label,
-            style: const TextStyle(
-              color: accentPink,
-              fontSize: 12,
-              fontFamily: 'Inter',
-            ),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onRemoved,
+        child: Container(
+          height: 20,
+          padding: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            color: _hovered ? panelRaised : Colors.transparent,
+            borderRadius: BorderRadius.circular(2),
           ),
-          IconButton(
-            splashRadius: 14,
-            constraints: const BoxConstraints(
-              minWidth: 24,
-              minHeight: 24,
-            ),
-            padding: EdgeInsets.zero,
-            iconSize: 14,
-            onPressed: onRemoved,
-            icon: const Icon(Icons.close, color: textSecondary),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                widget.label,
+                style: TextStyle(
+                  color: _hovered ? textSecondary : textMuted,
+                  fontSize: 11,
+                  fontFamily: 'Inter',
+                  height: 1.3,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 1),
+                child: Text(
+                  '\u00d7',
+                  style: TextStyle(
+                    color: _hovered
+                        ? textMuted
+                        : textMuted.withAlpha(40),
+                    fontSize: 10,
+                    fontFamily: 'Inter',
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

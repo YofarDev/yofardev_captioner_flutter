@@ -12,7 +12,7 @@ class CaptionDatabase {
   final List<CaptionData> images;
 
   CaptionDatabase({
-    this.version = 2,
+    this.version = 3,
     required this.categories,
     this.activeCategory,
     required this.images,

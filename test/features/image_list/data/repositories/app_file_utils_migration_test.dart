@@ -21,7 +21,7 @@ void main() {
       await tempDir.delete(recursive: true);
     });
 
-    test('migrates v1 database to v2 format', () async {
+    test('migrates v1 database to v3 format', () async {
       // Create old format db.json with proper JSON encoding
       final Map<String, dynamic> oldDb = <String, dynamic>{
         'images': <Map<String, dynamic>>[
@@ -51,7 +51,7 @@ void main() {
       final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
 
       // Verify migration
-      expect(db.version, equals(2));
+      expect(db.version, equals(3));
       expect(db.categories, equals(<String>['default']));
       expect(db.activeCategory, equals('default'));
       expect(db.images.length, equals(1));
@@ -59,10 +59,10 @@ void main() {
       expect(db.images.first.captions['default']?.text, equals('Test caption'));
     });
 
-    test('creates new v2 database for empty folder', () async {
+    test('creates new v3 database for empty folder', () async {
       final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
 
-      expect(db.version, equals(2));
+      expect(db.version, equals(3));
       expect(db.categories, equals(<String>['default']));
       expect(db.activeCategory, equals('default'));
       expect(db.images.length, equals(0));

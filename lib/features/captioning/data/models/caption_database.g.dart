@@ -8,7 +8,7 @@ part of 'caption_database.dart';
 
 CaptionDatabase _$CaptionDatabaseFromJson(Map<String, dynamic> json) =>
     CaptionDatabase(
-      version: (json['version'] as num?)?.toInt() ?? 2,
+      version: (json['version'] as num?)?.toInt() ?? 3,
       categories: (json['categories'] as List<dynamic>)
           .map((e) => e as String)
           .toList(),

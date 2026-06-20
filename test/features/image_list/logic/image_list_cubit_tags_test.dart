@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 
@@ -20,6 +21,119 @@ void main() {
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
+  });
+
+  test('getAllUniqueTags returns all unique tags across images', () {
+    final ImageListCubit cubit = ImageListCubit();
+    cubit.emit(cubit.state.copyWith(images: <AppImage>[
+      AppImage(
+        id: '1',
+        image: File(''),
+        captions: <String, CaptionEntry>{},
+        tags: <String>['sunset', 'landscape'],
+      ),
+      AppImage(
+        id: '2',
+        image: File(''),
+        captions: <String, CaptionEntry>{},
+        tags: <String>['landscape', 'night'],
+      ),
+      AppImage(
+        id: '3',
+        image: File(''),
+        captions: <String, CaptionEntry>{},
+        tags: <String>['sunset', 'portrait'],
+      ),
+    ]));
+    expect(
+      cubit.getAllUniqueTags(),
+      <String>{'sunset', 'landscape', 'night', 'portrait'},
+    );
+  });
+
+  String makeIdeogramJson(String medium) => jsonEncode(<String, dynamic>{
+        'high_level_description': 'A scene',
+        'style_description': <String, dynamic>{
+          'aesthetics': 'beautiful',
+          'lighting': 'natural',
+          'medium': medium,
+          'color_palette': <String>[],
+        },
+        'compositional_deconstruction': <String, dynamic>{
+          'background': 'sky',
+          'elements': <Map<String, dynamic>>[],
+        },
+      });
+
+  test('getAllUniqueMediums returns all unique mediums from JSON captions', () {
+    final ImageListCubit cubit = ImageListCubit();
+    cubit.emit(cubit.state.copyWith(images: <AppImage>[
+      AppImage(
+        id: '1',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: makeIdeogramJson('photograph')),
+        },
+        tags: <String>[],
+      ),
+      AppImage(
+        id: '2',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: makeIdeogramJson('oil painting')),
+        },
+        tags: <String>[],
+      ),
+      AppImage(
+        id: '3',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: makeIdeogramJson('photograph')),
+        },
+        tags: <String>[],
+      ),
+    ]));
+    expect(
+      cubit.getAllUniqueMediums(),
+      <String>{'photograph', 'oil painting'},
+    );
+  });
+
+  test('getAllUniqueMediums ignores non-JSON and invalid captions', () {
+    final ImageListCubit cubit = ImageListCubit();
+    cubit.emit(cubit.state.copyWith(images: <AppImage>[
+      AppImage(
+        id: '1',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: makeIdeogramJson('digital art')),
+        },
+        tags: <String>[],
+      ),
+      AppImage(
+        id: '2',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: 'just a plain caption'),
+        },
+        tags: <String>[],
+      ),
+      AppImage(
+        id: '3',
+        image: File(''),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: '{invalid json'),
+        },
+        tags: <String>[],
+      ),
+    ]));
+    expect(cubit.getAllUniqueMediums(), <String>{'digital art'});
+  });
+
+  test('getAllUniqueMediums returns empty set when no images', () {
+    final ImageListCubit cubit = ImageListCubit();
+    cubit.emit(cubit.state.copyWith(images: <AppImage>[]));
+    expect(cubit.getAllUniqueMediums(), <String>{});
   });
 
   test('_saveDb persists tags onto CaptionData in db.json', () async {

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/painting.dart';
@@ -12,6 +13,7 @@ import '../../caption_search/data/services/filter_parser.dart';
 import '../../captioning/data/models/caption_data.dart';
 import '../../captioning/data/models/caption_database.dart';
 import '../../captioning/data/models/caption_entry.dart';
+import '../../structured_captioning/data/models/ideogram_caption.dart';
 import '../data/models/app_image.dart';
 import '../data/repositories/app_file_utils.dart';
 
@@ -406,6 +408,36 @@ class ImageListCubit extends Cubit<ImageListState> {
     );
 
     await _fileUtils.writeDb(state.folderPath!, db);
+  }
+
+  /// Returns all unique tags across all images in the current folder.
+  Set<String> getAllUniqueTags() {
+    final Set<String> allTags = <String>{};
+    for (final AppImage image in state.images) {
+      allTags.addAll(image.tags);
+    }
+    return allTags;
+  }
+
+  /// Returns all unique medium values from structured captions across all images.
+  Set<String> getAllUniqueMediums() {
+    final Set<String> allMediums = <String>{};
+    final String category = state.activeCategory ?? 'default';
+    for (final AppImage image in state.images) {
+      final String captionText = image.captions[category]?.text ?? '';
+      if (captionText.trimLeft().startsWith('{')) {
+        try {
+          final IdeogramCaption parsed =
+              IdeogramCaption.fromJson(jsonDecode(captionText) as Map<String, dynamic>);
+          if (parsed.styleDescription.medium.isNotEmpty) {
+            allMediums.add(parsed.styleDescription.medium);
+          }
+        } catch (_) {
+          // skip invalid JSON
+        }
+      }
+    }
+    return allMediums;
   }
 
   Future<void> removeImage(String imageId) async {

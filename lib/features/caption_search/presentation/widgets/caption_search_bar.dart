@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../image_list/logic/image_list_cubit.dart';
+import '../../data/services/autocomplete_engine.dart';
 import '../../logic/caption_search_cubit.dart';
 import 'filter_help_dialog.dart';
+import 'search_autocomplete_overlay.dart';
 
 /// A search bar widget for filtering and replacing text in image captions.
 ///
@@ -27,6 +31,9 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   final TextEditingController _textController = TextEditingController();
   final TextEditingController _replaceController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final LayerLink _layerLink = LayerLink();
+  AutocompleteEngine? _autocompleteEngine;
+  OverlayEntry? _suggestionsOverlay;
 
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const double _searchBarWidth = 250.0;
@@ -38,6 +45,31 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     _initAnimation();
     _setupReplaceControllerListener();
     _setupCubitStateListener();
+    _setupKeyHandler();
+    _textController.addListener(_onTextChangedForAutocomplete);
+  }
+
+  void _setupKeyHandler() {
+    _focusNode.onKeyEvent = (FocusNode node, KeyEvent event) {
+      if (event is! KeyDownEvent || _suggestionsOverlay == null) {
+        return KeyEventResult.ignored;
+      }
+      final LogicalKeyboardKey key = event.logicalKey;
+      if (key == LogicalKeyboardKey.escape) {
+        _dismissSuggestions();
+        return KeyEventResult.handled;
+      }
+      if (key == LogicalKeyboardKey.arrowUp ||
+          key == LogicalKeyboardKey.arrowDown ||
+          key == LogicalKeyboardKey.enter) {
+        return SearchAutocompleteOverlay.handleKeyEvent(
+          _suggestionsOverlay!,
+          node,
+          event,
+        );
+      }
+      return KeyEventResult.ignored;
+    };
   }
 
   void _initAnimation() {
@@ -79,6 +111,8 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   @override
   void dispose() {
+    _dismissSuggestions();
+    _textController.removeListener(_onTextChangedForAutocomplete);
     _animationController.dispose();
     _textController.dispose();
     _replaceController.dispose();
@@ -88,6 +122,109 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _handleSearchChange(String query) {
     context.read<CaptionSearchCubit>().updateSearchQuery(query);
+  }
+
+  void _ensureAutocompleteEngine() {
+    if (_autocompleteEngine != null) return;
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
+    _autocompleteEngine = AutocompleteEngine(
+      getUniqueTags: () => imageListCubit.getAllUniqueTags(),
+      getUniqueMediums: () => imageListCubit.getAllUniqueMediums(),
+    );
+  }
+
+  void _onTextChangedForAutocomplete() {
+    _ensureAutocompleteEngine();
+
+    final String text = _textController.text;
+    final int cursorPos = _textController.selection.baseOffset;
+
+    if (cursorPos < 0) {
+      _dismissSuggestions();
+      return;
+    }
+
+    final List<AutocompleteSuggestion> suggestions = _autocompleteEngine!
+        .getSuggestions(text, cursorPos);
+
+    if (suggestions.isEmpty) {
+      _dismissSuggestions();
+      return;
+    }
+
+    _showSuggestions(suggestions);
+  }
+
+  void _showSuggestions(List<AutocompleteSuggestion> suggestions) {
+    if (_suggestionsOverlay != null) {
+      SearchAutocompleteOverlay.update(_suggestionsOverlay!, suggestions);
+      return;
+    }
+
+    _suggestionsOverlay = SearchAutocompleteOverlay.show(
+      context: context,
+      link: _layerLink,
+      suggestions: suggestions,
+      onSelected: _onSuggestionSelected,
+      onDismiss: _dismissSuggestions,
+    );
+  }
+
+  void _dismissSuggestions() {
+    if (_suggestionsOverlay != null) {
+      SearchAutocompleteOverlay.remove(_suggestionsOverlay!);
+      _suggestionsOverlay = null;
+    }
+  }
+
+  void _onSuggestionSelected(AutocompleteSuggestion suggestion) {
+    final String text = _textController.text;
+    final int cursorPos = _textController.selection.baseOffset;
+    if (cursorPos < 0) return;
+    final String beforeCursor = text.substring(0, cursorPos);
+    final String afterCursor = text.substring(cursorPos);
+
+    String newText;
+    int newCursorPos;
+
+    if (suggestion is FilterNameSuggestion) {
+      final int lastColon = beforeCursor.lastIndexOf(':');
+      newText =
+          '${beforeCursor.substring(0, lastColon)}:${suggestion.name}:$afterCursor';
+      newCursorPos = lastColon + suggestion.name.length + 2;
+    } else if (suggestion is TagValueSuggestion) {
+      const String tagPrefix = ':tag:';
+      final int tagStart = beforeCursor.lastIndexOf(tagPrefix);
+      newText =
+          '${beforeCursor.substring(0, tagStart)}$tagPrefix${suggestion.value}:$afterCursor';
+      newCursorPos = tagStart + tagPrefix.length + suggestion.value.length + 1;
+    } else if (suggestion is HasTypeSuggestion) {
+      const String hasPrefix = ':has:';
+      final int hasStart = beforeCursor.lastIndexOf(hasPrefix);
+      newText =
+          '${beforeCursor.substring(0, hasStart)}$hasPrefix${suggestion.type}:$afterCursor';
+      newCursorPos = hasStart + hasPrefix.length + suggestion.type.length + 1;
+    } else if (suggestion is MediumValueSuggestion) {
+      const String mediumPrefix = ':medium:';
+      final int mediumStart = beforeCursor.lastIndexOf(mediumPrefix);
+      newText =
+          '${beforeCursor.substring(0, mediumStart)}$mediumPrefix${suggestion.value}:$afterCursor';
+      newCursorPos =
+          mediumStart + mediumPrefix.length + suggestion.value.length + 1;
+    } else {
+      return;
+    }
+
+    _textController.value = TextEditingValue(
+      text: newText,
+      selection: TextSelection.collapsed(offset: newCursorPos),
+    );
+
+    _handleSearchChange(newText);
+
+    _dismissSuggestions();
+
+    _focusNode.requestFocus();
   }
 
   void _handleReplaceSubmitted(String text) {
@@ -202,18 +339,24 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   }
 
   Widget _buildSearchTextField(CaptionSearchCubit cubit) {
-    return TextField(
-      controller: _textController,
-      focusNode: _focusNode,
-      onChanged: _handleSearchChange,
-      decoration: InputDecoration(
-        hintText: 'Search in captions...',
-        hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
-        border: InputBorder.none,
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+    return CompositedTransformTarget(
+      link: _layerLink,
+      child: TextField(
+        controller: _textController,
+        focusNode: _focusNode,
+        onChanged: _handleSearchChange,
+        decoration: InputDecoration(
+          hintText: 'Search in captions...',
+          hintStyle: TextStyle(color: Colors.grey[600], fontSize: 13),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 8,
+          ),
+        ),
+        style: const TextStyle(fontSize: 13),
       ),
-      style: const TextStyle(fontSize: 13),
     );
   }
 

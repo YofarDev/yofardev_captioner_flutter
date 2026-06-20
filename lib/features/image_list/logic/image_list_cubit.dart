@@ -612,6 +612,62 @@ class ImageListCubit extends Cubit<ImageListState> {
     await _saveDb();
   }
 
+  // ---------------------------------------------------------------------------
+  // Tags
+  // ---------------------------------------------------------------------------
+
+  static final RegExp _whitespaceRun = RegExp(r'\s+');
+
+  /// Trims and collapses internal whitespace; preserves case.
+  String _normalizeTag(String raw) =>
+      raw.trim().replaceAll(_whitespaceRun, ' ');
+
+  /// Adds [rawTag] to the currently selected image's tags (normalized, deduped).
+  /// No-op if the normalized result is empty or no image is selected.
+  Future<void> addTag(String rawTag) async {
+    final AppImage? current = currentDisplayedImage;
+    if (current == null) return;
+    final String tag = _normalizeTag(rawTag);
+    if (tag.isEmpty) return;
+    if (current.tags.contains(tag)) return;
+    await setTags(<String>[...current.tags, tag]);
+  }
+
+  /// Removes [tag] from the currently selected image's tags.
+  /// No-op if the tag is absent or no image is selected.
+  Future<void> removeTag(String tag) async {
+    final AppImage? current = currentDisplayedImage;
+    if (current == null) return;
+    if (!current.tags.contains(tag)) return;
+    await setTags(current.tags.where((String t) => t != tag).toList());
+  }
+
+  /// Replaces the currently selected image's tags with [rawTags]
+  /// (each normalized; empties dropped; duplicates removed, preserving order).
+  Future<void> setTags(List<String> rawTags) async {
+    final AppImage? current = currentDisplayedImage;
+    if (current == null) return;
+
+    final List<String> normalized = <String>[];
+    final Set<String> seen = <String>{};
+    for (final String raw in rawTags) {
+      final String tag = _normalizeTag(raw);
+      if (tag.isEmpty || seen.contains(tag)) continue;
+      seen.add(tag);
+      normalized.add(tag);
+    }
+
+    final AppImage updated = current.copyWith(tags: normalized);
+    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
+    final int index = updatedImages.indexWhere(
+      (AppImage i) => i.id == current.id,
+    );
+    if (index == -1) return;
+    updatedImages[index] = updated;
+    emit(state.copyWith(images: updatedImages));
+    await _saveDb();
+  }
+
   /// Evicts all current image thumbnails from Flutter's global ImageCache.
   /// Prevents stale thumbnails when files are added, renamed, or replaced.
   void _evictImageCache() {

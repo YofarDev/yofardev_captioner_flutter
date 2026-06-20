@@ -147,6 +147,7 @@ class AppFileUtils {
         ),
       },
       lastModified: captionData.lastModified,
+      tags: captionData.tags,
     );
   }
 

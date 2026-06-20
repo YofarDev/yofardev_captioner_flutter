@@ -14,6 +14,7 @@ class AppImage extends Equatable {
   final String? captionModel;
   final DateTime? captionTimestamp;
   final DateTime? lastModified;
+  final List<String> tags;
 
   const AppImage({
     required this.id,
@@ -27,6 +28,7 @@ class AppImage extends Equatable {
     this.captionModel,
     this.captionTimestamp,
     this.lastModified,
+    this.tags = const <String>[],
   });
 
   String get caption {
@@ -54,6 +56,7 @@ class AppImage extends Equatable {
     captionModel,
     captionTimestamp,
     lastModified,
+    tags,
   ];
   AppImage copyWith({
     String? id,
@@ -67,6 +70,7 @@ class AppImage extends Equatable {
     String? captionModel,
     DateTime? captionTimestamp,
     DateTime? lastModified,
+    List<String>? tags,
     bool clearError = false,
   }) {
     return AppImage(
@@ -81,6 +85,7 @@ class AppImage extends Equatable {
       captionModel: captionModel ?? this.captionModel,
       captionTimestamp: captionTimestamp ?? this.captionTimestamp,
       lastModified: lastModified ?? this.lastModified,
+      tags: tags ?? this.tags,
     );
   }
 }

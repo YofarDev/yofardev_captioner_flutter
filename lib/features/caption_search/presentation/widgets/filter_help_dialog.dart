@@ -84,10 +84,16 @@ class FilterHelpDialog extends StatelessWidget {
                   'Forest background with a cat element',
                 ),
                 _buildExample(':nocaption:', 'Uncaptioned images'),
+                _buildExample(
+                  ':tag:favorite:',
+                  'Images tagged "favorite"',
+                ),
+                _buildExample(':notag:', 'Untagged images'),
                 const SizedBox(height: 8),
                 Text(
                   'Structured filters only match Ideogram JSON captions. '
-                  'Use :plain: to find non-JSON captions.',
+                  'Use :plain: to find non-JSON captions. '
+                  ':tag: and :notag: work on any image (tags are independent of captions).',
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
@@ -129,6 +135,8 @@ class FilterHelpDialog extends StatelessWidget {
         _filterRow(':structured:', 'Is Ideogram JSON'),
         _filterRow(':plain:', 'Is plain text (not JSON)'),
         _filterRow(':nocaption:', 'No caption'),
+        _filterRow(':tag:value:', 'Has a tag equal to value'),
+        _filterRow(':notag:', 'No tags assigned'),
       ],
     );
   }

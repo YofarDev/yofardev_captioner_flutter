@@ -257,4 +257,32 @@ void main() {
       });
     });
   });
+
+  group('tag / notag filters', () {
+    test('parses :tag:foo: as TagFilter', () {
+      final ParsedFilterQuery result = FilterParser.parse(':tag:foo:');
+      expect(result.filters, hasLength(1));
+      expect(result.filters.single, isA<TagFilter>());
+      expect((result.filters.single as TagFilter).tag, 'foo');
+    });
+
+    test('parses :notag: as NoTagFilter', () {
+      final ParsedFilterQuery result = FilterParser.parse(':notag:');
+      expect(result.filters, hasLength(1));
+      expect(result.filters.single, isA<NoTagFilter>());
+    });
+
+    test('combines tag and plain text (AND)', () {
+      final ParsedFilterQuery result = FilterParser.parse('sunset :tag:wide:');
+      expect(result.filters, hasLength(1));
+      expect(result.filters.single, isA<TagFilter>());
+      expect(result.plainTextQuery, 'sunset');
+    });
+
+    test(':tag:foo: :tag:bar: yields two TagFilters', () {
+      final ParsedFilterQuery result = FilterParser.parse(':tag:foo: :tag:bar:');
+      expect(result.filters, hasLength(2));
+      expect(result.filters.every((FilterExpression f) => f is TagFilter), isTrue);
+    });
+  });
 }

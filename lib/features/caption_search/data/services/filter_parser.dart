@@ -20,6 +20,8 @@ class FilterParser {
     'plain',
     'nocaption',
     'dupbbox',
+    'tag',
+    'notag',
   };
 
   /// Flag-only filters (no arguments between name and closing `:`).
@@ -27,6 +29,7 @@ class FilterParser {
     'structured',
     'plain',
     'nocaption',
+    'notag',
   };
 
   /// Parses [query] into a [ParsedFilterQuery].
@@ -160,6 +163,18 @@ class FilterParser {
       );
     }
 
+    // :tag:value:
+    if (name == 'tag') {
+      final int argEnd = _indexOf(query, ':', nameEnd + 1);
+      if (argEnd == -1) return null;
+      final String arg = query.substring(nameEnd + 1, argEnd).trim();
+      if (arg.isEmpty) return null;
+      return _ParseResult(
+        filter: TagFilter(tag: arg),
+        endIndex: argEnd + 1,
+      );
+    }
+
     return null;
   }
 
@@ -169,6 +184,7 @@ class FilterParser {
       'structured' => const IsStructuredFilter(),
       'plain' => const IsPlainFilter(),
       'nocaption' => const NoCaptionFilter(),
+      'notag' => const NoTagFilter(),
       _ => throw ArgumentError('Unknown flag filter: $name'),
     };
   }

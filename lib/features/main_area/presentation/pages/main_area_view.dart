@@ -6,6 +6,7 @@ import '../../../caption_search/presentation/widgets/caption_search_bar.dart';
 import '../../../captioning/presentation/widgets/caption_text_area.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_view.dart';
+import '../../../image_list/presentation/widgets/tag_editor.dart';
 import 'current_image_view.dart';
 
 class MainAreaView extends StatelessWidget {
@@ -23,6 +24,7 @@ class MainAreaView extends StatelessWidget {
             const Column(
               children: <Widget>[
                 CurrentImageView(),
+                TagEditor(),
                 Expanded(child: CaptionTextArea()),
                 ControlsView(),
                 SizedBox(height: 16),

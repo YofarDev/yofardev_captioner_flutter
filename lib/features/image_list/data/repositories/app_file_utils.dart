@@ -72,6 +72,7 @@ class AppFileUtils {
               captions: hydratedCaptionData.captions,
               size: file.lengthSync(),
               lastModified: hydratedCaptionData.lastModified,
+              tags: hydratedCaptionData.tags,
             ),
           );
         }
@@ -199,6 +200,20 @@ class AppFileUtils {
     );
   }
 
+  CaptionDatabase _migrateV2ToV3(Map<String, dynamic> oldJson) {
+    final List<dynamic> oldImages = oldJson['images'] as List<dynamic>;
+    for (final dynamic img in oldImages) {
+      final Map<String, dynamic> map = img as Map<String, dynamic>;
+      if (!map.containsKey('tags')) {
+        map['tags'] = <String>[];
+      }
+    }
+    return CaptionDatabase.fromJson(<String, dynamic>{
+      ...oldJson,
+      'version': 3,
+    });
+  }
+
   Future<CaptionDatabase> readDb(String folderPath) async {
     final File dbFile = _getDbPath(folderPath);
     if (await dbFile.exists()) {
@@ -218,6 +233,12 @@ class AppFileUtils {
           return migrated;
         }
 
+        final int version = (json['version'] as num?)?.toInt() ?? 1;
+        if (version < 3) {
+          final CaptionDatabase migrated = _migrateV2ToV3(json);
+          await writeDb(folderPath, migrated);
+          return migrated;
+        }
         return CaptionDatabase.fromJson(json);
       } catch (e) {
         return CaptionDatabase(
@@ -404,6 +425,7 @@ class AppFileUtils {
       captionModel: originalImage.captionModel,
       captionTimestamp: originalImage.captionTimestamp,
       lastModified: DateTime.now(),
+      tags: originalImage.tags,
     );
   }
 

@@ -10,6 +10,7 @@ import '../utils/bbox_utils.dart';
 class InteractiveBboxPainter extends CustomPainter {
   const InteractiveBboxPainter({
     required this.elements,
+    required this.resolvedBboxes,
     required this.hiddenIndices,
     required this.selectedIndex,
     required this.paintedRect,
@@ -18,6 +19,13 @@ class InteractiveBboxPainter extends CustomPainter {
   });
 
   final List<IdeogramElement> elements;
+
+  /// Parallel to [elements]: the bbox to render for each element, or null
+  /// when the element has no bbox. The caller (canvas) decides whether
+  /// each entry is the saved (VLM) bbox or the SAM3 bbox based on the
+  /// editor's display mode.
+  final List<List<int>?> resolvedBboxes;
+
   final Set<int> hiddenIndices;
   final int? selectedIndex;
   final Rect paintedRect;
@@ -31,9 +39,11 @@ class InteractiveBboxPainter extends CustomPainter {
       if (hiddenIndices.contains(i)) continue;
       if (i == selectedIndex) continue; // selected drawn last (on top)
       final IdeogramElement el = elements[i];
-      if (el.bbox == null) continue;
+      if (i >= resolvedBboxes.length) continue;
+      final List<int>? bbox = resolvedBboxes[i];
+      if (bbox == null) continue;
 
-      final Rect rect = bboxToRect(el.bbox!, paintedRect);
+      final Rect rect = bboxToRect(bbox, paintedRect);
       final Color color = boxColors[i % boxColors.length];
       _drawBbox(canvas, rect, color, el, false);
     }
@@ -44,8 +54,10 @@ class InteractiveBboxPainter extends CustomPainter {
         !hiddenIndices.contains(selected) &&
         selected < elements.length) {
       final IdeogramElement el = elements[selected];
-      if (el.bbox != null) {
-        final Rect rect = bboxToRect(el.bbox!, paintedRect);
+      final List<int>? bbox =
+          selected < resolvedBboxes.length ? resolvedBboxes[selected] : null;
+      if (bbox != null) {
+        final Rect rect = bboxToRect(bbox, paintedRect);
         final Color color = boxColors[selected % boxColors.length];
         _drawBbox(canvas, rect, color, el, true);
       }
@@ -268,6 +280,7 @@ class InteractiveBboxPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant InteractiveBboxPainter oldDelegate) {
     return elements != oldDelegate.elements ||
+        resolvedBboxes != oldDelegate.resolvedBboxes ||
         hiddenIndices != oldDelegate.hiddenIndices ||
         selectedIndex != oldDelegate.selectedIndex ||
         paintedRect != oldDelegate.paintedRect ||

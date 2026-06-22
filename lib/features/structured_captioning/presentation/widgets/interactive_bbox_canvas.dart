@@ -93,6 +93,7 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
                     painter: InteractiveBboxPainter(
                       elements:
                           state.caption.compositionalDeconstruction.elements,
+                      resolvedBboxes: _resolveBboxes(state),
                       hiddenIndices: state.hiddenElementIndices,
                       selectedIndex: state.selectedElementIndex,
                       paintedRect: paintedRect,
@@ -100,6 +101,32 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
                       boxColors: kBboxColors,
                     ),
                   ),
+                  if (state.showSamBboxes)
+                    Positioned(
+                      left: 12,
+                      right: 12,
+                      bottom: 12,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.7),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'SAM3 preview — editing disabled',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: Colors.tealAccent,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             );
@@ -109,11 +136,47 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
     );
   }
 
+  /// Returns the bbox to render per element, depending on the editor's
+  /// display mode: SAM3 boxes when [StructuredEditorState.showSamBboxes]
+  /// is on (falling back to the saved box when SAM has no entry for that
+  /// element), otherwise the saved box.
+  List<List<int>?> _resolveBboxes(StructuredEditorState state) {
+    final List<IdeogramElement> elements =
+        state.caption.compositionalDeconstruction.elements;
+    final Map<int, List<int>>? sam = state.samBboxByIndex;
+    final bool showSam = state.showSamBboxes;
+    return List<List<int>?>.generate(elements.length, (int i) {
+      final List<int>? saved = elements[i].bbox;
+      if (showSam && sam != null && sam.containsKey(i)) {
+        return sam[i];
+      }
+      return saved;
+    });
+  }
+
   void _onPanStart(
     DragStartDetails details,
     Rect paintedRect,
     StructuredEditorState state,
   ) {
+    // SAM preview mode: tap-to-select only, no drag/draw/edit.
+    if (state.showSamBboxes) {
+      final Offset localPos = details.localPosition;
+      final List<IdeogramElement> elements =
+          state.caption.compositionalDeconstruction.elements;
+      for (int i = elements.length - 1; i >= 0; i--) {
+        final List<int>? bbox = elements[i].bbox;
+        if (bbox == null) continue;
+        final Rect elRect = bboxToRect(bbox, paintedRect);
+        if (elRect.contains(localPos)) {
+          context.read<StructuredEditorCubit>().selectElement(i);
+          return;
+        }
+      }
+      context.read<StructuredEditorCubit>().deselectElement();
+      return;
+    }
+
     final Offset localPos = details.localPosition;
 
     // Check if tapping on a corner handle of the selected element

@@ -42,6 +42,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   Timer? _debounceTimer;
   bool _isDirty = false;
   Future<void>? _recaptionInFlight;
+  Future<void>? _samComputeInFlight;
 
   // -- Description --
 
@@ -167,6 +168,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   // -- Element Editing --
 
   void updateElementDesc(String value) {
+    _invalidateSamCache();
     if (state.selectedElementIndex == null) return;
     final int idx = state.selectedElementIndex!;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
@@ -177,6 +179,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   void updateElementText(String? value) {
+    _invalidateSamCache();
     if (state.selectedElementIndex == null) return;
     final int idx = state.selectedElementIndex!;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
@@ -190,6 +193,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   void updateElementType(String type) {
+    _invalidateSamCache();
     if (state.selectedElementIndex == null) return;
     final int idx = state.selectedElementIndex!;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
@@ -200,6 +204,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   void updateElementBbox(List<int>? bbox) {
+    _invalidateSamCache();
     if (state.selectedElementIndex == null) return;
     final int idx = state.selectedElementIndex!;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
@@ -210,6 +215,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   void updateElementColorPalette(List<String>? palette) {
+    _invalidateSamCache();
     if (state.selectedElementIndex == null) return;
     final int idx = state.selectedElementIndex!;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
@@ -369,6 +375,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
           ),
         );
       } else {
+        _invalidateSamCache();
         final List<IdeogramElement> elements = List<IdeogramElement>.from(
           currentElements,
         );
@@ -396,9 +403,80 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     }
   }
 
+  // -- SAM3 bbox comparison toggle --
+
+  /// Toggles between showing the saved (VLM) bboxes and SAM3-refined
+  /// bboxes. When turning ON for the first time on an image, runs
+  /// `computeSamBboxes` and caches the result. Subsequent toggles are
+  /// instant. Concurrent calls share a single in-flight compute.
+  ///
+  /// Editing is disabled while [StructuredEditorState.showSamBboxes] is
+  /// true — see `InteractiveBboxCanvas`. The cache is invalidated by any
+  /// element mutation, so the SAM boxes never drift from the caption.
+  Future<void> toggleSamBboxes() async {
+    // If a compute is in flight, wait for it but don't trigger another.
+    if (_samComputeInFlight != null) {
+      await _samComputeInFlight;
+      return;
+    }
+
+    // If turning ON and we have no cache yet, compute first.
+    if (!state.showSamBboxes && state.samBboxByIndex == null) {
+      await _computeSamBboxes();
+      // If compute failed, leave showSamBboxes false.
+      if (state.samComputeStatus != SamComputeStatus.ready) return;
+    }
+
+    emit(state.copyWith(showSamBboxes: !state.showSamBboxes));
+  }
+
+  Future<void> _computeSamBboxes() async {
+    final Completer<void> completer = Completer<void>();
+    _samComputeInFlight = completer.future;
+
+    emit(state.copyWith(samComputeStatus: SamComputeStatus.computing));
+
+    try {
+      final Map<int, List<int>> result = await _repository.computeSamBboxes(
+        imageFile: state.imageFile,
+        caption: state.caption,
+      );
+      emit(
+        state.copyWith(
+          samBboxByIndex: result,
+          samComputeStatus: SamComputeStatus.ready,
+          clearError: true,
+        ),
+      );
+    } catch (e) {
+      _logger.warning('toggleSamBboxes: compute failed: $e');
+      emit(
+        state.copyWith(
+          samComputeStatus: SamComputeStatus.error,
+          error: e.toString(),
+        ),
+      );
+    } finally {
+      completer.complete();
+      _samComputeInFlight = null;
+    }
+  }
+
+  /// Clears the SAM cache. Called from every element mutator so SAM boxes
+  /// never drift from the caption.
+  void _invalidateSamCache() {
+    if (state.samBboxByIndex == null &&
+        !state.showSamBboxes &&
+        state.samComputeStatus == SamComputeStatus.idle) {
+      return;
+    }
+    emit(state.copyWith(clearSamCache: true));
+  }
+
   // -- Element CRUD --
 
   void addElement({String type = 'obj', List<int>? bbox}) {
+    _invalidateSamCache();
     final IdeogramElement newElement = IdeogramElement(
       type: type,
       bbox: bbox,
@@ -421,6 +499,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   void removeElement(int index) {
+    _invalidateSamCache();
     if (index < 0 ||
         index >= state.caption.compositionalDeconstruction.elements.length) {
       return;

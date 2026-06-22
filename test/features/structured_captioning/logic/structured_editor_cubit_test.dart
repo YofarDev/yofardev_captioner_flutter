@@ -502,6 +502,232 @@ void main() {
         await c.close();
       });
     });
+
+    group('toggleSamBboxes', () {
+      late MockStructuredCaptionRepository mockRepo;
+
+      IdeogramCaption captionWithBboxes() => const IdeogramCaption(
+        highLevelDescription: 'hld',
+        styleDescription: IdeogramStyleDescription(
+          aesthetics: 'a',
+          lighting: 'l',
+          medium: 'photograph',
+          colorPalette: <String>['#000000'],
+        ),
+        compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+          background: 'bg',
+          elements: <IdeogramElement>[
+            IdeogramElement(
+              type: 'obj',
+              desc: 'cat',
+              bbox: <int>[100, 100, 200, 200],
+            ),
+            IdeogramElement(
+              type: 'obj',
+              desc: 'dog',
+              bbox: <int>[300, 300, 400, 400],
+            ),
+          ],
+        ),
+      );
+
+      setUp(() {
+        mockRepo = MockStructuredCaptionRepository();
+      });
+
+      StructuredEditorCubit buildCubit() {
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: captionWithBboxes(),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+          repository: mockRepo,
+        );
+        return c;
+      }
+
+      test('toggle ON computes SAM bboxes and flips showSamBboxes', () async {
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenAnswer((_) async => <int, List<int>>{
+          0: <int>[110, 110, 210, 210],
+        });
+
+        final StructuredEditorCubit c = buildCubit();
+        await c.toggleSamBboxes();
+
+        expect(c.state.showSamBboxes, isTrue);
+        expect(c.state.samComputeStatus, SamComputeStatus.ready);
+        expect(c.state.samBboxByIndex, <int, List<int>>{
+          0: <int>[110, 110, 210, 210],
+        });
+
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('toggle OFF after ON does not recompute', () async {
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenAnswer((_) async => <int, List<int>>{
+          0: <int>[110, 110, 210, 210],
+        });
+
+        final StructuredEditorCubit c = buildCubit();
+        await c.toggleSamBboxes(); // ON
+        await c.toggleSamBboxes(); // OFF
+
+        expect(c.state.showSamBboxes, isFalse);
+        // Still cached.
+        expect(c.state.samBboxByIndex, isNotNull);
+        // Repo only called once.
+        verify(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).called(1);
+
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('emits computing status while awaiting', () async {
+        final Completer<Map<int, List<int>>> completer =
+            Completer<Map<int, List<int>>>();
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final StructuredEditorCubit c = buildCubit();
+        final Future<void> done = c.toggleSamBboxes();
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        expect(c.state.samComputeStatus, SamComputeStatus.computing);
+
+        completer.complete(<int, List<int>>{0: <int>[110, 110, 210, 210]});
+        await done;
+
+        expect(c.state.samComputeStatus, SamComputeStatus.ready);
+
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('on error sets error status and leaves cache null', () async {
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenThrow(Exception('sam boom'));
+
+        final StructuredEditorCubit c = buildCubit();
+        await c.toggleSamBboxes();
+
+        expect(c.state.samComputeStatus, SamComputeStatus.error);
+        expect(c.state.samBboxByIndex, isNull);
+        expect(c.state.showSamBboxes, isFalse);
+        expect(c.state.error, contains('sam boom'));
+
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('concurrent toggles share a single in-flight call', () async {
+        final Completer<Map<int, List<int>>> completer =
+            Completer<Map<int, List<int>>>();
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final StructuredEditorCubit c = buildCubit();
+        final Future<void> a = c.toggleSamBboxes();
+        final Future<void> b = c.toggleSamBboxes(); // should no-op silently
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        completer.complete(<int, List<int>>{0: <int>[110, 110, 210, 210]});
+        await Future.wait<void>(<Future<void>>[a, b]);
+
+        verify(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).called(1);
+
+        await c.flushSave();
+        await c.close();
+      });
+    });
+
+    group('SAM cache invalidation', () {
+      late MockStructuredCaptionRepository mockRepo;
+
+      setUp(() {
+        mockRepo = MockStructuredCaptionRepository();
+      });
+
+      test('editing the selected element clears the SAM cache', () async {
+        when(
+          mockRepo.computeSamBboxes(
+            imageFile: anyNamed('imageFile'),
+            caption: anyNamed('caption'),
+          ),
+        ).thenAnswer((_) async => <int, List<int>>{0: <int>[110, 110, 210, 210]});
+
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: const IdeogramCaption(
+            highLevelDescription: 'hld',
+            styleDescription: IdeogramStyleDescription(
+              aesthetics: 'a',
+              lighting: 'l',
+              medium: 'photograph',
+              colorPalette: <String>['#000000'],
+            ),
+            compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+              background: 'bg',
+              elements: <IdeogramElement>[
+                IdeogramElement(
+                  type: 'obj',
+                  desc: 'cat',
+                  bbox: <int>[100, 100, 200, 200],
+                ),
+              ],
+            ),
+          ),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+          repository: mockRepo,
+        );
+
+        await c.toggleSamBboxes();
+        expect(c.state.samBboxByIndex, isNotNull);
+
+        c.selectElement(0);
+        c.updateElementDesc('a tougher cat');
+
+        expect(c.state.samBboxByIndex, isNull);
+        expect(c.state.showSamBboxes, isFalse);
+        expect(c.state.samComputeStatus, SamComputeStatus.idle);
+
+        await c.flushSave();
+        await c.close();
+      });
+    });
   });
 }
 

@@ -203,6 +203,60 @@ class _StructuredEditorView extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         actions: <Widget>[
+          // SAM3 bbox comparison toggle.
+          BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
+            buildWhen: (StructuredEditorState prev, StructuredEditorState next) =>
+                prev.showSamBboxes != next.showSamBboxes ||
+                prev.samComputeStatus != next.samComputeStatus,
+            builder: (BuildContext context, StructuredEditorState state) {
+              final bool computing =
+                  state.samComputeStatus == SamComputeStatus.computing;
+              final bool on = state.showSamBboxes;
+              final bool errored =
+                  state.samComputeStatus == SamComputeStatus.error;
+
+              final IconData icon = on
+                  ? Icons.center_focus_strong
+                  : Icons.center_focus_strong_outlined;
+              final Color color = on
+                  ? Colors.tealAccent
+                  : (errored ? Colors.redAccent : Colors.white);
+
+              return IconButton(
+                icon: computing
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(color),
+                        ),
+                      )
+                    : Icon(icon, color: color),
+                tooltip: computing
+                    ? 'Running SAM3…'
+                    : (on
+                        ? 'Show saved (VLM) bboxes'
+                        : (errored
+                            ? (state.error ?? 'SAM3 failed — retry')
+                            : 'Show SAM3 bboxes')),
+                onPressed: computing
+                    ? null
+                    : () {
+                        context.read<StructuredEditorCubit>().toggleSamBboxes();
+                        if (state.samComputeStatus == SamComputeStatus.error) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(state.error ?? 'SAM3 failed'),
+                              duration: const Duration(seconds: 3),
+                            ),
+                          );
+                        }
+                      },
+              );
+            },
+          ),
           // TEMP: re-run color palette extraction across ALL displayed images
           // (validate chroma-snap fix at scale). Single-image variant kept on
           // long-press.

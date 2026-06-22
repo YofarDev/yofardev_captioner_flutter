@@ -14,6 +14,8 @@ import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.da
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/bbox_highlight_service.dart'
     as _i7;
+import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
+    as _i9;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart'
     as _i8;
 
@@ -172,4 +174,50 @@ class MockStructuredPromptLoader extends _i1.Mock
             ),
           )
           as _i3.Future<String>);
+}
+
+/// A class which mocks [SamProcessService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSamProcessService extends _i1.Mock implements _i9.SamProcessService {
+  MockSamProcessService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  set scriptPathOverride(String? value) => super.noSuchMethod(
+    Invocation.setter(#scriptPathOverride, value),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  _i3.Future<String> findSamPythonForTest() =>
+      (super.noSuchMethod(
+            Invocation.method(#findSamPythonForTest, []),
+            returnValue: _i3.Future<String>.value(
+              _i6.dummyValue<String>(
+                this,
+                Invocation.method(#findSamPythonForTest, []),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
+  _i3.Future<List<_i9.SamDetection>> detectObjects(
+    String? imagePath,
+    List<String>? objectNames, {
+    List<List<int>?>? vlmBboxes,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #detectObjects,
+              [imagePath, objectNames],
+              {#vlmBboxes: vlmBboxes},
+            ),
+            returnValue: _i3.Future<List<_i9.SamDetection>>.value(
+              <_i9.SamDetection>[],
+            ),
+          )
+          as _i3.Future<List<_i9.SamDetection>>);
 }

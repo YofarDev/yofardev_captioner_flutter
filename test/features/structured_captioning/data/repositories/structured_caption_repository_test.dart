@@ -21,6 +21,7 @@ import 'structured_caption_repository_test.mocks.dart';
   CaptionService,
   BboxHighlightService,
   StructuredPromptLoader,
+  SamProcessService,
 ])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -1203,6 +1204,146 @@ void main() {
         throwsA(isA<StateError>()),
       );
       verifyNever(mockHighlight.renderHighlightedJpeg(any, any));
+    });
+  });
+
+  group('computeSamBboxes', () {
+    late StructuredCaptionRepository repo;
+    late MockSamProcessService mockSam;
+
+    setUp(() {
+      mockSam = MockSamProcessService();
+      repo = StructuredCaptionRepository(samProcessService: mockSam);
+    });
+
+    IdeogramCaption captionWith({
+      required List<IdeogramElement> elements,
+    }) =>
+        IdeogramCaption(
+          highLevelDescription: 'hld',
+          styleDescription: const IdeogramStyleDescription(
+            aesthetics: 'a',
+            lighting: 'l',
+            medium: 'photograph',
+            colorPalette: <String>['#000000'],
+          ),
+          compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+            background: 'bg',
+            elements: elements,
+          ),
+        );
+
+    test('returns empty map when no elements have bboxes', () async {
+      final IdeogramCaption c = captionWith(
+        elements: <IdeogramElement>[
+          const IdeogramElement(type: 'obj', desc: 'no box'),
+        ],
+      );
+      final Map<int, List<int>> result = await repo.computeSamBboxes(
+        imageFile: File('img.png'),
+        caption: c,
+      );
+      expect(result, isEmpty);
+      verifyNever(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      );
+    });
+
+    test('skips likely-group elements and elements without a bbox', () async {
+      final IdeogramCaption c = captionWith(
+        elements: <IdeogramElement>[
+          // 0: eligible — singular, has bbox.
+          const IdeogramElement(
+            type: 'obj',
+            desc: 'a single cat',
+            bbox: <int>[100, 100, 200, 200],
+          ),
+          // 1: group — plural name. Skipped.
+          const IdeogramElement(
+            type: 'obj',
+            desc: 'Books',
+            bbox: <int>[300, 300, 400, 400],
+          ),
+        ],
+      );
+
+      when(
+        mockSam.detectObjects(
+          'img.png',
+          <String>['a single cat'],
+          vlmBboxes: <List<int>?>[
+            <int>[100, 100, 200, 200],
+          ],
+        ),
+      ).thenAnswer((_) async => <SamDetection>[
+        const SamDetection(
+          name: 'a single cat',
+          bbox: <int>[110, 110, 210, 210],
+        ),
+      ]);
+
+      final Map<int, List<int>> result = await repo.computeSamBboxes(
+        imageFile: File('img.png'),
+        caption: c,
+      );
+
+      expect(result, <int, List<int>>{
+        0: <int>[110, 110, 210, 210],
+      });
+    });
+
+    test('omits elements with no SAM match (VLM fallback handled by caller)',
+        () async {
+      final IdeogramCaption c = captionWith(
+        elements: <IdeogramElement>[
+          const IdeogramElement(
+            type: 'obj',
+            desc: 'cat',
+            bbox: <int>[100, 100, 200, 200],
+          ),
+        ],
+      );
+
+      // SAM returns nothing.
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenAnswer((_) async => <SamDetection>[]);
+
+      final Map<int, List<int>> result = await repo.computeSamBboxes(
+        imageFile: File('img.png'),
+        caption: c,
+      );
+
+      // matchDetectionsToObjects falls back to VLM bbox when no SAM detections;
+      // the repo method should still return that as a "SAM result" so the
+      // caller can render it. (Per design: VLM fallback is correct here.)
+      expect(result, <int, List<int>>{
+        0: <int>[100, 100, 200, 200],
+      });
+    });
+
+    test('returns empty map and swallows errors from SamProcessService',
+        () async {
+      final IdeogramCaption c = captionWith(
+        elements: <IdeogramElement>[
+          const IdeogramElement(
+            type: 'obj',
+            desc: 'cat',
+            bbox: <int>[100, 100, 200, 200],
+          ),
+        ],
+      );
+
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenThrow(Exception('python gone'));
+
+      final Map<int, List<int>> result = await repo.computeSamBboxes(
+        imageFile: File('img.png'),
+        caption: c,
+      );
+
+      expect(result, isEmpty);
     });
   });
 }

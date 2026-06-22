@@ -225,8 +225,8 @@ class _StructuredEditorView extends StatelessWidget {
               return IconButton(
                 icon: computing
                     ? SizedBox(
-                        width: 18,
-                        height: 18,
+                        width: 20,
+                        height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
                           valueColor:
@@ -239,20 +239,12 @@ class _StructuredEditorView extends StatelessWidget {
                     : (on
                         ? 'Show saved (VLM) bboxes'
                         : (errored
-                            ? (state.error ?? 'SAM3 failed — retry')
+                            ? 'SAM3 failed — click to retry'
                             : 'Show SAM3 bboxes')),
                 onPressed: computing
                     ? null
                     : () {
                         context.read<StructuredEditorCubit>().toggleSamBboxes();
-                        if (state.samComputeStatus == SamComputeStatus.error) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(state.error ?? 'SAM3 failed'),
-                              duration: const Duration(seconds: 3),
-                            ),
-                          );
-                        }
                       },
               );
             },

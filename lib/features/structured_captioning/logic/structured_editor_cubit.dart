@@ -449,7 +449,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         ),
       );
     } catch (e) {
-      _logger.warning('toggleSamBboxes: compute failed: $e');
+      _logger.warning('_computeSamBboxes: compute failed: $e');
       emit(
         state.copyWith(
           samComputeStatus: SamComputeStatus.error,
@@ -558,8 +558,13 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   /// the image list's *current* image, so flushing first ensures edits land on
   /// the image they belong to rather than the next one. Also awaits any
   /// in-flight recaption so its result lands on the correct element before
-  /// the cubit is disposed/rebuilt.
+  /// the cubit is disposed/rebuilt, and any in-flight SAM compute so its
+  /// emit doesn't fire on a closed cubit.
   Future<void> flushSave() async {
+    final Future<void>? samPending = _samComputeInFlight;
+    if (samPending != null) {
+      await samPending;
+    }
     final Future<void>? pending = _recaptionInFlight;
     if (pending != null) {
       await pending;

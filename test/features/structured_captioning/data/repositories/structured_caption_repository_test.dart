@@ -1292,8 +1292,7 @@ void main() {
       });
     });
 
-    test('omits elements with no SAM match (VLM fallback handled by caller)',
-        () async {
+    test('passes through VLM bbox when SAM finds no match', () async {
       final IdeogramCaption c = captionWith(
         elements: <IdeogramElement>[
           const IdeogramElement(
@@ -1314,9 +1313,10 @@ void main() {
         caption: c,
       );
 
-      // matchDetectionsToObjects falls back to VLM bbox when no SAM detections;
-      // the repo method should still return that as a "SAM result" so the
-      // caller can render it. (Per design: VLM fallback is correct here.)
+      // matchDetectionsToObjects fills unmatched slots with the original VLM
+      // bbox, and computeSamBboxes returns that result as-is — so even when
+      // SAM finds no detection, the caller still gets a usable bbox per
+      // element and the canvas always has something to render.
       expect(result, <int, List<int>>{
         0: <int>[100, 100, 200, 200],
       });

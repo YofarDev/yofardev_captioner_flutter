@@ -441,6 +441,8 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         imageFile: state.imageFile,
         caption: state.caption,
       );
+      if (isClosed) return;
+      if (state.samComputeStatus != SamComputeStatus.computing) return;
       emit(
         state.copyWith(
           samBboxByIndex: result,
@@ -449,6 +451,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         ),
       );
     } catch (e) {
+      if (isClosed) return;
       _logger.warning('_computeSamBboxes: compute failed: $e');
       emit(
         state.copyWith(
@@ -470,7 +473,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         state.samComputeStatus == SamComputeStatus.idle) {
       return;
     }
-    emit(state.copyWith(clearSamCache: true));
+    emit(state.copyWith(clearSamCache: true, clearError: true));
   }
 
   // -- Element CRUD --

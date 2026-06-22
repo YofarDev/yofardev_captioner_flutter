@@ -162,10 +162,9 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
     // SAM preview mode: tap-to-select only, no drag/draw/edit.
     if (state.showSamBboxes) {
       final Offset localPos = details.localPosition;
-      final List<IdeogramElement> elements =
-          state.caption.compositionalDeconstruction.elements;
-      for (int i = elements.length - 1; i >= 0; i--) {
-        final List<int>? bbox = elements[i].bbox;
+      final List<List<int>?> resolvedBboxes = _resolveBboxes(state);
+      for (int i = resolvedBboxes.length - 1; i >= 0; i--) {
+        final List<int>? bbox = resolvedBboxes[i];
         if (bbox == null) continue;
         final Rect elRect = bboxToRect(bbox, paintedRect);
         if (elRect.contains(localPos)) {

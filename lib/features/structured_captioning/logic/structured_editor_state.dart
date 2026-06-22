@@ -2,6 +2,9 @@ part of 'structured_editor_cubit.dart';
 
 enum StructuredEditorStatus { initial, saved, error, recaptioning }
 
+/// Lifecycle of the SAM3 bbox comparison cache for the current image.
+enum SamComputeStatus { idle, computing, ready, error }
+
 class StructuredEditorState extends Equatable {
   const StructuredEditorState({
     required this.caption,
@@ -12,6 +15,9 @@ class StructuredEditorState extends Equatable {
     this.status = StructuredEditorStatus.initial,
     this.error,
     this.recaptioningElementIndex,
+    this.samBboxByIndex,
+    this.showSamBboxes = false,
+    this.samComputeStatus = SamComputeStatus.idle,
   });
 
   /// The mutable working copy of the caption.
@@ -35,6 +41,18 @@ class StructuredEditorState extends Equatable {
   /// Index of the element currently being recaptioned, or null. Drives the
   /// per-element spinner in the UI.
   final int? recaptioningElementIndex;
+
+  /// Cached SAM3 detections, keyed by element index. `null` = not yet
+  /// computed for this image; empty map = computed but SAM found nothing.
+  /// Never serialized — lives outside [caption].
+  final Map<int, List<int>>? samBboxByIndex;
+
+  /// When true, the canvas shows SAM3 bboxes instead of the saved (VLM)
+  /// bboxes. Editing is disabled while this is true.
+  final bool showSamBboxes;
+
+  /// Lifecycle of [samBboxByIndex] for AppBar icon state.
+  final SamComputeStatus samComputeStatus;
 
   // Derived getters
 
@@ -60,6 +78,10 @@ class StructuredEditorState extends Equatable {
     bool clearError = false,
     int? recaptioningElementIndex,
     bool clearRecaptioning = false,
+    Map<int, List<int>>? samBboxByIndex,
+    bool? showSamBboxes,
+    SamComputeStatus? samComputeStatus,
+    bool clearSamCache = false,
   }) {
     return StructuredEditorState(
       caption: caption ?? this.caption,
@@ -74,6 +96,12 @@ class StructuredEditorState extends Equatable {
       recaptioningElementIndex: clearRecaptioning
           ? null
           : (recaptioningElementIndex ?? this.recaptioningElementIndex),
+      samBboxByIndex:
+          clearSamCache ? null : (samBboxByIndex ?? this.samBboxByIndex),
+      showSamBboxes: !clearSamCache && (showSamBboxes ?? this.showSamBboxes),
+      samComputeStatus: clearSamCache
+          ? SamComputeStatus.idle
+          : (samComputeStatus ?? this.samComputeStatus),
     );
   }
 
@@ -87,5 +115,8 @@ class StructuredEditorState extends Equatable {
     status,
     error,
     recaptioningElementIndex,
+    samBboxByIndex,
+    showSamBboxes,
+    samComputeStatus,
   ];
 }

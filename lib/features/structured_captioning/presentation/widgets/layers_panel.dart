@@ -112,6 +112,7 @@ class LayersPanel extends StatelessWidget {
                             onTap: () => cubit.selectElement(index),
                             onToggleVisibility: () =>
                                 cubit.toggleElementVisibility(index),
+                            onDuplicate: () => cubit.duplicateElement(index),
                             onDelete: () => cubit.removeElement(index),
                           );
                         },

@@ -79,6 +79,21 @@ class ElementDetailSection extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
+              const Text(
+                'Position',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 11,
+                  color: Colors.white54,
+                ),
+              ),
+              const SizedBox(height: 4),
+              _BboxFields(
+                bbox: element.bbox,
+                onChanged: cubit.updateElementBbox,
+              ),
+              const SizedBox(height: 10),
+
               _RecaptionButton(elementIndex: idx, element: element),
               const SizedBox(height: 10),
 
@@ -395,6 +410,132 @@ class _RecaptionButton extends StatelessWidget {
     await cubit.recaptionSelectedElement(
       config: config,
       instructions: instructions,
+    );
+  }
+}
+
+/// Compact x, y, w, h editor for an element bbox in 0–1000 normalized space.
+/// A null [bbox] seeds zeros so a brand-new element can be positioned by typing.
+class _BboxFields extends StatefulWidget {
+  const _BboxFields({required this.bbox, required this.onChanged});
+
+  final List<int>? bbox; // [y1, x1, y2, x2], null = no bbox yet
+  final ValueChanged<List<int>> onChanged;
+
+  @override
+  State<_BboxFields> createState() => _BboxFieldsState();
+}
+
+class _BboxFieldsState extends State<_BboxFields> {
+  late final List<TextEditingController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = _values()
+        .map((int v) => TextEditingController(text: '$v'))
+        .toList(growable: false);
+  }
+
+  List<int> _values() {
+    final List<int> b = widget.bbox ?? <int>[0, 0, 0, 0];
+    return <int>[b[1], b[0], b[3] - b[1], b[2] - b[0]];
+  }
+
+  @override
+  void didUpdateWidget(covariant _BboxFields oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.bbox == oldWidget.bbox) return;
+    final List<int> v = _values();
+    for (int i = 0; i < 4; i++) {
+      final String expected = '${v[i]}';
+      if (_controllers[i].text != expected) {
+        _controllers[i].text = expected;
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final TextEditingController c in _controllers) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  void _commit() {
+    int? p(int i) => int.tryParse(_controllers[i].text);
+    final int? x = p(0);
+    final int? y = p(1);
+    final int? w = p(2);
+    final int? h = p(3);
+    if (x == null || y == null || w == null || h == null) return;
+    final int x1 = x.clamp(0, 1000);
+    final int y1 = y.clamp(0, 1000);
+    final int x2 = (x + w).clamp(0, 1000);
+    final int y2 = (y + h).clamp(0, 1000);
+    widget.onChanged(<int>[y1, x1, y2, x2]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: <Widget>[
+        for (int i = 0; i < 4; i++) ...<Widget>[
+          if (i > 0) const SizedBox(width: 6),
+          Expanded(
+            child: _CompactNumField(
+              label: const <String>['x', 'y', 'w', 'h'][i],
+              controller: _controllers[i],
+              onChanged: (_) => _commit(),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _CompactNumField extends StatelessWidget {
+  const _CompactNumField({
+    required this.label,
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final String label;
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 30,
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 12,
+          color: Colors.white,
+        ),
+        decoration: InputDecoration(
+          prefixText: '$label ',
+          prefixStyle: const TextStyle(
+            color: Colors.white38,
+            fontSize: 11,
+          ),
+          filled: true,
+          fillColor: const Color(0xFF333333),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(6),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          isDense: true,
+        ),
+        onChanged: onChanged,
+      ),
     );
   }
 }

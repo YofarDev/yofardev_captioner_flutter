@@ -513,6 +513,47 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     _scheduleSave();
   }
 
+  void duplicateElement(int index) {
+    _invalidateSamCache();
+    final List<IdeogramElement> elements =
+        state.caption.compositionalDeconstruction.elements;
+    if (index < 0 || index >= elements.length) {
+      return;
+    }
+    final List<IdeogramElement> updated = List<IdeogramElement>.from(elements)
+      ..insert(index + 1, elements[index]);
+
+    final Set<int> newHidden = <int>{};
+    for (final int i in state.hiddenElementIndices) {
+      newHidden.add(i > index ? i + 1 : i);
+    }
+    if (state.hiddenElementIndices.contains(index)) {
+      newHidden.add(index + 1);
+    }
+
+    int? newSelection = state.selectedElementIndex;
+    if (newSelection != null) {
+      if (newSelection == index) {
+        newSelection = index + 1;
+      } else if (newSelection > index) {
+        newSelection = newSelection + 1;
+      }
+    }
+
+    emit(
+      state.copyWith(
+        caption: state.caption.copyWith(
+          compositionalDeconstruction: state.caption.compositionalDeconstruction
+              .copyWith(elements: updated),
+        ),
+        selectedElementIndex: newSelection,
+        clearSelection: newSelection == null,
+        hiddenElementIndices: newHidden,
+      ),
+    );
+    _scheduleSave();
+  }
+
   void removeElement(int index) {
     _invalidateSamCache();
     if (index < 0 ||

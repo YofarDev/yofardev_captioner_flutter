@@ -31,6 +31,7 @@ class LayerTile extends StatelessWidget {
     required this.imageFile,
     required this.onTap,
     required this.onToggleVisibility,
+    required this.onDuplicate,
     required this.onDelete,
     super.key,
   });
@@ -39,6 +40,7 @@ class LayerTile extends StatelessWidget {
   final File imageFile;
   final VoidCallback onTap;
   final VoidCallback onToggleVisibility;
+  final VoidCallback onDuplicate;
   final VoidCallback onDelete;
 
   Color get _accent => kBboxColors[data.index % kBboxColors.length];
@@ -141,6 +143,15 @@ class LayerTile extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
               tooltip: data.isVisible ? 'Hide' : 'Show',
+            ),
+
+            // Duplicate
+            IconButton(
+              icon: const Icon(Icons.copy, size: 14, color: Colors.white38),
+              onPressed: onDuplicate,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              tooltip: 'Duplicate',
             ),
 
             // Delete

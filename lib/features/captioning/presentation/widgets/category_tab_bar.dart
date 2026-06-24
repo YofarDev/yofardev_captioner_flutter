@@ -86,19 +86,35 @@ class CategoryTabBar extends StatelessWidget {
   void _showAddCategoryDialog(BuildContext context) {
     final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     final TextEditingController controller = TextEditingController();
+    String format = 'txt';
     showDialog(
       context: context,
       builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
         value: imageListCubit,
-        child: _CategoryDialog(
-          title: 'Add Category',
-          hintText: 'Category name',
-          controller: controller,
-          confirmText: 'Add',
-          onConfirm: () {
-            if (controller.text.trim().isNotEmpty) {
-              imageListCubit.addCategory(controller.text.trim());
-            }
+        child: StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return _CategoryDialog(
+              title: 'Add Category',
+              hintText: 'Category name',
+              controller: controller,
+              confirmText: 'Add',
+              format: format,
+              onFormatChanged: (String? value) {
+                if (value != null) {
+                  setState(() {
+                    format = value;
+                  });
+                }
+              },
+              onConfirm: () {
+                if (controller.text.trim().isNotEmpty) {
+                  imageListCubit.addCategory(
+                    controller.text.trim(),
+                    format: format,
+                  );
+                }
+              },
+            );
           },
         ),
       ),
@@ -390,6 +406,8 @@ class _CategoryDialog extends StatelessWidget {
     required this.controller,
     required this.confirmText,
     required this.onConfirm,
+    this.format,
+    this.onFormatChanged,
   });
 
   final String title;
@@ -397,6 +415,8 @@ class _CategoryDialog extends StatelessWidget {
   final TextEditingController controller;
   final String confirmText;
   final VoidCallback onConfirm;
+  final String? format;
+  final ValueChanged<String?>? onFormatChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -410,32 +430,70 @@ class _CategoryDialog extends StatelessWidget {
           fontWeight: FontWeight.bold,
         ),
       ),
-      content: TextField(
-        controller: controller,
-        style: const TextStyle(color: Colors.white),
-        decoration: InputDecoration(
-          hintText: hintText,
-          hintStyle: TextStyle(color: Colors.white.withAlpha(100)),
-          filled: true,
-          fillColor: Colors.white.withAlpha(10),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Colors.white.withAlpha(25)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          TextField(
+            controller: controller,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: TextStyle(color: Colors.white.withAlpha(100)),
+              filled: true,
+              fillColor: Colors.white.withAlpha(10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white.withAlpha(25)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: Colors.white.withAlpha(25)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(color: lightPink.withAlpha(150)),
+              ),
+            ),
+            autofocus: true,
+            onSubmitted: (_) {
+              onConfirm();
+              Navigator.pop(context);
+            },
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: Colors.white.withAlpha(25)),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide(color: lightPink.withAlpha(150)),
-          ),
-        ),
-        autofocus: true,
-        onSubmitted: (_) {
-          onConfirm();
-          Navigator.pop(context);
-        },
+          if (onFormatChanged != null) ...<Widget>[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withAlpha(10),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.white.withAlpha(25)),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: format,
+                  isExpanded: true,
+                  dropdownColor: darkGrey,
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    color: Colors.white70,
+                  ),
+                  items: const <DropdownMenuItem<String>>[
+                    DropdownMenuItem<String>(
+                      value: 'txt',
+                      child: Text('TXT', style: TextStyle(color: Colors.white)),
+                    ),
+                    DropdownMenuItem<String>(
+                      value: 'json',
+                      child: Text('JSON', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                  onChanged: onFormatChanged,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
       actions: <Widget>[
         TextButton(

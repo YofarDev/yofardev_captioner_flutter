@@ -112,6 +112,37 @@ class MockAppFileUtils extends _i1.Mock implements _i4.AppFileUtils {
           as _i5.Future<void>);
 
   @override
+  _i5.Future<void> writeCaptionFiles(
+    String? folderPath,
+    List<_i3.AppImage>? images,
+    String? category,
+    String? format,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#writeCaptionFiles, [
+              folderPath,
+              images,
+              category,
+              format,
+            ]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> removeCaptionFiles(
+    String? folderPath,
+    List<_i3.AppImage>? images,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeCaptionFiles, [folderPath, images]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
   _i5.Future<void> removeImage(_i6.File? imageFile) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageFile]),

@@ -141,6 +141,7 @@ class ImageListCubit extends Cubit<ImageListState> {
         state.copyWith(
           images: images,
           categories: db.categories,
+          categoryFormats: db.categoryFormats,
           activeCategory: db.activeCategory ?? 'default',
           currentImageId: images.isNotEmpty ? images[0].id : null,
         ),
@@ -403,6 +404,7 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     final CaptionDatabase db = CaptionDatabase(
       categories: state.categories,
+      categoryFormats: state.categoryFormats,
       activeCategory: state.activeCategory,
       images: captionDataList,
     );
@@ -455,6 +457,36 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(images: updatedImages, currentImageId: newCurrentId));
     await _saveDb();
     await _fileUtils.removeImage(imageToRemove.image);
+  }
+
+  Future<void> writeCaptionFiles() async {
+    if (state.folderPath == null) return;
+    final String category = state.activeCategory ?? 'default';
+    final String format = _effectiveFormat(state, category);
+    await _fileUtils.writeCaptionFiles(
+      state.folderPath!,
+      state.images,
+      category,
+      format,
+    );
+  }
+
+  /// Returns the format for [category]: explicit if stored, else auto-detected
+  /// from the first non-empty caption (Ideogram JSON → 'json', else 'txt').
+  String _effectiveFormat(ImageListState state, String category) {
+    final String? stored = state.categoryFormats[category];
+    if (stored != null) return stored;
+    for (final AppImage image in state.images) {
+      final String text = image.captions[category]?.text ?? '';
+      if (IdeogramCaption.isIdeogramJson(text)) return 'json';
+      if (text.isNotEmpty) return 'txt';
+    }
+    return 'txt';
+  }
+
+  Future<void> removeCaptionFiles() async {
+    if (state.folderPath == null) return;
+    await _fileUtils.removeCaptionFiles(state.folderPath!, state.images);
   }
 
   Map<String, int> getAspectRatioCounts() {
@@ -556,14 +588,23 @@ class ImageListCubit extends Cubit<ImageListState> {
     await _saveDb();
   }
 
-  void addCategory(String name) async {
+  void addCategory(String name, {String format = 'txt'}) async {
     if (state.categories.contains(name)) {
-      return; // Already exists
+      return;
     }
 
     final List<String> updatedCategories = List<String>.from(state.categories)
       ..add(name);
-    emit(state.copyWith(categories: updatedCategories, activeCategory: name));
+    final Map<String, String> updatedFormats =
+        Map<String, String>.from(state.categoryFormats)
+          ..[name] = format;
+    emit(
+      state.copyWith(
+        categories: updatedCategories,
+        categoryFormats: updatedFormats,
+        activeCategory: name,
+      ),
+    );
 
     await _saveDb();
   }
@@ -575,6 +616,9 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     final List<String> updatedCategories = List<String>.from(state.categories)
       ..remove(name);
+    final Map<String, String> updatedFormats =
+        Map<String, String>.from(state.categoryFormats)
+          ..remove(name);
     final String? newActiveCategory = state.activeCategory == name
         ? updatedCategories.first
         : state.activeCategory;
@@ -582,6 +626,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(
       state.copyWith(
         categories: updatedCategories,
+        categoryFormats: updatedFormats,
         activeCategory: newActiveCategory,
       ),
     );
@@ -610,6 +655,12 @@ class ImageListCubit extends Cubit<ImageListState> {
       return img.copyWith(captions: newCaptions);
     }).toList();
 
+    final Map<String, String> updatedFormats =
+        Map<String, String>.from(state.categoryFormats);
+    if (updatedFormats.containsKey(oldName)) {
+      updatedFormats[newName] = updatedFormats.remove(oldName)!;
+    }
+
     final String? newActiveCategory = state.activeCategory == oldName
         ? newName
         : state.activeCategory;
@@ -617,6 +668,7 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(
       state.copyWith(
         categories: updatedCategories,
+        categoryFormats: updatedFormats,
         activeCategory: newActiveCategory,
         images: updatedImages,
       ),

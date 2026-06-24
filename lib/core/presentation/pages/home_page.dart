@@ -213,14 +213,24 @@ class _HomePageState extends State<HomePage> {
                   Expanded(
                     child: BlocBuilder<TabManagerCubit, TabManagerState>(
                       builder: (BuildContext context, TabManagerState state) {
-                        return IndexedStack(
-                          index: state.activeTabIndex,
-                          children: state.tabs.map((AppTab tab) {
-                            return TabContent(
-                              key: ValueKey<String>(tab.id),
-                              tabId: tab.id,
-                            );
-                          }).toList(),
+                        // ponytail: not IndexedStack — it wraps each child in a
+                        // keyless Visibility, so removing a tab reconciles by slot
+                        // and re-inflates (wiping state of) every tab after it.
+                        // Keyed Offstage as the direct Stack child is matched by
+                        // key, so closing a tab preserves the remaining cubits.
+                        return Stack(
+                          fit: StackFit.expand,
+                          children: List<Widget>.generate(
+                            state.tabs.length,
+                            (int index) {
+                              final AppTab tab = state.tabs[index];
+                              return Offstage(
+                                key: ValueKey<String>(tab.id),
+                                offstage: index != state.activeTabIndex,
+                                child: TabContent(tabId: tab.id),
+                              );
+                            },
+                          ),
                         );
                       },
                     ),

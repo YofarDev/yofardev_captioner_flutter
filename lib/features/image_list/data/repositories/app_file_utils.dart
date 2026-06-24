@@ -215,6 +215,14 @@ class AppFileUtils {
     });
   }
 
+  CaptionDatabase _migrateV3ToV4(Map<String, dynamic> oldJson) {
+    return CaptionDatabase.fromJson(<String, dynamic>{
+      ...oldJson,
+      'version': 4,
+      'categoryFormats': <String, String>{},
+    });
+  }
+
   Future<CaptionDatabase> readDb(String folderPath) async {
     final File dbFile = _getDbPath(folderPath);
     if (await dbFile.exists()) {
@@ -237,6 +245,11 @@ class AppFileUtils {
         final int version = (json['version'] as num?)?.toInt() ?? 1;
         if (version < 3) {
           final CaptionDatabase migrated = _migrateV2ToV3(json);
+          await writeDb(folderPath, migrated);
+          return migrated;
+        }
+        if (version < 4) {
+          final CaptionDatabase migrated = _migrateV3ToV4(json);
           await writeDb(folderPath, migrated);
           return migrated;
         }
@@ -339,6 +352,38 @@ class AppFileUtils {
     } catch (e) {
       // Re-throw with more context
       throw Exception('Failed to export archive: $e');
+    }
+  }
+
+  Future<void> writeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+    String format,
+  ) async {
+    for (final AppImage image in images) {
+      final CaptionEntry? entry = image.captions[category];
+      if (entry == null || entry.text.isEmpty) continue;
+
+      final String ext = format == 'json' ? '.json' : '.txt';
+      final String filePath = p.join(
+        folderPath,
+        '${p.basenameWithoutExtension(image.image.path)}$ext',
+      );
+      await File(filePath).writeAsString(entry.text);
+    }
+  }
+
+  Future<void> removeCaptionFiles(String folderPath, List<AppImage> images) async {
+    for (final AppImage image in images) {
+      final String base = p.join(
+        folderPath,
+        p.basenameWithoutExtension(image.image.path),
+      );
+      final File txtFile = File('$base.txt');
+      if (await txtFile.exists()) await txtFile.delete();
+      final File jsonFile = File('$base.json');
+      if (await jsonFile.exists()) await jsonFile.delete();
     }
   }
 

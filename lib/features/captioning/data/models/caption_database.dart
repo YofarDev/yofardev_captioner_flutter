@@ -8,12 +8,15 @@ part 'caption_database.g.dart';
 class CaptionDatabase {
   final int version;
   final List<String> categories;
+  @JsonKey(defaultValue: <String, String>{})
+  final Map<String, String> categoryFormats;
   final String? activeCategory;
   final List<CaptionData> images;
 
   CaptionDatabase({
-    this.version = 3,
+    this.version = 4,
     required this.categories,
+    this.categoryFormats = const <String, String>{},
     this.activeCategory,
     required this.images,
   });

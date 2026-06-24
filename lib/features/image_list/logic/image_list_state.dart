@@ -13,6 +13,7 @@ class ImageListState extends Equatable {
   final String searchQuery;
   final bool caseSensitive;
   final List<String> categories;
+  final Map<String, String> categoryFormats;
   final String? activeCategory;
 
   const ImageListState({
@@ -26,6 +27,7 @@ class ImageListState extends Equatable {
     this.searchQuery = '',
     this.caseSensitive = false,
     this.categories = const <String>['default'],
+    this.categoryFormats = const <String, String>{},
     this.activeCategory = 'default',
   });
 
@@ -40,6 +42,7 @@ class ImageListState extends Equatable {
     String? searchQuery,
     bool? caseSensitive,
     List<String>? categories,
+    Map<String, String>? categoryFormats,
     String? activeCategory,
   }) {
     return ImageListState(
@@ -53,6 +56,7 @@ class ImageListState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       caseSensitive: caseSensitive ?? this.caseSensitive,
       categories: categories ?? this.categories,
+      categoryFormats: categoryFormats ?? this.categoryFormats,
       activeCategory: activeCategory ?? this.activeCategory,
     );
   }
@@ -69,6 +73,7 @@ class ImageListState extends Equatable {
     searchQuery,
     caseSensitive,
     categories,
+    categoryFormats,
     activeCategory,
   ];
 }

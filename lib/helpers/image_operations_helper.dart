@@ -42,7 +42,9 @@ class ImageOperationsHelper {
     // Pass 1: Rename all files to temporary unique names to prevent collisions
     // when sequential targets overlap with existing file names
     final List<String> tempImagePaths = <String>[];
-    final List<String?> tempCaptionPaths = <String?>[];
+    final List<List<String>> tempCaptionPaths = <List<String>>[];
+
+    const List<String> captionExts = <String>['.txt', '.json'];
 
     for (int i = 0; i < sortedImageFiles.length; i++) {
       final File originalFile = sortedImageFiles[i];
@@ -59,17 +61,19 @@ class ImageOperationsHelper {
       await originalFile.rename(tempImagePath);
       tempImagePaths.add(tempImagePath);
 
-      final String oldCaptionPath = p.setExtension(originalFile.path, '.txt');
-      if (await File(oldCaptionPath).exists()) {
-        final String tempCaptionPath = p.join(
-          folderPath,
-          '.tmp_rename_${const Uuid().v4()}.txt',
-        );
-        await File(oldCaptionPath).rename(tempCaptionPath);
-        tempCaptionPaths.add(tempCaptionPath);
-      } else {
-        tempCaptionPaths.add(null);
+      final List<String> captionTemps = <String>[];
+      for (final String ext in captionExts) {
+        final String oldCaptionPath = p.setExtension(originalFile.path, ext);
+        if (await File(oldCaptionPath).exists()) {
+          final String tempCaptionPath = p.join(
+            folderPath,
+            '.tmp_rename_${const Uuid().v4()}$ext',
+          );
+          await File(oldCaptionPath).rename(tempCaptionPath);
+          captionTemps.add(tempCaptionPath);
+        }
       }
+      tempCaptionPaths.add(captionTemps);
     }
 
     // Pass 2: Rename from temporary to final sequential names
@@ -81,10 +85,11 @@ class ImageOperationsHelper {
 
       await File(tempImagePaths[i]).rename(finalImagePath);
 
-      if (tempCaptionPaths[i] != null) {
-        final String finalCaptionName = p.setExtension(finalImageName, '.txt');
+      for (final String tempCaptionPath in tempCaptionPaths[i]) {
+        final String ext = p.extension(tempCaptionPath);
+        final String finalCaptionName = '$paddedIndex$ext';
         final String finalCaptionPath = p.join(folderPath, finalCaptionName);
-        await File(tempCaptionPaths[i]!).rename(finalCaptionPath);
+        await File(tempCaptionPath).rename(finalCaptionPath);
       }
     }
 

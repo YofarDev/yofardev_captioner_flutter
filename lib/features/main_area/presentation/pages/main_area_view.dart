@@ -6,6 +6,7 @@ import '../../../caption_search/presentation/widgets/caption_search_bar.dart';
 import '../../../captioning/presentation/widgets/caption_text_area.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_view.dart';
+import '../../../image_operations/presentation/widgets/controls_widgets.dart';
 import 'current_image_view.dart';
 
 class MainAreaView extends StatelessWidget {
@@ -46,18 +47,30 @@ class MainAreaView extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyView() => Opacity(
-    opacity: 0.5,
+  Widget _buildEmptyView() => Center(
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        const Spacer(),
+        Opacity(
+          opacity: 0.5,
+          child: Column(
+            children: <Widget>[
+              const Text(
+                'Yofardev Captioner',
+                style: TextStyle(fontSize: 32, fontFamily: 'Orbitron'),
+              ),
+              const SizedBox(height: 16),
+              Image.asset('assets/logo.png', width: 400),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
         const Text(
-          'Yofardev Captioner',
-          style: TextStyle(fontSize: 32, fontFamily: 'Orbitron'),
+          'Drag a folder or image here, or pick a folder to start',
+          style: TextStyle(color: Colors.white70, fontFamily: 'Inter'),
         ),
         const SizedBox(height: 16),
-        Image.asset('assets/logo.png', width: 400),
-        const Spacer(),
+        const PickFolderButton(),
       ],
     ),
   );

@@ -51,7 +51,7 @@ void main() {
       final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
 
       // Verify migration
-      expect(db.version, equals(3));
+      expect(db.version, equals(4));
       expect(db.categories, equals(<String>['default']));
       expect(db.activeCategory, equals('default'));
       expect(db.images.length, equals(1));
@@ -62,7 +62,7 @@ void main() {
     test('creates new v3 database for empty folder', () async {
       final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
 
-      expect(db.version, equals(3));
+      expect(db.version, equals(4));
       expect(db.categories, equals(<String>['default']));
       expect(db.activeCategory, equals('default'));
       expect(db.images.length, equals(0));

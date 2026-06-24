@@ -213,6 +213,24 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<void> writeCaptionFiles() =>
+      (super.noSuchMethod(
+            Invocation.method(#writeCaptionFiles, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> removeCaptionFiles() =>
+      (super.noSuchMethod(
+            Invocation.method(#removeCaptionFiles, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
   Map<String, int> getAspectRatioCounts() =>
       (super.noSuchMethod(
             Invocation.method(#getAspectRatioCounts, []),
@@ -267,10 +285,11 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i4.Future<void>);
 
   @override
-  void addCategory(String? name) => super.noSuchMethod(
-    Invocation.method(#addCategory, [name]),
-    returnValueForMissingStub: null,
-  );
+  void addCategory(String? name, {String? format = 'txt'}) =>
+      super.noSuchMethod(
+        Invocation.method(#addCategory, [name], {#format: format}),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void removeCategory(String? name) => super.noSuchMethod(

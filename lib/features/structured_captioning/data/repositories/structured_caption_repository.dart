@@ -73,7 +73,11 @@ class StructuredCaptionRepository {
       prompt,
       // The deconstruction JSON is long; a low provider default would
       // truncate it into malformed JSON. Enforce a sane floor.
-      maxTokens: 4096,
+      // 8192 comfortably fits complex scenes (crowds, many objects) that
+      // easily exceed 4096 tokens. The _parseChatResponse now detects
+      // finish_reason="length" and throws a clear error if even this is
+      // exceeded.
+      maxTokens: 8192,
     );
     final VlmAnalysis analysis = _parseVlmResponse(vlmRawResponse);
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
@@ -256,14 +260,13 @@ class StructuredCaptionRepository {
     final List<VlmObjectBboxPair> eligiblePairs = <VlmObjectBboxPair>[];
     for (int j = 0; j < eligibleIndices.length; j++) {
       eligiblePairs.add(
-        VlmObjectBboxPair(
-          name: eligibleNames[j],
-          bbox: eligibleBboxes[j],
-        ),
+        VlmObjectBboxPair(name: eligibleNames[j], bbox: eligibleBboxes[j]),
       );
     }
-    final List<SamDetection> matched =
-        matchDetectionsToObjects(detections, eligiblePairs);
+    final List<SamDetection> matched = matchDetectionsToObjects(
+      detections,
+      eligiblePairs,
+    );
 
     final Map<int, List<int>> result = <int, List<int>>{};
     for (int j = 0; j < eligibleIndices.length; j++) {
@@ -704,7 +707,18 @@ class StructuredCaptionRepository {
     final int start = s.indexOf('{');
     final int end = s.lastIndexOf('}');
     if (start == -1 || end == -1 || end <= start) return null;
-    return s.substring(start, end + 1);
+    final String candidate = s.substring(start, end + 1);
+    // Validate the extracted span before returning it. A truncated response
+    // (e.g. from hitting max_tokens) may contain an inner `}` from a
+    // completed sub-object but no balanced top-level `}` — returning that
+    // fragment makes jsonDecode throw the cryptic "unexpected end of input".
+    // Returning null here yields a clearer error upstream.
+    try {
+      jsonDecode(candidate);
+      return candidate;
+    } catch (_) {
+      return null;
+    }
   }
 
   String _stripMarkdownFences(String input) {

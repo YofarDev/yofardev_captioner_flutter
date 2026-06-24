@@ -552,9 +552,11 @@ void main() {
             imageFile: anyNamed('imageFile'),
             caption: anyNamed('caption'),
           ),
-        ).thenAnswer((_) async => <int, List<int>>{
-          0: <int>[110, 110, 210, 210],
-        });
+        ).thenAnswer(
+          (_) async => <int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          },
+        );
 
         final StructuredEditorCubit c = buildCubit();
         await c.toggleSamBboxes();
@@ -575,9 +577,11 @@ void main() {
             imageFile: anyNamed('imageFile'),
             caption: anyNamed('caption'),
           ),
-        ).thenAnswer((_) async => <int, List<int>>{
-          0: <int>[110, 110, 210, 210],
-        });
+        ).thenAnswer(
+          (_) async => <int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          },
+        );
 
         final StructuredEditorCubit c = buildCubit();
         await c.toggleSamBboxes(); // ON
@@ -614,7 +618,9 @@ void main() {
 
         expect(c.state.samComputeStatus, SamComputeStatus.computing);
 
-        completer.complete(<int, List<int>>{0: <int>[110, 110, 210, 210]});
+        completer.complete(<int, List<int>>{
+          0: <int>[110, 110, 210, 210],
+        });
         await done;
 
         expect(c.state.samComputeStatus, SamComputeStatus.ready);
@@ -658,7 +664,9 @@ void main() {
         final Future<void> b = c.toggleSamBboxes(); // should no-op silently
         await Future<void>.delayed(const Duration(milliseconds: 5));
 
-        completer.complete(<int, List<int>>{0: <int>[110, 110, 210, 210]});
+        completer.complete(<int, List<int>>{
+          0: <int>[110, 110, 210, 210],
+        });
         await Future.wait<void>(<Future<void>>[a, b]);
 
         verify(
@@ -672,44 +680,51 @@ void main() {
         await c.close();
       });
 
-      test('flushSave waits for in-flight SAM compute before returning', () async {
-        final Completer<Map<int, List<int>>> computeCompleter =
-            Completer<Map<int, List<int>>>();
-        when(
-          mockRepo.computeSamBboxes(
-            imageFile: anyNamed('imageFile'),
-            caption: anyNamed('caption'),
-          ),
-        ).thenAnswer((_) => computeCompleter.future);
+      test(
+        'flushSave waits for in-flight SAM compute before returning',
+        () async {
+          final Completer<Map<int, List<int>>> computeCompleter =
+              Completer<Map<int, List<int>>>();
+          when(
+            mockRepo.computeSamBboxes(
+              imageFile: anyNamed('imageFile'),
+              caption: anyNamed('caption'),
+            ),
+          ).thenAnswer((_) => computeCompleter.future);
 
-        final StructuredEditorCubit c = buildCubit();
-        // Start a toggle (compute is held). Don't await.
-        final Future<void> toggleFuture = c.toggleSamBboxes();
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        expect(c.state.samComputeStatus, SamComputeStatus.computing);
+          final StructuredEditorCubit c = buildCubit();
+          // Start a toggle (compute is held). Don't await.
+          final Future<void> toggleFuture = c.toggleSamBboxes();
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          expect(c.state.samComputeStatus, SamComputeStatus.computing);
 
-        // Start flushSave — it must block until compute resolves.
-        final Completer<void> flushCompleter = Completer<void>();
-        c.flushSave().then((_) => flushCompleter.complete());
+          // Start flushSave — it must block until compute resolves.
+          final Completer<void> flushCompleter = Completer<void>();
+          c.flushSave().then((_) => flushCompleter.complete());
 
-        // Give flushSave a chance to (wrongly) complete.
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        expect(
-          flushCompleter.isCompleted,
-          isFalse,
-          reason: 'flushSave must wait for the in-flight SAM compute',
-        );
+          // Give flushSave a chance to (wrongly) complete.
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          expect(
+            flushCompleter.isCompleted,
+            isFalse,
+            reason: 'flushSave must wait for the in-flight SAM compute',
+          );
 
-        // Release the compute.
-        computeCompleter
-            .complete(<int, List<int>>{0: <int>[110, 110, 210, 210]});
-        await Future.wait<void>(<Future<void>>[toggleFuture, flushCompleter.future]);
+          // Release the compute.
+          computeCompleter.complete(<int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          });
+          await Future.wait<void>(<Future<void>>[
+            toggleFuture,
+            flushCompleter.future,
+          ]);
 
-        // Compute landed safely; cubit still usable.
-        expect(c.state.samComputeStatus, SamComputeStatus.ready);
+          // Compute landed safely; cubit still usable.
+          expect(c.state.samComputeStatus, SamComputeStatus.ready);
 
-        await c.close();
-      });
+          await c.close();
+        },
+      );
     });
 
     group('SAM cache invalidation', () {
@@ -725,7 +740,11 @@ void main() {
             imageFile: anyNamed('imageFile'),
             caption: anyNamed('caption'),
           ),
-        ).thenAnswer((_) async => <int, List<int>>{0: <int>[110, 110, 210, 210]});
+        ).thenAnswer(
+          (_) async => <int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          },
+        );
 
         final StructuredEditorCubit c = StructuredEditorCubit(
           initialCaption: const IdeogramCaption(

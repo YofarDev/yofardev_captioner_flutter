@@ -195,6 +195,22 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i5.Future<void>);
 
   @override
+  Set<String> getAllUniqueTags() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUniqueTags, []),
+            returnValue: <String>{},
+          )
+          as Set<String>);
+
+  @override
+  Set<String> getAllUniqueMediums() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUniqueMediums, []),
+            returnValue: <String>{},
+          )
+          as Set<String>);
+
+  @override
   _i5.Future<void> removeImage(String? imageId) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageId]),

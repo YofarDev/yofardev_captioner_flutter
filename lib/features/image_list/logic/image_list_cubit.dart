@@ -427,8 +427,9 @@ class ImageListCubit extends Cubit<ImageListState> {
       final String captionText = image.captions[category]?.text ?? '';
       if (captionText.trimLeft().startsWith('{')) {
         try {
-          final IdeogramCaption parsed =
-              IdeogramCaption.fromJson(jsonDecode(captionText) as Map<String, dynamic>);
+          final IdeogramCaption parsed = IdeogramCaption.fromJson(
+            jsonDecode(captionText) as Map<String, dynamic>,
+          );
           if (parsed.styleDescription.medium.isNotEmpty) {
             allMediums.add(parsed.styleDescription.medium);
           }

@@ -4,10 +4,8 @@ import 'package:flutter/services.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../data/services/autocomplete_engine.dart';
 
-typedef _AutocompleteKeyHandler = KeyEventResult Function(
-  FocusNode node,
-  KeyEvent event,
-);
+typedef _AutocompleteKeyHandler =
+    KeyEventResult Function(FocusNode node, KeyEvent event);
 
 /// Manages an [OverlayEntry] that displays autocomplete suggestions below
 /// a search field via a [LayerLink]/[CompositedTransformFollower] pair.
@@ -23,8 +21,8 @@ class SearchAutocompleteOverlay {
   SearchAutocompleteOverlay._();
 
   static final Map<OverlayEntry, ValueNotifier<List<AutocompleteSuggestion>>>
-      _activeNotifiers = <OverlayEntry,
-          ValueNotifier<List<AutocompleteSuggestion>>>{};
+  _activeNotifiers =
+      <OverlayEntry, ValueNotifier<List<AutocompleteSuggestion>>>{};
 
   static final Map<OverlayEntry, _AutocompleteKeyHandler> _activeKeyHandlers =
       <OverlayEntry, _AutocompleteKeyHandler>{};
@@ -122,10 +120,7 @@ class _SuggestionItem extends _DisplayItem {
 }
 
 class _SuggestionGroup {
-  const _SuggestionGroup({
-    required this.header,
-    required this.items,
-  });
+  const _SuggestionGroup({required this.header, required this.items});
 
   final String header;
   final List<AutocompleteSuggestion> items;
@@ -153,8 +148,8 @@ String _labelFor(AutocompleteSuggestion suggestion) {
 List<_SuggestionGroup> _groupByType(List<AutocompleteSuggestion> suggestions) {
   if (suggestions.isEmpty) return <_SuggestionGroup>[];
 
-  final Map<Type, List<AutocompleteSuggestion>> grouped = <Type,
-      List<AutocompleteSuggestion>>{};
+  final Map<Type, List<AutocompleteSuggestion>> grouped =
+      <Type, List<AutocompleteSuggestion>>{};
   for (final AutocompleteSuggestion s in suggestions) {
     grouped.putIfAbsent(s.runtimeType, () => <AutocompleteSuggestion>[]).add(s);
   }
@@ -368,11 +363,7 @@ class _AutocompleteDropdownState extends State<_AutocompleteDropdown> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: <Widget>[
-              Icon(
-                _iconForType(suggestion),
-                size: 16,
-                color: Colors.grey[400],
-              ),
+              Icon(_iconForType(suggestion), size: 16, color: Colors.grey[400]),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

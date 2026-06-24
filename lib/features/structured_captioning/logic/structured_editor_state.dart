@@ -96,8 +96,9 @@ class StructuredEditorState extends Equatable {
       recaptioningElementIndex: clearRecaptioning
           ? null
           : (recaptioningElementIndex ?? this.recaptioningElementIndex),
-      samBboxByIndex:
-          clearSamCache ? null : (samBboxByIndex ?? this.samBboxByIndex),
+      samBboxByIndex: clearSamCache
+          ? null
+          : (samBboxByIndex ?? this.samBboxByIndex),
       showSamBboxes: !clearSamCache && (showSamBboxes ?? this.showSamBboxes),
       samComputeStatus: clearSamCache
           ? SamComputeStatus.idle

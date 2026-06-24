@@ -84,10 +84,7 @@ class FilterHelpDialog extends StatelessWidget {
                   'Forest background with a cat element',
                 ),
                 _buildExample(':nocaption:', 'Uncaptioned images'),
-                _buildExample(
-                  ':tag:favorite:',
-                  'Images tagged "favorite"',
-                ),
+                _buildExample(':tag:favorite:', 'Images tagged "favorite"'),
                 _buildExample(':notag:', 'Untagged images'),
                 const SizedBox(height: 8),
                 Text(

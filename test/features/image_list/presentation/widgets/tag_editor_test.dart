@@ -10,20 +10,18 @@ import 'package:yofardev_captioner/features/image_list/presentation/widgets/tag_
 
 class _FakeImageListCubit extends ImageListCubit {
   _FakeImageListCubit(AppImage image) : super() {
-    emit(ImageListState(
-      images: <AppImage>[image],
-      currentImageId: image.id,
-    ));
+    emit(ImageListState(images: <AppImage>[image], currentImageId: image.id));
   }
 }
 
 void main() {
-  testWidgets('shows +Tags button when image has no tags',
-      (WidgetTester tester) async {
+  testWidgets('shows +Tags button when image has no tags', (
+    WidgetTester tester,
+  ) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
-      captions: <String, CaptionEntry>{},
+      captions: const <String, CaptionEntry>{},
     );
     await tester.pumpWidget(
       MaterialApp(
@@ -37,12 +35,13 @@ void main() {
     expect(find.text('+Tags'), findsOneWidget);
   });
 
-  testWidgets('shows +Tags (N) button when image has tags',
-      (WidgetTester tester) async {
+  testWidgets('shows +Tags (N) button when image has tags', (
+    WidgetTester tester,
+  ) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
-      captions: <String, CaptionEntry>{},
+      captions: const <String, CaptionEntry>{},
       tags: const <String>['sunset', 'landscape'],
     );
     await tester.pumpWidget(
@@ -57,12 +56,13 @@ void main() {
     expect(find.text('+Tags (2)'), findsOneWidget);
   });
 
-  testWidgets('button opens dialog with existing tags',
-      (WidgetTester tester) async {
+  testWidgets('button opens dialog with existing tags', (
+    WidgetTester tester,
+  ) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
-      captions: <String, CaptionEntry>{},
+      captions: const <String, CaptionEntry>{},
       tags: const <String>['sunset'],
     );
     await tester.pumpWidget(
@@ -80,12 +80,11 @@ void main() {
     expect(find.text('sunset'), findsOneWidget);
   });
 
-  testWidgets('dialog can add and save tags',
-      (WidgetTester tester) async {
+  testWidgets('dialog can add and save tags', (WidgetTester tester) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
-      captions: <String, CaptionEntry>{},
+      captions: const <String, CaptionEntry>{},
     );
     final _FakeImageListCubit cubit = _FakeImageListCubit(image);
     await tester.pumpWidget(
@@ -115,7 +114,7 @@ void main() {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
-      captions: <String, CaptionEntry>{},
+      captions: const <String, CaptionEntry>{},
       tags: const <String>['sunset'],
     );
     final _FakeImageListCubit cubit = _FakeImageListCubit(image);
@@ -140,8 +139,9 @@ void main() {
     expect(cubit.state.images.first.tags, <String>[]);
   });
 
-  testWidgets('renders nothing when no image selected',
-      (WidgetTester tester) async {
+  testWidgets('renders nothing when no image selected', (
+    WidgetTester tester,
+  ) async {
     final ImageListCubit cubit = ImageListCubit();
     await tester.pumpWidget(
       MaterialApp(

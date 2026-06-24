@@ -54,8 +54,9 @@ class InteractiveBboxPainter extends CustomPainter {
         !hiddenIndices.contains(selected) &&
         selected < elements.length) {
       final IdeogramElement el = elements[selected];
-      final List<int>? bbox =
-          selected < resolvedBboxes.length ? resolvedBboxes[selected] : null;
+      final List<int>? bbox = selected < resolvedBboxes.length
+          ? resolvedBboxes[selected]
+          : null;
       if (bbox != null) {
         final Rect rect = bboxToRect(bbox, paintedRect);
         final Color color = boxColors[selected % boxColors.length];

@@ -18,7 +18,15 @@ class CaptionResponse {
 class Choice {
   final ResponseMessage message;
 
-  Choice({required this.message});
+  /// Why the model stopped generating. Standard values:
+  ///   `stop` — natural completion.
+  ///   `length` — hit `max_tokens`, output is **truncated**.
+  ///   `content_filter` — blocked by safety filter.
+  /// Null when the provider omits the field.
+  @JsonKey(name: 'finish_reason')
+  final String? finishReason;
+
+  Choice({required this.message, this.finishReason});
 
   factory Choice.fromJson(Map<String, dynamic> json) => _$ChoiceFromJson(json);
 

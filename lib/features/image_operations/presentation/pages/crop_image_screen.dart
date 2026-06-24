@@ -82,7 +82,13 @@ class _CropImageScreenState extends State<CropImageScreen> {
           Column(
             children: <Widget>[
               Expanded(
+                // ponytail: re-key on ratio change. crop_your_image 2.0.0 stores
+                // aspectRatio in state once at init; CropController.aspectRatio
+                // setter only resizes the rect, leaving moveTopLeft/Right/etc.
+                // pinned to the stale initial ratio. Forcing a rebuild with the
+                // new key re-initializes state with the correct ratio.
                 child: Crop(
+                  key: ValueKey<String>(_selectedAspectRatio),
                   onMoved: (Rect rect, _) {
                     _rect = rect;
                   },
@@ -127,9 +133,6 @@ class _CropImageScreenState extends State<CropImageScreen> {
                       onPressed: () {
                         setState(() {
                           _selectedAspectRatio = ratio;
-                          _cropController.aspectRatio = _parseAspectRatio(
-                            ratio,
-                          );
                         });
                       },
                       style: ElevatedButton.styleFrom(

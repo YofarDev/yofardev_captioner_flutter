@@ -10,9 +10,7 @@ import 'package:yofardev_captioner/features/caption_search/presentation/widgets/
 /// the framework handles cleanup so that test-level [remove] calls don't
 /// collide.
 class _TestHarness extends StatefulWidget {
-  const _TestHarness({
-    required this.createOverlay,
-  });
+  const _TestHarness({required this.createOverlay});
 
   final void Function(BuildContext context, LayerLink link) createOverlay;
 
@@ -178,7 +176,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
         ],
       );
 
@@ -194,8 +192,8 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
-          TagValueSuggestion(value: 'sunset'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const TagValueSuggestion(value: 'sunset'),
         ],
       );
 
@@ -211,10 +209,10 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
-          TagValueSuggestion(value: 'sunset'),
-          HasTypeSuggestion(type: 'bbox'),
-          MediumValueSuggestion(value: 'photograph'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const TagValueSuggestion(value: 'sunset'),
+          const HasTypeSuggestion(type: 'bbox'),
+          const MediumValueSuggestion(value: 'photograph'),
         ],
       );
 
@@ -232,8 +230,8 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
-          TagValueSuggestion(value: 'sunset'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const TagValueSuggestion(value: 'sunset'),
         ],
       );
 
@@ -256,15 +254,16 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
-          FilterNameSuggestion(name: 'has', description: 'Has element type'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const FilterNameSuggestion(
+            name: 'has',
+            description: 'Has element type',
+          ),
         ],
       );
 
       expect(
-        find.byWidgetPredicate(
-          (Widget w) => w is Text && w.data == 'Filters',
-        ),
+        find.byWidgetPredicate((Widget w) => w is Text && w.data == 'Filters'),
         findsNothing,
       );
 
@@ -295,7 +294,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'beach'),
+          const TagValueSuggestion(value: 'beach'),
         ],
       );
 
@@ -312,7 +311,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'safe'),
+          const TagValueSuggestion(value: 'safe'),
         ],
       );
 
@@ -334,21 +333,21 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
-          FilterNameSuggestion(name: 'has', description: 'Has element type'),
+          const FilterNameSuggestion(name: 'tag', description: 'Filter by tag'),
+          const FilterNameSuggestion(
+            name: 'has',
+            description: 'Has element type',
+          ),
         ],
       );
 
       expect(find.text('tag — Filter by tag'), findsOneWidget);
       expect(find.text('has — Has element type'), findsOneWidget);
 
-      SearchAutocompleteOverlay.update(
-        entry,
-        <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'mountain'),
-          TagValueSuggestion(value: 'ocean'),
-        ],
-      );
+      SearchAutocompleteOverlay.update(entry, <AutocompleteSuggestion>[
+        const TagValueSuggestion(value: 'mountain'),
+        const TagValueSuggestion(value: 'ocean'),
+      ]);
       await tester.pump();
       await tester.pump();
 
@@ -366,7 +365,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'remove-me'),
+          const TagValueSuggestion(value: 'remove-me'),
         ],
       );
 
@@ -392,8 +391,8 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'forest'),
-          TagValueSuggestion(value: 'river'),
+          const TagValueSuggestion(value: 'forest'),
+          const TagValueSuggestion(value: 'river'),
         ],
         onSelected: (AutocompleteSuggestion s) {
           selectedSuggestion = s;
@@ -421,8 +420,8 @@ void main() {
       await _pumpKeyDrivenHarness(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'first'),
-          TagValueSuggestion(value: 'second'),
+          const TagValueSuggestion(value: 'first'),
+          const TagValueSuggestion(value: 'second'),
         ],
         onSelected: (AutocompleteSuggestion s) => selected = s,
         onDismiss: () {},
@@ -445,8 +444,8 @@ void main() {
       await _pumpKeyDrivenHarness(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'first'),
-          TagValueSuggestion(value: 'second'),
+          const TagValueSuggestion(value: 'first'),
+          const TagValueSuggestion(value: 'second'),
         ],
         onSelected: (AutocompleteSuggestion s) => selected = s,
         onDismiss: () {},
@@ -466,9 +465,9 @@ void main() {
       await _pumpKeyDrivenHarness(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'first'),
-          TagValueSuggestion(value: 'second'),
-          TagValueSuggestion(value: 'third'),
+          const TagValueSuggestion(value: 'first'),
+          const TagValueSuggestion(value: 'second'),
+          const TagValueSuggestion(value: 'third'),
         ],
         onSelected: (AutocompleteSuggestion s) => selected = s,
         onDismiss: () {},
@@ -489,7 +488,7 @@ void main() {
       await _pumpKeyDrivenHarness(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'first'),
+          const TagValueSuggestion(value: 'first'),
         ],
         onSelected: (AutocompleteSuggestion _) {},
         onDismiss: () => dismissed = true,
@@ -507,7 +506,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'first'),
+          const TagValueSuggestion(value: 'first'),
         ],
       );
       final FocusNode node = FocusNode();
@@ -539,7 +538,7 @@ void main() {
       final OverlayEntry entry = await _pumpOverlay(
         tester,
         suggestions: <AutocompleteSuggestion>[
-          TagValueSuggestion(value: 'style-test'),
+          const TagValueSuggestion(value: 'style-test'),
         ],
       );
 
@@ -547,9 +546,7 @@ void main() {
       final Iterable<Widget> materials = find
           .byWidgetPredicate(
             (Widget w) =>
-                w is Material &&
-                w.color == darkGrey &&
-                w.elevation == 8,
+                w is Material && w.color == darkGrey && w.elevation == 8,
           )
           .evaluate()
           .map((Element e) => e.widget);
@@ -577,9 +574,7 @@ void main() {
       // The ConstrainedBox with maxHeight: 320 wraps the ListView
       final Iterable<ConstrainedBox> boxes = find
           .byWidgetPredicate(
-            (Widget w) =>
-                w is ConstrainedBox &&
-                w.constraints.maxHeight == 320,
+            (Widget w) => w is ConstrainedBox && w.constraints.maxHeight == 320,
           )
           .evaluate()
           .map((Element e) => e.widget as ConstrainedBox);

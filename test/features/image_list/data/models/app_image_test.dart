@@ -10,7 +10,7 @@ void main() {
       final AppImage image = AppImage(
         id: 'x',
         image: File('a.jpg'),
-        captions: <String, CaptionEntry>{},
+        captions: const <String, CaptionEntry>{},
       );
       expect(image.tags, <String>[]);
     });
@@ -19,7 +19,7 @@ void main() {
       final AppImage image = AppImage(
         id: 'x',
         image: File('a.jpg'),
-        captions: <String, CaptionEntry>{},
+        captions: const <String, CaptionEntry>{},
         tags: const <String>['sunset'],
       );
       final AppImage copy = image.copyWith(id: 'y');
@@ -30,7 +30,7 @@ void main() {
       final AppImage image = AppImage(
         id: 'x',
         image: File('a.jpg'),
-        captions: <String, CaptionEntry>{},
+        captions: const <String, CaptionEntry>{},
         tags: const <String>['sunset'],
       );
       final AppImage copy = image.copyWith(tags: const <String>['night']);

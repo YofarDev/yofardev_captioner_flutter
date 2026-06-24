@@ -18,10 +18,12 @@ Map<String, dynamic> _$CaptionResponseToJson(CaptionResponse instance) =>
 
 Choice _$ChoiceFromJson(Map<String, dynamic> json) => Choice(
   message: ResponseMessage.fromJson(json['message'] as Map<String, dynamic>),
+  finishReason: json['finish_reason'] as String?,
 );
 
 Map<String, dynamic> _$ChoiceToJson(Choice instance) => <String, dynamic>{
   'message': instance.message,
+  'finish_reason': instance.finishReason,
 };
 
 ResponseMessage _$ResponseMessageFromJson(Map<String, dynamic> json) =>

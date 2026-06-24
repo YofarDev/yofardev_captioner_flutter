@@ -24,7 +24,9 @@ class BboxOverlayImage extends StatefulWidget {
 }
 
 class _BboxOverlayImageState extends State<BboxOverlayImage> {
+  // ignore: use_late_for_private_fields_and_variables
   int? _imageWidth;
+  // ignore: use_late_for_private_fields_and_variables
   int? _imageHeight;
   bool _loaded = false;
 

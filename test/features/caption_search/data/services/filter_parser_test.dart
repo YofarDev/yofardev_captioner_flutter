@@ -280,9 +280,14 @@ void main() {
     });
 
     test(':tag:foo: :tag:bar: yields two TagFilters', () {
-      final ParsedFilterQuery result = FilterParser.parse(':tag:foo: :tag:bar:');
+      final ParsedFilterQuery result = FilterParser.parse(
+        ':tag:foo: :tag:bar:',
+      );
       expect(result.filters, hasLength(2));
-      expect(result.filters.every((FilterExpression f) => f is TagFilter), isTrue);
+      expect(
+        result.filters.every((FilterExpression f) => f is TagFilter),
+        isTrue,
+      );
     });
   });
 }

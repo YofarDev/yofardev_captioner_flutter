@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,6 +9,10 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../llm_config/data/models/structured_batch_overrides.dart';
+import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../structured_captioning/data/models/apply_structured_overrides.dart';
+import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../../structured_captioning/presentation/pages/structured_editor_page.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 import '../../logic/captioning_cubit.dart';
@@ -51,6 +56,10 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
 
   @override
   Widget build(BuildContext context) {
+    final StructuredBatchOverrides overrides = context
+        .select<LlmConfigsCubit, StructuredBatchOverrides>(
+          (LlmConfigsCubit c) => c.state.llmConfigs.structuredBatchOverrides,
+        );
     return BlocListener<ImageListCubit, ImageListState>(
       listener: (BuildContext context, ImageListState state) {
         // Update highlight properties when search changes
@@ -191,6 +200,29 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
+                                    if (isIdeogram && overrides.enabled)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.teal.withAlpha(60),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          'overrides',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.tealAccent,
+                                          ),
+                                        ),
+                                      ),
+                                    if (isIdeogram && overrides.enabled)
+                                      const SizedBox(width: 8),
                                     Tooltip(
                                       message: captionText.trim().isEmpty
                                           ? 'No caption to copy'
@@ -199,15 +231,35 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         onTap: captionText.trim().isEmpty
                                             ? null
                                             : () {
+                                                String textToCopy = captionText;
+                                                if (isIdeogram &&
+                                                    overrides.enabled) {
+                                                  final IdeogramCaption parsed =
+                                                      IdeogramCaption.fromJson(
+                                                        jsonDecode(captionText)
+                                                            as Map<
+                                                              String,
+                                                              dynamic
+                                                            >,
+                                                      );
+                                                  textToCopy =
+                                                      applyStructuredOverrides(
+                                                        parsed,
+                                                        overrides,
+                                                      ).toJsonString();
+                                                }
                                                 Clipboard.setData(
                                                   ClipboardData(
-                                                    text: captionText,
+                                                    text: textToCopy,
                                                   ),
                                                 );
                                                 NotificationOverlay.show(
                                                   context,
                                                   message:
-                                                      'Caption copied to clipboard',
+                                                      isIdeogram &&
+                                                          overrides.enabled
+                                                      ? 'Caption copied to clipboard (overrides applied)'
+                                                      : 'Caption copied to clipboard',
                                                 );
                                               },
                                         child: Container(

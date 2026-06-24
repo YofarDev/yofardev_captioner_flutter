@@ -151,6 +151,18 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     _scheduleSave();
   }
 
+  // -- Raw JSON --
+
+  /// Replaces the entire caption from a raw JSON edit. Clears selection since
+  /// element indices may no longer be valid.
+  // ponytail: hiddenElementIndices left as-is; stale refs are harmless and
+  // remapping on a full replace isn't worth the diff.
+  void replaceCaption(IdeogramCaption caption) {
+    _invalidateSamCache();
+    emit(state.copyWith(caption: caption, clearSelection: true));
+    _scheduleSave();
+  }
+
   // -- Element Selection --
 
   void selectElement(int index) {

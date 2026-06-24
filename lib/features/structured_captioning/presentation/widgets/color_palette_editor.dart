@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'color_picker_dialog.dart';
 import 'image_eyedropper_dialog.dart';
@@ -35,10 +36,14 @@ class ColorPaletteEditor extends StatelessWidget {
           return _ColorSwatch(
             hex: colors[index],
             onTap: () => _editColor(context, index),
+            onLongPress: () => _copyColor(context, colors[index]),
             onRemove: () => _removeColor(index),
           );
         }),
-        _AddSwatchButton(onTap: () => _addColor(context)),
+        _AddSwatchButton(
+          onTap: () => _addColor(context),
+          onLongPress: () => _pasteColor(context),
+        ),
       ],
     );
   }
@@ -77,17 +82,56 @@ class ColorPaletteEditor extends StatelessWidget {
     final List<String> updated = List<String>.from(colors)..removeAt(index);
     onChanged(updated);
   }
+
+  Future<void> _copyColor(BuildContext context, String hex) async {
+    await Clipboard.setData(ClipboardData(text: hex));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Copied $hex — long-press + to paste'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _pasteColor(BuildContext context) async {
+    final ClipboardData? data = await Clipboard.getData('text/plain');
+    final String? hex = _tryParseColorHex(data?.text);
+    if (hex == null) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Clipboard is not a color'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    final List<String> updated = List<String>.from(colors)..add(hex);
+    onChanged(updated);
+  }
+
+  /// Returns normalized "#RRGGBB" if [text] is a parseable hex color, else null.
+  String? _tryParseColorHex(String? text) {
+    if (text == null) return null;
+    String clean = text.trim().replaceFirst('#', '');
+    if (clean.length == 8) clean = clean.substring(2);
+    if (!RegExp(r'^[0-9A-Fa-f]{6}$').hasMatch(clean)) return null;
+    return '#${clean.toUpperCase()}';
+  }
 }
 
 class _ColorSwatch extends StatelessWidget {
   const _ColorSwatch({
     required this.hex,
     required this.onTap,
+    required this.onLongPress,
     required this.onRemove,
   });
 
   final String hex;
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
   final VoidCallback onRemove;
 
   Color get _color {
@@ -102,9 +146,10 @@ class _ColorSwatch extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       onSecondaryTap: onRemove,
       child: Tooltip(
-        message: '$hex\n(right-click to remove)',
+        message: '$hex\n(long-press copy, right-click remove)',
         child: Container(
           width: 28,
           height: 28,
@@ -120,16 +165,18 @@ class _ColorSwatch extends StatelessWidget {
 }
 
 class _AddSwatchButton extends StatelessWidget {
-  const _AddSwatchButton({required this.onTap});
+  const _AddSwatchButton({required this.onTap, required this.onLongPress});
 
   final VoidCallback onTap;
+  final VoidCallback onLongPress;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Tooltip(
-        message: 'Add color',
+        message: 'Add color (eyedropper)\nlong-press to paste from clipboard',
         child: Container(
           width: 28,
           height: 28,

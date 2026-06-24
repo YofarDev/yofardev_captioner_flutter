@@ -2,7 +2,7 @@ name: yofardev_captioner
 description: "The captioner app."
 publish_to: "none"
 
-version: 2.1.1+16
+version: 2.2.1+17
 
 environment:
   sdk: ^3.9.2

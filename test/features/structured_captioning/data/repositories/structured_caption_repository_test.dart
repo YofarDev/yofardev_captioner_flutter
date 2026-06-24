@@ -395,6 +395,21 @@ void main() {
       test('returns null when no object is present', () {
         expect(repo.extractJsonObject('no json here at all'), isNull);
       });
+
+      test(
+        'returns null for truncated JSON instead of an unbalanced fragment',
+        () {
+          // Simulates a VLM response that was cut off by max_tokens: the
+          // top-level object never closes, but an inner sub-object's `}`
+          // exists. The old fallback returned the substring up to that inner
+          // `}`, producing invalid JSON that threw the cryptic
+          // "FormatException: unexpected end of input". Now it must return
+          // null so the caller can emit a clear error.
+          const String truncated =
+              '{"high_level_description": "A crowd", "objects": [{"name": "person", "desc": "tall"}, {"name": "person2"';
+          expect(repo.extractJsonObject(truncated), isNull);
+        },
+      );
     });
 
     // =========================================================================
@@ -1216,9 +1231,7 @@ void main() {
       repo = StructuredCaptionRepository(samProcessService: mockSam);
     });
 
-    IdeogramCaption captionWith({
-      required List<IdeogramElement> elements,
-    }) =>
+    IdeogramCaption captionWith({required List<IdeogramElement> elements}) =>
         IdeogramCaption(
           highLevelDescription: 'hld',
           styleDescription: const IdeogramStyleDescription(
@@ -1275,12 +1288,14 @@ void main() {
             <int>[100, 100, 200, 200],
           ],
         ),
-      ).thenAnswer((_) async => <SamDetection>[
-        const SamDetection(
-          name: 'a single cat',
-          bbox: <int>[110, 110, 210, 210],
-        ),
-      ]);
+      ).thenAnswer(
+        (_) async => <SamDetection>[
+          const SamDetection(
+            name: 'a single cat',
+            bbox: <int>[110, 110, 210, 210],
+          ),
+        ],
+      );
 
       final Map<int, List<int>> result = await repo.computeSamBboxes(
         imageFile: File('img.png'),
@@ -1322,28 +1337,30 @@ void main() {
       });
     });
 
-    test('returns empty map and swallows errors from SamProcessService',
-        () async {
-      final IdeogramCaption c = captionWith(
-        elements: <IdeogramElement>[
-          const IdeogramElement(
-            type: 'obj',
-            desc: 'cat',
-            bbox: <int>[100, 100, 200, 200],
-          ),
-        ],
-      );
+    test(
+      'returns empty map and swallows errors from SamProcessService',
+      () async {
+        final IdeogramCaption c = captionWith(
+          elements: <IdeogramElement>[
+            const IdeogramElement(
+              type: 'obj',
+              desc: 'cat',
+              bbox: <int>[100, 100, 200, 200],
+            ),
+          ],
+        );
 
-      when(
-        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
-      ).thenThrow(Exception('python gone'));
+        when(
+          mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+        ).thenThrow(Exception('python gone'));
 
-      final Map<int, List<int>> result = await repo.computeSamBboxes(
-        imageFile: File('img.png'),
-        caption: c,
-      );
+        final Map<int, List<int>> result = await repo.computeSamBboxes(
+          imageFile: File('img.png'),
+          caption: c,
+        );
 
-      expect(result, isEmpty);
-    });
+        expect(result, isEmpty);
+      },
+    );
   });
 }

@@ -25,108 +25,113 @@ void main() {
 
   test('getAllUniqueTags returns all unique tags across images', () {
     final ImageListCubit cubit = ImageListCubit();
-    cubit.emit(cubit.state.copyWith(images: <AppImage>[
-      AppImage(
-        id: '1',
-        image: File(''),
-        captions: <String, CaptionEntry>{},
-        tags: <String>['sunset', 'landscape'],
+    cubit.emit(
+      cubit.state.copyWith(
+        images: <AppImage>[
+          AppImage(
+            id: '1',
+            image: File(''),
+            captions: const <String, CaptionEntry>{},
+            tags: const <String>['sunset', 'landscape'],
+          ),
+          AppImage(
+            id: '2',
+            image: File(''),
+            captions: const <String, CaptionEntry>{},
+            tags: const <String>['landscape', 'night'],
+          ),
+          AppImage(
+            id: '3',
+            image: File(''),
+            captions: const <String, CaptionEntry>{},
+            tags: const <String>['sunset', 'portrait'],
+          ),
+        ],
       ),
-      AppImage(
-        id: '2',
-        image: File(''),
-        captions: <String, CaptionEntry>{},
-        tags: <String>['landscape', 'night'],
-      ),
-      AppImage(
-        id: '3',
-        image: File(''),
-        captions: <String, CaptionEntry>{},
-        tags: <String>['sunset', 'portrait'],
-      ),
-    ]));
-    expect(
-      cubit.getAllUniqueTags(),
-      <String>{'sunset', 'landscape', 'night', 'portrait'},
     );
+    expect(cubit.getAllUniqueTags(), <String>{
+      'sunset',
+      'landscape',
+      'night',
+      'portrait',
+    });
   });
 
   String makeIdeogramJson(String medium) => jsonEncode(<String, dynamic>{
-        'high_level_description': 'A scene',
-        'style_description': <String, dynamic>{
-          'aesthetics': 'beautiful',
-          'lighting': 'natural',
-          'medium': medium,
-          'color_palette': <String>[],
-        },
-        'compositional_deconstruction': <String, dynamic>{
-          'background': 'sky',
-          'elements': <Map<String, dynamic>>[],
-        },
-      });
+    'high_level_description': 'A scene',
+    'style_description': <String, dynamic>{
+      'aesthetics': 'beautiful',
+      'lighting': 'natural',
+      'medium': medium,
+      'color_palette': <String>[],
+    },
+    'compositional_deconstruction': <String, dynamic>{
+      'background': 'sky',
+      'elements': <Map<String, dynamic>>[],
+    },
+  });
 
   test('getAllUniqueMediums returns all unique mediums from JSON captions', () {
     final ImageListCubit cubit = ImageListCubit();
-    cubit.emit(cubit.state.copyWith(images: <AppImage>[
-      AppImage(
-        id: '1',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: makeIdeogramJson('photograph')),
-        },
-        tags: <String>[],
+    cubit.emit(
+      cubit.state.copyWith(
+        images: <AppImage>[
+          AppImage(
+            id: '1',
+            image: File(''),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: makeIdeogramJson('photograph')),
+            },
+          ),
+          AppImage(
+            id: '2',
+            image: File(''),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: makeIdeogramJson('oil painting')),
+            },
+          ),
+          AppImage(
+            id: '3',
+            image: File(''),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: makeIdeogramJson('photograph')),
+            },
+          ),
+        ],
       ),
-      AppImage(
-        id: '2',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: makeIdeogramJson('oil painting')),
-        },
-        tags: <String>[],
-      ),
-      AppImage(
-        id: '3',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: makeIdeogramJson('photograph')),
-        },
-        tags: <String>[],
-      ),
-    ]));
-    expect(
-      cubit.getAllUniqueMediums(),
-      <String>{'photograph', 'oil painting'},
     );
+    expect(cubit.getAllUniqueMediums(), <String>{'photograph', 'oil painting'});
   });
 
   test('getAllUniqueMediums ignores non-JSON and invalid captions', () {
     final ImageListCubit cubit = ImageListCubit();
-    cubit.emit(cubit.state.copyWith(images: <AppImage>[
-      AppImage(
-        id: '1',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: makeIdeogramJson('digital art')),
-        },
-        tags: <String>[],
+    cubit.emit(
+      cubit.state.copyWith(
+        images: <AppImage>[
+          AppImage(
+            id: '1',
+            image: File(''),
+            captions: <String, CaptionEntry>{
+              'default': CaptionEntry(text: makeIdeogramJson('digital art')),
+            },
+          ),
+          AppImage(
+            id: '2',
+            image: File(''),
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: 'just a plain caption'),
+            },
+          ),
+          AppImage(
+            id: '3',
+            image: File(''),
+            captions: const <String, CaptionEntry>{
+              'default': CaptionEntry(text: '{invalid json'),
+            },
+          ),
+        ],
       ),
-      AppImage(
-        id: '2',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: 'just a plain caption'),
-        },
-        tags: <String>[],
-      ),
-      AppImage(
-        id: '3',
-        image: File(''),
-        captions: <String, CaptionEntry>{
-          'default': CaptionEntry(text: '{invalid json'),
-        },
-        tags: <String>[],
-      ),
-    ]));
+    );
     expect(cubit.getAllUniqueMediums(), <String>{'digital art'});
   });
 
@@ -144,8 +149,9 @@ void main() {
 
     // updateImage matches by id, so reuse the loaded image's id to ensure the
     // update actually applies and _saveDb runs with the tagged image.
-    final AppImage image = cubit.state.images.first
-        .copyWith(tags: const <String>['sunset', 'landscape']);
+    final AppImage image = cubit.state.images.first.copyWith(
+      tags: const <String>['sunset', 'landscape'],
+    );
     await cubit.updateImage(image: image);
 
     final File dbFile = File(p.join(tempDir.path, 'db.json'));
@@ -165,19 +171,21 @@ void main() {
       tempDir = Directory.systemTemp.createTempSync('cubit_tags_ops_');
       File(p.join(tempDir.path, 'a.jpg')).writeAsStringSync('');
       // Seed a db.json so onFolderPicked loads one image.
-      File(p.join(tempDir.path, 'db.json')).writeAsStringSync(jsonEncode({
-        'version': 3,
-        'categories': <String>['default'],
-        'activeCategory': 'default',
-        'images': <Map<String, dynamic>>[
-          <String, dynamic>{
-            'id': 'img-1',
-            'filename': 'a.jpg',
-            'captions': <String, dynamic>{},
-            'tags': <String>[],
-          },
-        ],
-      }));
+      File(p.join(tempDir.path, 'db.json')).writeAsStringSync(
+        jsonEncode(<String, Object>{
+          'version': 3,
+          'categories': <String>['default'],
+          'activeCategory': 'default',
+          'images': <Map<String, dynamic>>[
+            <String, dynamic>{
+              'id': 'img-1',
+              'filename': 'a.jpg',
+              'captions': <String, dynamic>{},
+              'tags': <String>[],
+            },
+          ],
+        }),
+      );
       cubit = ImageListCubit();
       await cubit.onFolderPicked(tempDir.path);
       // Select the image.
@@ -197,11 +205,12 @@ void main() {
       await cubit.addTag('sunset');
       expect(currentImage(cubit).tags, <String>['sunset']);
       // Verify persisted to disk.
-      final Map<String, dynamic> json = jsonDecode(
-        File(p.join(tempDir.path, 'db.json')).readAsStringSync(),
-      ) as Map<String, dynamic>;
-      final List<dynamic> tags =
-          (json['images'] as List).first['tags'] as List<dynamic>;
+      final Map<String, dynamic> json =
+          jsonDecode(File(p.join(tempDir.path, 'db.json')).readAsStringSync())
+              as Map<String, dynamic>;
+      final Map<String, dynamic> firstImage =
+          (json['images'] as List<dynamic>).first as Map<String, dynamic>;
+      final List<dynamic> tags = firstImage['tags'] as List<dynamic>;
       expect(tags, <String>['sunset']);
     });
 
@@ -230,10 +239,7 @@ void main() {
     });
 
     test('operations are no-op when no image selected', () async {
-      cubit.emit(cubit.state.copyWith(
-        currentImageId: null,
-        images: <AppImage>[],
-      ));
+      cubit.emit(cubit.state.copyWith(images: <AppImage>[]));
       await cubit.addTag('x');
       expect(cubit.state.images, isEmpty);
     });

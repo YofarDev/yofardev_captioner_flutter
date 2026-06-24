@@ -410,6 +410,97 @@ void main() {
           ),
         );
       });
+
+      test(
+        'throws ApiException when finish_reason=length (truncated response)',
+        () {
+          // Simulates a VLM response that hit the max_tokens limit: the
+          // content is a truncated JSON fragment and finish_reason is "length"
+          // instead of "stop". Without finish_reason detection this would
+          // propagate as "FormatException: unexpected end of input".
+          when(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).thenAnswer(
+            (_) async => http.Response(
+              jsonEncode(<String, dynamic>{
+                'choices': <Map<String, dynamic>>[
+                  <String, dynamic>{
+                    'message': <String, dynamic>{
+                      'content':
+                          '{"high_level_description": "A crowd of people',
+                    },
+                    'finish_reason': 'length',
+                  },
+                ],
+              }),
+              200,
+            ),
+          );
+
+          final LlmConfig config = LlmConfig(
+            name: 'test',
+            model: 'gpt-4',
+            apiKey: 'key',
+            url: 'https://api.example.com',
+            providerType: LlmProviderType.remote,
+          );
+
+          expect(
+            () => service.getCaption(config, File('/test/img.jpg'), 'prompt'),
+            throwsA(
+              isA<ApiException>().having(
+                (ApiException e) => e.message,
+                'message',
+                contains('max_tokens'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('returns content normally when finish_reason=stop', () async {
+        when(
+          mockHttpClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode(<String, dynamic>{
+              'choices': <Map<String, dynamic>>[
+                <String, dynamic>{
+                  'message': <String, dynamic>{
+                    'content': 'A complete caption.',
+                  },
+                  'finish_reason': 'stop',
+                },
+              ],
+            }),
+            200,
+          ),
+        );
+
+        final LlmConfig config = LlmConfig(
+          name: 'test',
+          model: 'gpt-4',
+          apiKey: 'key',
+          url: 'https://api.example.com',
+          providerType: LlmProviderType.remote,
+        );
+
+        final String result = await service.getCaption(
+          config,
+          File('/test/img.jpg'),
+          'prompt',
+        );
+
+        expect(result, 'A complete caption.');
+      });
     });
 
     // ─── rewriteCaption (text-only) ─────────────────────────────────

@@ -3,8 +3,7 @@ import 'package:yofardev_captioner/features/caption_search/data/models/filter_qu
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 
 void main() {
-  FilterContext ctx(String caption) =>
-      FilterContext(captionText: caption, tags: const <String>[]);
+  FilterContext ctx(String caption) => FilterContext(captionText: caption);
 
   // Sample Ideogram JSON for testing
   const String sampleIdeogramJson =
@@ -389,10 +388,12 @@ void main() {
     test('matches when tags contain the value (case-insensitive)', () {
       const TagFilter filter = TagFilter(tag: 'sunset');
       expect(
-        filter.evaluate(FilterContext(
-          captionText: '',
-          tags: <String>['Sunset', 'landscape'],
-        )),
+        filter.evaluate(
+          const FilterContext(
+            captionText: '',
+            tags: <String>['Sunset', 'landscape'],
+          ),
+        ),
         isTrue,
       );
     });
@@ -400,45 +401,31 @@ void main() {
     test('no match when tags lack the value', () {
       const TagFilter filter = TagFilter(tag: 'sunset');
       expect(
-        filter.evaluate(const FilterContext(
-          captionText: '',
-          tags: <String>['landscape'],
-        )),
+        filter.evaluate(
+          const FilterContext(captionText: '', tags: <String>['landscape']),
+        ),
         isFalse,
       );
     });
 
     test('no match when tags empty', () {
       const TagFilter filter = TagFilter(tag: 'sunset');
-      expect(
-        filter.evaluate(const FilterContext(
-          captionText: '',
-          tags: <String>[],
-        )),
-        isFalse,
-      );
+      expect(filter.evaluate(const FilterContext(captionText: '')), isFalse);
     });
   });
 
   group('NoTagFilter', () {
     test('matches when tags empty', () {
       const NoTagFilter filter = NoTagFilter();
-      expect(
-        filter.evaluate(const FilterContext(
-          captionText: '',
-          tags: <String>[],
-        )),
-        isTrue,
-      );
+      expect(filter.evaluate(const FilterContext(captionText: '')), isTrue);
     });
 
     test('no match when tags present', () {
       const NoTagFilter filter = NoTagFilter();
       expect(
-        filter.evaluate(const FilterContext(
-          captionText: '',
-          tags: <String>['sunset'],
-        )),
+        filter.evaluate(
+          const FilterContext(captionText: '', tags: <String>['sunset']),
+        ),
         isFalse,
       );
     });

@@ -142,11 +142,7 @@ class _TagDialogState extends State<_TagDialog> {
       surfaceTintColor: Colors.transparent,
       title: const Text(
         'Tags',
-        style: TextStyle(
-          color: textPrimary,
-          fontSize: 14,
-          fontFamily: 'Inter',
-        ),
+        style: TextStyle(color: textPrimary, fontSize: 14, fontFamily: 'Inter'),
       ),
       content: SizedBox(
         width: 300,
@@ -170,8 +166,11 @@ class _TagDialogState extends State<_TagDialog> {
                           fontFamily: 'Inter',
                         ),
                       ),
-                      deleteIcon: const Icon(Icons.close, size: 14,
-                          color: textMuted),
+                      deleteIcon: const Icon(
+                        Icons.close,
+                        size: 14,
+                        color: textMuted,
+                      ),
                       onDeleted: () => _removeTag(tag),
                       backgroundColor: panelRaised,
                       side: BorderSide.none,
@@ -207,18 +206,24 @@ class _TagDialogState extends State<_TagDialog> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(4),
-                          borderSide:
-                              const BorderSide(color: hairline, width: 0.5),
+                          borderSide: const BorderSide(
+                            color: hairline,
+                            width: 0.5,
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(4),
-                          borderSide:
-                              const BorderSide(color: hairline, width: 0.5),
+                          borderSide: const BorderSide(
+                            color: hairline,
+                            width: 0.5,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(4),
-                          borderSide:
-                              const BorderSide(color: textMuted, width: 0.5),
+                          borderSide: const BorderSide(
+                            color: textMuted,
+                            width: 0.5,
+                          ),
                         ),
                       ),
                       textInputAction: TextInputAction.done,
@@ -243,10 +248,7 @@ class _TagDialogState extends State<_TagDialog> {
                     ),
                     child: const Text(
                       'Add',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontFamily: 'Inter',
-                      ),
+                      style: TextStyle(fontSize: 11, fontFamily: 'Inter'),
                     ),
                   ),
                 ),
@@ -260,16 +262,22 @@ class _TagDialogState extends State<_TagDialog> {
           onPressed: () => Navigator.of(context).pop(),
           child: const Text(
             'Cancel',
-            style: TextStyle(color: textMuted, fontSize: 12,
-                fontFamily: 'Inter'),
+            style: TextStyle(
+              color: textMuted,
+              fontSize: 12,
+              fontFamily: 'Inter',
+            ),
           ),
         ),
         TextButton(
           onPressed: _save,
           child: const Text(
             'Save',
-            style: TextStyle(color: textPrimary, fontSize: 12,
-                fontFamily: 'Inter'),
+            style: TextStyle(
+              color: textPrimary,
+              fontSize: 12,
+              fontFamily: 'Inter',
+            ),
           ),
         ),
       ],

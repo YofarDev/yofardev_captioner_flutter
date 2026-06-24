@@ -30,7 +30,7 @@ class CategoryTabBar extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   proxyDecorator: _proxyDecorator,
                   itemCount: state.categories.length,
-                  onReorder: (int oldIndex, int newIndex) {
+                  onReorderItem: (int oldIndex, int newIndex) {
                     context.read<ImageListCubit>().reorderCategories(
                       oldIndex,
                       newIndex,

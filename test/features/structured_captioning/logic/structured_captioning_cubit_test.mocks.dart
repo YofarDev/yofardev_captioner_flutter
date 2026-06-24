@@ -210,6 +210,22 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as _i6.Future<void>);
 
   @override
+  Set<String> getAllUniqueTags() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUniqueTags, []),
+            returnValue: <String>{},
+          )
+          as Set<String>);
+
+  @override
+  Set<String> getAllUniqueMediums() =>
+      (super.noSuchMethod(
+            Invocation.method(#getAllUniqueMediums, []),
+            returnValue: <String>{},
+          )
+          as Set<String>);
+
+  @override
   _i6.Future<void> removeImage(String? imageId) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageId]),
@@ -406,6 +422,22 @@ class MockStructuredCaptionRepository extends _i1.Mock
             ),
           )
           as _i6.Future<_i3.IdeogramCaption>);
+
+  @override
+  _i6.Future<Map<int, List<int>>> computeSamBboxes({
+    required _i10.File? imageFile,
+    required _i3.IdeogramCaption? caption,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#computeSamBboxes, [], {
+              #imageFile: imageFile,
+              #caption: caption,
+            }),
+            returnValue: _i6.Future<Map<int, List<int>>>.value(
+              <int, List<int>>{},
+            ),
+          )
+          as _i6.Future<Map<int, List<int>>>);
 
   @override
   _i6.Future<_i3.IdeogramElement> recaptionElement({

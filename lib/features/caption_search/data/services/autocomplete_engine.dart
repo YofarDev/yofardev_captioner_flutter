@@ -45,8 +45,8 @@ class AutocompleteEngine {
   AutocompleteEngine({
     required Set<String> Function() getUniqueTags,
     required Set<String> Function() getUniqueMediums,
-  })  : _getUniqueTags = getUniqueTags,
-        _getUniqueMediums = getUniqueMediums;
+  }) : _getUniqueTags = getUniqueTags,
+       _getUniqueMediums = getUniqueMediums;
 
   final Set<String> Function() _getUniqueTags;
   final Set<String> Function() _getUniqueMediums;
@@ -82,9 +82,7 @@ class AutocompleteEngine {
     final String? inHas = _extractFilterValue(textBeforeCursor, 'has');
     if (inHas != null) {
       if (inHas.isEmpty) {
-        return _hasTypes
-            .map((String t) => HasTypeSuggestion(type: t))
-            .toList();
+        return _hasTypes.map((String t) => HasTypeSuggestion(type: t)).toList();
       }
       final String lower = inHas.toLowerCase();
       return _hasTypes
@@ -147,7 +145,9 @@ class AutocompleteEngine {
     if (lastInstance == -1) return null;
 
     final int valueStart = lastInstance + pattern.length;
-    if (valueStart >= before.length) return ''; // cursor right after :filterName:
+    if (valueStart >= before.length) {
+      return ''; // cursor right after :filterName:
+    }
 
     final String value = before.substring(valueStart);
     // If there's a closing `:` in the value, the filter is already closed
@@ -162,10 +162,10 @@ class AutocompleteEngine {
     final Iterable<MapEntry<String, String>> entries = _filterNames.entries;
     if (prefix.isEmpty) {
       return entries
-          .map((MapEntry<String, String> e) => FilterNameSuggestion(
-                name: e.key,
-                description: e.value,
-              ))
+          .map(
+            (MapEntry<String, String> e) =>
+                FilterNameSuggestion(name: e.key, description: e.value),
+          )
           .toList();
     }
     final String lower = prefix.toLowerCase();
@@ -173,19 +173,17 @@ class AutocompleteEngine {
         .where(
           (MapEntry<String, String> e) => e.key.toLowerCase().startsWith(lower),
         )
-        .map((MapEntry<String, String> e) => FilterNameSuggestion(
-              name: e.key,
-              description: e.value,
-            ))
+        .map(
+          (MapEntry<String, String> e) =>
+              FilterNameSuggestion(name: e.key, description: e.value),
+        )
         .toList();
   }
 
   List<TagValueSuggestion> _suggestTagValues(String partial) {
     final Set<String> allTags = _getUniqueTags();
     if (partial.isEmpty) {
-      return allTags
-          .map((String t) => TagValueSuggestion(value: t))
-          .toList();
+      return allTags.map((String t) => TagValueSuggestion(value: t)).toList();
     }
     final String lower = partial.toLowerCase();
     return allTags

@@ -8,6 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../llm_config/data/models/structured_batch_overrides.dart';
+import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../data/models/apply_structured_overrides.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../widgets/element_detail_section.dart';
@@ -205,9 +208,10 @@ class _StructuredEditorView extends StatelessWidget {
         actions: <Widget>[
           // SAM3 bbox comparison toggle.
           BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
-            buildWhen: (StructuredEditorState prev, StructuredEditorState next) =>
-                prev.showSamBboxes != next.showSamBboxes ||
-                prev.samComputeStatus != next.samComputeStatus,
+            buildWhen:
+                (StructuredEditorState prev, StructuredEditorState next) =>
+                    prev.showSamBboxes != next.showSamBboxes ||
+                    prev.samComputeStatus != next.samComputeStatus,
             builder: (BuildContext context, StructuredEditorState state) {
               final bool computing =
                   state.samComputeStatus == SamComputeStatus.computing;
@@ -229,18 +233,17 @@ class _StructuredEditorView extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(color),
+                          valueColor: AlwaysStoppedAnimation<Color>(color),
                         ),
                       )
                     : Icon(icon, color: color),
                 tooltip: computing
                     ? 'Running SAM3…'
                     : (on
-                        ? 'Show saved (VLM) bboxes'
-                        : (errored
-                            ? 'SAM3 failed — click to retry'
-                            : 'Show SAM3 bboxes')),
+                          ? 'Show saved (VLM) bboxes'
+                          : (errored
+                                ? 'SAM3 failed — click to retry'
+                                : 'Show SAM3 bboxes')),
                 onPressed: computing
                     ? null
                     : () {
@@ -546,9 +549,59 @@ class _JsonViewer extends StatefulWidget {
 
 class _JsonViewerState extends State<_JsonViewer> {
   bool _expanded = false;
+  bool _editing = false;
+  String? _parseError;
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _enterEdit(String currentRaw) {
+    _controller.text = currentRaw;
+    setState(() {
+      _expanded = true;
+      _editing = true;
+      _parseError = null;
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editing = false;
+      _parseError = null;
+    });
+  }
+
+  void _apply(BuildContext context) {
+    try {
+      final Map<String, dynamic> decoded =
+          jsonDecode(_controller.text) as Map<String, dynamic>;
+      final IdeogramCaption caption = IdeogramCaption.fromJson(decoded);
+      context.read<StructuredEditorCubit>().replaceCaption(caption);
+      setState(() {
+        _editing = false;
+        _parseError = null;
+      });
+    } catch (e) {
+      setState(() => _parseError = e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final StructuredBatchOverrides overrides = context
+        .select<LlmConfigsCubit, StructuredBatchOverrides>(
+          (LlmConfigsCubit c) => c.state.llmConfigs.structuredBatchOverrides,
+        );
     return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
       builder: (BuildContext context, StructuredEditorState state) {
         final String raw = const JsonEncoder.withIndent(
@@ -587,14 +640,63 @@ class _JsonViewerState extends State<_JsonViewer> {
                         color: Colors.white70,
                       ),
                     ),
+                    if (overrides.enabled)
+                      Container(
+                        margin: const EdgeInsets.only(left: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(30),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'overrides',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
                     const Spacer(),
+                    if (_expanded && !_editing) ...<Widget>[
+                      InkWell(
+                        onTap: () => _enterEdit(raw),
+                        borderRadius: BorderRadius.circular(6),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(20),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            size: 16,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     InkWell(
                       onTap: () {
-                        Clipboard.setData(ClipboardData(text: raw));
+                        final IdeogramCaption copyCaption =
+                            applyStructuredOverrides(state.caption, overrides);
+                        final String copyText = const JsonEncoder.withIndent(
+                          '  ',
+                        ).convert(copyCaption.toJson());
+                        Clipboard.setData(ClipboardData(text: copyText));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('JSON copied to clipboard'),
-                            duration: Duration(seconds: 2),
+                          SnackBar(
+                            content: Text(
+                              overrides.enabled
+                                  ? 'JSON copied to clipboard (overrides applied)'
+                                  : 'JSON copied to clipboard',
+                            ),
+                            duration: const Duration(seconds: 2),
                           ),
                         );
                       },
@@ -618,23 +720,82 @@ class _JsonViewerState extends State<_JsonViewer> {
             ),
             if (_expanded) ...<Widget>[
               const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: lightGrey,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: SelectableText(
-                  raw,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
-                    height: 1.5,
-                    color: Colors.white70,
+              if (_editing)
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: lightGrey,
+                    borderRadius: BorderRadius.circular(8),
+                    border: _parseError != null
+                        ? Border.all(color: Colors.redAccent)
+                        : null,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      TextField(
+                        controller: _controller,
+                        minLines: 8,
+                        maxLines: null,
+                        style: const TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 11,
+                          height: 1.5,
+                          color: Colors.white,
+                        ),
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                        ),
+                      ),
+                      if (_parseError != null) ...<Widget>[
+                        const SizedBox(height: 6),
+                        Text(
+                          _parseError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: <Widget>[
+                          TextButton(
+                            onPressed: _cancelEdit,
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () => _apply(context),
+                            child: const Text('Apply'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: lightGrey,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: SelectableText(
+                    raw,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 11,
+                      height: 1.5,
+                      color: Colors.white70,
+                    ),
                   ),
                 ),
-              ),
             ],
           ],
         );

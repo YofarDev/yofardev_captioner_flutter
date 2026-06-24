@@ -222,13 +222,14 @@ void main() {
         expect(suggestions, isEmpty);
       });
 
-      test(':tag:foo:sunset (closed tag filter then text) suggests nothing', () {
-        final List<AutocompleteSuggestion> suggestions = engine.getSuggestions(
-          ':tag:foo:sunset',
-          15,
-        );
-        expect(suggestions, isEmpty);
-      });
+      test(
+        ':tag:foo:sunset (closed tag filter then text) suggests nothing',
+        () {
+          final List<AutocompleteSuggestion> suggestions = engine
+              .getSuggestions(':tag:foo:sunset', 15);
+          expect(suggestions, isEmpty);
+        },
+      );
     });
 
     group('cursor in the middle of text', () {

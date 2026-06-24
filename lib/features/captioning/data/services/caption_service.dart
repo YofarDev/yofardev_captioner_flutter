@@ -71,9 +71,10 @@ class CaptionService {
     try {
       imageToSend = await _imageResizer.resizeImageIfNecessary(image);
 
-      // Default to 4096 (enough for the structured deconstruction JSON) when
-      // the caller doesn't override — the model default is often too small.
-      final int effectiveMaxTokens = maxTokens ?? 4096;
+      // Default to 8192 (enough for the structured deconstruction JSON of
+      // complex scenes like crowds) when the caller doesn't override — the
+      // model default is often too small.
+      final int effectiveMaxTokens = maxTokens ?? 8192;
       final List<String> arguments = <String>[
         '--model',
         config.model,
@@ -264,16 +265,39 @@ class CaptionService {
   }
 
   /// Parses a chat completions 200 response into the assistant message text.
+  ///
+  /// Throws [ApiException] when the response is malformed OR when the model
+  /// was cut off by the `max_tokens` limit (`finish_reason: "length"`). The
+  /// latter is critical for structured-JSON generation, where a truncated
+  /// response produces invalid JSON (`FormatException: unexpected end of
+  /// input`) downstream. Detecting it here lets callers surface an
+  /// actionable message instead.
   String _parseChatResponse(http.Response response) {
     try {
       final CaptionResponse captionResponse = CaptionResponse.fromJson(
         jsonDecode(response.body) as Map<String, dynamic>,
       );
       if (captionResponse.choices.isNotEmpty) {
-        return captionResponse.choices.first.message.content;
+        final Choice choice = captionResponse.choices.first;
+        if (choice.finishReason == 'length') {
+          _logger.severe(
+            'Response truncated by max_tokens (finish_reason=length). '
+            'Content length: ${choice.message.content.length} chars.',
+          );
+          throw ApiException(
+            'The model hit the max_tokens limit and the response was '
+            'truncated. This usually happens with complex images that '
+            'produce long output. The partial response cannot be used. '
+            'Try again, increase max_tokens, or use a model with a larger '
+            'output capacity.',
+          );
+        }
+        return choice.message.content;
       } else {
         throw ApiException('Invalid response format: ${response.body}');
       }
+    } on ApiException {
+      rethrow;
     } catch (e) {
       _logger.severe('Error decoding response: $e');
       throw ApiException('Failed to decode response: $e');

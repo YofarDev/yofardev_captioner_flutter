@@ -176,26 +176,25 @@ void main() {
       expect(field.controller!.text, ':tag:sunset:');
     });
 
-    testWidgets(
-      'arrow up wraps around to the last suggestion from the first',
-      (WidgetTester tester) async {
-        await pumpBar(tester);
-        await typeText(tester, ':tag:');
+    testWidgets('arrow up wraps around to the last suggestion from the first', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await typeText(tester, ':tag:');
 
-        // Arrow up from the first item wraps to the last (mountain).
-        await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
-        await tester.pump();
+      // Arrow up from the first item wraps to the last (mountain).
+      await tester.sendKeyEvent(LogicalKeyboardKey.arrowUp);
+      await tester.pump();
 
-        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
-        final TextField field = tester.widget<TextField>(
-          find.byType(TextField).first,
-        );
-        expect(field.controller!.text, ':tag:mountain:');
-      },
-    );
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, ':tag:mountain:');
+    });
 
     testWidgets('suggestions dismiss when search is cleared', (
       WidgetTester tester,

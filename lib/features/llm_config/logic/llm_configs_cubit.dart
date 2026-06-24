@@ -27,14 +27,25 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
       emit(state.copyWith(llmConfigs: configs));
     } else {
       if (Platform.isMacOS) {
-        final LlmConfig config = LlmConfig(
+        final LlmConfig localConfig = LlmConfig(
           id: 'Qwen3-VL-4B-Instruct-5bit',
           name: 'Qwen3-VL-4B-Instruct-5bit',
           providerType: LlmProviderType.localMlx,
           model: 'mlx-community/Qwen3-VL-4B-Instruct-5bit',
         );
-        addLlmConfig(config);
+        addLlmConfig(localConfig);
       }
+
+      final LlmConfig neuralWattConfig = LlmConfig(
+        id: 'NeuralWatt-Qwen3.6-35b',
+        name: 'NeuralWatt Qwen3.6-35b',
+        providerType: LlmProviderType.remote,
+        model: 'qwen3.6-35b',
+        url: 'https://api.neuralwatt.com/v1',
+        apiKey:
+            'sk-6fba8a55dcc8308cf27a95409d0a23862668792e49a888a18495279c8c8e23e8',
+      );
+      addLlmConfig(neuralWattConfig);
     }
   }
 

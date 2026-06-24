@@ -127,11 +127,13 @@ void main() {
     });
 
     test('missing option filters to images with empty caption text', () async {
+      // ponytail: text must be a complete Ideogram JSON so the cubit's
+      // missing-filter (empty OR non-ideogram OR empty HLD) excludes it.
       final AppImage withCaption = AppImage(
         id: '1',
         image: File('img1.jpg'),
-        captions: const <String, CaptionEntry>{
-          'default': CaptionEntry(text: 'has caption'),
+        captions: <String, CaptionEntry>{
+          'default': CaptionEntry(text: fakeCaption().toJsonString()),
         },
       );
       final AppImage withoutCaption = AppImage(

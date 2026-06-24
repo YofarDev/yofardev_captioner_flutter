@@ -97,20 +97,38 @@ class _HsvPickerState extends State<_HsvPicker> {
     _hsv = HSVColor.fromColor(widget.currentColor);
   }
 
+  static const double _svWidth = 240;
+  static const double _svHeight = 180;
+
+  void _updateFromLocal(Offset pos) {
+    final double s = (pos.dx / _svWidth).clamp(0.0, 1.0);
+    final double v = (1.0 - pos.dy / _svHeight).clamp(0.0, 1.0);
+    setState(() {
+      _hsv = _hsv.withSaturation(s).withValue(v);
+    });
+    widget.onColorChanged(_hsv.toColor());
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
         // Saturation/Value square
-        SizedBox(
-          width: 240,
-          height: 180,
-          child: CustomPaint(
-            painter: _SVPickerPainter(
-              hue: _hsv.hue,
-              saturation: _hsv.saturation,
-              value: _hsv.value,
+        Listener(
+          onPointerDown: (PointerDownEvent e) =>
+              _updateFromLocal(e.localPosition),
+          onPointerMove: (PointerMoveEvent e) =>
+              _updateFromLocal(e.localPosition),
+          child: SizedBox(
+            width: _svWidth,
+            height: _svHeight,
+            child: CustomPaint(
+              painter: _SVPickerPainter(
+                hue: _hsv.hue,
+                saturation: _hsv.saturation,
+                value: _hsv.value,
+              ),
             ),
           ),
         ),

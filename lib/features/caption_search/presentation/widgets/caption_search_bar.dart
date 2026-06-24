@@ -301,7 +301,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   ) {
     return SizeTransition(
       axis: Axis.horizontal,
-      axisAlignment: -1,
+      alignment: Alignment.topCenter,
       sizeFactor: _widthAnimation,
       child: SizedBox(
         width: state.showReplaceMode ? _replaceBarWidth : _searchBarWidth,

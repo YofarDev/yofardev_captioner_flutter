@@ -9,7 +9,7 @@ void main() {
     test('Configuration values are correct', () {
       // Verify constants are set as expected
       expect(ImageUtils.maxFileSize, equals(1 * 1024 * 1024));
-      expect(ImageUtils.maxDimension, equals(1024));
+      expect(ImageUtils.defaultMaxDimension, equals(512));
     });
 
     test('Calculate aspect ratio preservation', () {

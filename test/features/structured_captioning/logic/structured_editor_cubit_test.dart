@@ -5,12 +5,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/config/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/services/layer_title_store.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
 
 import 'structured_editor_cubit_test.mocks.dart';
@@ -46,6 +48,8 @@ void main() {
     });
 
     setUp(() {
+      // LayerTitleStore reads/writes SharedPreferences; isolate per test.
+      SharedPreferences.setMockInitialValues(<String, Object>{});
       mockImageListCubit = MockImageListCubit();
       when(
         mockImageListCubit.updateCaption(caption: anyNamed('caption')),
@@ -230,6 +234,109 @@ void main() {
         expect(cubit.state.hiddenElementIndices, <int>{0});
         cubit.toggleElementVisibility(0);
         expect(cubit.state.hiddenElementIndices, <int>{});
+      });
+    });
+
+    group('layer titles (UI-only)', () {
+      test('setElementTitle sets, trims, and clears', () {
+        cubit.setElementTitle(1, '  hero  ');
+        expect(cubit.state.elementTitles, <int, String>{1: 'hero'});
+        // Clearing via empty string removes it.
+        cubit.setElementTitle(1, '   ');
+        expect(cubit.state.elementTitles, <int, String>{});
+      });
+
+      test(
+        'setElementTitle persists titles WITHOUT touching the caption JSON',
+        () async {
+          cubit.setElementTitle(1, 'hero');
+          await cubit.flushSave();
+
+          // Caption JSON is never rewritten for a title-only change.
+          verifyNever(
+            mockImageListCubit.updateCaption(caption: anyNamed('caption')),
+          );
+          // Titles round-trip through the sidecar store.
+          expect(
+            await const LayerTitleStore().load('img.png'),
+            <int, String>{1: 'hero'},
+          );
+        },
+      );
+
+      test('persisted titles are restored on cubit construction', () async {
+        await const LayerTitleStore().save(
+          'seeded.png',
+          <int, String>{0: 'restored', 2: 'bg'},
+        );
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: baseCaption(),
+          imageFile: File('seeded.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+        );
+        // Let the constructor's fire-and-forget _loadTitles() land.
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(c.state.elementTitles, <int, String>{0: 'restored', 2: 'bg'});
+        await c.flushSave();
+        await c.close();
+      });
+    });
+
+    group('reorder (moveElement)', () {
+      test(
+        'moves element and remaps selection, hidden, and titles together',
+        () {
+          // Setup: titles on 0, hidden 2, selection 0.
+          cubit.setElementTitle(0, 'first-title');
+          cubit.toggleElementVisibility(2);
+          cubit.selectElement(0);
+
+          // Move element at index 0 ('first') to index 2.
+          cubit.moveElement(0, 2);
+
+          final List<IdeogramElement> els =
+              cubit.state.caption.compositionalDeconstruction.elements;
+          // JSON reordered: ['second', 'third', 'first'].
+          expect(els.map((IdeogramElement e) => e.desc).toList(), <String>[
+            'second',
+            'third',
+            'first',
+          ]);
+          // Title followed the element (old 0 -> new 2).
+          expect(cubit.state.elementTitles, <int, String>{2: 'first-title'});
+          // Hidden 'third' shifted old 2 -> new 1.
+          expect(cubit.state.hiddenElementIndices, <int>{1});
+          // Selection followed old 0 -> new 2.
+          expect(cubit.state.selectedElementIndex, 2);
+        },
+      );
+
+      test('moveElement(from == to) is a no-op', () {
+        cubit.moveElement(1, 1);
+        expect(
+          cubit.state.caption.compositionalDeconstruction.elements
+              .map((IdeogramElement e) => e.desc)
+              .toList(),
+          <String>['first', 'second', 'third'],
+        );
+      });
+
+      test('moveElement ignores out-of-range indices', () {
+        cubit.moveElement(-1, 0);
+        cubit.moveElement(0, 99);
+        expect(
+          cubit.state.caption.compositionalDeconstruction.elements.length,
+          3,
+        );
+      });
+
+      test('moveElement schedules a save', () async {
+        cubit.moveElement(0, 2);
+        await cubit.flushSave();
+        verify(
+          mockImageListCubit.updateCaption(caption: anyNamed('caption')),
+        ).called(1);
       });
     });
 

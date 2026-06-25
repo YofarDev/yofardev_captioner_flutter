@@ -31,6 +31,7 @@ class LayersPanel extends StatelessWidget {
                 bbox: el.bbox,
                 isVisible: !state.hiddenElementIndices.contains(idx),
                 isSelected: state.selectedElementIndex == idx,
+                title: state.elementTitles[idx] ?? '',
               );
             })
             .toList();
@@ -103,17 +104,27 @@ class LayersPanel extends StatelessWidget {
                           ),
                         ),
                       )
-                    : ListView.builder(
+                    : ReorderableListView.builder(
                         itemCount: elements.length,
+                        buildDefaultDragHandles: false,
+                        onReorderItem: cubit.moveElement,
                         itemBuilder: (BuildContext context, int index) {
+                          final LayerTileData data = elements[index];
                           return LayerTile(
-                            data: elements[index],
+                            key: ValueKey<int>(data.index),
+                            data: data,
                             imageFile: state.imageFile,
                             onTap: () => cubit.selectElement(index),
                             onToggleVisibility: () =>
                                 cubit.toggleElementVisibility(index),
                             onDuplicate: () => cubit.duplicateElement(index),
                             onDelete: () => cubit.removeElement(index),
+                            onEditTitle: () => _editLayerTitle(
+                              context,
+                              cubit,
+                              data.index,
+                              data.title,
+                            ),
                           );
                         },
                       ),
@@ -122,6 +133,71 @@ class LayersPanel extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+Future<void> _editLayerTitle(
+  BuildContext context,
+  StructuredEditorCubit cubit,
+  int index,
+  String current,
+) async {
+  final String? result = await showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => _LayerTitleEditDialog(initial: current),
+  );
+  if (result != null) {
+    cubit.setElementTitle(index, result);
+  }
+}
+
+class _LayerTitleEditDialog extends StatefulWidget {
+  const _LayerTitleEditDialog({required this.initial});
+
+  final String initial;
+
+  @override
+  State<_LayerTitleEditDialog> createState() => _LayerTitleEditDialogState();
+}
+
+class _LayerTitleEditDialogState extends State<_LayerTitleEditDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initial);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Layer title'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: const InputDecoration(
+          hintText: 'Shown only in the layers panel',
+        ),
+        onSubmitted: (String value) => Navigator.of(context).pop(value),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

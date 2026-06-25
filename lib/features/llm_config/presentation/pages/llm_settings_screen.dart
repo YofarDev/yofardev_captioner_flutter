@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/cache_service.dart';
 import '../widgets/models_prompts_panel.dart';
 import '../widgets/structured_panel.dart';
 
@@ -43,9 +44,133 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
           ),
         ),
       ),
-      body: IndexedStack(
-        index: _tab,
-        children: const <Widget>[ModelsPromptsPanel(), StructuredPanel()],
+      body: Column(
+        children: <Widget>[
+          Expanded(
+            child: IndexedStack(
+              index: _tab,
+              children: const <Widget>[
+                ModelsPromptsPanel(),
+                StructuredPanel(),
+              ],
+            ),
+          ),
+          const _MaxImageSizeBar(),
+        ],
+      ),
+    );
+  }
+}
+
+/// Persistent footer controlling the longest-edge size images are downscaled
+/// to before being sent to the VLM. Stored in [CacheService]; read live by
+/// [ImageResizer] at caption time, so changes apply to the next caption run.
+class _MaxImageSizeBar extends StatefulWidget {
+  const _MaxImageSizeBar();
+
+  @override
+  State<_MaxImageSizeBar> createState() => _MaxImageSizeBarState();
+}
+
+class _MaxImageSizeBarState extends State<_MaxImageSizeBar> {
+  final TextEditingController _controller = TextEditingController();
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    CacheService.loadMaxImageDimension().then((int value) {
+      if (!mounted) return;
+      _controller.text = value.toString();
+      setState(() => _loaded = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _persist() {
+    final int? parsed = int.tryParse(_controller.text.trim());
+    if (parsed != null && parsed > 0) {
+      CacheService.saveMaxImageDimension(parsed);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 14),
+      decoration: const BoxDecoration(
+        color: darkGrey,
+        border: Border(top: BorderSide(color: hairline)),
+      ),
+      child: Row(
+        children: <Widget>[
+          const Icon(
+            Icons.photo_size_select_large_outlined,
+            size: 18,
+            color: lightPink,
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                Text(
+                  'MAX IMAGE SIZE',
+                  style: TextStyle(
+                    fontFamily: 'Orbitron',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                    letterSpacing: 1.1,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Images are downscaled to this longest-edge size before being sent to the VLM.',
+                  style: TextStyle(color: textSecondary, fontSize: 11.5),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          SizedBox(
+            width: 96,
+            child: TextField(
+              controller: _controller,
+              enabled: _loaded,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.right,
+              onChanged: (_) => _persist(),
+              onSubmitted: (_) => _persist(),
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 9,
+                ),
+                suffixText: 'px',
+                suffixStyle: const TextStyle(color: textSecondary, fontSize: 12),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(7),
+                  borderSide: const BorderSide(color: hairline),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(7),
+                  borderSide: BorderSide(
+                    color: lightPink.withValues(alpha: 0.6),
+                  ),
+                ),
+              ),
+              style: const TextStyle(color: textPrimary, fontSize: 13),
+            ),
+          ),
+        ],
       ),
     );
   }

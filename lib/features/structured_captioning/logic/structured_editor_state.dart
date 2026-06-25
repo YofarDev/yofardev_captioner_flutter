@@ -12,6 +12,7 @@ class StructuredEditorState extends Equatable {
     required this.activeCategory,
     this.selectedElementIndex,
     this.hiddenElementIndices = const <int>{},
+    this.elementTitles = const <int, String>{},
     this.status = StructuredEditorStatus.initial,
     this.error,
     this.recaptioningElementIndex,
@@ -34,6 +35,10 @@ class StructuredEditorState extends Equatable {
 
   /// Set of element indices whose bbox overlays are hidden.
   final Set<int> hiddenElementIndices;
+
+  /// UI-only labels per element index. Never serialized — exists only to help
+  /// the user tell layers apart in the panel.
+  final Map<int, String> elementTitles;
 
   final StructuredEditorStatus status;
   final String? error;
@@ -73,6 +78,7 @@ class StructuredEditorState extends Equatable {
     int? selectedElementIndex,
     bool clearSelection = false,
     Set<int>? hiddenElementIndices,
+    Map<int, String>? elementTitles,
     StructuredEditorStatus? status,
     String? error,
     bool clearError = false,
@@ -91,6 +97,7 @@ class StructuredEditorState extends Equatable {
           ? null
           : (selectedElementIndex ?? this.selectedElementIndex),
       hiddenElementIndices: hiddenElementIndices ?? this.hiddenElementIndices,
+      elementTitles: elementTitles ?? this.elementTitles,
       status: status ?? this.status,
       error: clearError ? null : (error ?? this.error),
       recaptioningElementIndex: clearRecaptioning
@@ -113,6 +120,7 @@ class StructuredEditorState extends Equatable {
     activeCategory,
     selectedElementIndex,
     hiddenElementIndices,
+    elementTitles,
     status,
     error,
     recaptioningElementIndex,

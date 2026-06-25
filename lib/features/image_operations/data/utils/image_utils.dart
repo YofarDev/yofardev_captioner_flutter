@@ -18,7 +18,7 @@ import 'bash_scripts_runner.dart';
 /// and retrieving image file sizes.
 class ImageUtils {
   static const int maxFileSize = 1 * 1024 * 1024;
-  static const int maxDimension = 1024;
+  static const int defaultMaxDimension = 512;
 
   /// Asynchronously retrieves the dimensions (width and height) of an image.
   ///
@@ -144,7 +144,10 @@ class ImageUtils {
     return Size(finalW.toDouble(), finalH.toDouble());
   }
 
-  static Future<File> resizeImageIfNecessary(File imageFile) async {
+  static Future<File> resizeImageIfNecessary(
+    File imageFile, {
+    int maxDimension = defaultMaxDimension,
+  }) async {
     final Directory tempDir = Directory.systemTemp;
     final String baseName = p.basenameWithoutExtension(imageFile.path);
     final String tempPath = p.join(tempDir.path, '${baseName}_compressed.jpg');

@@ -14,6 +14,7 @@ class LayerTileData {
     required this.bbox,
     required this.isVisible,
     required this.isSelected,
+    required this.title,
   });
 
   final int index;
@@ -22,6 +23,7 @@ class LayerTileData {
   final List<int>? bbox;
   final bool isVisible;
   final bool isSelected;
+  final String title;
 }
 
 /// A single row in the layers panel.
@@ -33,6 +35,7 @@ class LayerTile extends StatelessWidget {
     required this.onToggleVisibility,
     required this.onDuplicate,
     required this.onDelete,
+    required this.onEditTitle,
     super.key,
   });
 
@@ -42,6 +45,7 @@ class LayerTile extends StatelessWidget {
   final VoidCallback onToggleVisibility;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
+  final VoidCallback onEditTitle;
 
   Color get _accent => kBboxColors[data.index % kBboxColors.length];
 
@@ -64,6 +68,18 @@ class LayerTile extends StatelessWidget {
         ),
         child: Row(
           children: <Widget>[
+            // Drag handle for reorder (desktop-friendly explicit handle).
+            ReorderableDragStartListener(
+              index: data.index,
+              child: const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: Icon(
+                  Icons.drag_indicator,
+                  size: 16,
+                  color: Colors.white24,
+                ),
+              ),
+            ),
             // Thumbnail
             if (data.bbox != null)
               LayerThumbnail(
@@ -94,6 +110,21 @@ class LayerTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
+                  if (data.title.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        data.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   Row(
                     children: <Widget>[
                       Icon(
@@ -152,6 +183,19 @@ class LayerTile extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
               tooltip: 'Duplicate',
+            ),
+
+            // Edit layer title (UI-only)
+            IconButton(
+              icon: Icon(
+                data.title.isEmpty ? Icons.label_outlined : Icons.label,
+                size: 14,
+                color: data.title.isEmpty ? Colors.white38 : _accent,
+              ),
+              onPressed: onEditTitle,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              tooltip: data.title.isEmpty ? 'Add title' : 'Edit title',
             ),
 
             // Delete

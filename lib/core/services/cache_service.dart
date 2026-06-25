@@ -3,6 +3,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CacheService {
   static const String _folderPathKey = 'folderPath';
 
+  static const String _maxImageDimensionKey = 'maxImageDimension';
+  static const int defaultMaxImageDimension = 512;
+
+  static Future<void> saveMaxImageDimension(int dimension) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_maxImageDimensionKey, dimension);
+  }
+
+  static Future<int> loadMaxImageDimension() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_maxImageDimensionKey) ?? defaultMaxImageDimension;
+  }
+
   static Future<void> saveFolderPath(String path) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setString(_folderPathKey, path);

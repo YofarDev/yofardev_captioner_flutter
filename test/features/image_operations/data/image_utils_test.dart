@@ -43,8 +43,8 @@ void main() {
         expect(ImageUtils.maxFileSize, equals(1 * 1024 * 1024));
       });
 
-      test('should have correct max dimension limit (1024px)', () {
-        expect(ImageUtils.maxDimension, equals(1024));
+      test('should have correct default max dimension (512px)', () {
+        expect(ImageUtils.defaultMaxDimension, equals(512));
       });
     });
 

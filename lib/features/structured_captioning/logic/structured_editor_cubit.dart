@@ -14,6 +14,7 @@ import '../../llm_config/data/models/llm_config.dart';
 import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 import '../data/services/color_extraction_service.dart';
+import '../data/services/layer_title_store.dart';
 
 part 'structured_editor_state.dart';
 
@@ -24,23 +25,30 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required String activeCategory,
     required ImageListCubit imageListCubit,
     StructuredCaptionRepository? repository,
+    LayerTitleStore? layerTitleStore,
   }) : _imageListCubit = imageListCubit,
        _repository = repository ?? StructuredCaptionRepository(),
+       _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),
        super(
          StructuredEditorState(
            caption: initialCaption,
            imageFile: imageFile,
            activeCategory: activeCategory,
          ),
-       );
+       ) {
+    _loadTitles();
+  }
 
   final ImageListCubit _imageListCubit;
   final StructuredCaptionRepository _repository;
+  final LayerTitleStore _layerTitleStore;
   final Logger _logger = locator<Logger>();
   final ColorExtractionService _colorExtractionService =
       ColorExtractionService();
   Timer? _debounceTimer;
   bool _isDirty = false;
+  bool _titlesMutated = false;
+  Future<void>? _titleSaveInFlight;
   Future<void>? _recaptionInFlight;
   Future<void>? _samComputeInFlight;
 
@@ -520,6 +528,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     if (index < 0 || index >= elements.length) {
       return;
     }
+    _titlesMutated = true;
     final List<IdeogramElement> updated = List<IdeogramElement>.from(elements)
       ..insert(index + 1, elements[index]);
 
@@ -530,6 +539,11 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     if (state.hiddenElementIndices.contains(index)) {
       newHidden.add(index + 1);
     }
+
+    final Map<int, String> newTitles = <int, String>{};
+    state.elementTitles.forEach((int i, String t) {
+      newTitles[i > index ? i + 1 : i] = t;
+    });
 
     int? newSelection = state.selectedElementIndex;
     if (newSelection != null) {
@@ -549,6 +563,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         selectedElementIndex: newSelection,
         clearSelection: newSelection == null,
         hiddenElementIndices: newHidden,
+        elementTitles: newTitles,
       ),
     );
     _scheduleSave();
@@ -560,6 +575,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         index >= state.caption.compositionalDeconstruction.elements.length) {
       return;
     }
+    _titlesMutated = true;
     final List<IdeogramElement> elements = List<IdeogramElement>.from(
       state.caption.compositionalDeconstruction.elements,
     )..removeAt(index);
@@ -580,6 +596,12 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         .map((int i) => i > index ? i - 1 : i)
         .toSet();
 
+    final Map<int, String> newTitles = <int, String>{};
+    state.elementTitles.forEach((int i, String t) {
+      if (i == index) return;
+      newTitles[i > index ? i - 1 : i] = t;
+    });
+
     emit(
       state.copyWith(
         caption: state.caption.copyWith(
@@ -589,6 +611,57 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         selectedElementIndex: newSelection,
         clearSelection: newSelection == null,
         hiddenElementIndices: newHidden,
+        elementTitles: newTitles,
+      ),
+    );
+    _scheduleSave();
+  }
+
+  // -- Reorder --
+
+  /// Moves element [from] to [to], reordering the underlying JSON list and
+  /// remapping all index-keyed UI state (selection, hidden, titles).
+  void moveElement(int from, int to) {
+    if (from == to) return;
+    _invalidateSamCache();
+    _titlesMutated = true;
+    final List<IdeogramElement> elements = List<IdeogramElement>.from(
+      state.caption.compositionalDeconstruction.elements,
+    );
+    if (from < 0 ||
+        from >= elements.length ||
+        to < 0 ||
+        to >= elements.length) {
+      return;
+    }
+    final IdeogramElement moved = elements.removeAt(from);
+    elements.insert(to, moved);
+
+    // Build old->new index map by performing the same move on identity slots.
+    final List<int> slots = List<int>.generate(elements.length, (int i) => i);
+    final int movedSlot = slots.removeAt(from);
+    slots.insert(to, movedSlot);
+    int oldToNew(int oldIdx) => slots.indexOf(oldIdx);
+
+    final Map<int, String> newTitles = <int, String>{};
+    state.elementTitles
+        .forEach((int oldIdx, String t) => newTitles[oldToNew(oldIdx)] = t);
+    final Set<int> newHidden = state.hiddenElementIndices
+        .map((int oldIdx) => oldToNew(oldIdx))
+        .toSet();
+    final int? newSelection = state.selectedElementIndex == null
+        ? null
+        : oldToNew(state.selectedElementIndex!);
+
+    emit(
+      state.copyWith(
+        caption: state.caption.copyWith(
+          compositionalDeconstruction: state.caption.compositionalDeconstruction
+              .copyWith(elements: elements),
+        ),
+        selectedElementIndex: newSelection,
+        hiddenElementIndices: newHidden,
+        elementTitles: newTitles,
       ),
     );
     _scheduleSave();
@@ -604,6 +677,41 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       updated.add(index);
     }
     emit(state.copyWith(hiddenElementIndices: updated));
+  }
+
+  // -- UI-only layer titles --
+
+  /// Sets/clears a display-only title for an element. Never persisted into the
+  /// caption JSON — written to a sidecar store keyed by image path.
+  void setElementTitle(int index, String title) {
+    _titlesMutated = true;
+    final Map<int, String> titles = Map<int, String>.from(state.elementTitles);
+    final String trimmed = title.trim();
+    if (trimmed.isEmpty) {
+      titles.remove(index);
+    } else {
+      titles[index] = trimmed;
+    }
+    emit(state.copyWith(elementTitles: titles));
+    _persistTitles();
+  }
+
+  /// Loads persisted titles for this image. Guards against clobbering any
+  /// title mutation that happened before the async load landed.
+  Future<void> _loadTitles() async {
+    final Map<int, String> loaded =
+        await _layerTitleStore.load(state.imageFile.path);
+    if (isClosed) return;
+    if (_titlesMutated) return;
+    if (loaded.isEmpty) return;
+    emit(state.copyWith(elementTitles: loaded));
+  }
+
+  Future<void> _persistTitles() {
+    final Future<void> future =
+        _layerTitleStore.save(state.imageFile.path, state.elementTitles);
+    _titleSaveInFlight = future;
+    return future;
   }
 
   // -- Auto-save --
@@ -625,6 +733,10 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     if (pending != null) {
       await pending;
     }
+    final Future<void>? titleSave = _titleSaveInFlight;
+    if (titleSave != null) {
+      await titleSave;
+    }
     _debounceTimer?.cancel();
     if (_isDirty) {
       await _save();
@@ -643,6 +755,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     try {
       final String json = state.caption.toJsonString();
       await _imageListCubit.updateCaption(caption: json);
+      await _persistTitles();
       _isDirty = false;
       emit(state.copyWith(status: StructuredEditorStatus.saved));
     } catch (e) {

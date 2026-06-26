@@ -7,17 +7,18 @@ import 'dart:async' as _i3;
 import 'dart:io' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart'
     as _i2;
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart'
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/bbox_highlight_service.dart'
-    as _i7;
-import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
-    as _i9;
-import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart'
     as _i8;
+import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
+    as _i10;
+import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart'
+    as _i9;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -48,20 +49,21 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
     _i5.File? image,
     String? prompt, {
     int? maxTokens,
+    _i6.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #getCaption,
               [config, image, prompt],
-              {#maxTokens: maxTokens},
+              {#maxTokens: maxTokens, #cancelToken: cancelToken},
             ),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(
                   #getCaption,
                   [config, image, prompt],
-                  {#maxTokens: maxTokens},
+                  {#maxTokens: maxTokens, #cancelToken: cancelToken},
                 ),
               ),
             ),
@@ -81,7 +83,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
               instructions,
             ]),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#rewriteCaption, [
                   config,
@@ -97,7 +99,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
   String buildUrl(String? baseUrl) =>
       (super.noSuchMethod(
             Invocation.method(#buildUrl, [baseUrl]),
-            returnValue: _i6.dummyValue<String>(
+            returnValue: _i7.dummyValue<String>(
               this,
               Invocation.method(#buildUrl, [baseUrl]),
             ),
@@ -109,7 +111,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockBboxHighlightService extends _i1.Mock
-    implements _i7.BboxHighlightService {
+    implements _i8.BboxHighlightService {
   MockBboxHighlightService() {
     _i1.throwOnMissingStub(this);
   }
@@ -122,7 +124,7 @@ class MockBboxHighlightService extends _i1.Mock
       (super.noSuchMethod(
             Invocation.method(#renderHighlightedJpeg, [imageFile, bbox]),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#renderHighlightedJpeg, [imageFile, bbox]),
               ),
@@ -144,7 +146,7 @@ class MockBboxHighlightService extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockStructuredPromptLoader extends _i1.Mock
-    implements _i8.StructuredPromptLoader {
+    implements _i9.StructuredPromptLoader {
   MockStructuredPromptLoader() {
     _i1.throwOnMissingStub(this);
   }
@@ -154,7 +156,7 @@ class MockStructuredPromptLoader extends _i1.Mock
       (super.noSuchMethod(
             Invocation.method(#loadVisionAnalysisPrompt, []),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#loadVisionAnalysisPrompt, []),
               ),
@@ -167,7 +169,7 @@ class MockStructuredPromptLoader extends _i1.Mock
       (super.noSuchMethod(
             Invocation.method(#loadElementRecaptionPrompt, []),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#loadElementRecaptionPrompt, []),
               ),
@@ -179,7 +181,7 @@ class MockStructuredPromptLoader extends _i1.Mock
 /// A class which mocks [SamProcessService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockSamProcessService extends _i1.Mock implements _i9.SamProcessService {
+class MockSamProcessService extends _i1.Mock implements _i10.SamProcessService {
   MockSamProcessService() {
     _i1.throwOnMissingStub(this);
   }
@@ -195,7 +197,7 @@ class MockSamProcessService extends _i1.Mock implements _i9.SamProcessService {
       (super.noSuchMethod(
             Invocation.method(#findSamPythonForTest, []),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#findSamPythonForTest, []),
               ),
@@ -204,7 +206,7 @@ class MockSamProcessService extends _i1.Mock implements _i9.SamProcessService {
           as _i3.Future<String>);
 
   @override
-  _i3.Future<List<_i9.SamDetection>> detectObjects(
+  _i3.Future<List<_i10.SamDetection>> detectObjects(
     String? imagePath,
     List<String>? objectNames, {
     List<List<int>?>? vlmBboxes,
@@ -215,9 +217,9 @@ class MockSamProcessService extends _i1.Mock implements _i9.SamProcessService {
               [imagePath, objectNames],
               {#vlmBboxes: vlmBboxes},
             ),
-            returnValue: _i3.Future<List<_i9.SamDetection>>.value(
-              <_i9.SamDetection>[],
+            returnValue: _i3.Future<List<_i10.SamDetection>>.value(
+              <_i10.SamDetection>[],
             ),
           )
-          as _i3.Future<List<_i9.SamDetection>>);
+          as _i3.Future<List<_i10.SamDetection>>);
 }

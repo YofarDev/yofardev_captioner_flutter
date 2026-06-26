@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -6,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../../../../core/config/service_locator.dart';
+import '../../../../core/utils/cancel_token.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../models/caption/caption_request.dart';
@@ -34,11 +36,24 @@ class CaptionService {
     File image,
     String prompt, {
     int? maxTokens,
+    CancelToken? cancelToken,
   }) {
     if (config.providerType == LlmProviderType.localMlx) {
-      return _getLocalCaption(config, image, prompt, maxTokens: maxTokens);
+      return _getLocalCaption(
+        config,
+        image,
+        prompt,
+        maxTokens: maxTokens,
+        cancelToken: cancelToken,
+      );
     } else {
-      return _getRemoteCaption(config, image, prompt, maxTokens: maxTokens);
+      return _getRemoteCaption(
+        config,
+        image,
+        prompt,
+        maxTokens: maxTokens,
+        cancelToken: cancelToken,
+      );
     }
   }
 
@@ -66,6 +81,7 @@ class CaptionService {
     File image,
     String prompt, {
     int? maxTokens,
+    CancelToken? cancelToken,
   }) async {
     File? imageToSend;
     try {
@@ -94,6 +110,7 @@ class CaptionService {
       final ProcessResult result = await _processRunner.run(
         executable,
         arguments,
+        cancelToken: cancelToken,
       );
 
       if (result.exitCode == 0) {
@@ -138,6 +155,7 @@ class CaptionService {
     File image,
     String prompt, {
     int? maxTokens,
+    CancelToken? cancelToken,
   }) async {
     File? imageToSend;
     try {
@@ -169,7 +187,7 @@ class CaptionService {
         ],
       );
 
-      final http.Response response = await _httpClient.post(
+      final http.Response response = await _postOrCancel(
         Uri.parse(url),
         headers: <String, String>{
           'Content-Type': 'application/json',
@@ -177,6 +195,7 @@ class CaptionService {
           'Accept': 'application/json',
         },
         body: jsonEncode(request.toJson()),
+        cancelToken: cancelToken,
       );
 
       if (response.statusCode == 200) {
@@ -314,6 +333,51 @@ class CaptionService {
     } catch (_) {
       return false;
     }
+  }
+
+  /// POSTs [body] to [url], but stops awaiting (and throws
+  /// [CancellationException]) as soon as [cancelToken] fires, so the caller
+  /// can move on immediately. The underlying HTTP request is not aborted —
+  /// the remote provider keeps running — but for local VRAM the real kill
+  /// happens in [ProcessRunner]; this only makes remote stops non-blocking.
+  Future<http.Response> _postOrCancel(
+    Uri url, {
+    required Map<String, String> headers,
+    required String body,
+    CancelToken? cancelToken,
+  }) {
+    final Future<http.Response> request = _httpClient.post(
+      url,
+      headers: headers,
+      body: body,
+    );
+    if (cancelToken == null) {
+      return request;
+    }
+
+    // Race via a Completer so the losing branch is a no-op instead of an
+    // unhandled async error.
+    final Completer<http.Response> completer = Completer<http.Response>();
+    request.then(
+      (http.Response r) {
+        if (!completer.isCompleted) {
+          completer.complete(r);
+        }
+      },
+      onError: (Object e) {
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
+      },
+    );
+    cancelToken.onCancel.then((_) {
+      if (!completer.isCompleted) {
+        completer.completeError(
+          const CancellationException('Remote caption cancelled.'),
+        );
+      }
+    });
+    return completer.future;
   }
 
   /// Visible for testing. Builds the chat completions URL from a base URL.

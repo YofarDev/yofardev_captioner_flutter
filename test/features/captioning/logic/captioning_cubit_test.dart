@@ -68,7 +68,14 @@ void main() {
           mockImageListCubit.state,
         ).thenReturn(ImageListState(images: images, folderPath: '/tmp'));
 
-        when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
           (Invocation invocation) async =>
               invocation.positionalArguments[1] as AppImage,
         );
@@ -87,6 +94,7 @@ void main() {
             llmConfig,
             image1,
             'Test Prompt',
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
 
@@ -96,6 +104,7 @@ void main() {
             llmConfig,
             image2,
             'Test Prompt',
+            cancelToken: anyNamed('cancelToken'),
           ),
         );
 
@@ -105,6 +114,7 @@ void main() {
             llmConfig,
             image2,
             'Test Prompt',
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
       });
@@ -130,7 +140,14 @@ void main() {
 
       expect(captioningCubit.state.status, CaptioningStatus.success);
       expect(captioningCubit.state.totalImages, 0);
-      verifyNever(mockCaptioningRepository.captionImage(any, any, any));
+      verifyNever(
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      );
     });
 
     test('runCaptioner captions only current image', () async {
@@ -153,7 +170,14 @@ void main() {
         ),
       );
       when(mockImageListCubit.currentDisplayedImage).thenReturn(image2);
-      when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+      when(
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).thenAnswer(
         (Invocation invocation) async =>
             invocation.positionalArguments[1] as AppImage,
       );
@@ -172,10 +196,20 @@ void main() {
       );
 
       verify(
-        mockCaptioningRepository.captionImage(llmConfig, image2, 'Prompt'),
+        mockCaptioningRepository.captionImage(
+          llmConfig,
+          image2,
+          'Prompt',
+          cancelToken: anyNamed('cancelToken'),
+        ),
       ).called(1);
       verifyNever(
-        mockCaptioningRepository.captionImage(llmConfig, image1, 'Prompt'),
+        mockCaptioningRepository.captionImage(
+          llmConfig,
+          image1,
+          'Prompt',
+          cancelToken: anyNamed('cancelToken'),
+        ),
       );
       expect(captioningCubit.state.status, CaptioningStatus.success);
     });
@@ -200,7 +234,14 @@ void main() {
           folderPath: '/tmp',
         ),
       );
-      when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+      when(
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).thenAnswer(
         (Invocation invocation) async =>
             invocation.positionalArguments[1] as AppImage,
       );
@@ -223,10 +264,16 @@ void main() {
           llmConfig,
           withoutCaption,
           'Prompt',
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).called(1);
       verifyNever(
-        mockCaptioningRepository.captionImage(llmConfig, withCaption, 'Prompt'),
+        mockCaptioningRepository.captionImage(
+          llmConfig,
+          withCaption,
+          'Prompt',
+          cancelToken: anyNamed('cancelToken'),
+        ),
       );
     });
 
@@ -241,7 +288,12 @@ void main() {
         ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
       );
       when(
-        mockCaptioningRepository.captionImage(any, any, any),
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
       ).thenThrow(Exception('API error'));
 
       final LlmConfig llmConfig = LlmConfig(
@@ -295,6 +347,7 @@ void main() {
             any,
             any,
             category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((Invocation inv) {
           categoriesPassed.add(
@@ -476,7 +529,12 @@ void main() {
         ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
       );
       when(
-        mockCaptioningRepository.captionImage(any, any, any),
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
       ).thenThrow(Exception('fail'));
 
       final LlmConfig llmConfig = LlmConfig(
@@ -513,7 +571,14 @@ void main() {
       when(mockImageListCubit.state).thenReturn(
         ImageListState(images: <AppImage>[image1, image2], folderPath: '/tmp'),
       );
-      when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+      when(
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).thenAnswer(
         (Invocation invocation) async =>
             invocation.positionalArguments[1] as AppImage,
       );
@@ -558,7 +623,14 @@ void main() {
             folderPath: '/tmp',
           ),
         );
-        when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
           (Invocation invocation) async =>
               invocation.positionalArguments[1] as AppImage,
         );
@@ -577,10 +649,20 @@ void main() {
         );
 
         verify(
-          mockCaptioningRepository.captionImage(llmConfig, notEdited, 'Prompt'),
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            notEdited,
+            'Prompt',
+            cancelToken: anyNamed('cancelToken'),
+          ),
         ).called(1);
         verifyNever(
-          mockCaptioningRepository.captionImage(llmConfig, edited, 'Prompt'),
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            edited,
+            'Prompt',
+            cancelToken: anyNamed('cancelToken'),
+          ),
         );
       },
     );
@@ -609,7 +691,14 @@ void main() {
             mockImageListCubit.filteredImages,
           ).thenReturn(<AppImage>[image1]);
 
-          when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+          when(
+            mockCaptioningRepository.captionImage(
+              any,
+              any,
+              any,
+              cancelToken: anyNamed('cancelToken'),
+            ),
+          ).thenAnswer(
             (Invocation invocation) async =>
                 invocation.positionalArguments[1] as AppImage,
           );
@@ -636,10 +725,16 @@ void main() {
               llmConfig,
               image1,
               'Test Prompt',
+              cancelToken: anyNamed('cancelToken'),
             ),
           ).called(1);
           verifyNever(
-            mockCaptioningRepository.captionImage(llmConfig, image2, any),
+            mockCaptioningRepository.captionImage(
+              llmConfig,
+              image2,
+              any,
+              cancelToken: anyNamed('cancelToken'),
+            ),
           );
         });
       },
@@ -661,7 +756,14 @@ void main() {
           mockImageListCubit.filteredImages,
         ).thenReturn(<AppImage>[editedImage]);
 
-        when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
           (Invocation invocation) async =>
               invocation.positionalArguments[1] as AppImage,
         );
@@ -689,6 +791,7 @@ void main() {
             llmConfig,
             editedImage,
             'Test Prompt',
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
       });
@@ -707,7 +810,14 @@ void main() {
           ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
         );
 
-        when(mockCaptioningRepository.captionImage(any, any, any)).thenAnswer(
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
           (Invocation invocation) async =>
               invocation.positionalArguments[1] as AppImage,
         );
@@ -730,7 +840,12 @@ void main() {
         async.flushMicrotasks();
 
         verifyNever(
-          mockCaptioningRepository.captionImage(llmConfig, editedImage, any),
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            editedImage,
+            any,
+            cancelToken: anyNamed('cancelToken'),
+          ),
         );
       });
     });

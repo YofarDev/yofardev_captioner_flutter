@@ -1,3 +1,4 @@
+import '../../../../core/utils/cancel_token.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../services/caption_service.dart';
@@ -7,8 +8,18 @@ class CaptionRepository {
   CaptionRepository({CaptionService? captionService})
     : _captionService = captionService ?? CaptionService();
 
-  Future<String> getCaption(LlmConfig config, AppImage image, String prompt) {
-    return _captionService.getCaption(config, image.image, prompt);
+  Future<String> getCaption(
+    LlmConfig config,
+    AppImage image,
+    String prompt, {
+    CancelToken? cancelToken,
+  }) {
+    return _captionService.getCaption(
+      config,
+      image.image,
+      prompt,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Rewrites an existing caption (text-only) using the LLM.

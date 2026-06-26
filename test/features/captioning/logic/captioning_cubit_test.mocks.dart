@@ -7,6 +7,7 @@ import 'dart:async' as _i4;
 
 import 'package:flutter_bloc/flutter_bloc.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i8;
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart'
     as _i6;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
@@ -388,12 +389,13 @@ class MockCaptioningRepository extends _i1.Mock
     _i3.AppImage? image,
     String? prompt, {
     String? category = 'default',
+    _i8.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #captionImage,
               [config, image, prompt],
-              {#category: category},
+              {#category: category, #cancelToken: cancelToken},
             ),
             returnValue: _i4.Future<_i3.AppImage>.value(
               _FakeAppImage_1(
@@ -401,7 +403,7 @@ class MockCaptioningRepository extends _i1.Mock
                 Invocation.method(
                   #captionImage,
                   [config, image, prompt],
-                  {#category: category},
+                  {#category: category, #cancelToken: cancelToken},
                 ),
               ),
             ),

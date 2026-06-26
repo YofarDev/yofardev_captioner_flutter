@@ -7,7 +7,8 @@ import 'dart:async' as _i3;
 import 'dart:io' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart'
     as _i2;
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart'
@@ -42,20 +43,21 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
     _i5.File? image,
     String? prompt, {
     int? maxTokens,
+    _i6.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #getCaption,
               [config, image, prompt],
-              {#maxTokens: maxTokens},
+              {#maxTokens: maxTokens, #cancelToken: cancelToken},
             ),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(
                   #getCaption,
                   [config, image, prompt],
-                  {#maxTokens: maxTokens},
+                  {#maxTokens: maxTokens, #cancelToken: cancelToken},
                 ),
               ),
             ),
@@ -75,7 +77,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
               instructions,
             ]),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#rewriteCaption, [
                   config,
@@ -91,7 +93,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
   String buildUrl(String? baseUrl) =>
       (super.noSuchMethod(
             Invocation.method(#buildUrl, [baseUrl]),
-            returnValue: _i6.dummyValue<String>(
+            returnValue: _i7.dummyValue<String>(
               this,
               Invocation.method(#buildUrl, [baseUrl]),
             ),

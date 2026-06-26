@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../../../../core/utils/cancel_token.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../models/caption_entry.dart';
@@ -15,11 +16,13 @@ class CaptioningRepository {
     AppImage image,
     String prompt, {
     String category = 'default',
+    CancelToken? cancelToken,
   }) async {
     final String caption = await _captionRepository.getCaption(
       config,
       image,
       prompt,
+      cancelToken: cancelToken,
     );
     final DateTime timestamp = DateTime.now();
     return image.copyWith(

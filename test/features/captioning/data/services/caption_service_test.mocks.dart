@@ -58,14 +58,23 @@ class MockProcessRunner extends _i1.Mock implements _i4.ProcessRunner {
   @override
   _i5.Future<_i3.ProcessResult> run(
     String? executable,
-    List<String>? arguments,
-  ) =>
+    List<String>? arguments, {
+    dynamic cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#run, [executable, arguments]),
+            Invocation.method(
+              #run,
+              [executable, arguments],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i5.Future<_i3.ProcessResult>.value(
               _i6.dummyValue<_i3.ProcessResult>(
                 this,
-                Invocation.method(#run, [executable, arguments]),
+                Invocation.method(
+                  #run,
+                  [executable, arguments],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )

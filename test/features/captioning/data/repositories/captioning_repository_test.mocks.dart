@@ -6,7 +6,8 @@
 import 'dart:async' as _i3;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart'
     as _i2;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
@@ -41,14 +42,23 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
   _i3.Future<String> getCaption(
     _i4.LlmConfig? config,
     _i5.AppImage? image,
-    String? prompt,
-  ) =>
+    String? prompt, {
+    _i6.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#getCaption, [config, image, prompt]),
+            Invocation.method(
+              #getCaption,
+              [config, image, prompt],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
-                Invocation.method(#getCaption, [config, image, prompt]),
+                Invocation.method(
+                  #getCaption,
+                  [config, image, prompt],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )
@@ -67,7 +77,7 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               instructions,
             ]),
             returnValue: _i3.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#rewriteCaption, [
                   config,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/utils/cancel_token.dart';
 import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
 import '../../llm_config/data/models/llm_config.dart';
@@ -21,7 +22,9 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   final ImageListCubit _imageListCubit;
   final CaptioningRepository _captioningRepository;
 
-  Completer<void>? _cancelCompleter;
+  /// Aborts the in-flight operation (kills the local subprocess to free
+  /// VRAM) AND gates the image loop. null when no run is active.
+  CancelToken? _cancelToken;
 
   Future<void> runCaptioner({
     required LlmConfig llm,
@@ -29,8 +32,8 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     required CaptionOptions option,
     bool scopeToFiltered = false,
   }) async {
-    // Reset or create cancel completer
-    _cancelCompleter = Completer<void>();
+    // Reset or create cancel token.
+    _cancelToken = CancelToken();
     emit(
       state.copyWith(
         status: CaptioningStatus.inProgress,
@@ -90,19 +93,34 @@ class CaptioningCubit extends Cubit<CaptioningState> {
 
     for (final AppImage image in imagesToCaption) {
       // Check if cancelled
-      if (_cancelCompleter?.isCompleted ?? false) {
+      if (_cancelToken?.isCancelled ?? false) {
         emit(
           state.copyWith(
             status: CaptioningStatus.initial,
             error: 'Captioning cancelled',
           ),
         );
-        _cancelCompleter = null;
+        _cancelToken = null;
         return;
       }
 
       if (processedImagesCount > 0 && llm.delay > 0) {
-        await Future<void>.delayed(Duration(milliseconds: llm.delay));
+        // Race the inter-image delay against cancellation so a stop request
+        // during the wait is honored immediately rather than after the delay.
+        await Future.any<void>(<Future<void>>[
+          Future<void>.delayed(Duration(milliseconds: llm.delay)),
+          if (_cancelToken != null) _cancelToken!.onCancel,
+        ]);
+        if (_cancelToken?.isCancelled ?? false) {
+          emit(
+            state.copyWith(
+              status: CaptioningStatus.initial,
+              error: 'Captioning cancelled',
+            ),
+          );
+          _cancelToken = null;
+          return;
+        }
       }
 
       emit(
@@ -117,10 +135,22 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           image,
           prompt,
           category: category,
+          cancelToken: _cancelToken,
         );
         // Clear any previous errors on success
         updatedImage = updatedImage.copyWith(clearError: true);
         _imageListCubit.updateImage(image: updatedImage);
+      } on CancellationException {
+        // The in-flight op was aborted via stop — don't flag the image as
+        // failed; just end the run cleanly.
+        emit(
+          state.copyWith(
+            status: CaptioningStatus.initial,
+            error: 'Captioning cancelled',
+          ),
+        );
+        _cancelToken = null;
+        return;
       } catch (e) {
         errors.add('Failed to caption ${image.image.path}: $e');
         // Store error in the image object
@@ -158,8 +188,8 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
     }
-    // Clear the cancel completer when done
-    _cancelCompleter = null;
+    // Clear the cancel token when done
+    _cancelToken = null;
   }
 
   /// Asks the LLM to rewrite the current image's active caption (text-only,
@@ -184,7 +214,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   }
 
   void cancelCaptioning() {
-    _cancelCompleter?.complete();
+    _cancelToken?.cancel();
     emit(state.copyWith(isCancelling: true));
   }
 

@@ -252,14 +252,6 @@ class _StructuredEditorView extends StatelessWidget {
               );
             },
           ),
-          // TEMP: re-run color palette extraction across ALL displayed images
-          // (validate chroma-snap fix at scale). Single-image variant kept on
-          // long-press.
-          IconButton(
-            icon: const Icon(Icons.auto_awesome),
-            tooltip: 'Re-extract palette on ALL images (temp)',
-            onPressed: () => _confirmBatchPaletteRerun(context),
-          ),
           _NavArrow(
             icon: Icons.chevron_left,
             tooltip: 'Previous image (←)',
@@ -303,6 +295,12 @@ class _StructuredEditorView extends StatelessWidget {
         bindings: <ShortcutActivator, VoidCallback>{
           const SingleActivator(LogicalKeyboardKey.arrowLeft): onPrevious,
           const SingleActivator(LogicalKeyboardKey.arrowRight): onNext,
+          // ponytail: no confirm/undo — matches the layer-tile delete button;
+          // add undo stack if accidental deletes become a problem.
+          const SingleActivator(LogicalKeyboardKey.delete):
+              () => _removeSelectedElement(context),
+          const SingleActivator(LogicalKeyboardKey.backspace):
+              () => _removeSelectedElement(context),
         },
         child: const Focus(
           autofocus: true,
@@ -329,55 +327,12 @@ class _StructuredEditorView extends StatelessWidget {
     );
   }
 
-  /// Confirms then runs batch palette re-extraction over every displayed image,
-  /// showing a snackbar on completion.
-  Future<void> _confirmBatchPaletteRerun(BuildContext context) async {
-    final int count = imageListCubit.displayedImages.length;
-    final bool? ok = await showDialog<bool>(
-      context: context,
-      builder: (BuildContext ctx) {
-        return AlertDialog(
-          backgroundColor: lightGrey,
-          title: const Text(
-            'Re-extract palettes?',
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          content: Text(
-            'Overwrites color palettes on all $count displayed images using the '
-            'fixed extractor. This cannot be undone.',
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Run'),
-            ),
-          ],
-        );
-      },
-    );
-    if (ok != true) return;
-
+  /// Removes the currently selected layer/element. Keyboard shortcut target.
+  void _removeSelectedElement(BuildContext context) {
     final StructuredEditorCubit cubit = context.read<StructuredEditorCubit>();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Re-extracting palettes…'),
-        duration: Duration(seconds: 1),
-      ),
-    );
-    await cubit.rerunColorPaletteExtractionAll();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Palette re-extraction complete'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    final int? selected = cubit.state.selectedElementIndex;
+    if (selected == null) return;
+    cubit.removeElement(selected);
   }
 }
 

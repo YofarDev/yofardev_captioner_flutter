@@ -5,6 +5,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/services/cache_service.dart';
@@ -28,10 +29,12 @@ class _HomePageState extends State<HomePage> {
     'dev.yofardev.io/open_file',
   );
   bool _filePending = false;
+  String _appVersion = '';
 
   @override
   void initState() {
     super.initState();
+    _loadVersion();
     _channel.setMethodCallHandler((MethodCall call) async {
       if (call.method == 'setFilePath') {
         final String path = call.arguments as String;
@@ -45,6 +48,13 @@ class _HomePageState extends State<HomePage> {
         _initTabs();
       }
     });
+  }
+
+  Future<void> _loadVersion() async {
+    final PackageInfo info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() => _appVersion = 'v${info.version}');
+    }
   }
 
   Future<void> _initTabs() async {
@@ -268,6 +278,17 @@ class _HomePageState extends State<HomePage> {
                         style: TextStyle(color: Colors.white, fontSize: 15),
                       ),
                     ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 4,
+                right: 8,
+                child: Text(
+                  _appVersion,
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Theme.of(context).hintColor,
                   ),
                 ),
               ),

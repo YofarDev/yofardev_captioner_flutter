@@ -295,16 +295,16 @@ class _StructuredEditorView extends StatelessWidget {
         bindings: <ShortcutActivator, VoidCallback>{
           const SingleActivator(LogicalKeyboardKey.arrowLeft): onPrevious,
           const SingleActivator(LogicalKeyboardKey.arrowRight): onNext,
-          // ponytail: no confirm/undo — matches the layer-tile delete button;
-          // add undo stack if accidental deletes become a problem.
-          const SingleActivator(LogicalKeyboardKey.delete):
-              () => _removeSelectedElement(context),
-          const SingleActivator(LogicalKeyboardKey.backspace):
-              () => _removeSelectedElement(context),
         },
-        child: const Focus(
+        child: Focus(
           autofocus: true,
-          child: Row(
+          // ponytail: Delete/Backspace handled here (not in CallbackShortcuts)
+          // so a focused TextField keeps them for character editing.
+          // CallbackShortcuts is an ancestor Focus and would otherwise swallow
+          // the key before text entry; see flutter/shortcuts.dart.
+          onKeyEvent: (FocusNode node, KeyEvent event) =>
+              _handleDeleteShortcut(node, event, context),
+          child: const Row(
             children: <Widget>[
               // Left panel: image + layers
               Expanded(
@@ -325,6 +325,32 @@ class _StructuredEditorView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  KeyEventResult _handleDeleteShortcut(
+    FocusNode node,
+    KeyEvent event,
+    BuildContext context,
+  ) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    final LogicalKeyboardKey key = event.logicalKey;
+    if (key != LogicalKeyboardKey.delete && key != LogicalKeyboardKey.backspace) {
+      return KeyEventResult.ignored;
+    }
+    // Let an active text field keep the keystroke for editing.
+    if (_primaryFocusIsEditableText()) {
+      return KeyEventResult.ignored;
+    }
+    _removeSelectedElement(context);
+    return KeyEventResult.handled;
+  }
+
+  bool _primaryFocusIsEditableText() {
+    final BuildContext? ctx = FocusManager.instance.primaryFocus?.context;
+    if (ctx == null) return false;
+    return ctx.findAncestorStateOfType<EditableTextState>() != null;
   }
 
   /// Removes the currently selected layer/element. Keyboard shortcut target.

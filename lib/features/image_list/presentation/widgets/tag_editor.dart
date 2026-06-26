@@ -24,7 +24,7 @@ class TagEditor extends StatelessWidget {
             children: <Widget>[
               _TagsButton(
                 tagCount: tags.length,
-                onPressed: () => _showTagDialog(context, cubit, tags),
+                onPressed: () => _showTagDialog(context, cubit),
               ),
             ],
           ),
@@ -33,14 +33,10 @@ class TagEditor extends StatelessWidget {
     );
   }
 
-  void _showTagDialog(
-    BuildContext context,
-    ImageListCubit cubit,
-    List<String> tags,
-  ) {
+  void _showTagDialog(BuildContext context, ImageListCubit cubit) {
     showDialog<void>(
       context: context,
-      builder: (BuildContext context) => _TagDialog(cubit: cubit, tags: tags),
+      builder: (BuildContext context) => _TagDialog(cubit: cubit),
     );
   }
 }
@@ -81,10 +77,9 @@ class _TagsButton extends StatelessWidget {
 }
 
 class _TagDialog extends StatefulWidget {
-  const _TagDialog({required this.cubit, required this.tags});
+  const _TagDialog({required this.cubit});
 
   final ImageListCubit cubit;
-  final List<String> tags;
 
   @override
   State<_TagDialog> createState() => _TagDialogState();
@@ -92,195 +87,266 @@ class _TagDialog extends StatefulWidget {
 
 class _TagDialogState extends State<_TagDialog> {
   late final TextEditingController _controller;
-  late List<String> _tags;
+  late final FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController();
-    _tags = List<String>.from(widget.tags);
+    _focusNode = FocusNode();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  void _addTags() {
+  // ponytail: writes through on every action — no buffered Save step.
+  // Enter/comma split -> setTags normalizes+dedupes+persists in one DB write.
+  void _commit() {
     final String value = _controller.text;
     if (value.trim().isEmpty) return;
-    final List<String> newTags = <String>[];
-    for (final String part in value.split(',')) {
-      final String trimmed = part.trim();
-      if (trimmed.isNotEmpty && !_tags.contains(trimmed)) {
-        newTags.add(trimmed);
-      }
-    }
-    if (newTags.isEmpty) return;
-    setState(() {
-      _tags = <String>[..._tags, ...newTags];
+    final AppImage? image = widget.cubit.currentDisplayedImage;
+    if (image == null) return;
+    final List<String> parsed = value
+        .split(',')
+        .map((String p) => p.trim())
+        .where((String p) => p.isNotEmpty)
+        .toList();
+    if (parsed.isEmpty) {
       _controller.clear();
-    });
-  }
-
-  void _removeTag(String tag) {
-    setState(() {
-      _tags = _tags.where((String t) => t != tag).toList();
-    });
-  }
-
-  void _save() {
-    widget.cubit.setTags(_tags);
+      return;
+    }
+    widget.cubit.setTags(<String>[...image.tags, ...parsed]);
     Navigator.of(context).pop();
   }
 
+  void _removeTag(String tag) => widget.cubit.removeTag(tag);
+
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: panelDark,
-      surfaceTintColor: Colors.transparent,
-      title: const Text(
-        'Tags',
-        style: TextStyle(color: textPrimary, fontSize: 14, fontFamily: 'Inter'),
-      ),
-      content: SizedBox(
-        width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            if (_tags.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Wrap(
-                  spacing: 4,
-                  runSpacing: 4,
-                  children: _tags.map((String tag) {
-                    return Chip(
-                      label: Text(
-                        tag,
-                        style: const TextStyle(
-                          color: textPrimary,
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                      deleteIcon: const Icon(
-                        Icons.close,
-                        size: 14,
-                        color: textMuted,
-                      ),
-                      onDeleted: () => _removeTag(tag),
-                      backgroundColor: panelRaised,
-                      side: BorderSide.none,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      visualDensity: VisualDensity.compact,
-                      padding: EdgeInsets.zero,
-                    );
-                  }).toList(),
-                ),
-              ),
-            Row(
+    return BlocProvider<ImageListCubit>.value(
+      value: widget.cubit,
+      child: BlocBuilder<ImageListCubit, ImageListState>(
+        builder: (BuildContext context, ImageListState state) {
+          final AppImage? image = widget.cubit.currentDisplayedImage;
+          final List<String> tags = image?.tags ?? const <String>[];
+          return AlertDialog(
+            backgroundColor: panelDark,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: hairline, width: 0.5),
+            ),
+            titlePadding: const EdgeInsets.fromLTRB(18, 16, 18, 6),
+            contentPadding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
+            title: Row(
               children: <Widget>[
-                Expanded(
-                  child: SizedBox(
-                    height: 28,
-                    child: TextField(
-                      controller: _controller,
+                const Text(
+                  'Tags',
+                  style: TextStyle(
+                    color: textPrimary,
+                    fontSize: 14,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                if (tags.isNotEmpty) ...<Widget>[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 1,
+                    ),
+                    decoration: BoxDecoration(
+                      color: pinkSurface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: hairline, width: 0.5),
+                    ),
+                    child: Text(
+                      '${tags.length}',
                       style: const TextStyle(
-                        color: textPrimary,
+                        color: lightPink,
+                        fontSize: 10,
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            content: SizedBox(
+              width: 320,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 170),
+                    child: tags.isEmpty
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            child: Text(
+                              'No tags yet — type one below.',
+                              style: TextStyle(
+                                color: textMuted.withAlpha(130),
+                                fontSize: 11,
+                                fontFamily: 'Inter',
+                              ),
+                            ),
+                          )
+                        : SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 5,
+                              runSpacing: 5,
+                              children: tags
+                                  .map(
+                                    (String tag) => _TagChip(
+                                      label: tag,
+                                      onDeleted: () => _removeTag(tag),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    style: const TextStyle(
+                      color: textPrimary,
+                      fontSize: 13,
+                      fontFamily: 'Inter',
+                    ),
+                    cursorColor: accentPink,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 11,
+                      ),
+                      hintText: 'Type a tag and press Enter…',
+                      hintStyle: TextStyle(
+                        color: textMuted.withAlpha(110),
                         fontSize: 12,
                         fontFamily: 'Inter',
                       ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                        ),
-                        hintText: 'add tag(s)\u2026',
-                        hintStyle: TextStyle(
-                          color: textMuted.withAlpha(80),
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          borderSide: const BorderSide(
-                            color: hairline,
-                            width: 0.5,
-                          ),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          borderSide: const BorderSide(
-                            color: hairline,
-                            width: 0.5,
-                          ),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(4),
-                          borderSide: const BorderSide(
-                            color: textMuted,
-                            width: 0.5,
-                          ),
+                      prefixIcon: Icon(
+                        Icons.tag_rounded,
+                        size: 14,
+                        color: textMuted.withAlpha(140),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(
+                        minWidth: 26,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(
+                          color: hairline,
+                          width: 0.5,
                         ),
                       ),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: (_) => _addTags(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                SizedBox(
-                  height: 28,
-                  child: TextButton(
-                    onPressed: _addTags,
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      foregroundColor: textSecondary,
-                      backgroundColor: panelRaised,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(
+                          color: hairline,
+                          width: 0.5,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: const BorderSide(
+                          color: accentPink,
+                          width: 0.75,
+                        ),
                       ),
                     ),
-                    child: const Text(
-                      'Add',
-                      style: TextStyle(fontSize: 11, fontFamily: 'Inter'),
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) => _commit(),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    'Enter or comma to add  ·  saves instantly',
+                    style: TextStyle(
+                      color: textMuted.withAlpha(100),
+                      fontSize: 10,
+                      fontFamily: 'Inter',
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
-        ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  foregroundColor: lightPink,
+                  minimumSize: const Size(56, 30),
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(
-              color: textMuted,
-              fontSize: 12,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ),
-        TextButton(
-          onPressed: _save,
-          child: const Text(
-            'Save',
-            style: TextStyle(
+    );
+  }
+}
+
+class _TagChip extends StatelessWidget {
+  const _TagChip({required this.label, required this.onDeleted});
+
+  final String label;
+  final VoidCallback onDeleted;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: panelRaised,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: hairline, width: 0.5),
+      ),
+      padding: const EdgeInsets.only(left: 8, right: 4, top: 3, bottom: 3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            label,
+            style: const TextStyle(
               color: textPrimary,
               fontSize: 12,
               fontFamily: 'Inter',
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 5),
+          InkWell(
+            onTap: onDeleted,
+            borderRadius: BorderRadius.circular(3),
+            child: Padding(
+              padding: const EdgeInsets.all(2),
+              child: Icon(
+                Icons.close,
+                size: 12,
+                color: textMuted.withAlpha(150),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

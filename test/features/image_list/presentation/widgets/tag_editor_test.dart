@@ -80,7 +80,9 @@ void main() {
     expect(find.text('sunset'), findsOneWidget);
   });
 
-  testWidgets('dialog can add and save tags', (WidgetTester tester) async {
+  testWidgets('dialog adds tags on Enter and persists instantly', (
+    WidgetTester tester,
+  ) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
@@ -100,17 +102,46 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField), 'wide-angle');
-    await tester.tap(find.text('Add'));
-    await tester.pump();
-    expect(find.text('wide-angle'), findsOneWidget);
-
-    await tester.tap(find.text('Save'));
+    await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
 
+    expect(find.text('wide-angle'), findsNothing);
+    expect(find.text('Done'), findsNothing);
     expect(cubit.state.images.first.tags, <String>['wide-angle']);
   });
 
-  testWidgets('dialog remove chip works', (WidgetTester tester) async {
+  testWidgets('dialog splits multiple comma tags in one go', (
+    WidgetTester tester,
+  ) async {
+    final AppImage image = AppImage(
+      id: 'img-1',
+      image: File('a.jpg'),
+      captions: const <String, CaptionEntry>{},
+    );
+    final _FakeImageListCubit cubit = _FakeImageListCubit(image);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: BlocProvider<ImageListCubit>.value(
+          value: cubit,
+          child: const Scaffold(body: TagEditor()),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('+Tags'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'red, blue,green');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(TextField), findsNothing);
+    expect(cubit.state.images.first.tags, <String>['red', 'blue', 'green']);
+  });
+
+  testWidgets('dialog remove chip persists instantly', (
+    WidgetTester tester,
+  ) async {
     final AppImage image = AppImage(
       id: 'img-1',
       image: File('a.jpg'),
@@ -131,11 +162,8 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.tap(find.byIcon(Icons.close));
-    await tester.pump();
-    expect(find.text('sunset'), findsNothing);
-
-    await tester.tap(find.text('Save'));
     await tester.pumpAndSettle();
+    expect(find.text('sunset'), findsNothing);
     expect(cubit.state.images.first.tags, <String>[]);
   });
 

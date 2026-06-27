@@ -96,7 +96,7 @@ class ColorPaletteEditor extends StatelessWidget {
 
   Future<void> _pasteColor(BuildContext context) async {
     final ClipboardData? data = await Clipboard.getData('text/plain');
-    final String? hex = _tryParseColorHex(data?.text);
+    final String? hex = parseColorHex(data?.text);
     if (hex == null) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -112,7 +112,10 @@ class ColorPaletteEditor extends StatelessWidget {
   }
 
   /// Returns normalized "#RRGGBB" if [text] is a parseable hex color, else null.
-  String? _tryParseColorHex(String? text) {
+  ///
+  /// Exposed for testing. Accepts an optional leading '#', and an 8-digit
+  /// (alpha-prefixed) form which is stripped to RGB.
+  static String? parseColorHex(String? text) {
     if (text == null) return null;
     String clean = text.trim().replaceFirst('#', '');
     if (clean.length == 8) clean = clean.substring(2);

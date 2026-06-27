@@ -4,6 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/filter_help_dialog.dart';
 
+// ponytail: examples in FilterHelpDialog render as RichText (TextSpan), which
+// find.textContaining cannot see. Match against the flattened plain text.
+Finder findRichTextContaining(String substring) => find.byWidgetPredicate(
+  (Widget widget) =>
+      widget is RichText && widget.text.toPlainText().contains(substring),
+);
+
 void main() {
   // ponytail: harness opens the dialog via a button, returns a Completer so we
   // can assert what showDialog resolved with (always null since the close
@@ -50,11 +57,11 @@ void main() {
     expect(find.text(':tag:value:'), findsOneWidget);
     expect(find.text(':notag:'), findsOneWidget);
 
-    // Representative examples.
-    expect(find.textContaining('Images with text layers'), findsOneWidget);
-    expect(find.textContaining('Uncaptioned images'), findsOneWidget);
-    expect(find.textContaining('Untagged images'), findsOneWidget);
-    expect(find.textContaining('Images tagged "favorite"'), findsOneWidget);
+    // Representative examples (rendered as RichText, so match via plain text).
+    expect(findRichTextContaining('Images with text layers'), findsOneWidget);
+    expect(findRichTextContaining('Uncaptioned images'), findsOneWidget);
+    expect(findRichTextContaining('Untagged images'), findsOneWidget);
+    expect(findRichTextContaining('Images tagged "favorite"'), findsOneWidget);
   });
 
   testWidgets('close button dismisses the dialog and completes the future', (

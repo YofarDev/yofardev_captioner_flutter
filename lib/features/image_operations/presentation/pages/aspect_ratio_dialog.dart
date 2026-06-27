@@ -55,7 +55,14 @@ class AspectRatioDialog extends StatelessWidget {
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
-          const Text('Aspect Ratio Distribution'),
+          // ponytail: Flexible so the title ellipsizes instead of overflowing
+          // on narrow windows / with the wide Orbitron heading font.
+          const Flexible(
+            child: Text(
+              'Aspect Ratio Distribution',
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           Text(
             'Total: $totalCount',
             style: Theme.of(

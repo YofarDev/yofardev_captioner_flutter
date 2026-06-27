@@ -14,6 +14,7 @@ class LayerTileData {
     required this.bbox,
     required this.isVisible,
     required this.isSelected,
+    required this.isLocked,
     required this.title,
   });
 
@@ -23,6 +24,7 @@ class LayerTileData {
   final List<int>? bbox;
   final bool isVisible;
   final bool isSelected;
+  final bool isLocked;
   final String title;
 }
 
@@ -33,6 +35,7 @@ class LayerTile extends StatelessWidget {
     required this.imageFile,
     required this.onTap,
     required this.onToggleVisibility,
+    required this.onToggleLock,
     required this.onDuplicate,
     required this.onDelete,
     required this.onEditTitle,
@@ -43,6 +46,7 @@ class LayerTile extends StatelessWidget {
   final File imageFile;
   final VoidCallback onTap;
   final VoidCallback onToggleVisibility;
+  final VoidCallback onToggleLock;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final VoidCallback onEditTitle;
@@ -174,6 +178,19 @@ class LayerTile extends StatelessWidget {
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
               tooltip: data.isVisible ? 'Hide' : 'Show',
+            ),
+
+            // Lock toggle
+            IconButton(
+              icon: Icon(
+                data.isLocked ? Icons.lock : Icons.lock_open,
+                size: 14,
+                color: data.isLocked ? Colors.white54 : Colors.tealAccent,
+              ),
+              onPressed: onToggleLock,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+              tooltip: data.isLocked ? 'Unlock' : 'Lock',
             ),
 
             // Duplicate

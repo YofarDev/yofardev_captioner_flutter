@@ -308,6 +308,7 @@ class StructuredCaptionRepository {
     required IdeogramCaption currentCaption,
     required int elementIndex,
     String? instructions,
+    bool cropToBbox = false,
   }) async {
     final List<IdeogramElement> elements =
         currentCaption.compositionalDeconstruction.elements;
@@ -320,8 +321,9 @@ class StructuredCaptionRepository {
       throw StateError('Target element has no bbox; cannot highlight.');
     }
 
-    final String highlightPath = await _bboxHighlightService
-        .renderHighlightedJpeg(imageFile, bbox);
+    final String imagePath = cropToBbox
+        ? await _bboxHighlightService.renderCroppedJpeg(imageFile, bbox)
+        : await _bboxHighlightService.renderHighlightedJpeg(imageFile, bbox);
 
     try {
       final String template = await _promptLoader.loadElementRecaptionPrompt();
@@ -335,13 +337,13 @@ class StructuredCaptionRepository {
 
       final String raw = await _captionService.getCaption(
         config,
-        File(highlightPath),
+        File(imagePath),
         prompt,
       );
 
       return _parseRecaptionResponse(raw, target);
     } finally {
-      await _bboxHighlightService.cleanup(highlightPath);
+      await _bboxHighlightService.cleanup(imagePath);
     }
   }
 

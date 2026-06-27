@@ -498,6 +498,16 @@ class ImageListCubit extends Cubit<ImageListState> {
     return counts;
   }
 
+  Map<String, int> getTagCounts() {
+    final Map<String, int> counts = <String, int>{};
+    for (final AppImage image in state.images) {
+      for (final String tag in image.tags) {
+        counts[tag] = (counts[tag] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }
+
   int getTotalImagesSize() {
     int totalSize = 0;
     for (final AppImage image in state.images) {

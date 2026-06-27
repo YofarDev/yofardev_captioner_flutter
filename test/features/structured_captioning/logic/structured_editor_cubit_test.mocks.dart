@@ -261,6 +261,14 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as Map<String, int>);
 
   @override
+  Map<String, int> getTagCounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getTagCounts, []),
+            returnValue: <String, int>{},
+          )
+          as Map<String, int>);
+
+  @override
   int getTotalImagesSize() =>
       (super.noSuchMethod(
             Invocation.method(#getTotalImagesSize, []),
@@ -465,6 +473,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
     required _i3.IdeogramCaption? currentCaption,
     required int? elementIndex,
     String? instructions,
+    bool? cropToBbox = false,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#recaptionElement, [], {
@@ -473,6 +482,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               #currentCaption: currentCaption,
               #elementIndex: elementIndex,
               #instructions: instructions,
+              #cropToBbox: cropToBbox,
             }),
             returnValue: _i6.Future<_i3.IdeogramElement>.value(
               _FakeIdeogramElement_2(
@@ -483,6 +493,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                   #currentCaption: currentCaption,
                   #elementIndex: elementIndex,
                   #instructions: instructions,
+                  #cropToBbox: cropToBbox,
                 }),
               ),
             ),

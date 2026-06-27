@@ -16,6 +16,7 @@ class InteractiveBboxPainter extends CustomPainter {
     required this.paintedRect,
     required this.boxColors,
     this.drawingRect,
+    this.showBboxText = true,
   });
 
   final List<IdeogramElement> elements;
@@ -31,6 +32,7 @@ class InteractiveBboxPainter extends CustomPainter {
   final Rect paintedRect;
   final List<Color> boxColors;
   final Rect? drawingRect;
+  final bool showBboxText;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -91,6 +93,8 @@ class InteractiveBboxPainter extends CustomPainter {
     final RRect rrect = RRect.fromRectAndRadius(rect, const Radius.circular(3));
     canvas.drawRRect(rrect, fillPaint);
     canvas.drawRRect(rrect, paint);
+
+    if (!showBboxText) return;
 
     // Label: full description when selected, first sentence otherwise.
     final String label = element.type == 'text'
@@ -285,6 +289,7 @@ class InteractiveBboxPainter extends CustomPainter {
         hiddenIndices != oldDelegate.hiddenIndices ||
         selectedIndex != oldDelegate.selectedIndex ||
         paintedRect != oldDelegate.paintedRect ||
-        drawingRect != oldDelegate.drawingRect;
+        drawingRect != oldDelegate.drawingRect ||
+        showBboxText != oldDelegate.showBboxText;
   }
 }

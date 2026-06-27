@@ -71,6 +71,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
   late String _captionJson;
   late String _imageId;
   StructuredEditorCubit? _cubit;
+  bool _showBboxText = true;
 
   @override
   void initState() {
@@ -130,6 +131,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
     list.onImageSelected(target.id);
 
     setState(() {
+      _showBboxText = cubit?.state.showBboxText ?? true;
       _imageFile = target!.image;
       _captionJson = target.captions[widget.activeCategory]?.text ?? '';
       _imageId = target.id;
@@ -151,6 +153,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
           imageFile: _imageFile,
           activeCategory: widget.activeCategory,
           imageListCubit: widget.imageListCubit,
+          showBboxText: _showBboxText,
         );
         _cubit = cubit;
         return cubit;
@@ -252,6 +255,32 @@ class _StructuredEditorView extends StatelessWidget {
               );
             },
           ),
+          // Bbox text label toggle.
+          BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
+            buildWhen:
+                (StructuredEditorState prev, StructuredEditorState next) =>
+                    prev.showBboxText != next.showBboxText,
+            builder: (BuildContext context, StructuredEditorState state) {
+              return IconButton(
+                icon: Icon(
+                  state.showBboxText
+                      ? Icons.text_fields
+                      : Icons.text_fields,
+                  color: state.showBboxText
+                      ? Colors.white
+                      : Colors.white38,
+                ),
+                tooltip: state.showBboxText
+                    ? 'Hide bbox labels'
+                    : 'Show bbox labels',
+                onPressed: () {
+                  context
+                      .read<StructuredEditorCubit>()
+                      .toggleBboxText();
+                },
+              );
+            },
+          ),
           _NavArrow(
             icon: Icons.chevron_left,
             tooltip: 'Previous image (←)',
@@ -336,12 +365,18 @@ class _StructuredEditorView extends StatelessWidget {
       return KeyEventResult.ignored;
     }
     final LogicalKeyboardKey key = event.logicalKey;
-    if (key != LogicalKeyboardKey.delete &&
-        key != LogicalKeyboardKey.backspace) {
-      return KeyEventResult.ignored;
-    }
     // Let an active text field keep the keystroke for editing.
     if (_primaryFocusIsEditableText()) {
+      return KeyEventResult.ignored;
+    }
+    if (key == LogicalKeyboardKey.keyL) {
+      final StructuredEditorCubit c = context.read<StructuredEditorCubit>();
+      final int? idx = c.state.selectedElementIndex;
+      if (idx != null) c.toggleElementLock(idx);
+      return KeyEventResult.handled;
+    }
+    if (key != LogicalKeyboardKey.delete &&
+        key != LogicalKeyboardKey.backspace) {
       return KeyEventResult.ignored;
     }
     _removeSelectedElement(context);

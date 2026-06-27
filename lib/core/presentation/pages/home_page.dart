@@ -282,12 +282,12 @@ class _HomePageState extends State<HomePage> {
               ),
               Positioned(
                 bottom: 4,
-                right: 8,
+                right: 16,
                 child: Text(
                   _appVersion,
                   style: TextStyle(
                     fontSize: 10,
-                    color: Theme.of(context).hintColor,
+                    color: Theme.of(context).hintColor.withAlpha(80),
                   ),
                 ),
               ),

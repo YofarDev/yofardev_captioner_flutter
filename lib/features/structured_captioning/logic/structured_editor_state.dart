@@ -12,6 +12,7 @@ class StructuredEditorState extends Equatable {
     required this.activeCategory,
     this.selectedElementIndex,
     this.hiddenElementIndices = const <int>{},
+    this.lockedIndices = const <int>{},
     this.elementTitles = const <int, String>{},
     this.status = StructuredEditorStatus.initial,
     this.error,
@@ -19,6 +20,7 @@ class StructuredEditorState extends Equatable {
     this.samBboxByIndex,
     this.showSamBboxes = false,
     this.samComputeStatus = SamComputeStatus.idle,
+    this.showBboxText = true,
   });
 
   /// The mutable working copy of the caption.
@@ -35,6 +37,9 @@ class StructuredEditorState extends Equatable {
 
   /// Set of element indices whose bbox overlays are hidden.
   final Set<int> hiddenElementIndices;
+
+  /// Set of element indices whose bbox is locked (cannot be moved/resized).
+  final Set<int> lockedIndices;
 
   /// UI-only labels per element index. Never serialized — exists only to help
   /// the user tell layers apart in the panel.
@@ -59,6 +64,10 @@ class StructuredEditorState extends Equatable {
   /// Lifecycle of [samBboxByIndex] for AppBar icon state.
   final SamComputeStatus samComputeStatus;
 
+  /// When false, the canvas hides the text labels from bboxes (shows only
+  /// colored squares).
+  final bool showBboxText;
+
   // Derived getters
 
   bool get isElementSelected => selectedElementIndex != null;
@@ -78,6 +87,7 @@ class StructuredEditorState extends Equatable {
     int? selectedElementIndex,
     bool clearSelection = false,
     Set<int>? hiddenElementIndices,
+    Set<int>? lockedIndices,
     Map<int, String>? elementTitles,
     StructuredEditorStatus? status,
     String? error,
@@ -87,6 +97,7 @@ class StructuredEditorState extends Equatable {
     Map<int, List<int>>? samBboxByIndex,
     bool? showSamBboxes,
     SamComputeStatus? samComputeStatus,
+    bool? showBboxText,
     bool clearSamCache = false,
   }) {
     return StructuredEditorState(
@@ -97,6 +108,7 @@ class StructuredEditorState extends Equatable {
           ? null
           : (selectedElementIndex ?? this.selectedElementIndex),
       hiddenElementIndices: hiddenElementIndices ?? this.hiddenElementIndices,
+      lockedIndices: lockedIndices ?? this.lockedIndices,
       elementTitles: elementTitles ?? this.elementTitles,
       status: status ?? this.status,
       error: clearError ? null : (error ?? this.error),
@@ -110,6 +122,7 @@ class StructuredEditorState extends Equatable {
       samComputeStatus: clearSamCache
           ? SamComputeStatus.idle
           : (samComputeStatus ?? this.samComputeStatus),
+      showBboxText: showBboxText ?? this.showBboxText,
     );
   }
 
@@ -120,6 +133,7 @@ class StructuredEditorState extends Equatable {
     activeCategory,
     selectedElementIndex,
     hiddenElementIndices,
+    lockedIndices,
     elementTitles,
     status,
     error,
@@ -127,5 +141,6 @@ class StructuredEditorState extends Equatable {
     samBboxByIndex,
     showSamBboxes,
     samComputeStatus,
+    showBboxText,
   ];
 }

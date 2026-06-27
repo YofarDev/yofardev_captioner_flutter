@@ -51,6 +51,17 @@ class AspectRatioDialog extends StatelessWidget {
     sortGroup(square);
     sortGroup(others);
 
+    // Tag counts
+    final Map<String, int> tagCounts = context
+        .read<ImageListCubit>()
+        .getTagCounts();
+    final List<MapEntry<String, int>> sortedTags = tagCounts.entries
+        .toList()
+      ..sort(
+        (MapEntry<String, int> a, MapEntry<String, int> b) =>
+            b.value.compareTo(a.value),
+      );
+
     return AlertDialog(
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -80,13 +91,30 @@ class AspectRatioDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               if (landscape.isNotEmpty)
-                _buildSection(context, 'Landscape', Icons.landscape, landscape),
+                _buildSection(
+                  context,
+                  'Landscape',
+                  Icons.landscape,
+                  landscape,
+                ),
               if (portrait.isNotEmpty)
-                _buildSection(context, 'Portrait', Icons.portrait, portrait),
+                _buildSection(
+                  context,
+                  'Portrait',
+                  Icons.portrait,
+                  portrait,
+                ),
               if (square.isNotEmpty)
-                _buildSection(context, 'Square', Icons.crop_square, square),
+                _buildSection(
+                  context,
+                  'Square',
+                  Icons.crop_square,
+                  square,
+                ),
               if (others.isNotEmpty)
                 _buildSection(context, 'Others', Icons.help_outline, others),
+              if (sortedTags.isNotEmpty)
+                _buildTagsSection(context, sortedTags, totalCount),
             ],
           ),
         ),
@@ -99,6 +127,53 @@ class AspectRatioDialog extends StatelessWidget {
           child: const Text('Close'),
         ),
       ],
+    );
+  }
+
+  Widget _buildTagsSection(
+    BuildContext context,
+    List<MapEntry<String, int>> tags,
+    int total,
+  ) {
+    final int tagImageCount = tags.fold(
+      0,
+      (int sum, MapEntry<String, int> e) => sum + e.value,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              const Icon(Icons.label, size: 20, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                'Tags ($tagImageCount)',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const Divider(),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: tags
+                .map(
+                  (MapEntry<String, int> e) => Chip(
+                    label: Text('${e.key} (${e.value})'),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -118,7 +193,7 @@ class AspectRatioDialog extends StatelessWidget {
               Icon(icon, size: 20, color: Colors.white),
               const SizedBox(width: 8),
               Text(
-                title,
+                '$title (${items.fold(0, (int sum, _RatioItem i) => sum + i.count)})',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 16,

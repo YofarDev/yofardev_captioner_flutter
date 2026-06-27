@@ -1,7 +1,7 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image/image.dart' as img;
 
@@ -25,6 +25,7 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
   _DragMode _dragMode = _DragMode.none;
   Rect? _dragStartRect;
   Offset? _dragStartOffset;
+  _CornerHit? _resizeCorner;
 
   // New bbox drawing
   bool _isDrawingNew = false;
@@ -99,6 +100,7 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
                       paintedRect: paintedRect,
                       drawingRect: _drawingRect,
                       boxColors: kBboxColors,
+                      showBboxText: state.showBboxText,
                     ),
                   ),
                   if (state.showSamBboxes)
@@ -159,27 +161,32 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
     Rect paintedRect,
     StructuredEditorState state,
   ) {
-    // SAM preview mode: tap-to-select only, no drag/draw/edit.
+    // Request focus so keyboard shortcuts (L, Delete, etc.) reach
+    // the ancestor Focus.onKeyEvent handler.
+    Focus.of(context).requestFocus();
+    final Offset localPos = details.localPosition;
+    final bool altPressed = HardwareKeyboard.instance.isAltPressed;
+
     if (state.showSamBboxes) {
-      final Offset localPos = details.localPosition;
       final List<List<int>?> resolvedBboxes = _resolveBboxes(state);
-      for (int i = resolvedBboxes.length - 1; i >= 0; i--) {
-        final List<int>? bbox = resolvedBboxes[i];
-        if (bbox == null) continue;
-        final Rect elRect = bboxToRect(bbox, paintedRect);
-        if (elRect.contains(localPos)) {
-          context.read<StructuredEditorCubit>().selectElement(i);
-          return;
-        }
+      final int? hit = _pickBboxAt(
+        localPos,
+        paintedRect,
+        resolvedBboxes,
+        altPressed,
+      );
+      if (hit != null) {
+        context.read<StructuredEditorCubit>().selectElement(hit);
+      } else {
+        context.read<StructuredEditorCubit>().deselectElement();
       }
-      context.read<StructuredEditorCubit>().deselectElement();
       return;
     }
 
-    final Offset localPos = details.localPosition;
-
-    // Check if tapping on a corner handle of the selected element
-    if (state.selectedElementIndex != null) {
+    // Without alt: check corner handles and drag-to-move for already-selected.
+    if (!altPressed &&
+        state.selectedElementIndex != null &&
+        !state.lockedIndices.contains(state.selectedElementIndex)) {
       final IdeogramElement? element = state.selectedElement;
       if (element?.bbox != null) {
         final Rect selectedRect = bboxToRect(element!.bbox!, paintedRect);
@@ -187,13 +194,13 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
         if (cornerHit != null) {
           setState(() {
             _dragMode = _DragMode.resize;
+            _resizeCorner = cornerHit;
             _dragStartRect = selectedRect;
             _dragStartOffset = localPos;
           });
           return;
         }
 
-        // Check if tapping inside the selected element bbox
         if (selectedRect.contains(localPos)) {
           setState(() {
             _dragMode = _DragMode.move;
@@ -205,23 +212,24 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
       }
     }
 
-    // Check if tapping on any other element
     final List<IdeogramElement> elements =
         state.caption.compositionalDeconstruction.elements;
-    for (int i = elements.length - 1; i >= 0; i--) {
-      final IdeogramElement el = elements[i];
-      final List<int>? bbox = el.bbox;
-      if (bbox == null) continue;
-      final Rect elRect = bboxToRect(bbox, paintedRect);
-      if (elRect.contains(localPos)) {
-        context.read<StructuredEditorCubit>().selectElement(i);
+    final List<List<int>?> rawBboxes = elements
+        .map<List<int>?>((IdeogramElement e) => e.bbox)
+        .toList();
+    final int? hit = _pickBboxAt(localPos, paintedRect, rawBboxes, altPressed);
+
+    if (hit != null) {
+      context.read<StructuredEditorCubit>().selectElement(hit);
+      if (!state.lockedIndices.contains(hit)) {
+        final Rect elRect = bboxToRect(elements[hit].bbox!, paintedRect);
         setState(() {
           _dragMode = _DragMode.move;
           _dragStartRect = elRect;
           _dragStartOffset = localPos;
         });
-        return;
       }
+      return;
     }
 
     // Hit nothing → start drawing new bbox
@@ -233,6 +241,30 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
       });
       context.read<StructuredEditorCubit>().deselectElement();
     }
+  }
+
+  /// Finds the element at [localPos] in z-order (last = topmost).
+  ///
+  /// When [alt] is true and multiple bboxes overlap, skips the topmost hit and
+  /// returns the one directly under it. Falls back to the only hit when just
+  /// one exists.
+  int? _pickBboxAt(
+    Offset localPos,
+    Rect paintedRect,
+    List<List<int>?> bboxes,
+    bool alt,
+  ) {
+    final List<int> hits = <int>[];
+    for (int i = bboxes.length - 1; i >= 0; i--) {
+      final List<int>? bbox = bboxes[i];
+      if (bbox == null) continue;
+      if (bboxToRect(bbox, paintedRect).contains(localPos)) {
+        hits.add(i);
+      }
+    }
+    if (hits.isEmpty) return null;
+    if (alt && hits.length > 1) return hits[1];
+    return hits[0];
   }
 
   void _onPanUpdate(DragUpdateDetails details, Rect paintedRect) {
@@ -250,12 +282,22 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
 
       case _DragMode.resize:
         if (_dragStartRect != null && _dragStartOffset != null) {
-          // Simplified resize: extend the rect toward the drag direction
           final Offset delta = localPos - _dragStartOffset!;
-          Rect newRect = Rect.fromPoints(
-            _dragStartRect!.topLeft,
-            _dragStartRect!.bottomRight + delta,
-          );
+          final Rect start = _dragStartRect!;
+          Offset newA = start.topLeft;
+          Offset newB = start.bottomRight;
+          if (_resizeCorner == _CornerHit.topLeft) {
+            newA += delta;
+          } else if (_resizeCorner == _CornerHit.topRight) {
+            newA = Offset(newA.dx, newA.dy + delta.dy);
+            newB = Offset(newB.dx + delta.dx, newB.dy);
+          } else if (_resizeCorner == _CornerHit.bottomLeft) {
+            newA = Offset(newA.dx + delta.dx, newA.dy);
+            newB = Offset(newB.dx, newB.dy + delta.dy);
+          } else if (_resizeCorner == _CornerHit.bottomRight) {
+            newB += delta;
+          }
+          Rect newRect = Rect.fromPoints(newA, newB);
           newRect = _clampToPainted(newRect, paintedRect);
           final List<int> newBbox = rectToBbox(newRect, paintedRect);
           context.read<StructuredEditorCubit>().updateElementBbox(newBbox);
@@ -288,6 +330,7 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
       _dragMode = _DragMode.none;
       _dragStartRect = null;
       _dragStartOffset = null;
+      _resizeCorner = null;
       _isDrawingNew = false;
       _drawingRect = null;
     });

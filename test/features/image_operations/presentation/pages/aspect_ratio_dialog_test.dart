@@ -34,10 +34,11 @@ void main() {
     expect(find.text('Aspect Ratio Distribution'), findsOneWidget);
     expect(find.textContaining('Total: 0'), findsOneWidget);
     // No section headers should render when all groups are empty.
-    expect(find.text('Landscape'), findsNothing);
-    expect(find.text('Portrait'), findsNothing);
-    expect(find.text('Square'), findsNothing);
-    expect(find.text('Others'), findsNothing);
+    expect(find.textContaining('Landscape'), findsNothing);
+    expect(find.textContaining('Portrait'), findsNothing);
+    expect(find.textContaining('Square'), findsNothing);
+    expect(find.textContaining('Others'), findsNothing);
+    expect(find.textContaining('Tags'), findsNothing);
   });
 
   testWidgets('groups landscape, portrait, square ratios and shows counts', (
@@ -55,11 +56,11 @@ void main() {
 
     expect(find.textContaining('Total: 14'), findsOneWidget);
 
-    // Section headers present.
-    expect(find.text('Landscape'), findsOneWidget);
-    expect(find.text('Portrait'), findsOneWidget);
-    expect(find.text('Square'), findsOneWidget);
-    expect(find.text('Others'), findsNothing); // none in this set
+    // Section headers present with group totals.
+    expect(find.text('Landscape (8)'), findsOneWidget);
+    expect(find.text('Portrait (2)'), findsOneWidget);
+    expect(find.text('Square (4)'), findsOneWidget);
+    expect(find.textContaining('Others'), findsNothing); // none in this set
 
     // Ratio chips render with their counts.
     expect(find.text('16:9'), findsOneWidget);
@@ -85,10 +86,10 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('Landscape'), findsOneWidget);
-    expect(find.text('Others'), findsOneWidget);
-    expect(find.text('Square'), findsNothing);
-    expect(find.text('Portrait'), findsNothing);
+    expect(find.text('Landscape (2)'), findsOneWidget);
+    expect(find.text('Others (1)'), findsOneWidget);
+    expect(find.textContaining('Square'), findsNothing);
+    expect(find.textContaining('Portrait'), findsNothing);
   });
 
   testWidgets('close button pops the dialog', (WidgetTester tester) async {
@@ -101,5 +102,31 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Aspect Ratio Distribution'), findsNothing);
+  });
+
+  testWidgets('shows Tags section with per-tag counts when tags exist', (
+    WidgetTester tester,
+  ) async {
+    final MockImageListCubit cubit = MockImageListCubit();
+    when(cubit.getAspectRatioCounts()).thenReturn(<String, int>{'1:1': 4});
+    when(cubit.getTagCounts()).thenReturn(<String, int>{
+      'sketch': 3,
+      'painting': 1,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: BlocProvider<ImageListCubit>.value(
+            value: cubit,
+            child: const AspectRatioDialog(),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.textContaining('Tags (4)'), findsOneWidget);
+    expect(find.text('sketch (3)'), findsOneWidget);
+    expect(find.text('painting (1)'), findsOneWidget);
   });
 }

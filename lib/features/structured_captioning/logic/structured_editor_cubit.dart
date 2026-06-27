@@ -22,6 +22,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required ImageListCubit imageListCubit,
     StructuredCaptionRepository? repository,
     LayerTitleStore? layerTitleStore,
+    bool showBboxText = true,
   }) : _imageListCubit = imageListCubit,
        _repository = repository ?? StructuredCaptionRepository(),
        _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),
@@ -30,10 +31,16 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
            caption: initialCaption,
            imageFile: imageFile,
            activeCategory: activeCategory,
+           showBboxText: showBboxText,
+           lockedIndices: Set<int>.from(
+             Iterable<int>.generate(
+               initialCaption.compositionalDeconstruction.elements.length,
+             ),
+           ),
          ),
        ) {
-    _loadTitles();
-  }
+     _loadTitles();
+   }
 
   final ImageListCubit _imageListCubit;
   final StructuredCaptionRepository _repository;
@@ -254,6 +261,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   Future<void> recaptionSelectedElement({
     required LlmConfig config,
     String? instructions,
+    bool cropToBbox = false,
   }) async {
     final int? selected = state.selectedElementIndex;
     if (selected == null) return;
@@ -277,6 +285,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         currentCaption: state.caption,
         elementIndex: selected,
         instructions: instructions,
+        cropToBbox: cropToBbox,
       );
       final List<IdeogramElement> currentElements =
           state.caption.compositionalDeconstruction.elements;
@@ -436,6 +445,14 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       newHidden.add(index + 1);
     }
 
+    final Set<int> newLocked = <int>{};
+    for (final int i in state.lockedIndices) {
+      newLocked.add(i > index ? i + 1 : i);
+    }
+    if (state.lockedIndices.contains(index)) {
+      newLocked.add(index + 1);
+    }
+
     final Map<int, String> newTitles = <int, String>{};
     state.elementTitles.forEach((int i, String t) {
       newTitles[i > index ? i + 1 : i] = t;
@@ -459,6 +476,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         selectedElementIndex: newSelection,
         clearSelection: newSelection == null,
         hiddenElementIndices: newHidden,
+        lockedIndices: newLocked,
         elementTitles: newTitles,
       ),
     );
@@ -492,6 +510,11 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         .map((int i) => i > index ? i - 1 : i)
         .toSet();
 
+    final Set<int> newLocked = state.lockedIndices
+        .where((int i) => i != index)
+        .map((int i) => i > index ? i - 1 : i)
+        .toSet();
+
     final Map<int, String> newTitles = <int, String>{};
     state.elementTitles.forEach((int i, String t) {
       if (i == index) return;
@@ -507,6 +530,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         selectedElementIndex: newSelection,
         clearSelection: newSelection == null,
         hiddenElementIndices: newHidden,
+        lockedIndices: newLocked,
         elementTitles: newTitles,
       ),
     );
@@ -546,6 +570,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     final Set<int> newHidden = state.hiddenElementIndices
         .map((int oldIdx) => oldToNew(oldIdx))
         .toSet();
+    final Set<int> newLocked = state.lockedIndices
+        .map((int oldIdx) => oldToNew(oldIdx))
+        .toSet();
     final int? newSelection = state.selectedElementIndex == null
         ? null
         : oldToNew(state.selectedElementIndex!);
@@ -558,10 +585,15 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         ),
         selectedElementIndex: newSelection,
         hiddenElementIndices: newHidden,
+        lockedIndices: newLocked,
         elementTitles: newTitles,
       ),
     );
     _scheduleSave();
+  }
+
+  void toggleBboxText() {
+    emit(state.copyWith(showBboxText: !state.showBboxText));
   }
 
   // -- Visibility --
@@ -574,6 +606,16 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       updated.add(index);
     }
     emit(state.copyWith(hiddenElementIndices: updated));
+  }
+
+  void toggleElementLock(int index) {
+    final Set<int> updated = Set<int>.from(state.lockedIndices);
+    if (updated.contains(index)) {
+      updated.remove(index);
+    } else {
+      updated.add(index);
+    }
+    emit(state.copyWith(lockedIndices: updated));
   }
 
   // -- UI-only layer titles --

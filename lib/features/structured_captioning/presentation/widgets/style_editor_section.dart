@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../data/models/ideogram_caption.dart';
+import '../../data/services/color_extraction_service.dart';
 import '../../logic/structured_editor_cubit.dart';
 import 'color_palette_editor.dart';
 
@@ -67,7 +68,30 @@ class StyleEditorSection extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const _SectionLabel('Color Palette'),
+            Row(
+              children: <Widget>[
+                const _SectionLabel('Color Palette'),
+                const Spacer(),
+                SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    icon: const Icon(Icons.auto_awesome, size: 14),
+                    tooltip: 'Extract colors from image',
+                    onPressed: () async {
+                      final List<String> palette =
+                          await ColorExtractionService().extractPalette(
+                        state.imageFile,
+                      );
+                      if (palette.isNotEmpty) {
+                        cubit.updateStyleColorPalette(palette);
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 6),
             ColorPaletteEditor(
               colors: style.colorPalette,

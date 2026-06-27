@@ -136,6 +136,19 @@ class MockBboxHighlightService extends _i1.Mock
           as _i3.Future<String>);
 
   @override
+  _i3.Future<String> renderCroppedJpeg(_i5.File? imageFile, List<int>? bbox) =>
+      (super.noSuchMethod(
+            Invocation.method(#renderCroppedJpeg, [imageFile, bbox]),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#renderCroppedJpeg, [imageFile, bbox]),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
   _i3.Future<void> cleanup(String? path) =>
       (super.noSuchMethod(
             Invocation.method(#cleanup, [path]),

@@ -31,6 +31,7 @@ class LayersPanel extends StatelessWidget {
                 bbox: el.bbox,
                 isVisible: !state.hiddenElementIndices.contains(idx),
                 isSelected: state.selectedElementIndex == idx,
+                isLocked: state.lockedIndices.contains(idx),
                 title: state.elementTitles[idx] ?? '',
               );
             })
@@ -117,6 +118,8 @@ class LayersPanel extends StatelessWidget {
                             onTap: () => cubit.selectElement(index),
                             onToggleVisibility: () =>
                                 cubit.toggleElementVisibility(index),
+                            onToggleLock: () =>
+                                cubit.toggleElementLock(index),
                             onDuplicate: () => cubit.duplicateElement(index),
                             onDelete: () => cubit.removeElement(index),
                             onEditTitle: () => _editLayerTitle(

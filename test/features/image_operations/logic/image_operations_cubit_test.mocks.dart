@@ -232,6 +232,14 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
           as Map<String, int>);
 
   @override
+  Map<String, int> getTagCounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getTagCounts, []),
+            returnValue: <String, int>{},
+          )
+          as Map<String, int>);
+
+  @override
   int getTotalImagesSize() =>
       (super.noSuchMethod(
             Invocation.method(#getTotalImagesSize, []),

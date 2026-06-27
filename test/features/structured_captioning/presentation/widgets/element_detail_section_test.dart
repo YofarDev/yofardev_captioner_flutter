@@ -116,7 +116,7 @@ void main() {
     expect(widget.onPressed, isNull);
   });
 
-  testWidgets('disables Recaption for a localMlx config', (
+  testWidgets('enables Recaption for a localMlx config', (
     WidgetTester tester,
   ) async {
     final LlmConfig mlx = LlmConfig(
@@ -129,7 +129,7 @@ void main() {
     final FilledButton widget = tester.widget<FilledButton>(
       find.byKey(const Key('recaptionButton')),
     );
-    expect(widget.onPressed, isNull);
+    expect(widget.onPressed, isNotNull);
   });
 
   testWidgets('enables Recaption for a remote config', (

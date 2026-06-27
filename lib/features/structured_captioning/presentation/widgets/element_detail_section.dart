@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../llm_config/data/models/llm_config.dart';
-import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../data/models/ideogram_caption.dart';
+import '../../data/services/color_extraction_service.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
 import 'color_palette_editor.dart';
@@ -138,13 +138,39 @@ class ElementDetailSection extends StatelessWidget {
               ],
 
               // Color palette
-              const Text(
-                'Color Palette',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  color: Colors.white54,
-                ),
+              Row(
+                children: <Widget>[
+                  const Text(
+                    'Color Palette',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: Colors.white54,
+                    ),
+                  ),
+                  const Spacer(),
+                  if (element.bbox != null)
+                    SizedBox(
+                      height: 24,
+                      width: 24,
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: const Icon(Icons.auto_awesome, size: 14),
+                        tooltip: 'Extract colors from region',
+                        onPressed: () async {
+                          final List<String> palette =
+                              await ColorExtractionService()
+                                  .extractPaletteFromRegion(
+                            state.imageFile,
+                            element.bbox!,
+                          );
+                          if (palette.isNotEmpty) {
+                            cubit.updateElementColorPalette(palette);
+                          }
+                        },
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 4),
               ColorPaletteEditor(
@@ -302,34 +328,80 @@ class _ElementFieldState extends State<_ElementField> {
   }
 }
 
-/// Resolves the active [LlmConfig], subscribing to [LlmConfigsCubit] so the
-/// button rebuilds when the user switches config. Returns null when no
-/// [LlmConfigsCubit] is present in the tree (defensive for tests).
-LlmConfig? _maybeWatchSelectedConfig(BuildContext context) {
-  try {
-    return context.watch<LlmConfigsCubit>().state.llmConfigs.selectedConfig;
-  } on ProviderNotFoundException {
-    return null;
-  }
-}
-
-class _RecaptionButton extends StatelessWidget {
+class _RecaptionButton extends StatefulWidget {
   const _RecaptionButton({required this.elementIndex, required this.element});
 
   final int elementIndex;
   final IdeogramElement element;
 
   @override
+  State<_RecaptionButton> createState() => _RecaptionButtonState();
+}
+
+class _RecaptionButtonState extends State<_RecaptionButton> {
+  String? _selectedConfigId;
+  bool _cropToBbox = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initConfigFromGlobal();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_selectedConfigId == null) _initConfigFromGlobal();
+  }
+
+  void _initConfigFromGlobal() {
+    try {
+      final String? globalId = context
+          .read<LlmConfigsCubit>()
+          .state
+          .llmConfigs
+          .selectedConfigId;
+      if (globalId != null) _selectedConfigId = globalId;
+    } on ProviderNotFoundException {
+      // no-op
+    }
+  }
+
+  List<LlmConfig> _usableConfigs(LlmConfigsState llmState) {
+    return llmState.llmConfigs.configs;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final StructuredEditorCubit cubit = context.read<StructuredEditorCubit>();
 
-    // Resolve the active config safely. Returns null when no LlmConfigsCubit
-    // ancestor exists (defensive; the app provides one at the root).
-    final LlmConfig? config = _maybeWatchSelectedConfig(context);
+    // Watch for config additions/removals so the dropdown stays current.
+    final LlmConfigsState llmState;
+    try {
+      llmState = context.watch<LlmConfigsCubit>().state;
+    } on ProviderNotFoundException {
+      // Defensive: no [LlmConfigsCubit] ancestor (tests).
+      return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
+        buildWhen: (_, StructuredEditorState next) =>
+            next.recaptioningElementIndex != null ||
+            next.status == StructuredEditorStatus.error,
+        builder: (_, StructuredEditorState _) => const SizedBox.shrink(),
+      );
+    }
 
-    final bool isLocalMlx = config?.providerType == LlmProviderType.localMlx;
-    final bool canRecaption =
-        config != null && !isLocalMlx && element.bbox != null;
+    final List<LlmConfig> configs = _usableConfigs(llmState);
+    final String? effectiveId = _selectedConfigId != null &&
+            configs.any((LlmConfig c) => c.id == _selectedConfigId)
+        ? _selectedConfigId
+        : (configs.isNotEmpty ? configs.first.id : null);
+    final LlmConfig? config = effectiveId != null
+        ? configs.cast<LlmConfig?>().firstWhere(
+              (LlmConfig? c) => c?.id == effectiveId,
+              orElse: () => null,
+            )
+        : null;
+
+    final bool canRecaption = config != null && widget.element.bbox != null;
 
     return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
       buildWhen: (StructuredEditorState prev, StructuredEditorState next) =>
@@ -337,7 +409,8 @@ class _RecaptionButton extends StatelessWidget {
           prev.status != next.status ||
           prev.error != next.error,
       builder: (BuildContext context, StructuredEditorState state) {
-        final bool isBusy = state.recaptioningElementIndex == elementIndex;
+        final bool isBusy =
+            state.recaptioningElementIndex == widget.elementIndex;
         final String? error = state.status == StructuredEditorStatus.error
             ? state.error
             : null;
@@ -345,24 +418,90 @@ class _RecaptionButton extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            FilledButton.icon(
-              key: const Key('recaptionButton'),
-              onPressed: (isBusy || !canRecaption)
-                  ? null
-                  : () => _onRecaption(context, cubit, config),
-              icon: isBusy
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.white,
-                      ),
-                    )
-                  : const Icon(Icons.auto_awesome, size: 16),
-              label: Text(isBusy ? 'Recaptioning…' : 'Recaption'),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: FilledButton.icon(
+                    key: const Key('recaptionButton'),
+                    onPressed: (isBusy || !canRecaption)
+                        ? null
+                        : () => _onRecaption(context, cubit, config),
+                    icon: isBusy
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.auto_awesome, size: 16),
+                    label: Text(isBusy ? 'Recaptioning…' : 'Recaption'),
+                  ),
+                ),
+                if (configs.isNotEmpty) ...<Widget>[
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: effectiveId,
+                    isDense: true,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    dropdownColor: Colors.grey[850],
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.white70,
+                    ),
+                    underline: const SizedBox.shrink(),
+                    onChanged: (String? id) {
+                      if (id != null) setState(() => _selectedConfigId = id);
+                    },
+                    items: configs.map<DropdownMenuItem<String>>((
+                      LlmConfig c,
+                    ) {
+                      return DropdownMenuItem<String>(
+                        value: c.id,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 4),
+                          child: Text(c.name),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ],
             ),
-            if (element.bbox == null)
+            if (config != null && widget.element.bbox != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: <Widget>[
+                    _ChipToggle(
+                      label: 'Full',
+                      selected: !_cropToBbox,
+                      onTap: () => setState(() => _cropToBbox = false),
+                    ),
+                    const SizedBox(width: 6),
+                    _ChipToggle(
+                      label: 'Crop',
+                      selected: _cropToBbox,
+                      onTap: () => setState(() => _cropToBbox = true),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      _cropToBbox ? 'crop to bbox' : 'full image',
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10,
+                        color: Colors.white38,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (widget.element.bbox == null)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
@@ -370,19 +509,11 @@ class _RecaptionButton extends StatelessWidget {
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               )
-            else if (config == null)
+            else if (configs.isEmpty)
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
-                  'Select a remote VLM config to enable recaption.',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
-                ),
-              )
-            else if (isLocalMlx)
-              const Padding(
-                padding: EdgeInsets.only(top: 4),
-                child: Text(
-                  'Local MLX configs are not supported for recaption.',
+                  'Add a VLM config to enable recaption.',
                   style: TextStyle(color: Colors.white38, fontSize: 11),
                 ),
               ),
@@ -406,10 +537,49 @@ class _RecaptionButton extends StatelessWidget {
     LlmConfig config,
   ) async {
     final String? instructions = await showRecaptionElementDialog(context);
-    if (instructions == null) return; // user cancelled
+    if (instructions == null) return;
     await cubit.recaptionSelectedElement(
       config: config,
       instructions: instructions,
+      cropToBbox: _cropToBbox,
+    );
+  }
+}
+
+class _ChipToggle extends StatelessWidget {
+  const _ChipToggle({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: selected ? Colors.tealAccent.withValues(alpha: 0.3) : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: selected ? Colors.tealAccent : Colors.white24,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 10,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+            color: selected ? Colors.tealAccent : Colors.white54,
+          ),
+        ),
+      ),
     );
   }
 }

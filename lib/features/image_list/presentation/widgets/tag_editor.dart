@@ -242,9 +242,7 @@ class _TagDialogState extends State<_TagDialog> {
                         size: 14,
                         color: textMuted.withAlpha(140),
                       ),
-                      prefixIconConstraints: const BoxConstraints(
-                        minWidth: 26,
-                      ),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 26),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(6),
                         borderSide: const BorderSide(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
@@ -313,17 +314,11 @@ class AppFileUtils {
           ? '$baseFileName.zip'
           : '$baseFileName-$category.zip';
 
-      final String? outputFile = await FilePicker.saveFile(
-        dialogTitle: 'Please select an output file',
-        fileName: fileName,
-        initialDirectory: downloadsPath,
-      );
-      if (outputFile == null) {
-        return;
-      }
-
+      // ponytail: build zip to temp file first; file_picker v12 saveFile
+      // requires bytes upfront and writes them itself (no path-only mode).
+      final String tempPath = p.join(Directory.systemTemp.path, fileName);
       final ZipFileEncoder encoder = ZipFileEncoder();
-      encoder.create(outputFile);
+      encoder.create(tempPath);
 
       // Add images and their captions
       for (final AppImage image in images) {
@@ -349,6 +344,19 @@ class AppFileUtils {
 
       // Close the zip file first to finalize the archive
       encoder.close();
+
+      final Uint8List zipBytes = await File(tempPath).readAsBytes();
+      await File(tempPath).delete();
+
+      final String? outputFile = await FilePicker.saveFile(
+        dialogTitle: 'Please select an output file',
+        fileName: fileName,
+        initialDirectory: downloadsPath,
+        bytes: zipBytes,
+      );
+      if (outputFile == null) {
+        return;
+      }
     } catch (e) {
       // Re-throw with more context
       throw Exception('Failed to export archive: $e');
@@ -374,7 +382,10 @@ class AppFileUtils {
     }
   }
 
-  Future<void> removeCaptionFiles(String folderPath, List<AppImage> images) async {
+  Future<void> removeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+  ) async {
     for (final AppImage image in images) {
       final String base = p.join(
         folderPath,

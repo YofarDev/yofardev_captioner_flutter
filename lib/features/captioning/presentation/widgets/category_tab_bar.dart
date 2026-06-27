@@ -485,7 +485,10 @@ class _CategoryDialog extends StatelessWidget {
                     ),
                     DropdownMenuItem<String>(
                       value: 'json',
-                      child: Text('JSON', style: TextStyle(color: Colors.white)),
+                      child: Text(
+                        'JSON',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
                   onChanged: onFormatChanged,

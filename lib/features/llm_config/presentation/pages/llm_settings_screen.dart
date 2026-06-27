@@ -49,10 +49,7 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
           Expanded(
             child: IndexedStack(
               index: _tab,
-              children: const <Widget>[
-                ModelsPromptsPanel(),
-                StructuredPanel(),
-              ],
+              children: const <Widget>[ModelsPromptsPanel(), StructuredPanel()],
             ),
           ),
           const _MaxImageSizeBar(),
@@ -118,8 +115,8 @@ class _MaxImageSizeBarState extends State<_MaxImageSizeBar> {
           const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
                 Text(
                   'MAX IMAGE SIZE',
                   style: TextStyle(
@@ -155,7 +152,10 @@ class _MaxImageSizeBarState extends State<_MaxImageSizeBar> {
                   vertical: 9,
                 ),
                 suffixText: 'px',
-                suffixStyle: const TextStyle(color: textSecondary, fontSize: 12),
+                suffixStyle: const TextStyle(
+                  color: textSecondary,
+                  fontSize: 12,
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(7),
                   borderSide: const BorderSide(color: hairline),

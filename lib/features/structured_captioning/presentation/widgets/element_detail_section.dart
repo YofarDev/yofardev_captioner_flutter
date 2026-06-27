@@ -521,17 +521,17 @@ class _CompactNumField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           prefixText: '$label ',
-          prefixStyle: const TextStyle(
-            color: Colors.white38,
-            fontSize: 11,
-          ),
+          prefixStyle: const TextStyle(color: Colors.white38, fontSize: 11),
           filled: true,
           fillColor: const Color(0xFF333333),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 4,
+          ),
           isDense: true,
         ),
         onChanged: onChanged,

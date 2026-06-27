@@ -595,9 +595,9 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     final List<String> updatedCategories = List<String>.from(state.categories)
       ..add(name);
-    final Map<String, String> updatedFormats =
-        Map<String, String>.from(state.categoryFormats)
-          ..[name] = format;
+    final Map<String, String> updatedFormats = Map<String, String>.from(
+      state.categoryFormats,
+    )..[name] = format;
     emit(
       state.copyWith(
         categories: updatedCategories,
@@ -616,9 +616,9 @@ class ImageListCubit extends Cubit<ImageListState> {
 
     final List<String> updatedCategories = List<String>.from(state.categories)
       ..remove(name);
-    final Map<String, String> updatedFormats =
-        Map<String, String>.from(state.categoryFormats)
-          ..remove(name);
+    final Map<String, String> updatedFormats = Map<String, String>.from(
+      state.categoryFormats,
+    )..remove(name);
     final String? newActiveCategory = state.activeCategory == name
         ? updatedCategories.first
         : state.activeCategory;
@@ -655,8 +655,9 @@ class ImageListCubit extends Cubit<ImageListState> {
       return img.copyWith(captions: newCaptions);
     }).toList();
 
-    final Map<String, String> updatedFormats =
-        Map<String, String>.from(state.categoryFormats);
+    final Map<String, String> updatedFormats = Map<String, String>.from(
+      state.categoryFormats,
+    );
     if (updatedFormats.containsKey(oldName)) {
       updatedFormats[newName] = updatedFormats.remove(oldName)!;
     }

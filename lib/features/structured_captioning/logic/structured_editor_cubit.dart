@@ -540,8 +540,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     int oldToNew(int oldIdx) => slots.indexOf(oldIdx);
 
     final Map<int, String> newTitles = <int, String>{};
-    state.elementTitles
-        .forEach((int oldIdx, String t) => newTitles[oldToNew(oldIdx)] = t);
+    state.elementTitles.forEach(
+      (int oldIdx, String t) => newTitles[oldToNew(oldIdx)] = t,
+    );
     final Set<int> newHidden = state.hiddenElementIndices
         .map((int oldIdx) => oldToNew(oldIdx))
         .toSet();
@@ -595,8 +596,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   /// Loads persisted titles for this image. Guards against clobbering any
   /// title mutation that happened before the async load landed.
   Future<void> _loadTitles() async {
-    final Map<int, String> loaded =
-        await _layerTitleStore.load(state.imageFile.path);
+    final Map<int, String> loaded = await _layerTitleStore.load(
+      state.imageFile.path,
+    );
     if (isClosed) return;
     if (_titlesMutated) return;
     if (loaded.isEmpty) return;
@@ -604,8 +606,10 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   Future<void> _persistTitles() {
-    final Future<void> future =
-        _layerTitleStore.save(state.imageFile.path, state.elementTitles);
+    final Future<void> future = _layerTitleStore.save(
+      state.imageFile.path,
+      state.elementTitles,
+    );
     _titleSaveInFlight = future;
     return future;
   }

@@ -336,7 +336,8 @@ class _StructuredEditorView extends StatelessWidget {
       return KeyEventResult.ignored;
     }
     final LogicalKeyboardKey key = event.logicalKey;
-    if (key != LogicalKeyboardKey.delete && key != LogicalKeyboardKey.backspace) {
+    if (key != LogicalKeyboardKey.delete &&
+        key != LogicalKeyboardKey.backspace) {
       return KeyEventResult.ignored;
     }
     // Let an active text field keep the keystroke for editing.

@@ -257,18 +257,17 @@ void main() {
             mockImageListCubit.updateCaption(caption: anyNamed('caption')),
           );
           // Titles round-trip through the sidecar store.
-          expect(
-            await const LayerTitleStore().load('img.png'),
-            <int, String>{1: 'hero'},
-          );
+          expect(await const LayerTitleStore().load('img.png'), <int, String>{
+            1: 'hero',
+          });
         },
       );
 
       test('persisted titles are restored on cubit construction', () async {
-        await const LayerTitleStore().save(
-          'seeded.png',
-          <int, String>{0: 'restored', 2: 'bg'},
-        );
+        await const LayerTitleStore().save('seeded.png', <int, String>{
+          0: 'restored',
+          2: 'bg',
+        });
         final StructuredEditorCubit c = StructuredEditorCubit(
           initialCaption: baseCaption(),
           imageFile: File('seeded.png'),

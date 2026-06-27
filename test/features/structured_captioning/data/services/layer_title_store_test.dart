@@ -13,10 +13,7 @@ void main() {
     test('save then load round-trips int-keyed titles', () async {
       const LayerTitleStore store = LayerTitleStore();
       await store.save('img.png', <int, String>{0: 'hero', 2: 'bg'});
-      expect(
-        await store.load('img.png'),
-        <int, String>{0: 'hero', 2: 'bg'},
-      );
+      expect(await store.load('img.png'), <int, String>{0: 'hero', 2: 'bg'});
     });
 
     test('load returns empty map when nothing was saved', () async {

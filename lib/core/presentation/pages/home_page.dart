@@ -230,17 +230,16 @@ class _HomePageState extends State<HomePage> {
                         // key, so closing a tab preserves the remaining cubits.
                         return Stack(
                           fit: StackFit.expand,
-                          children: List<Widget>.generate(
-                            state.tabs.length,
-                            (int index) {
-                              final AppTab tab = state.tabs[index];
-                              return Offstage(
-                                key: ValueKey<String>(tab.id),
-                                offstage: index != state.activeTabIndex,
-                                child: TabContent(tabId: tab.id),
-                              );
-                            },
-                          ),
+                          children: List<Widget>.generate(state.tabs.length, (
+                            int index,
+                          ) {
+                            final AppTab tab = state.tabs[index];
+                            return Offstage(
+                              key: ValueKey<String>(tab.id),
+                              offstage: index != state.activeTabIndex,
+                              child: TabContent(tabId: tab.id),
+                            );
+                          }),
                         );
                       },
                     ),

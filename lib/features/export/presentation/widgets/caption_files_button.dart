@@ -50,8 +50,7 @@ class CaptionFilesButton extends StatelessWidget {
 
     final int withCaption = state.images
         .where(
-          (AppImage img) =>
-              (img.captions[category]?.text ?? '').isNotEmpty,
+          (AppImage img) => (img.captions[category]?.text ?? '').isNotEmpty,
         )
         .length;
 
@@ -65,10 +64,7 @@ class CaptionFilesButton extends StatelessWidget {
           ),
           title: const Text(
             'Create Caption Files',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           content: Text(
             'Create ${format.toUpperCase()} caption files for '

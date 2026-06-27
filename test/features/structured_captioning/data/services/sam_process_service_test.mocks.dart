@@ -7,7 +7,8 @@ import 'dart:async' as _i3;
 import 'dart:io' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i5;
 import 'package:yofardev_captioner/features/captioning/data/services/process_runner.dart'
     as _i2;
 
@@ -38,7 +39,7 @@ class MockProcessRunner extends _i1.Mock implements _i2.ProcessRunner {
   _i3.Future<_i4.ProcessResult> run(
     String? executable,
     List<String>? arguments, {
-    dynamic cancelToken,
+    _i5.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -47,7 +48,7 @@ class MockProcessRunner extends _i1.Mock implements _i2.ProcessRunner {
               {#cancelToken: cancelToken},
             ),
             returnValue: _i3.Future<_i4.ProcessResult>.value(
-              _i5.dummyValue<_i4.ProcessResult>(
+              _i6.dummyValue<_i4.ProcessResult>(
                 this,
                 Invocation.method(
                   #run,

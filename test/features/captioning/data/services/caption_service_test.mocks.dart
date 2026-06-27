@@ -4,15 +4,16 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:convert' as _i7;
+import 'dart:convert' as _i8;
 import 'dart:io' as _i3;
-import 'dart:typed_data' as _i8;
+import 'dart:typed_data' as _i9;
 
 import 'package:http/http.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
 import 'package:yofardev_captioner/features/captioning/data/services/image_resizer.dart'
-    as _i9;
+    as _i10;
 import 'package:yofardev_captioner/features/captioning/data/services/process_runner.dart'
     as _i4;
 
@@ -59,7 +60,7 @@ class MockProcessRunner extends _i1.Mock implements _i4.ProcessRunner {
   _i5.Future<_i3.ProcessResult> run(
     String? executable,
     List<String>? arguments, {
-    dynamic cancelToken,
+    _i6.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -68,7 +69,7 @@ class MockProcessRunner extends _i1.Mock implements _i4.ProcessRunner {
               {#cancelToken: cancelToken},
             ),
             returnValue: _i5.Future<_i3.ProcessResult>.value(
-              _i6.dummyValue<_i3.ProcessResult>(
+              _i7.dummyValue<_i3.ProcessResult>(
                 this,
                 Invocation.method(
                   #run,
@@ -120,7 +121,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i8.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -146,7 +147,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i8.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -172,7 +173,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i8.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -198,7 +199,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i7.Encoding? encoding,
+    _i8.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -224,7 +225,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
       (super.noSuchMethod(
             Invocation.method(#read, [url], {#headers: headers}),
             returnValue: _i5.Future<String>.value(
-              _i6.dummyValue<String>(
+              _i7.dummyValue<String>(
                 this,
                 Invocation.method(#read, [url], {#headers: headers}),
               ),
@@ -233,15 +234,15 @@ class MockClient extends _i1.Mock implements _i2.Client {
           as _i5.Future<String>);
 
   @override
-  _i5.Future<_i8.Uint8List> readBytes(
+  _i5.Future<_i9.Uint8List> readBytes(
     Uri? url, {
     Map<String, String>? headers,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#readBytes, [url], {#headers: headers}),
-            returnValue: _i5.Future<_i8.Uint8List>.value(_i8.Uint8List(0)),
+            returnValue: _i5.Future<_i9.Uint8List>.value(_i9.Uint8List(0)),
           )
-          as _i5.Future<_i8.Uint8List>);
+          as _i5.Future<_i9.Uint8List>);
 
   @override
   _i5.Future<_i2.StreamedResponse> send(_i2.BaseRequest? request) =>
@@ -266,7 +267,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// A class which mocks [ImageResizer].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockImageResizer extends _i1.Mock implements _i9.ImageResizer {
+class MockImageResizer extends _i1.Mock implements _i10.ImageResizer {
   MockImageResizer() {
     _i1.throwOnMissingStub(this);
   }

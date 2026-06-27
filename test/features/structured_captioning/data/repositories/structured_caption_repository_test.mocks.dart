@@ -6,6 +6,7 @@
 import 'dart:async' as _i3;
 import 'dart:io' as _i5;
 
+import 'package:image/image.dart' as _i12;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
 import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
@@ -15,6 +16,8 @@ import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.da
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/bbox_highlight_service.dart'
     as _i8;
+import 'package:yofardev_captioner/features/structured_captioning/data/services/color_extraction_service.dart'
+    as _i11;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
     as _i10;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart'
@@ -222,4 +225,56 @@ class MockSamProcessService extends _i1.Mock implements _i10.SamProcessService {
             ),
           )
           as _i3.Future<List<_i10.SamDetection>>);
+}
+
+/// A class which mocks [ColorExtractionService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockColorExtractionService extends _i1.Mock
+    implements _i11.ColorExtractionService {
+  MockColorExtractionService() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i3.Future<List<String>> extractPalette(
+    _i5.File? imageFile, {
+    int? colorCount = 6,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #extractPalette,
+              [imageFile],
+              {#colorCount: colorCount},
+            ),
+            returnValue: _i3.Future<List<String>>.value(<String>[]),
+          )
+          as _i3.Future<List<String>>);
+
+  @override
+  _i3.Future<List<String>> extractPaletteFromRegion(
+    _i5.File? imageFile,
+    List<int>? bbox, {
+    int? colorCount = 5,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #extractPaletteFromRegion,
+              [imageFile, bbox],
+              {#colorCount: colorCount},
+            ),
+            returnValue: _i3.Future<List<String>>.value(<String>[]),
+          )
+          as _i3.Future<List<String>>);
+
+  @override
+  String hexAt(_i12.Image? image, int? x, int? y) =>
+      (super.noSuchMethod(
+            Invocation.method(#hexAt, [image, x, y]),
+            returnValue: _i7.dummyValue<String>(
+              this,
+              Invocation.method(#hexAt, [image, x, y]),
+            ),
+          )
+          as String);
 }

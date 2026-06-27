@@ -8,10 +8,12 @@ import 'package:yofardev_captioner/core/config/service_locator.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/features/llm_config/data/models/structured_batch_overrides.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/bbox_highlight_service.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/services/color_extraction_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart';
 
@@ -22,6 +24,7 @@ import 'structured_caption_repository_test.mocks.dart';
   BboxHighlightService,
   StructuredPromptLoader,
   SamProcessService,
+  ColorExtractionService,
 ])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -847,6 +850,149 @@ void main() {
           isNull,
         );
       });
+
+      // ---- StructuredBatchOverrides branches ----
+
+      const VlmAnalysis baseAnalysis = VlmAnalysis(
+        highLevelDescription: 'hld',
+        style: VlmStyle(
+          medium: 'photograph',
+          aesthetics: 'orig-aesthetics',
+          lighting: 'orig-lighting',
+          photoOrArt: 'orig-photoOrArt',
+        ),
+        background: 'orig-background',
+        objects: <VlmObject>[VlmObject(name: 'Cat', desc: 'a cat')],
+      );
+
+      test('applies enabled medium/aesthetics/lighting/background overrides', () {
+        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+          enabled: true,
+          overrideMedium: true,
+          medium: 'oil painting',
+          overrideAesthetics: true,
+          aesthetics: 'moody',
+          overrideLighting: true,
+          lighting: 'chiaroscuro',
+          overrideBackground: true,
+          background: 'studio',
+        );
+
+        final IdeogramCaption caption = repo.buildIdeogramCaption(
+          <String>[],
+          baseAnalysis,
+          <SamDetection>[const SamDetection(name: 'Cat')],
+          <int, List<String>>{},
+          overrides,
+        );
+
+        final IdeogramStyleDescription style = caption.styleDescription;
+        expect(style.medium, 'oil painting');
+        expect(style.aesthetics, 'moody');
+        expect(style.lighting, 'chiaroscuro');
+        expect(caption.compositionalDeconstruction.background, 'studio');
+        // Non-photograph medium → isPhoto false → artStyle falls back to
+        // photoOrArt, photo is null.
+        expect(style.photo, isNull);
+        expect(style.artStyle, 'orig-photoOrArt');
+      });
+
+      test('routes styleMode=photo into the photo field', () {
+        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+          enabled: true,
+          styleMode: 'photo',
+          styleDetail: '35mm film grain',
+        );
+
+        final IdeogramCaption caption = repo.buildIdeogramCaption(
+          <String>[],
+          baseAnalysis,
+          <SamDetection>[const SamDetection(name: 'Cat')],
+          <int, List<String>>{},
+          overrides,
+        );
+
+        // medium stays 'photograph' → isPhoto true; styleMode photo wins.
+        expect(caption.styleDescription.medium, 'photograph');
+        expect(caption.styleDescription.photo, '35mm film grain');
+        expect(caption.styleDescription.artStyle, isNull);
+      });
+
+      test('routes styleMode=art_style into the artStyle field', () {
+        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+          enabled: true,
+          overrideMedium: true,
+          medium: 'digital art',
+          styleMode: 'art_style',
+          styleDetail: 'cyberpunk',
+        );
+
+        final IdeogramCaption caption = repo.buildIdeogramCaption(
+          <String>[],
+          baseAnalysis,
+          <SamDetection>[const SamDetection(name: 'Cat')],
+          <int, List<String>>{},
+          overrides,
+        );
+
+        expect(caption.styleDescription.medium, 'digital art');
+        expect(caption.styleDescription.artStyle, 'cyberpunk');
+        expect(caption.styleDescription.photo, isNull);
+      });
+
+      test('does not apply overrides when enabled is false', () {
+        // Every override flag is set, but the batch is disabled — the analysis
+        // values must come through untouched.
+        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+          // ignore: avoid_redundant_argument_values
+          enabled: false,
+          overrideMedium: true,
+          medium: 'oil painting',
+          overrideAesthetics: true,
+          aesthetics: 'moody',
+          overrideLighting: true,
+          lighting: 'chiaroscuro',
+          overrideBackground: true,
+          background: 'studio',
+          styleMode: 'photo',
+          styleDetail: 'ignored',
+        );
+
+        final IdeogramCaption caption = repo.buildIdeogramCaption(
+          <String>[],
+          baseAnalysis,
+          <SamDetection>[const SamDetection(name: 'Cat')],
+          <int, List<String>>{},
+          overrides,
+        );
+
+        final IdeogramStyleDescription style = caption.styleDescription;
+        expect(style.medium, 'photograph');
+        expect(style.aesthetics, 'orig-aesthetics');
+        expect(style.lighting, 'orig-lighting');
+        expect(caption.compositionalDeconstruction.background, 'orig-background');
+        // isPhoto true + no styleMode override → photo from photoOrArt.
+        expect(style.photo, 'orig-photoOrArt');
+      });
+
+      test('ignores an override whose flag is false even when enabled', () {
+        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+          enabled: true,
+          // ignore: avoid_redundant_argument_values
+          overrideMedium: false, // flag off → medium not overridden
+          medium: 'ignored',
+        );
+
+        final IdeogramCaption caption = repo.buildIdeogramCaption(
+          <String>[],
+          baseAnalysis,
+          <SamDetection>[const SamDetection(name: 'Cat')],
+          <int, List<String>>{},
+          overrides,
+        );
+
+        expect(caption.styleDescription.medium, 'photograph');
+      });
     });
 
     // =========================================================================
@@ -1362,5 +1508,198 @@ void main() {
         expect(result, isEmpty);
       },
     );
+  });
+
+  // ===========================================================================
+  // generateStructuredCaption — the full pipeline. Stubs every collaborator so
+  // we can assert on orchestration: progress emission, SAM subset selection
+  // (group elements skipped), and graceful degradation when a step fails.
+  // ===========================================================================
+  group('generateStructuredCaption', () {
+    late MockCaptionService mockCaption;
+    late MockSamProcessService mockSam;
+    late MockColorExtractionService mockColor;
+    late MockStructuredPromptLoader mockLoader;
+    late StructuredCaptionRepository repo;
+    late LlmConfig config;
+
+    /// VLM JSON with one singular object (Cat → SAM-eligible) and one group
+    /// object (Books → skipped by SAM). Bboxes are VLM [x1,y1,x2,y2].
+    const String vlmResponse = '''
+{
+  "high_level_description": "a cat near some books",
+  "style": {
+    "medium": "photograph",
+    "aesthetics": "cozy",
+    "lighting": "soft",
+    "photo_or_art": "DSLR"
+  },
+  "background": "wooden floor",
+  "objects": [
+    {"name": "Cat", "desc": "a tabby cat", "type": "obj", "bbox": [100, 200, 300, 400]},
+    {"name": "Books", "desc": "a stack of books", "type": "obj", "bbox": [600, 700, 800, 900]}
+  ]
+}''';
+
+    setUp(() {
+      mockCaption = MockCaptionService();
+      mockSam = MockSamProcessService();
+      mockColor = MockColorExtractionService();
+      mockLoader = MockStructuredPromptLoader();
+      config = LlmConfig(
+        id: 'cfg',
+        name: 'cfg',
+        model: 'vlm',
+        providerType: LlmProviderType.remote,
+      );
+      repo = StructuredCaptionRepository(
+        captionService: mockCaption,
+        samProcessService: mockSam,
+        colorExtractionService: mockColor,
+        promptLoader: mockLoader,
+      );
+      when(mockLoader.loadVisionAnalysisPrompt()).thenAnswer(
+        (_) async => 'PROMPT aspect={{aspect_ratio}}',
+      );
+      when(mockCaption.getCaption(any, any, any, maxTokens: 8192)).thenAnswer(
+        (_) async => vlmResponse,
+      );
+    });
+
+    test('runs the full pipeline and emits progress for each step', () async {
+      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>['#GLOBAL']);
+      // Cat bbox normalizes [x1,y1,x2,y2]=[100,200,300,400] → [200,100,400,300].
+      when(
+        mockSam.detectObjects('img.png', <String>['Cat'], vlmBboxes: <List<int>?>[
+          <int>[200, 100, 400, 300],
+        ]),
+      ).thenAnswer(
+        (_) async => <SamDetection>[
+          const SamDetection(name: 'Cat', bbox: <int>[210, 110, 410, 310]),
+        ],
+      );
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>['#ELEM']);
+
+      final List<String> steps = <String>[];
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: steps.add,
+      );
+
+      // Every pipeline phase announced.
+      expect(steps, contains('Extracting color palette...'));
+      expect(steps, contains('Analyzing image with VLM...'));
+      expect(steps, contains('Building structured caption...'));
+
+      // Global palette lands on the style.
+      expect(caption.styleDescription.colorPalette, <String>['#GLOBAL']);
+      expect(caption.highLevelDescription, 'a cat near some books');
+
+      // Both objects became elements.
+      expect(caption.compositionalDeconstruction.elements, hasLength(2));
+      // SAM refined the Cat; Books fell back to its VLM bbox.
+      expect(
+        caption.compositionalDeconstruction.elements[0].bbox,
+        <int>[210, 110, 410, 310],
+      );
+      // VLM Books bbox [600,700,800,900](x1,y1,x2,y2) → [700,600,900,800].
+      expect(
+        caption.compositionalDeconstruction.elements[1].bbox,
+        <int>[700, 600, 900, 800],
+      );
+    });
+
+    test('only sends singular objects to SAM (group elements skipped)', () async {
+      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenAnswer((_) async => <SamDetection>[]);
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>[]);
+
+      await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+      );
+
+      // "Books" is plural → must NOT be sent to SAM; only "Cat" is.
+      verify(
+        mockSam.detectObjects('img.png', <String>['Cat'], vlmBboxes: anyNamed('vlmBboxes')),
+      ).called(1);
+      verifyNever(
+        mockSam.detectObjects(
+          'img.png',
+          <String>['Books'],
+          vlmBboxes: anyNamed('vlmBboxes'),
+        ),
+      );
+    });
+
+    test('skips SAM entirely when disableSam is true', () async {
+      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>[]);
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+      );
+
+      verifyNever(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      );
+      // Elements still built from VLM bboxes.
+      expect(caption.compositionalDeconstruction.elements, hasLength(2));
+    });
+
+    test('continues with an empty palette when extraction fails', () async {
+      when(mockColor.extractPalette(any)).thenThrow(Exception('decode failed'));
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenAnswer((_) async => <SamDetection>[]);
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>[]);
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+      );
+
+      // Palette failure is non-fatal — pipeline still produces a caption.
+      expect(caption.styleDescription.colorPalette, isEmpty);
+      expect(caption.compositionalDeconstruction.elements, hasLength(2));
+    });
+
+    test('falls back to VLM bboxes when SAM detection throws', () async {
+      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenThrow(Exception('subprocess crashed'));
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>[]);
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+      );
+
+      // SAM failed → Cat element uses its VLM bbox [200,100,400,300].
+      expect(
+        caption.compositionalDeconstruction.elements[0].bbox,
+        <int>[200, 100, 400, 300],
+      );
+    });
   });
 }

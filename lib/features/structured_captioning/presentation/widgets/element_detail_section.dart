@@ -9,6 +9,7 @@ import '../../data/services/color_extraction_service.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
 import 'color_palette_editor.dart';
+import 'editor_primitives.dart';
 import 'recaption_element_dialog.dart';
 
 /// Detail editor for the currently selected element.
@@ -34,7 +35,7 @@ class ElementDetailSection extends StatelessWidget {
         return Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: layerColor.withValues(alpha: 0.2),
+            color: layerColor.withValues(alpha: 0.16),
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: layerColor.withValues(alpha: 0.8)),
           ),
@@ -55,7 +56,7 @@ class ElementDetailSection extends StatelessWidget {
                       child: const Icon(
                         Icons.info_outline,
                         size: 14,
-                        color: Colors.white38,
+                        color: textMuted,
                       ),
                     ),
                   const SizedBox(width: 8),
@@ -77,16 +78,9 @@ class ElementDetailSection extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
 
-              const Text(
-                'Position',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  color: Colors.white54,
-                ),
-              ),
+              const FieldLabel('Position'),
               const SizedBox(height: 4),
               _BboxFields(
                 bbox: element.bbox,
@@ -98,16 +92,9 @@ class ElementDetailSection extends StatelessWidget {
               const SizedBox(height: 10),
 
               // Description
-              const Text(
-                'Description',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  color: Colors.white54,
-                ),
-              ),
+              const FieldLabel('Description'),
               const SizedBox(height: 4),
-              _ElementField(
+              EditorTextField(
                 value: element.desc,
                 maxLines: 3,
                 enabled: !anyRecaptioning,
@@ -117,16 +104,9 @@ class ElementDetailSection extends StatelessWidget {
 
               // Text field (only for text type)
               if (element.type == 'text') ...<Widget>[
-                const Text(
-                  'Text Content',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    color: Colors.white54,
-                  ),
-                ),
+                const FieldLabel('Text Content'),
                 const SizedBox(height: 4),
-                _ElementField(
+                EditorTextField(
                   value: element.text ?? '',
                   maxLines: null,
                   minLines: 2,
@@ -140,14 +120,7 @@ class ElementDetailSection extends StatelessWidget {
               // Color palette
               Row(
                 children: <Widget>[
-                  const Text(
-                    'Color Palette',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: Colors.white54,
-                    ),
-                  ),
+                  const FieldLabel('Color Palette'),
                   const Spacer(),
                   if (element.bbox != null)
                     SizedBox(
@@ -155,7 +128,11 @@ class ElementDetailSection extends StatelessWidget {
                       width: 24,
                       child: IconButton(
                         padding: EdgeInsets.zero,
-                        icon: const Icon(Icons.auto_awesome, size: 14),
+                        icon: const Icon(
+                          Icons.auto_awesome,
+                          size: 14,
+                          color: accentPink,
+                        ),
                         tooltip: 'Extract colors from region',
                         onPressed: () async {
                           final List<String> palette =
@@ -195,11 +172,10 @@ class _TypeToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color tint = currentType == 'text' ? amberWarn : accentPink;
     return Container(
       decoration: BoxDecoration(
-        color: currentType == 'text'
-            ? Colors.amber.withAlpha(40)
-            : Colors.teal.withAlpha(40),
+        color: tint.withValues(alpha: 0.16),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -239,7 +215,9 @@ class _TypeChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: active ? Colors.white.withAlpha(30) : Colors.transparent,
+          color: active
+              ? textPrimary.withValues(alpha: 0.12)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Text(
@@ -248,82 +226,10 @@ class _TypeChip extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: 11,
             fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-            color: active ? Colors.white : Colors.white54,
+            color: active ? textPrimary : textSecondary,
           ),
         ),
       ),
-    );
-  }
-}
-
-class _ElementField extends StatefulWidget {
-  const _ElementField({
-    required this.value,
-    required this.onChanged,
-    this.maxLines = 1,
-    this.minLines,
-    this.enabled = true,
-  });
-
-  final String value;
-  final int? maxLines;
-  final int? minLines;
-  final ValueChanged<String> onChanged;
-  final bool enabled;
-
-  @override
-  State<_ElementField> createState() => _ElementFieldState();
-}
-
-class _ElementFieldState extends State<_ElementField> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.value);
-  }
-
-  @override
-  void didUpdateWidget(covariant _ElementField oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value && widget.value != _controller.text) {
-      final int selEnd = _controller.selection.baseOffset;
-      _controller.text = widget.value;
-      final int pos = selEnd.clamp(0, widget.value.length);
-      _controller.selection = TextSelection.collapsed(offset: pos);
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _controller,
-      maxLines: widget.maxLines,
-      minLines: widget.minLines,
-      enabled: widget.enabled,
-      style: const TextStyle(
-        fontFamily: 'Inter',
-        fontSize: 13,
-        color: Colors.white,
-      ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFF333333),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(6),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        isDense: true,
-      ),
-      onChanged: widget.onChanged,
     );
   }
 }
@@ -446,13 +352,13 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
                     isDense: true,
                     style: const TextStyle(
                       fontSize: 13,
-                      color: Colors.white,
+                      color: textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
-                    dropdownColor: Colors.grey[850],
+                    dropdownColor: panelRaised,
                     icon: const Icon(
                       Icons.arrow_drop_down,
-                      color: Colors.white70,
+                      color: textSecondary,
                     ),
                     underline: const SizedBox.shrink(),
                     onChanged: (String? id) {
@@ -495,7 +401,7 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 10,
-                        color: Colors.white38,
+                        color: textMuted,
                       ),
                     ),
                   ],
@@ -506,7 +412,7 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
                   'Draw a bbox to enable recaption.',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  style: TextStyle(color: textMuted, fontSize: 11),
                 ),
               )
             else if (configs.isEmpty)
@@ -514,7 +420,7 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
                 padding: EdgeInsets.only(top: 4),
                 child: Text(
                   'Add a VLM config to enable recaption.',
-                  style: TextStyle(color: Colors.white38, fontSize: 11),
+                  style: TextStyle(color: textMuted, fontSize: 11),
                 ),
               ),
             if (error != null)
@@ -564,11 +470,9 @@ class _ChipToggle extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: selected ? Colors.tealAccent.withValues(alpha: 0.3) : Colors.transparent,
+          color: selected ? accentPink.withValues(alpha: 0.22) : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(
-            color: selected ? Colors.tealAccent : Colors.white24,
-          ),
+          border: Border.all(color: selected ? accentPink : hairline),
         ),
         child: Text(
           label,
@@ -576,7 +480,7 @@ class _ChipToggle extends StatelessWidget {
             fontFamily: 'Inter',
             fontSize: 10,
             fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-            color: selected ? Colors.tealAccent : Colors.white54,
+            color: selected ? lightPink : textSecondary,
           ),
         ),
       ),
@@ -687,13 +591,13 @@ class _CompactNumField extends StatelessWidget {
         style: const TextStyle(
           fontFamily: 'Inter',
           fontSize: 12,
-          color: Colors.white,
+          color: textPrimary,
         ),
         decoration: InputDecoration(
           prefixText: '$label ',
-          prefixStyle: const TextStyle(color: Colors.white38, fontSize: 11),
+          prefixStyle: const TextStyle(color: textMuted, fontSize: 11),
           filled: true,
-          fillColor: const Color(0xFF333333),
+          fillColor: panelRaised,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(6),
             borderSide: BorderSide.none,

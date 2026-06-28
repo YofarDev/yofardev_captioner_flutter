@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import 'layer_tile.dart';
@@ -38,7 +39,7 @@ class LayersPanel extends StatelessWidget {
             .toList();
 
         return ColoredBox(
-          color: const Color(0xFF2A2A2A),
+          color: panelDark,
           child: Column(
             children: <Widget>[
               // Header
@@ -48,29 +49,30 @@ class LayersPanel extends StatelessWidget {
                   vertical: 8,
                 ),
                 decoration: const BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.white12)),
+                  border: Border(bottom: BorderSide(color: hairline)),
                 ),
                 child: Row(
                   children: <Widget>[
                     const Text(
-                      'Elements',
+                      'ELEMENTS',
                       style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
+                        fontFamily: 'Orbitron',
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white70,
+                        color: lightPink,
+                        letterSpacing: 1.4,
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       '${elements.length}',
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 11,
-                        color: Colors.white38,
+                        color: textMuted,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const Spacer(),
                     Tooltip(
                       message: 'Add element',
                       child: InkWell(
@@ -79,12 +81,12 @@ class LayersPanel extends StatelessWidget {
                           cubit.addElement();
                         },
                         borderRadius: BorderRadius.circular(4),
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          child: const Icon(
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(
                             Icons.add,
                             size: 16,
-                            color: Colors.tealAccent,
+                            color: accentPink,
                           ),
                         ),
                       ),
@@ -101,7 +103,7 @@ class LayersPanel extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Inter',
                             fontSize: 12,
-                            color: Colors.white24,
+                            color: textMuted,
                           ),
                         ),
                       )

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../utils/bbox_utils.dart';
 import 'layer_thumbnail.dart';
 
@@ -60,9 +61,7 @@ class LayerTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: data.isSelected
-              ? Colors.white.withAlpha(20)
-              : Colors.transparent,
+          color: data.isSelected ? panelRaised : Colors.transparent,
           border: Border(
             left: BorderSide(
               color: data.isSelected ? _accent : Colors.transparent,
@@ -80,7 +79,7 @@ class LayerTile extends StatelessWidget {
                 child: Icon(
                   Icons.drag_indicator,
                   size: 16,
-                  color: Colors.white24,
+                  color: textMuted,
                 ),
               ),
             ),
@@ -125,7 +124,7 @@ class LayerTile extends StatelessWidget {
                           fontFamily: 'Inter',
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          color: textPrimary,
                         ),
                       ),
                     ),
@@ -158,9 +157,7 @@ class LayerTile extends StatelessWidget {
                     style: TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 11,
-                      color: data.desc.isEmpty
-                          ? Colors.white24
-                          : Colors.white70,
+                      color: data.desc.isEmpty ? textMuted : textSecondary,
                     ),
                   ),
                 ],
@@ -172,7 +169,7 @@ class LayerTile extends StatelessWidget {
               icon: Icon(
                 data.isVisible ? Icons.visibility : Icons.visibility_off,
                 size: 14,
-                color: data.isVisible ? Colors.white54 : Colors.white24,
+                color: data.isVisible ? textSecondary : textMuted,
               ),
               onPressed: onToggleVisibility,
               padding: EdgeInsets.zero,
@@ -185,7 +182,7 @@ class LayerTile extends StatelessWidget {
               icon: Icon(
                 data.isLocked ? Icons.lock : Icons.lock_open,
                 size: 14,
-                color: data.isLocked ? Colors.white54 : Colors.tealAccent,
+                color: data.isLocked ? textSecondary : accentPink,
               ),
               onPressed: onToggleLock,
               padding: EdgeInsets.zero,
@@ -195,7 +192,7 @@ class LayerTile extends StatelessWidget {
 
             // Duplicate
             IconButton(
-              icon: const Icon(Icons.copy, size: 14, color: Colors.white38),
+              icon: const Icon(Icons.copy, size: 14, color: textMuted),
               onPressed: onDuplicate,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
@@ -207,7 +204,7 @@ class LayerTile extends StatelessWidget {
               icon: Icon(
                 data.title.isEmpty ? Icons.label_outlined : Icons.label,
                 size: 14,
-                color: data.title.isEmpty ? Colors.white38 : _accent,
+                color: data.title.isEmpty ? textMuted : _accent,
               ),
               onPressed: onEditTitle,
               padding: EdgeInsets.zero,
@@ -217,7 +214,7 @@ class LayerTile extends StatelessWidget {
 
             // Delete
             IconButton(
-              icon: const Icon(Icons.close, size: 14, color: Colors.white38),
+              icon: const Icon(Icons.close, size: 14, color: textMuted),
               onPressed: onDelete,
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(minWidth: 24, minHeight: 24),

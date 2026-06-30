@@ -215,33 +215,47 @@ void main() {
   });
 
   group('tag filter chips', () {
-    testWidgets('shows a chip per tag when field is focused', (
+    testWidgets('shows a chips overlay anchored below the field when focused', (
       WidgetTester tester,
     ) async {
       await pumpBar(tester);
       await tester.tap(find.byType(TextField).first);
       await tester.pumpAndSettle();
 
-      // Chip labels (not autocomplete overlay — we typed nothing).
+      // Chips live in a Key'd overlay (not inline) so taps aren't canceled by
+      // the field's focus listener unmounting them — same pattern as the
+      // autocomplete overlay.
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
       expect(find.text('sunset'), findsOneWidget);
       expect(find.text('beach'), findsOneWidget);
       expect(find.text('mountain'), findsOneWidget);
     });
 
-    testWidgets('hides chips when the field loses focus', (
+    testWidgets('removes the chips overlay when the field loses focus', (
       WidgetTester tester,
     ) async {
       await pumpBar(tester);
       await tester.tap(find.byType(TextField).first);
       await tester.pumpAndSettle();
-      expect(find.text('sunset'), findsOneWidget);
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
 
-      // Unfocus the field.
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
-      expect(find.text('sunset'), findsNothing);
-      expect(find.text('beach'), findsNothing);
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
+    });
+
+    testWidgets('hides the chips overlay while typing a structured :filter: query', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await typeText(tester, ':tag:');
+
+      // Autocomplete owns the :filter: space; the chips overlay must yield.
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
     });
 
     testWidgets('tapping a chip injects #tag into the query', (
@@ -314,6 +328,27 @@ void main() {
         find.byType(TextField).first,
       );
       expect(field.controller!.text, 'sunset #beach');
+    });
+
+    testWidgets('tapping a chip keeps focus so the overlay stays open', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('sunset'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+
+      // Overlay still present => the field retained focus (GestureDetector
+      // does not steal it, unlike InkWell). The user can keep typing/tapping.
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, '#sunset');
     });
   });
 }

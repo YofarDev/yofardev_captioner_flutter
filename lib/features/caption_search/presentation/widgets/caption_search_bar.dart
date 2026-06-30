@@ -10,6 +10,7 @@ import '../../data/services/filter_parser.dart';
 import '../../logic/caption_search_cubit.dart';
 import 'filter_help_dialog.dart';
 import 'search_autocomplete_overlay.dart';
+import 'tag_filter_chips_overlay.dart';
 
 /// A search bar widget for filtering and replacing text in image captions.
 ///
@@ -36,6 +37,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   final LayerLink _layerLink = LayerLink();
   AutocompleteEngine? _autocompleteEngine;
   OverlayEntry? _suggestionsOverlay;
+  OverlayEntry? _chipsOverlay;
 
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const double _searchBarWidth = 250.0;
@@ -54,7 +56,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _onFocusChanged() {
     if (!mounted) return;
-    setState(() {});
+    _syncTagChipsOverlay(context.read<CaptionSearchCubit>().state);
   }
 
   void _setupKeyHandler() {
@@ -104,7 +106,9 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     context.read<CaptionSearchCubit>().stream.listen((
       CaptionSearchState state,
     ) {
+      if (!mounted) return;
       _syncControllersWithState(state);
+      _syncTagChipsOverlay(state);
     });
   }
 
@@ -120,6 +124,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   @override
   void dispose() {
     _dismissSuggestions();
+    _dismissTagChips();
     _textController.removeListener(_onTextChangedForAutocomplete);
     _animationController.dispose();
     _textController.dispose();
@@ -245,27 +250,37 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     return context.read<ImageListCubit>().getAllUniqueTags().isNotEmpty;
   }
 
-  Widget _buildTagChipsRow(ImageListCubit imageListCubit) {
+  void _syncTagChipsOverlay(CaptionSearchState state) {
+    final bool should = _shouldShowTagChips(state);
+    if (!should) {
+      _dismissTagChips();
+      return;
+    }
+    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     final Set<String> tags = imageListCubit.getAllUniqueTags();
-    if (tags.isEmpty) return const SizedBox.shrink();
     final Set<String> active = _activeTagSet();
     final List<String> sorted = tags.toList()..sort();
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: Wrap(
-        spacing: 5,
-        runSpacing: 5,
-        children: sorted
-            .map(
-              (String tag) => _TagFilterChip(
-                label: tag,
-                active: active.contains(tag.toLowerCase()),
-                onTap: () => _toggleTagChip(tag),
-              ),
-            )
-            .toList(),
-      ),
-    );
+    final List<({String label, bool active})> chips = sorted
+        .map((String t) => (label: t, active: active.contains(t.toLowerCase())))
+        .toList();
+    if (_chipsOverlay == null) {
+      _chipsOverlay = TagFilterChipsOverlay.show(
+        context: context,
+        link: _layerLink,
+        chips: chips,
+        onToggle: _toggleTagChip,
+        onDismiss: _dismissTagChips,
+      );
+    } else {
+      TagFilterChipsOverlay.update(_chipsOverlay!, chips);
+    }
+  }
+
+  void _dismissTagChips() {
+    if (_chipsOverlay != null) {
+      TagFilterChipsOverlay.remove(_chipsOverlay!);
+      _chipsOverlay = null;
+    }
   }
 
   /// Derives active tag filters from the current query text (single source
@@ -290,6 +305,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     );
     _handleSearchChange(next);
     _focusNode.requestFocus();
+    _syncTagChipsOverlay(context.read<CaptionSearchCubit>().state);
   }
 
   static String _injectHashtag(String query, String tag) {
@@ -391,8 +407,6 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             _buildSearchRow(cubit, state, showActions),
-            if (_shouldShowTagChips(state))
-              _buildTagChipsRow(context.read<ImageListCubit>()),
             if (state.showReplaceMode) _buildReplaceRow(cubit),
           ],
         ),
@@ -592,43 +606,6 @@ class _ActionButton extends StatelessWidget {
           color: isActive ? lightPink : Colors.grey[600],
         ),
         splashRadius: 18,
-      ),
-    );
-  }
-}
-
-class _TagFilterChip extends StatelessWidget {
-  const _TagFilterChip({
-    required this.label,
-    required this.active,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4),
-      child: Container(
-        decoration: BoxDecoration(
-          color: active ? pinkSurface : panelRaised,
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: active ? accentPink : hairline, width: 0.5),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: active ? lightPink : textPrimary,
-            fontSize: 11,
-            fontFamily: 'Inter',
-            fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
       ),
     );
   }

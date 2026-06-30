@@ -4,7 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
+import '../../data/models/filter_query.dart';
 import '../../data/services/autocomplete_engine.dart';
+import '../../data/services/filter_parser.dart';
 import '../../logic/caption_search_cubit.dart';
 import 'filter_help_dialog.dart';
 import 'search_autocomplete_overlay.dart';
@@ -47,6 +49,12 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     _setupCubitStateListener();
     _setupKeyHandler();
     _textController.addListener(_onTextChangedForAutocomplete);
+    _focusNode.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    if (!mounted) return;
+    setState(() {});
   }
 
   void _setupKeyHandler() {
@@ -227,6 +235,79 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     _focusNode.requestFocus();
   }
 
+  bool _shouldShowTagChips(CaptionSearchState state) {
+    if (!state.isExpanded || !_focusNode.hasFocus) return false;
+    // Hide chips while the user is typing structured :filter: syntax — the
+    // autocomplete overlay covers that path and renders the same tag values,
+    // so showing both would collide (e.g. two `Text('sunset')`). `#value`
+    // shorthand contains no ':', so chips stay visible during chip toggling.
+    if (_textController.text.contains(':')) return false;
+    return context.read<ImageListCubit>().getAllUniqueTags().isNotEmpty;
+  }
+
+  Widget _buildTagChipsRow(ImageListCubit imageListCubit) {
+    final Set<String> tags = imageListCubit.getAllUniqueTags();
+    if (tags.isEmpty) return const SizedBox.shrink();
+    final Set<String> active = _activeTagSet();
+    final List<String> sorted = tags.toList()..sort();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 2),
+      child: Wrap(
+        spacing: 5,
+        runSpacing: 5,
+        children: sorted
+            .map(
+              (String tag) => _TagFilterChip(
+                label: tag,
+                active: active.contains(tag.toLowerCase()),
+                onTap: () => _toggleTagChip(tag),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  /// Derives active tag filters from the current query text (single source
+  /// of truth). Case-insensitive to match TagFilter.evaluate semantics.
+  Set<String> _activeTagSet() {
+    final ParsedFilterQuery parsed = FilterParser.parse(_textController.text);
+    return parsed.filters
+        .whereType<TagFilter>()
+        .map((TagFilter f) => f.tag.toLowerCase())
+        .toSet();
+  }
+
+  void _toggleTagChip(String tag) {
+    final String current = _textController.text;
+    final bool isActive = _activeTagSet().contains(tag.toLowerCase());
+    final String next = isActive
+        ? _removeHashtag(current, tag)
+        : _injectHashtag(current, tag);
+    _textController.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: next.length),
+    );
+    _handleSearchChange(next);
+    _focusNode.requestFocus();
+  }
+
+  static String _injectHashtag(String query, String tag) {
+    if (query.isEmpty) return '#$tag';
+    if (query.endsWith(' ')) return '$query#$tag';
+    return '$query #$tag';
+  }
+
+  static String _removeHashtag(String query, String tag) {
+    final RegExp re = RegExp(
+      '#${RegExp.escape(tag)}(?=\\s|#|:|\$)',
+      caseSensitive: false,
+    );
+    final String stripped = query.replaceAll(re, '');
+    // Collapse double spaces left behind and trim ends.
+    return stripped.replaceAll(RegExp(r'\s{2,}'), ' ').trim();
+  }
+
   void _handleReplaceSubmitted(String text) {
     if (text.isNotEmpty) {
       context.read<CaptionSearchCubit>().executeReplace();
@@ -310,6 +391,8 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
             _buildSearchRow(cubit, state, showActions),
+            if (_shouldShowTagChips(state))
+              _buildTagChipsRow(context.read<ImageListCubit>()),
             if (state.showReplaceMode) _buildReplaceRow(cubit),
           ],
         ),
@@ -509,6 +592,43 @@ class _ActionButton extends StatelessWidget {
           color: isActive ? lightPink : Colors.grey[600],
         ),
         splashRadius: 18,
+      ),
+    );
+  }
+}
+
+class _TagFilterChip extends StatelessWidget {
+  const _TagFilterChip({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Container(
+        decoration: BoxDecoration(
+          color: active ? pinkSurface : panelRaised,
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: active ? accentPink : hairline, width: 0.5),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: active ? lightPink : textPrimary,
+            fontSize: 11,
+            fontFamily: 'Inter',
+            fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

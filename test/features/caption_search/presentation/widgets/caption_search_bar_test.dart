@@ -12,58 +12,58 @@ import 'caption_search_bar_test.mocks.dart';
 
 @GenerateMocks(<Type>[ImageListCubit])
 void main() {
-  group('CaptionSearchBar autocomplete', () {
-    late MockImageListCubit mockImageListCubit;
-    late CaptionSearchCubit captionSearchCubit;
+  late MockImageListCubit mockImageListCubit;
+  late CaptionSearchCubit captionSearchCubit;
 
-    setUp(() {
-      mockImageListCubit = MockImageListCubit();
-      when(mockImageListCubit.state).thenReturn(const ImageListState());
-      when(
-        mockImageListCubit.stream,
-      ).thenAnswer((_) => const Stream<ImageListState>.empty());
-      when(
-        mockImageListCubit.getAllUniqueTags(),
-      ).thenReturn(<String>{'sunset', 'beach', 'mountain'});
-      when(
-        mockImageListCubit.getAllUniqueMediums(),
-      ).thenReturn(<String>{'photograph', 'oil painting'});
-      captionSearchCubit = CaptionSearchCubit(
-        imageListCubit: mockImageListCubit,
-      );
-    });
+  setUp(() {
+    mockImageListCubit = MockImageListCubit();
+    when(mockImageListCubit.state).thenReturn(const ImageListState());
+    when(
+      mockImageListCubit.stream,
+    ).thenAnswer((_) => const Stream<ImageListState>.empty());
+    when(
+      mockImageListCubit.getAllUniqueTags(),
+    ).thenReturn(<String>{'sunset', 'beach', 'mountain'});
+    when(
+      mockImageListCubit.getAllUniqueMediums(),
+    ).thenReturn(<String>{'photograph', 'oil painting'});
+    captionSearchCubit = CaptionSearchCubit(
+      imageListCubit: mockImageListCubit,
+    );
+  });
 
-    tearDown(() {
-      captionSearchCubit.close();
-    });
+  tearDown(() {
+    captionSearchCubit.close();
+  });
 
-    Future<void> pumpBar(WidgetTester tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MultiBlocProvider(
-              providers: <BlocProvider<dynamic>>[
-                BlocProvider<ImageListCubit>.value(value: mockImageListCubit),
-                BlocProvider<CaptionSearchCubit>.value(
-                  value: captionSearchCubit,
-                ),
-              ],
-              child: const CaptionSearchBar(),
-            ),
+  Future<void> pumpBar(WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MultiBlocProvider(
+            providers: <BlocProvider<dynamic>>[
+              BlocProvider<ImageListCubit>.value(value: mockImageListCubit),
+              BlocProvider<CaptionSearchCubit>.value(
+                value: captionSearchCubit,
+              ),
+            ],
+            child: const CaptionSearchBar(),
           ),
         ),
-      );
-      // Expand the search bar so the text field is visible.
-      captionSearchCubit.toggleExpanded();
-      await tester.pumpAndSettle();
-    }
+      ),
+    );
+    // Expand the search bar so the text field is visible.
+    captionSearchCubit.toggleExpanded();
+    await tester.pumpAndSettle();
+  }
 
-    Future<void> typeText(WidgetTester tester, String text) async {
-      await tester.enterText(find.byType(TextField).first, text);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 50));
-    }
+  Future<void> typeText(WidgetTester tester, String text) async {
+    await tester.enterText(find.byType(TextField).first, text);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 
+  group('CaptionSearchBar autocomplete', () {
     testWidgets('typing ":" shows filter name suggestions', (
       WidgetTester tester,
     ) async {
@@ -211,6 +211,37 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('sunset'), findsNothing);
+    });
+  });
+
+  group('tag filter chips', () {
+    testWidgets('shows a chip per tag when field is focused', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      // Chip labels (not autocomplete overlay — we typed nothing).
+      expect(find.text('sunset'), findsOneWidget);
+      expect(find.text('beach'), findsOneWidget);
+      expect(find.text('mountain'), findsOneWidget);
+    });
+
+    testWidgets('hides chips when the field loses focus', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+      expect(find.text('sunset'), findsOneWidget);
+
+      // Unfocus the field.
+      FocusManager.instance.primaryFocus?.unfocus();
+      await tester.pumpAndSettle();
+
+      expect(find.text('sunset'), findsNothing);
+      expect(find.text('beach'), findsNothing);
     });
   });
 }

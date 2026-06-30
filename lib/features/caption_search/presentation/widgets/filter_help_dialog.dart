@@ -85,12 +85,14 @@ class FilterHelpDialog extends StatelessWidget {
                 ),
                 _buildExample(':nocaption:', 'Uncaptioned images'),
                 _buildExample(':tag:favorite:', 'Images tagged "favorite"'),
+                _buildExample('#favorite', 'Images tagged "favorite" (or click a chip in the search bar)'),
                 _buildExample(':notag:', 'Untagged images'),
                 const SizedBox(height: 8),
                 Text(
                   'Structured filters only match Ideogram JSON captions. '
                   'Use :plain: to find non-JSON captions. '
-                  ':tag: and :notag: work on any image (tags are independent of captions).',
+                  ':tag: and :notag: work on any image (tags are independent of captions). '
+                  'The #value shorthand is equivalent to :tag:value:.',
                   style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                 ),
               ],
@@ -134,6 +136,7 @@ class FilterHelpDialog extends StatelessWidget {
         _filterRow(':nocaption:', 'No caption'),
         _filterRow(':tag:value:', 'Has a tag equal to value'),
         _filterRow(':notag:', 'No tags assigned'),
+        _filterRow('#value', 'Has a tag equal to value (shorthand for :tag:value:)'),
       ],
     );
   }

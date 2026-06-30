@@ -61,7 +61,16 @@ void main() {
     expect(findRichTextContaining('Images with text layers'), findsOneWidget);
     expect(findRichTextContaining('Uncaptioned images'), findsOneWidget);
     expect(findRichTextContaining('Untagged images'), findsOneWidget);
-    expect(findRichTextContaining('Images tagged "favorite"'), findsOneWidget);
+    // ponytail: include the query prefix to stay unique once the #favorite chip
+    // example also renders "Images tagged "favorite"".
+    expect(
+      findRichTextContaining(':tag:favorite: — Images tagged "favorite"'),
+      findsOneWidget,
+    );
+    expect(
+      findRichTextContaining('#favorite — Images tagged'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('close button dismisses the dialog and completes the future', (

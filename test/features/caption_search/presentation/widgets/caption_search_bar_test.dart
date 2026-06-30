@@ -243,5 +243,77 @@ void main() {
       expect(find.text('sunset'), findsNothing);
       expect(find.text('beach'), findsNothing);
     });
+
+    testWidgets('tapping a chip injects #tag into the query', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('sunset'));
+      await tester.pump();
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, '#sunset');
+    });
+
+    testWidgets('tapping an active chip removes the #tag', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('sunset'));
+      await tester.pump();
+      await tester.tap(find.text('sunset'));
+      await tester.pump();
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, isEmpty);
+    });
+
+    testWidgets('multiple chips compose into space-separated hashtags', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('sunset'));
+      await tester.pump();
+      await tester.tap(find.text('beach'));
+      await tester.pump();
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, '#sunset #beach');
+    });
+
+    testWidgets('chips compose with typed plain text', (
+      WidgetTester tester,
+    ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'sunset');
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('beach'));
+      await tester.pump();
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, 'sunset #beach');
+    });
   });
 }

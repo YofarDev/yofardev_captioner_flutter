@@ -290,4 +290,78 @@ void main() {
       );
     });
   });
+
+  group('#value hashtag shorthand', () {
+    test('parses #favorite as TagFilter', () {
+      final ParsedFilterQuery result = FilterParser.parse('#favorite');
+      expect(result.filters, hasLength(1));
+      expect(result.filters.single, isA<TagFilter>());
+      expect((result.filters.single as TagFilter).tag, 'favorite');
+      expect(result.plainTextQuery, isEmpty);
+    });
+
+    test('parses two space-separated hashtags', () {
+      final ParsedFilterQuery result = FilterParser.parse('#favorite #cat');
+      expect(result.filters, hasLength(2));
+      expect(
+        result.filters.every((FilterExpression f) => f is TagFilter),
+        isTrue,
+      );
+    });
+
+    test('parses two adjacent hashtags without space', () {
+      final ParsedFilterQuery result = FilterParser.parse('#a#b');
+      final List<TagFilter> tags = result.filters
+          .whereType<TagFilter>()
+          .toList();
+      expect(tags, hasLength(2));
+      expect(tags.map((TagFilter f) => f.tag).toList(), <String>['a', 'b']);
+    });
+
+    test('combines plain text and hashtag (AND)', () {
+      final ParsedFilterQuery result = FilterParser.parse('sunset #favorite');
+      expect(result.filters, hasLength(1));
+      expect(result.filters.single, isA<TagFilter>());
+      expect(result.plainTextQuery, 'sunset');
+    });
+
+    test('coexists with :tag:value: syntax', () {
+      final ParsedFilterQuery result =
+          FilterParser.parse(':tag:foo: #bar');
+      final List<TagFilter> tags = result.filters
+          .whereType<TagFilter>()
+          .toList();
+      expect(tags, hasLength(2));
+      expect(tags.map((TagFilter f) => f.tag).toList(), <String>['foo', 'bar']);
+    });
+
+    test('lone "#" is plain text', () {
+      final ParsedFilterQuery result = FilterParser.parse('#');
+      expect(result.filters, isEmpty);
+      expect(result.plainTextQuery, '#');
+    });
+
+    test('"#" followed by space is plain text "#"', () {
+      final ParsedFilterQuery result = FilterParser.parse('# ');
+      expect(result.filters, isEmpty);
+      expect(result.plainTextQuery, '#');
+    });
+
+    test('mid-word "#" starts a tag token (documented behavior)', () {
+      // ponytail: bare '#' anywhere starts a tag token. Captions rarely
+      // contain literal '#'; ':'-delimited hex stays inside :color:#HEX:.
+      final ParsedFilterQuery result = FilterParser.parse('art#1');
+      expect(result.filters, hasLength(1));
+      expect((result.filters.single as TagFilter).tag, '1');
+      expect(result.plainTextQuery, 'art');
+    });
+
+    test('hashtag terminated by ":" colon', () {
+      final ParsedFilterQuery result = FilterParser.parse('#fav :has:text:');
+      expect(result.filters, hasLength(2));
+      expect(result.filters[0], isA<TagFilter>());
+      expect(result.filters[1], isA<HasTypeFilter>());
+      expect(result.plainTextQuery, isEmpty);
+    });
+  });
 }

@@ -43,6 +43,17 @@ class FilterParser {
 
     int pos = 0;
     while (pos < query.length) {
+      // #value hashtag shorthand -> TagFilter. A bare '#' always starts a
+      // tag token; ':'-delimited hex (e.g. :color:#HEX:) is consumed by the
+      // ':' branch below before we ever reach its '#' here.
+      if (query[pos] == '#') {
+        final _ParseResult? result = _tryParseHashtag(query, pos);
+        if (result != null) {
+          filters.add(result.filter);
+          pos = result.endIndex;
+          continue;
+        }
+      }
       if (query[pos] == ':') {
         final _ParseResult? result = _tryParseFilter(query, pos);
         if (result != null) {
@@ -176,6 +187,31 @@ class FilterParser {
     }
 
     return null;
+  }
+
+  /// Parses a `#value` hashtag starting at [pos] (pointing at `#`).
+  ///
+  /// The token runs until whitespace, `#`, `:`, or end of string.
+  /// Returns `null` when the token is empty (a lone `#`), so the caller
+  /// leaves the `#` in plain text.
+  static _ParseResult? _tryParseHashtag(String query, int pos) {
+    final int start = pos + 1;
+    int end = start;
+    while (end < query.length) {
+      final String c = query[end];
+      if (c == ' ' ||
+          c == '\t' ||
+          c == '\n' ||
+          c == '\r' ||
+          c == '#' ||
+          c == ':') {
+        break;
+      }
+      end++;
+    }
+    final String value = query.substring(start, end).trim();
+    if (value.isEmpty) return null;
+    return _ParseResult(filter: TagFilter(tag: value), endIndex: end);
   }
 
   /// Creates a flag-only filter from its name.

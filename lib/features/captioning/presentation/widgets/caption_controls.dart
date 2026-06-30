@@ -229,6 +229,14 @@ class _CaptionControlsState extends State<CaptionControls> {
     if (otherCategories.isEmpty) {
       return const SizedBox.shrink();
     }
+    final String? selected = otherCategories.contains(_jsonContextCategory)
+        ? _jsonContextCategory
+        : null;
+    if (selected == null && _jsonContextCategory != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _jsonContextCategory = null);
+      });
+    }
     return Padding(
       padding: const EdgeInsets.only(left: 4),
       child: Row(
@@ -242,7 +250,7 @@ class _CaptionControlsState extends State<CaptionControls> {
               width: 24,
               height: 24,
               child: Checkbox(
-                value: _jsonContextCategory != null,
+                value: selected != null,
                 onChanged: (bool? value) {
                   setState(() {
                     _jsonContextCategory =
@@ -265,7 +273,7 @@ class _CaptionControlsState extends State<CaptionControls> {
           ),
           const SizedBox(width: 6),
           DropdownButton<String?>(
-            value: _jsonContextCategory,
+            value: selected,
             underline: const SizedBox.shrink(),
             dropdownColor: panelRaised,
             style: const TextStyle(color: Colors.white, fontSize: 14),

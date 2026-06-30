@@ -131,6 +131,11 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
             color: darkGrey,
             child: Container(
               key: const Key('tagFilterChipsOverlay'),
+              // color makes this a ColoredBox -> opaque to hit-testing, so the
+              // panel blocks the main view behind it. Without this, the main
+              // view's drag recognizer joins the arena and cancels chip taps
+              // (onTapDown -> onTapCancel) on any mouse jiggle.
+              color: darkGrey,
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               child: Column(
                 mainAxisSize: MainAxisSize.min,

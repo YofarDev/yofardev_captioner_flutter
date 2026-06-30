@@ -119,43 +119,50 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
       link: widget.link,
       targetAnchor: Alignment.bottomLeft,
       offset: const Offset(0, 4),
-      child: Material(
-        elevation: 8,
-        borderRadius: BorderRadius.circular(8),
-        color: darkGrey,
-        child: Container(
-          key: const Key('tagFilterChipsOverlay'),
-          constraints: const BoxConstraints(maxWidth: 320),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Padding(
-                padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
-                child: Text(
-                  'FILTER BY TAG',
-                  style: TextStyle(
-                    fontFamily: 'Orbitron',
-                    fontSize: 10,
-                    color: lightPink,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 180),
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _chips.map(_buildChip).toList(),
+      // UnconstrainedBox detaches the panel from the overlay's full-screen
+      // constraints so it shrinks to its own content; ConstrainedBox caps it.
+      // Without this the Column expands to the overlay height (fills the view).
+      child: UnconstrainedBox(
+        alignment: Alignment.topLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 240),
+          child: Material(
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            color: darkGrey,
+            child: Container(
+              key: const Key('tagFilterChipsOverlay'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  const Padding(
+                    padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
+                    child: Text(
+                      'FILTER BY TAG',
+                      style: TextStyle(
+                        fontFamily: 'Orbitron',
+                        fontSize: 10,
+                        color: lightPink,
+                        letterSpacing: 0.8,
+                      ),
                     ),
                   ),
-                ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _chips.map(_buildChip).toList(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

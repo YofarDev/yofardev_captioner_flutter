@@ -92,6 +92,15 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     int processedImagesCount = 0;
     final List<String> errors = <String>[];
 
+    // Broadcast the displayed image's guidance to every image in the run so a
+    // single guidance entry covers a whole filtered Run-All instead of only
+    // the image it was keyed to. For the "current" option the source IS the
+    // processed image, so behavior there is unchanged.
+    final AppImage? guidanceSource = _imageListCubit.currentDisplayedImage;
+    final String runGuidance = guidanceSource == null
+        ? ''
+        : _imageListCubit.guidanceFor(guidanceSource.image.path);
+
     for (final AppImage image in imagesToCaption) {
       // Check if cancelled
       if (_cancelToken?.isCancelled ?? false) {
@@ -135,11 +144,18 @@ class CaptioningCubit extends Cubit<CaptioningState> {
             jsonContextCategory == null
                 ? ''
                 : (image.captions[jsonContextCategory]?.text ?? '');
+        // Per-image guidance: appended (not replacing) the user prompt so it
+        // composes with both the settings prompt and any JSON reference. In a
+        // batch run this is the displayed image's guidance broadcast to all.
+        final String guidance = runGuidance;
+        final String guidanceBlock = guidance.isEmpty
+            ? ''
+            : '\n\nPer-image guidance (authoritative):\n$guidance';
         final String effectivePrompt = jsonContext.isEmpty
-            ? prompt
+            ? '$prompt$guidanceBlock'
             : '$prompt\n\n'
                 'Existing structured analysis of this image (JSON), use as reference:\n'
-                '$jsonContext';
+                '$jsonContext$guidanceBlock';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,

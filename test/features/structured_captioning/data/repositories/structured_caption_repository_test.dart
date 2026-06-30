@@ -352,6 +352,111 @@ void main() {
     });
 
     // =========================================================================
+    // normalizeBbox — vlmEmitsXyxy: false (VLM obeys the yxyx instruction)
+    // =========================================================================
+
+    group('normalizeBbox (vlmEmitsXyxy: false)', () {
+      test('keeps [y1,x1,y2,x2] input as-is (no swap)', () {
+        // VLM obeyed the yxyx instruction → input already yxyx, no swap.
+        expect(
+          repo.normalizeBbox(
+            <int>[100, 200, 300, 400],
+            vlmEmitsXyxy: false,
+          ),
+          <int>[100, 200, 300, 400],
+        );
+      });
+
+      test('clamps out-of-range values to [0,1000] without swapping', () {
+        // Input [y1,x1,y2,x2] = [-50, 200, 1500, 400] → clamp only.
+        expect(
+          repo.normalizeBbox(
+            <int>[-50, 200, 1500, 400],
+            vlmEmitsXyxy: false,
+          ),
+          <int>[0, 200, 1000, 400],
+        );
+      });
+
+      test('orders inverted corners (yxyx interpretation)', () {
+        // Input read as [y2,x2,y1,x1] effectively → still normalized correctly.
+        expect(
+          repo.normalizeBbox(
+            <int>[300, 400, 100, 200],
+            vlmEmitsXyxy: false,
+          ),
+          <int>[100, 200, 300, 400],
+        );
+      });
+
+      test('returns null for zero-area / line boxes', () {
+        expect(
+          repo.normalizeBbox(<int>[100, 100, 100, 400], vlmEmitsXyxy: false),
+          isNull,
+        );
+        expect(
+          repo.normalizeBbox(<int>[100, 200, 300, 200], vlmEmitsXyxy: false),
+          isNull,
+        );
+      });
+
+      test('contrast: xyxy vs yxyx interpretation diverges', () {
+        // Same four numbers, two orientations → different stored boxes. This is
+        // the core contract: the flag flips input interpretation, output stays
+        // yxyx.
+        const List<int> raw = <int>[100, 200, 300, 400];
+        expect(
+          repo.normalizeBbox(raw), // default xyxy: reads x1,y1,x2,y2
+          <int>[200, 100, 400, 300],
+        );
+        expect(
+          repo.normalizeBbox(raw, vlmEmitsXyxy: false), // reads y1,x1,y2,x2
+          <int>[100, 200, 300, 400],
+        );
+      });
+    });
+
+    // =========================================================================
+    // parseAnalysisJson — orientation threaded through
+    // =========================================================================
+
+    group('parseAnalysisJson orientation', () {
+      Map<String, dynamic> singleObjectBbox(List<int> bbox) =>
+          <String, dynamic>{
+            'high_level_description': '',
+            'style': <String, dynamic>{
+              'medium': 'photograph',
+              'aesthetics': '',
+              'lighting': '',
+              'photo_or_art': '',
+            },
+            'background': '',
+            'objects': <Map<String, dynamic>>[
+              <String, dynamic>{
+                'name': 'X',
+                'desc': '',
+                'has_text': false,
+                'bbox': bbox,
+              },
+            ],
+          };
+
+      test('default (xyxy) swaps to yxyx', () {
+        final VlmAnalysis analysis =
+            repo.parseAnalysisJson(singleObjectBbox(<int>[100, 200, 300, 400]));
+        expect(analysis.objects[0].bbox, <int>[200, 100, 400, 300]);
+      });
+
+      test('vlmEmitsXyxy: false keeps yxyx input order', () {
+        final VlmAnalysis analysis = repo.parseAnalysisJson(
+          singleObjectBbox(<int>[100, 200, 300, 400]),
+          vlmEmitsXyxy: false,
+        );
+        expect(analysis.objects[0].bbox, <int>[100, 200, 300, 400]);
+      });
+    });
+
+    // =========================================================================
     // computeAspectRatio
     // =========================================================================
 

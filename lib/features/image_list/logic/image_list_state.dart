@@ -16,6 +16,15 @@ class ImageListState extends Equatable {
   final Map<String, String> categoryFormats;
   final String? activeCategory;
 
+  /// Per-image captioning guidance keyed by image file path. Ephemeral — held
+  /// in memory for the session only, never persisted. When empty for an image,
+  /// no guidance is injected for it.
+  final Map<String, String> imageGuidance;
+
+  /// Global enable for guidance injection. When false, [imageGuidance] is
+  /// ignored by both captioning paths even if populated.
+  final bool guidanceEnabled;
+
   const ImageListState({
     this.images = const <AppImage>[],
     this.sortBy = SortBy.name,
@@ -29,6 +38,8 @@ class ImageListState extends Equatable {
     this.categories = const <String>['default'],
     this.categoryFormats = const <String, String>{},
     this.activeCategory = 'default',
+    this.imageGuidance = const <String, String>{},
+    this.guidanceEnabled = false,
   });
 
   ImageListState copyWith({
@@ -44,6 +55,8 @@ class ImageListState extends Equatable {
     List<String>? categories,
     Map<String, String>? categoryFormats,
     String? activeCategory,
+    Map<String, String>? imageGuidance,
+    bool? guidanceEnabled,
   }) {
     return ImageListState(
       images: images ?? this.images,
@@ -58,22 +71,26 @@ class ImageListState extends Equatable {
       categories: categories ?? this.categories,
       categoryFormats: categoryFormats ?? this.categoryFormats,
       activeCategory: activeCategory ?? this.activeCategory,
+      imageGuidance: imageGuidance ?? this.imageGuidance,
+      guidanceEnabled: guidanceEnabled ?? this.guidanceEnabled,
     );
   }
 
   @override
   List<Object?> get props => <Object?>[
-    images,
-    sortBy,
-    sortAscending,
-    folderPath,
-    currentImageId,
-    occurrencesCount,
-    occurrenceFileNames,
-    searchQuery,
-    caseSensitive,
-    categories,
-    categoryFormats,
-    activeCategory,
-  ];
+        images,
+        sortBy,
+        sortAscending,
+        folderPath,
+        currentImageId,
+        occurrencesCount,
+        occurrenceFileNames,
+        searchQuery,
+        caseSensitive,
+        categories,
+        categoryFormats,
+        activeCategory,
+        imageGuidance,
+        guidanceEnabled,
+      ];
 }

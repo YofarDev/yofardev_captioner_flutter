@@ -279,6 +279,18 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
+  /// Sets whether the configured VLM emits `[x1,y1,x2,y2]` (xyxy, the common
+  /// default) or obeys the yxyx instruction. The prompt and the bbox
+  /// normalizer both follow this flag; the stored Ideogram4 JSON stays yxyx.
+  void setVlmEmitsXyxy(bool enabled) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(vlmEmitsXyxy: enabled),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
   /// Updates the structured batch overrides for the JSON captioning pipeline.
   void updateStructuredBatchOverrides(StructuredBatchOverrides overrides) {
     emit(

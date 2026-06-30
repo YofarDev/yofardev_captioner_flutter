@@ -147,6 +147,19 @@ class _ModelsPromptsPanelState extends State<ModelsPromptsPanel> {
   }
 
   Widget _buildModelsList(LlmConfigsState state) {
+    final List<LlmConfig> sorted =
+        _sortedGroupedConfigs(state.llmConfigs.configs);
+    // Flat row list: a String entry is a group header, an LlmConfig is a card.
+    final List<Object> rows = <Object>[];
+    String? currentGroup;
+    for (final LlmConfig config in sorted) {
+      if (config.providerLabel != currentGroup) {
+        currentGroup = config.providerLabel;
+        rows.add(config.providerLabel);
+      }
+      rows.add(config);
+    }
+
     return CustomRadioGroup<String?>(
       groupValue: state.llmConfigs.selectedConfigId,
       onChanged: (String? val) {
@@ -157,10 +170,14 @@ class _ModelsPromptsPanelState extends State<ModelsPromptsPanel> {
       child: ListView.separated(
         controller: _modelsScrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        itemCount: state.llmConfigs.configs.length,
+        itemCount: rows.length,
         separatorBuilder: (BuildContext _, int _) => const SizedBox(height: 8),
         itemBuilder: (BuildContext context, int index) {
-          final LlmConfig config = state.llmConfigs.configs[index];
+          final Object row = rows[index];
+          if (row is String) {
+            return _GroupHeader(row);
+          }
+          final LlmConfig config = row as LlmConfig;
           final bool isSelected =
               config.id == state.llmConfigs.selectedConfigId;
           return _ConfigCard(
@@ -234,6 +251,40 @@ class _EmptyState extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Sorts configs by provider label (case-insensitive) then by name
+/// (case-insensitive). Mirrors the ordering used by the model dropdown.
+List<LlmConfig> _sortedGroupedConfigs(List<LlmConfig> configs) {
+  return List<LlmConfig>.of(configs)
+    ..sort((LlmConfig a, LlmConfig b) {
+      final int groupCmp = a.providerLabel
+          .toLowerCase()
+          .compareTo(b.providerLabel.toLowerCase());
+      if (groupCmp != 0) return groupCmp;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+}
+
+class _GroupHeader extends StatelessWidget {
+  final String label;
+  const _GroupHeader(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 2),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: lightPink.withValues(alpha: 0.85),
+        ),
       ),
     );
   }

@@ -99,6 +99,31 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
           as _i3.Future<String>);
 
   @override
+  _i3.Future<String> repairJson(
+    _i4.LlmConfig? config,
+    String? brokenOutput, {
+    int? maxTokens,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #repairJson,
+              [config, brokenOutput],
+              {#maxTokens: maxTokens},
+            ),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(
+                  #repairJson,
+                  [config, brokenOutput],
+                  {#maxTokens: maxTokens},
+                ),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
   String buildUrl(String? baseUrl) =>
       (super.noSuchMethod(
             Invocation.method(#buildUrl, [baseUrl]),

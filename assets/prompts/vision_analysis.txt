@@ -35,7 +35,7 @@ Emit a SINGLE JSON object with exactly these top-level keys, in this order: `hig
       "type": "<obj | text — see TEXT elements for how to classify>",
       "desc": "<detailed 30-60 word description>",
       "text": "<literal characters; ONLY present when type is text>",
-      "bbox": [y1, x1, y2, x2]
+      "bbox": [{{bbox_order}}]
     }
   ]
 }
@@ -166,7 +166,7 @@ Examples:
 
 ## BBOX format — REQUIRED for every object
 
-`[y_min, x_min, y_max, x_max]` in 0–1000 normalized coordinates, top-left origin (`y1 < y2`, `x1 < x2`).
+`[{{bbox_order}}]` in 0–1000 normalized coordinates, top-left origin (`y1 < y2`, `x1 < x2`).
 
 - Every object MUST include a bbox. No exceptions. If precise edges are hard to place, give your best estimate — a rough box is always better than none.
 - Trace real visible bounds; do not round to convenient values.

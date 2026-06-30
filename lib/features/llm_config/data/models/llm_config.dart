@@ -85,4 +85,17 @@ class LlmConfig extends Equatable {
       'mlxPath': mlxPath,
     };
   }
+
+  /// Human-friendly provider label used to group/sort configs in lists.
+  /// Local MLX runs get a fixed label; remote configs use the URL host with
+  /// common prefixes stripped.
+  String get providerLabel {
+    if (providerType == LlmProviderType.localMlx) return 'Local (MLX)';
+    final Uri? uri = Uri.tryParse(url ?? '');
+    String host = uri?.host ?? '';
+    if (host.isEmpty) return 'No URL';
+    if (host.startsWith('api.')) host = host.substring(4);
+    if (host.startsWith('www.')) host = host.substring(4);
+    return host;
+  }
 }

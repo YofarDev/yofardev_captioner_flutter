@@ -20,6 +20,13 @@ class LlmConfigs extends Equatable {
   /// VLM-provided bboxes directly.
   final bool disableSam;
 
+  /// What bbox order the configured VLM actually emits. Most VLMs output
+  /// `[x1, y1, x2, y2]` (xyxy) regardless of the prompt; some obey the yxyx
+  /// instruction. The prompt is rewritten to ask for whichever the VLM is good
+  /// at, and the normalizer trusts that decision. The stored Ideogram4 JSON is
+  /// always `[y1, x1, y2, x2]` regardless of this flag.
+  final bool vlmEmitsXyxy;
+
   final StructuredBatchOverrides structuredBatchOverrides;
 
   const LlmConfigs({
@@ -30,20 +37,22 @@ class LlmConfigs extends Equatable {
     this.ideogramJsonEnabled = false,
     this.debugMode = false,
     this.disableSam = false,
+    this.vlmEmitsXyxy = true,
     this.structuredBatchOverrides = const StructuredBatchOverrides(),
   });
 
   @override
   List<Object?> get props => <Object?>[
-    configs,
-    prompts,
-    selectedConfigId,
-    selectedPrompt,
-    ideogramJsonEnabled,
-    debugMode,
-    disableSam,
-    structuredBatchOverrides,
-  ];
+        configs,
+        prompts,
+        selectedConfigId,
+        selectedPrompt,
+        ideogramJsonEnabled,
+        debugMode,
+        disableSam,
+        vlmEmitsXyxy,
+        structuredBatchOverrides,
+      ];
 
   LlmConfigs copyWith({
     List<LlmConfig>? configs,
@@ -54,6 +63,7 @@ class LlmConfigs extends Equatable {
     bool? ideogramJsonEnabled,
     bool? debugMode,
     bool? disableSam,
+    bool? vlmEmitsXyxy,
     StructuredBatchOverrides? structuredBatchOverrides,
   }) {
     return LlmConfigs(
@@ -66,6 +76,7 @@ class LlmConfigs extends Equatable {
       ideogramJsonEnabled: ideogramJsonEnabled ?? this.ideogramJsonEnabled,
       debugMode: debugMode ?? this.debugMode,
       disableSam: disableSam ?? this.disableSam,
+      vlmEmitsXyxy: vlmEmitsXyxy ?? this.vlmEmitsXyxy,
       structuredBatchOverrides:
           structuredBatchOverrides ?? this.structuredBatchOverrides,
     );
@@ -85,6 +96,7 @@ class LlmConfigs extends Equatable {
       ideogramJsonEnabled: json['ideogramJsonEnabled'] as bool? ?? false,
       debugMode: json['debugMode'] as bool? ?? false,
       disableSam: json['disableSam'] as bool? ?? false,
+      vlmEmitsXyxy: json['vlmEmitsXyxy'] as bool? ?? true,
       structuredBatchOverrides: StructuredBatchOverrides.fromJson(
         json['structuredBatchOverrides'] as Map<String, dynamic>? ??
             <String, dynamic>{},
@@ -100,6 +112,7 @@ class LlmConfigs extends Equatable {
       'ideogramJsonEnabled': ideogramJsonEnabled,
       'debugMode': debugMode,
       'disableSam': disableSam,
+      'vlmEmitsXyxy': vlmEmitsXyxy,
       'structuredBatchOverrides': structuredBatchOverrides.toJson(),
     };
   }

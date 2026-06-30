@@ -5,14 +5,15 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:flutter/material.dart' as _i7;
-import 'package:flutter_bloc/flutter_bloc.dart' as _i5;
+import 'package:flutter/material.dart' as _i8;
+import 'package:flutter_bloc/flutter_bloc.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
     as _i3;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
     as _i2;
-import 'package:yofardev_captioner/helpers/image_operations_helper.dart' as _i6;
+import 'package:yofardev_captioner/helpers/image_operations_helper.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -118,6 +119,29 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
     Invocation.method(#previousImage, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void setGuidanceEnabled(bool? enabled) => super.noSuchMethod(
+    Invocation.method(#setGuidanceEnabled, [enabled]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void setGuidance(String? imagePath, String? text) => super.noSuchMethod(
+    Invocation.method(#setGuidance, [imagePath, text]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  String guidanceFor(String? imagePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#guidanceFor, [imagePath]),
+            returnValue: _i5.dummyValue<String>(
+              this,
+              Invocation.method(#guidanceFor, [imagePath]),
+            ),
+          )
+          as String);
 
   @override
   _i4.Future<void> saveChanges() =>
@@ -347,7 +371,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void onChange(_i5.Change<_i2.ImageListState>? change) => super.noSuchMethod(
+  void onChange(_i6.Change<_i2.ImageListState>? change) => super.noSuchMethod(
     Invocation.method(#onChange, [change]),
     returnValueForMissingStub: null,
   );
@@ -378,7 +402,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockImageOperationsHelper extends _i1.Mock
-    implements _i6.ImageOperationsHelper {
+    implements _i7.ImageOperationsHelper {
   MockImageOperationsHelper() {
     _i1.throwOnMissingStub(this);
   }
@@ -423,7 +447,7 @@ class MockImageOperationsHelper extends _i1.Mock
 
   @override
   _i4.Future<_i2.ImageListState?> cropCurrentImage(
-    _i7.BuildContext? context,
+    _i8.BuildContext? context,
     _i2.ImageListState? state,
   ) =>
       (super.noSuchMethod(

@@ -26,6 +26,13 @@ void main() {
     setUp(() {
       mockImageListCubit = MockImageListCubit();
       mockCaptioningRepository = MockCaptioningRepository();
+      // guidanceFor defaults to '' (disabled) so the effective prompt is
+      // unchanged by the per-image guidance feature in these tests.
+      when(mockImageListCubit.guidanceFor(any)).thenReturn('');
+      // The captioner now reads the displayed image once to broadcast its
+      // guidance across a batch run. Default to null so broadcast no-ops here;
+      // tests that exercise guidance stub this explicitly.
+      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
       captioningCubit = CaptioningCubit(
         mockImageListCubit,
         captioningRepository: mockCaptioningRepository,

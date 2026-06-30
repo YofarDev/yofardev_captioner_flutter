@@ -55,6 +55,18 @@ class StructuredPanel extends StatelessWidget {
                     context.read<LlmConfigsCubit>().setDisableSam(v),
               ),
               const SizedBox(height: 16),
+              _ToggleCard(
+                accentColor: Colors.indigo[300]!,
+                icon: Icons.center_focus_strong_outlined,
+                title: 'VLM emits xyxy',
+                subtitle:
+                    'Most VLMs output [x1,y1,x2,y2]. Turn off if your VLM obeys '
+                    'the yxyx instruction. Stored JSON is always yxyx.',
+                value: state.llmConfigs.vlmEmitsXyxy,
+                onChanged: (bool v) =>
+                    context.read<LlmConfigsCubit>().setVlmEmitsXyxy(v),
+              ),
+              const SizedBox(height: 16),
               _OverridesCard(
                 overrides: state.llmConfigs.structuredBatchOverrides,
               ),

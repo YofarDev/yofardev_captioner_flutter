@@ -4,25 +4,25 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
-import 'dart:io' as _i10;
+import 'dart:io' as _i11;
 
-import 'package:flutter_bloc/flutter_bloc.dart' as _i7;
+import 'package:flutter_bloc/flutter_bloc.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i12;
+import 'package:mockito/src/dummies.dart' as _i7;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
     as _i5;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
     as _i2;
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart'
-    as _i9;
+    as _i10;
 import 'package:yofardev_captioner/features/llm_config/data/models/structured_batch_overrides.dart'
-    as _i11;
+    as _i12;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart'
     as _i3;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart'
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
-    as _i8;
+    as _i9;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
     as _i13;
 
@@ -147,6 +147,29 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
     Invocation.method(#previousImage, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void setGuidanceEnabled(bool? enabled) => super.noSuchMethod(
+    Invocation.method(#setGuidanceEnabled, [enabled]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void setGuidance(String? imagePath, String? text) => super.noSuchMethod(
+    Invocation.method(#setGuidance, [imagePath, text]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  String guidanceFor(String? imagePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#guidanceFor, [imagePath]),
+            returnValue: _i7.dummyValue<String>(
+              this,
+              Invocation.method(#guidanceFor, [imagePath]),
+            ),
+          )
+          as String);
 
   @override
   _i6.Future<void> saveChanges() =>
@@ -376,7 +399,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void onChange(_i7.Change<_i2.ImageListState>? change) => super.noSuchMethod(
+  void onChange(_i8.Change<_i2.ImageListState>? change) => super.noSuchMethod(
     Invocation.method(#onChange, [change]),
     returnValueForMissingStub: null,
   );
@@ -407,19 +430,21 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockStructuredCaptionRepository extends _i1.Mock
-    implements _i8.StructuredCaptionRepository {
+    implements _i9.StructuredCaptionRepository {
   MockStructuredCaptionRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
   _i6.Future<_i3.IdeogramCaption> generateStructuredCaption(
-    _i9.LlmConfig? config,
-    _i10.File? imageFile, {
+    _i10.LlmConfig? config,
+    _i11.File? imageFile, {
     required void Function(String)? onProgress,
-    _i11.StructuredBatchOverrides? overrides,
+    _i12.StructuredBatchOverrides? overrides,
     bool? debugMode = false,
     bool? disableSam = false,
+    bool? vlmEmitsXyxy = true,
+    String? guidance = '',
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -430,6 +455,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #overrides: overrides,
                 #debugMode: debugMode,
                 #disableSam: disableSam,
+                #vlmEmitsXyxy: vlmEmitsXyxy,
+                #guidance: guidance,
               },
             ),
             returnValue: _i6.Future<_i3.IdeogramCaption>.value(
@@ -443,6 +470,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
                     #overrides: overrides,
                     #debugMode: debugMode,
                     #disableSam: disableSam,
+                    #vlmEmitsXyxy: vlmEmitsXyxy,
+                    #guidance: guidance,
                   },
                 ),
               ),
@@ -452,7 +481,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
 
   @override
   _i6.Future<Map<int, List<int>>> computeSamBboxes({
-    required _i10.File? imageFile,
+    required _i11.File? imageFile,
     required _i3.IdeogramCaption? caption,
   }) =>
       (super.noSuchMethod(
@@ -468,8 +497,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
 
   @override
   _i6.Future<_i3.IdeogramElement> recaptionElement({
-    required _i9.LlmConfig? config,
-    required _i10.File? imageFile,
+    required _i10.LlmConfig? config,
+    required _i11.File? imageFile,
     required _i3.IdeogramCaption? currentCaption,
     required int? elementIndex,
     String? instructions,
@@ -504,7 +533,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
   String computeAspectRatio(int? width, int? height) =>
       (super.noSuchMethod(
             Invocation.method(#computeAspectRatio, [width, height]),
-            returnValue: _i12.dummyValue<String>(
+            returnValue: _i7.dummyValue<String>(
               this,
               Invocation.method(#computeAspectRatio, [width, height]),
             ),
@@ -517,12 +546,34 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as String?);
 
   @override
-  _i4.VlmAnalysis parseAnalysisJson(Map<String, dynamic>? json) =>
+  List<int>? normalizeBbox(dynamic raw, {bool? vlmEmitsXyxy = true}) =>
       (super.noSuchMethod(
-            Invocation.method(#parseAnalysisJson, [json]),
+            Invocation.method(
+              #normalizeBbox,
+              [raw],
+              {#vlmEmitsXyxy: vlmEmitsXyxy},
+            ),
+          )
+          as List<int>?);
+
+  @override
+  _i4.VlmAnalysis parseAnalysisJson(
+    Map<String, dynamic>? json, {
+    bool? vlmEmitsXyxy = true,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #parseAnalysisJson,
+              [json],
+              {#vlmEmitsXyxy: vlmEmitsXyxy},
+            ),
             returnValue: _FakeVlmAnalysis_3(
               this,
-              Invocation.method(#parseAnalysisJson, [json]),
+              Invocation.method(
+                #parseAnalysisJson,
+                [json],
+                {#vlmEmitsXyxy: vlmEmitsXyxy},
+              ),
             ),
           )
           as _i4.VlmAnalysis);
@@ -530,7 +581,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
   @override
   List<_i13.SamDetection> matchDetectionsToObjects(
     List<_i13.SamDetection>? detections,
-    List<_i8.VlmObjectBboxPair>? vlmObjects,
+    List<_i9.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#matchDetectionsToObjects, [
@@ -547,7 +598,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
     _i4.VlmAnalysis? analysis,
     List<_i13.SamDetection>? detections,
     Map<int, List<String>>? elementPalettes,
-    _i11.StructuredBatchOverrides? overrides,
+    _i12.StructuredBatchOverrides? overrides,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#buildIdeogramCaption, [

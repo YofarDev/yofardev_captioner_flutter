@@ -10,6 +10,8 @@ class LlmConfigWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
       builder: (BuildContext context, LlmConfigsState state) {
+        final List<DropdownMenuItem<String>> items =
+            _buildGroupedItems(state.llmConfigs.configs);
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -40,14 +42,7 @@ class LlmConfigWidget extends StatelessWidget {
                     context.read<LlmConfigsCubit>().selectLlmConfig(newValue);
                   }
                 },
-                items: state.llmConfigs.configs.map<DropdownMenuItem<String>>((
-                  LlmConfig config,
-                ) {
-                  return DropdownMenuItem<String>(
-                    value: config.id,
-                    child: Text(config.name),
-                  );
-                }).toList(),
+                items: items,
               ),
             ),
           ],
@@ -55,4 +50,56 @@ class LlmConfigWidget extends StatelessWidget {
       },
     );
   }
+
+  /// Sorts configs by provider (URL host) then by name, and inserts
+  /// non-selectable group headers between groups.
+  static List<DropdownMenuItem<String>> _buildGroupedItems(
+    List<LlmConfig> configs,
+  ) {
+    final List<LlmConfig> sorted = _sortedGrouped(configs);
+
+    final List<DropdownMenuItem<String>> items = <DropdownMenuItem<String>>[];
+    String? currentGroup;
+    for (final LlmConfig config in sorted) {
+      final String label = config.providerLabel;
+      if (label != currentGroup) {
+        currentGroup = label;
+        items.add(
+          DropdownMenuItem<String>(
+            value: '__group__${config.id}',
+            enabled: false,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.6,
+                color: Colors.pinkAccent.withValues(alpha: 0.85),
+              ),
+            ),
+          ),
+        );
+      }
+      items.add(
+        DropdownMenuItem<String>(
+          value: config.id,
+          child: Text(config.name),
+        ),
+      );
+    }
+    return items;
+  }
+}
+
+/// Sorts configs by provider label (case-insensitive) then by name
+/// (case-insensitive).
+List<LlmConfig> _sortedGrouped(List<LlmConfig> configs) {
+  return List<LlmConfig>.of(configs)
+    ..sort((LlmConfig a, LlmConfig b) {
+      final int groupCmp = a.providerLabel
+          .toLowerCase()
+          .compareTo(b.providerLabel.toLowerCase());
+      if (groupCmp != 0) return groupCmp;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
 }

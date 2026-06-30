@@ -5,9 +5,10 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:flutter/material.dart' as _i7;
-import 'package:flutter_bloc/flutter_bloc.dart' as _i6;
+import 'package:flutter/material.dart' as _i8;
+import 'package:flutter_bloc/flutter_bloc.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart'
     as _i4;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
@@ -125,6 +126,29 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
     Invocation.method(#previousImage, []),
     returnValueForMissingStub: null,
   );
+
+  @override
+  void setGuidanceEnabled(bool? enabled) => super.noSuchMethod(
+    Invocation.method(#setGuidanceEnabled, [enabled]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void setGuidance(String? imagePath, String? text) => super.noSuchMethod(
+    Invocation.method(#setGuidance, [imagePath, text]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  String guidanceFor(String? imagePath) =>
+      (super.noSuchMethod(
+            Invocation.method(#guidanceFor, [imagePath]),
+            returnValue: _i6.dummyValue<String>(
+              this,
+              Invocation.method(#guidanceFor, [imagePath]),
+            ),
+          )
+          as String);
 
   @override
   _i5.Future<void> saveChanges() =>
@@ -354,7 +378,7 @@ class MockImageListCubit extends _i1.Mock implements _i2.ImageListCubit {
   );
 
   @override
-  void onChange(_i6.Change<_i2.ImageListState>? change) => super.noSuchMethod(
+  void onChange(_i7.Change<_i2.ImageListState>? change) => super.noSuchMethod(
     Invocation.method(#onChange, [change]),
     returnValueForMissingStub: null,
   );
@@ -444,7 +468,7 @@ class MockImageOperationsCubit extends _i1.Mock
       );
 
   @override
-  _i5.Future<void> cropCurrentImage(_i7.BuildContext? context) =>
+  _i5.Future<void> cropCurrentImage(_i8.BuildContext? context) =>
       (super.noSuchMethod(
             Invocation.method(#cropCurrentImage, [context]),
             returnValue: _i5.Future<void>.value(),
@@ -459,7 +483,7 @@ class MockImageOperationsCubit extends _i1.Mock
   );
 
   @override
-  void onChange(_i6.Change<_i3.ImageOperationsState>? change) =>
+  void onChange(_i7.Change<_i3.ImageOperationsState>? change) =>
       super.noSuchMethod(
         Invocation.method(#onChange, [change]),
         returnValueForMissingStub: null,

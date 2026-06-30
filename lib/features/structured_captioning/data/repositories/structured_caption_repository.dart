@@ -17,6 +17,7 @@ import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
 import '../services/sam_process_service.dart';
 import '../services/structured_prompt_loader.dart';
+import '../utils/caption_hardening.dart';
 
 /// Orchestrates the structured captioning pipeline:
 /// global palette → VLM analysis → SAM detection → bbox matching → element
@@ -54,6 +55,8 @@ class StructuredCaptionRepository {
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
+    bool vlmEmitsXyxy = true,
+    String guidance = '',
   }) async {
     // Step 1: Global color palette.
     onProgress('Extracting color palette...');
@@ -66,7 +69,11 @@ class StructuredCaptionRepository {
 
     // Step 2: VLM analysis.
     onProgress('Analyzing image with VLM...');
-    final String prompt = await _buildVisionPrompt(imageFile);
+    // `/no_think` prefix keeps reasoning models from burning the token budget
+    // on an internal <think> block; harmless for models that don't recognize it.
+    final String prompt = injectNoThink(
+      await _buildVisionPrompt(imageFile, guidance, vlmEmitsXyxy: vlmEmitsXyxy),
+    );
     final String vlmRawResponse = await _captionService.getCaption(
       config,
       imageFile,
@@ -79,7 +86,26 @@ class StructuredCaptionRepository {
       // exceeded.
       maxTokens: 8192,
     );
-    final VlmAnalysis analysis = _parseVlmResponse(vlmRawResponse);
+    // Strip any <think>...</think> the model emitted before its final answer.
+    final String vlmCleaned = stripThinking(vlmRawResponse);
+    final VlmAnalysis analysis = await _parseVlmResponseWithRepair(
+      vlmCleaned,
+      config,
+      vlmEmitsXyxy: vlmEmitsXyxy,
+    );
+
+    // Cheap structural health check before spending SAM + palette work on a
+    // refusal / empty / degenerate output. Fatal issues abort the image
+    // (retryable); soft issues are logged.
+    final List<String> healthIssues = captionHealthIssues(analysis);
+    if (hasFatalHealthIssue(healthIssues)) {
+      throw FormatException(
+        'VLM produced unusable output: ${healthIssues.join('; ')}',
+      );
+    }
+    for (final String issue in healthIssues) {
+      _logger.warning('Caption health issue for ${imageFile.path}: $issue');
+    }
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
 
     // Step 3: SAM3 detection (skip group elements — SAM detects individuals).
@@ -367,11 +393,36 @@ class StructuredCaptionRepository {
 
   /// Builds the vision-analysis prompt, injecting the image's real aspect
   /// ratio so the VLM sizes bboxes correctly (a `[0,0,500,500]` box is square
-  /// only on a square frame).
-  Future<String> _buildVisionPrompt(File imageFile) async {
+  /// only on a square frame). When [guidance] is non-empty it is appended as
+  /// an authoritative per-image instruction block that overrides the base
+  /// rules — letting the user name a subject, force a split, or skip an
+  /// attribute for this one image.
+  Future<String> _buildVisionPrompt(
+    File imageFile,
+    String guidance, {
+    bool vlmEmitsXyxy = true,
+  }) async {
     final String template = await _promptLoader.loadVisionAnalysisPrompt();
     final String aspectRatio = await _aspectRatioOfFile(imageFile);
-    return template.replaceAll('{{aspect_ratio}}', aspectRatio);
+    // Ask the VLM for whichever bbox order it actually emits well. The stored
+    // Ideogram4 JSON is always yxyx — the normalizer reinterprets the response
+    // using the same flag, so asking + interpreting must agree here.
+    final String bboxOrder =
+        vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
+    String prompt = template
+        .replaceAll('{{aspect_ratio}}', aspectRatio)
+        .replaceAll('{{bbox_order}}', bboxOrder);
+    if (guidance.trim().isNotEmpty) {
+      prompt +=
+          '\n\n## PER-IMAGE USER GUIDANCE (authoritative)\n'
+          'The instructions below are supplied by the user for THIS specific '
+          'image. Follow them exactly. Where they conflict with the rules '
+          'above, this guidance takes precedence — for example you MAY emit '
+          'a part, prop, or held object as its own separate element, or omit '
+          'attributes the user tells you to skip.\n\n'
+          'USER GUIDANCE:\n$guidance';
+    }
+    return prompt;
   }
 
   /// Computes a clean `W:H` aspect-ratio string for [imageFile], snapped to a
@@ -663,7 +714,7 @@ class StructuredCaptionRepository {
   /// Strips markdown code fences and handles common JSON formatting issues
   /// (stray preamble, trailing prose). On total failure throws so the caller
   /// can retry with a simplified prompt.
-  VlmAnalysis _parseVlmResponse(String raw) {
+  VlmAnalysis _parseVlmResponse(String raw, {bool vlmEmitsXyxy = true}) {
     final String? jsonStr = _extractJsonObject(raw);
     if (jsonStr == null) {
       _logger.warning('Failed to parse VLM response: no JSON object found');
@@ -675,11 +726,46 @@ class StructuredCaptionRepository {
     try {
       final Map<String, dynamic> json =
           jsonDecode(jsonStr) as Map<String, dynamic>;
-      return parseAnalysisJson(json);
+      return parseAnalysisJson(json, vlmEmitsXyxy: vlmEmitsXyxy);
     } catch (e) {
       _logger.warning('Failed to parse VLM response: $e');
       _logger.fine('Raw response was: $raw');
       throw FormatException('Failed to parse VLM JSON response: $e');
+    }
+  }
+
+  /// Parses the VLM response into a [VlmAnalysis], retrying once via a
+  /// JSON-repair LLM call when the first parse fails. Repair is text-only and
+  /// unavailable for local MLX providers — in that case the original parse
+  /// error is rethrown so the image is marked failed and stays retryable.
+  Future<VlmAnalysis> _parseVlmResponseWithRepair(
+    String raw,
+    LlmConfig config, {
+    bool vlmEmitsXyxy = true,
+  }) async {
+    try {
+      return _parseVlmResponse(raw, vlmEmitsXyxy: vlmEmitsXyxy);
+    } on FormatException catch (firstError) {
+      _logger.warning(
+        'VLM JSON parse failed; attempting model-side repair: $firstError',
+      );
+      try {
+        final String repaired = await _captionService.repairJson(
+          config,
+          raw,
+          maxTokens: 8192,
+        );
+        return _parseVlmResponse(
+          stripThinking(repaired),
+          vlmEmitsXyxy: vlmEmitsXyxy,
+        );
+      } catch (repairError) {
+        _logger.warning('JSON repair retry failed: $repairError');
+        throw FormatException(
+          'Failed to parse VLM JSON response and repair retry failed: '
+          '$firstError',
+        );
+      }
     }
   }
 
@@ -742,13 +828,14 @@ class StructuredCaptionRepository {
   /// Normalizes a raw VLM bbox into the Ideogram `[y1, x1, y2, x2]` 0-1000
   /// format, or returns null when the box is missing/malformed/degenerate.
   ///
-  /// VLMs emit `[x1, y1, x2, y2]` regardless of prompt instructions and
-  /// occasionally produce out-of-range or inverted coordinates. This rounds,
-  /// clamps to [0, 1000], orders the corners, swaps to `[y1, x1, y2, x2]`,
-  /// and drops boxes with zero area so downstream SAM box-prompts, palette
-  /// extraction, and overlays never receive garbage.
+  /// [vlmEmitsXyxy] declares the order the VLM actually emitted: most output
+  /// `[x1, y1, x2, y2]` (the default), some obey the yxyx instruction. Either
+  /// way this rounds, clamps to [0, 1000], orders the corners, reorders to the
+  /// Ideogram `[y1, x1, y2, x2]` format, and drops zero-area boxes so
+  /// downstream SAM box-prompts, palette extraction, and overlays never
+  /// receive garbage. The stored result is always yxyx.
   @visibleForTesting
-  List<int>? normalizeBbox(dynamic raw) {
+  List<int>? normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) {
     if (raw is! List || raw.length != 4) return null;
     final List<int> v;
     try {
@@ -757,10 +844,24 @@ class StructuredCaptionRepository {
       // Non-numeric entries — not a usable bbox.
       return null;
     }
-    int x1 = v[0];
-    int y1 = v[1];
-    int x2 = v[2];
-    int y2 = v[3];
+    // Interpret the four values by the orientation the VLM emitted. The output
+    // is always [y1, x1, y2, x2]; only the input interpretation changes.
+    int x1;
+    int y1;
+    int x2;
+    int y2;
+    if (vlmEmitsXyxy) {
+      x1 = v[0];
+      y1 = v[1];
+      x2 = v[2];
+      y2 = v[3];
+    } else {
+      // VLM obeyed the yxyx instruction: input is [y1, x1, y2, x2].
+      y1 = v[0];
+      x1 = v[1];
+      y2 = v[2];
+      x2 = v[3];
+    }
     if (x2 < x1) {
       final int t = x1;
       x1 = x2;
@@ -776,10 +877,14 @@ class StructuredCaptionRepository {
     return <int>[y1, x1, y2, x2];
   }
 
-  List<int>? _normalizeBbox(dynamic raw) => normalizeBbox(raw);
+  List<int>? _normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) =>
+      normalizeBbox(raw, vlmEmitsXyxy: vlmEmitsXyxy);
 
   @visibleForTesting
-  VlmAnalysis parseAnalysisJson(Map<String, dynamic> json) {
+  VlmAnalysis parseAnalysisJson(
+    Map<String, dynamic> json, {
+    bool vlmEmitsXyxy = true,
+  }) {
     // Parse style.
     final Map<String, dynamic> styleJson =
         json['style'] as Map<String, dynamic>;
@@ -806,11 +911,12 @@ class StructuredCaptionRepository {
         desc: obj['desc'] as String? ?? '',
         type: type,
         text: (obj['text'] as String?) ?? (obj['visible_text'] as String?),
-        // VLMs return [x1, y1, x2, y2] regardless of prompt instructions.
-        // Normalize: round, clamp to [0,1000], enforce ordering, swap to the
-        // Ideogram [y1, x1, y2, x2] format. Degenerate boxes become null so
-        // they don't poison SAM box-prompts, palette extraction, or overlays.
-        bbox: _normalizeBbox(obj['bbox']),
+        // VLMs mostly return [x1, y1, x2, y2]; some obey the yxyx instruction.
+        // [vlmEmitsXyxy] tells the normalizer how to interpret the four values.
+        // Either way the stored Ideogram format is [y1, x1, y2, x2]; degenerate
+        // boxes become null so they don't poison SAM box-prompts, palette
+        // extraction, or overlays.
+        bbox: _normalizeBbox(obj['bbox'], vlmEmitsXyxy: vlmEmitsXyxy),
       );
     }).toList();
 

@@ -46,6 +46,13 @@ void main() {
     setUp(() {
       mockImageListCubit = MockImageListCubit();
       mockRepository = MockStructuredCaptionRepository();
+      // guidanceFor defaults to '' so the cubit passes the default `guidance`
+      // value, keeping the existing omit-the-named-arg stub/verify matchers valid.
+      when(mockImageListCubit.guidanceFor(any)).thenReturn('');
+      // The captioner now reads the displayed image once to broadcast its
+      // guidance across a batch run. Default to null so broadcast no-ops here;
+      // tests that exercise guidance stub this explicitly.
+      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
       cubit = StructuredCaptioningCubit(
         mockImageListCubit,
         repository: mockRepository,
@@ -314,6 +321,68 @@ void main() {
       expect(cubit.state.processedImages, 2);
       expect(cubit.state.totalImages, 2);
       expect(cubit.state.progress, 1.0);
+    });
+
+    test(
+        'broadcasts the displayed image guidance to every image in a batch run',
+        () async {
+      // Regression: guidance used to be strict per-path, so only the image it
+      // was keyed to received it during Run-All. The displayed image's guidance
+      // must now cover every image in the batch.
+      final AppImage image1 = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final AppImage image2 = AppImage(
+        id: '2',
+        image: File('img2.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+
+      when(mockImageListCubit.state).thenReturn(
+        ImageListState(
+          images: <AppImage>[image1, image2],
+          folderPath: '/tmp',
+        ),
+      );
+      // Displayed image (image1) carries guidance; image2 has none of its own.
+      when(mockImageListCubit.currentDisplayedImage).thenReturn(image1);
+      when(
+        mockImageListCubit.guidanceFor(image1.image.path),
+      ).thenReturn('NAME IT MIRA');
+      when(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+        ),
+      ).thenAnswer((_) async => fakeCaption());
+
+      await cubit.runStructuredCaptioner(
+        llm: llmConfig(),
+        option: CaptionOptions.all,
+      );
+
+      // Both images receive image1's broadcast guidance.
+      verify(
+        mockRepository.generateStructuredCaption(
+          any,
+          argThat(equals(image1.image)),
+          onProgress: anyNamed('onProgress'),
+          guidance: 'NAME IT MIRA',
+        ),
+      ).called(1);
+      verify(
+        mockRepository.generateStructuredCaption(
+          any,
+          argThat(equals(image2.image)),
+          onProgress: anyNamed('onProgress'),
+          guidance: 'NAME IT MIRA',
+        ),
+      ).called(1);
     });
 
     test('cancelStructuredCaptioning sets isCancelling', () {

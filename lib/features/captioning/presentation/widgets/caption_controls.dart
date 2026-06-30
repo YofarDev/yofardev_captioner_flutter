@@ -19,6 +19,7 @@ import '../../logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../logic/batch_apply/batch_json_apply_state.dart';
 import '../../logic/captioning_cubit.dart';
 import '../widgets/batch_json_apply_dialog.dart';
+import 'guidance_dialog.dart';
 
 class CaptionControls extends StatefulWidget {
   const CaptionControls({super.key});
@@ -351,6 +352,60 @@ class _CaptionControlsState extends State<CaptionControls> {
     },
   );
 
+  Widget _buildGuidanceToggle(
+    BuildContext context,
+    ImageListState imageListState,
+  ) {
+    final bool enabled = imageListState.guidanceEnabled;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(
+            'Guidance',
+            style: TextStyle(
+              color: enabled ? textPrimary : textMuted,
+              fontSize: 12,
+            ),
+          ),
+          IconButton(
+            tooltip: 'Edit per-image guidance',
+            icon: Icon(
+              Icons.tune,
+              size: 16,
+              color: enabled ? lightPink : textMuted,
+            ),
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(),
+            onPressed: () => showDialog<void>(
+              context: context,
+              // The dialog is inserted into the navigator overlay, which sits
+              // above the BlocProvider tree — so re-provide the existing cubit
+              // instance into the dialog subtree.
+              builder: (BuildContext _) => BlocProvider<ImageListCubit>.value(
+                value: context.read<ImageListCubit>(),
+                child: const GuidanceDialog(),
+              ),
+            ),
+          ),
+          Switch(
+            value: enabled,
+            onChanged: (bool v) =>
+                context.read<ImageListCubit>().setGuidanceEnabled(v),
+            activeThumbColor: lightPink,
+            activeTrackColor: lightPink.withValues(alpha: 0.35),
+            inactiveThumbColor: textSecondary,
+            inactiveTrackColor: hairline,
+            trackOutlineColor:
+                WidgetStateProperty.all<Color>(Colors.transparent),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRunRow({
     required BuildContext context,
     required ImageListState imageListState,
@@ -385,6 +440,8 @@ class _CaptionControlsState extends State<CaptionControls> {
           _buildJsonContextControl(imageListState),
           const SizedBox(width: 12),
         ],
+        _buildGuidanceToggle(context, imageListState),
+        const SizedBox(width: 12),
         GestureDetector(
           onSecondaryTap: () {
             if (!isInProgress) {
@@ -428,6 +485,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                                   : null,
                               debugMode: configState.llmConfigs.debugMode,
                               disableSam: configState.llmConfigs.disableSam,
+                              vlmEmitsXyxy: configState.llmConfigs.vlmEmitsXyxy,
                               scopeToFiltered: scoped,
                             );
                       } else {

@@ -33,6 +33,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
+    bool vlmEmitsXyxy = true,
     bool scopeToFiltered = false,
   }) async {
     _cancelCompleter = Completer<void>();
@@ -97,6 +98,15 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     int processed = 0;
     final List<String> errors = <String>[];
 
+    // Broadcast the displayed image's guidance to every image in the run so a
+    // single guidance entry covers a whole filtered Run-All instead of only
+    // the image it was keyed to. For the "current" option the source IS the
+    // processed image, so behavior there is unchanged.
+    final AppImage? guidanceSource = _imageListCubit.currentDisplayedImage;
+    final String runGuidance = guidanceSource == null
+        ? ''
+        : _imageListCubit.guidanceFor(guidanceSource.image.path);
+
     for (final AppImage image in imagesToProcess) {
       // Check cancellation.
       if (_cancelCompleter?.isCompleted ?? false) {
@@ -131,6 +141,8 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
               overrides: overrides,
               debugMode: debugMode,
               disableSam: disableSam,
+              vlmEmitsXyxy: vlmEmitsXyxy,
+              guidance: runGuidance,
             );
 
         // Store JSON string as caption in active category.

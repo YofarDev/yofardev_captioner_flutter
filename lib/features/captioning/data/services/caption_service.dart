@@ -76,6 +76,27 @@ class CaptionService {
     return _getRemoteRewrite(config, currentCaption, instructions);
   }
 
+  /// Asks the model to repair malformed JSON emitted by another (vision) model
+  /// — a second-chance pass used by the structured-captioning pipeline when the
+  /// VLM response fails to parse. Text-only (no image). Returns the repaired
+  /// raw text; the caller parses it.
+  ///
+  /// Local MLX is vision-only and unsupported (throws), mirroring
+  /// [rewriteCaption]. The caller is expected to catch and fall back to the
+  /// original parse error when this is unavailable.
+  Future<String> repairJson(
+    LlmConfig config,
+    String brokenOutput, {
+    int? maxTokens,
+  }) {
+    if (config.providerType == LlmProviderType.localMlx) {
+      throw ApiException(
+        'JSON repair requires a remote (API) provider; local MLX is vision-only.',
+      );
+    }
+    return _getRemoteRepair(config, brokenOutput, maxTokens: maxTokens);
+  }
+
   Future<String> _getLocalCaption(
     LlmConfig config,
     File image,
@@ -281,6 +302,81 @@ class CaptionService {
         'Failed to rewrite caption (${response.statusCode}): ${response.body}',
       );
     }
+  }
+
+  Future<String> _getRemoteRepair(
+    LlmConfig config,
+    String brokenOutput, {
+    int? maxTokens,
+  }) async {
+    if (config.url == null || config.apiKey == null) {
+      throw ApiException('URL and API Key are required for remote providers.');
+    }
+
+    const String systemPrompt =
+        'You repair malformed JSON emitted by another model.\n'
+        'Return exactly one compact valid JSON object. No markdown. No '
+        'commentary.\n'
+        'Preserve the original content and field names whenever possible.\n'
+        'If the response contains extra prose, remove the prose.\n'
+        'If the response is truncated or impossible to fully repair, return '
+        'the most complete valid object that preserves the usable content.';
+
+    // Cap the broken payload so a runaway VLM output can't blow the context
+    // window — keep the head and tail where the structural damage usually is.
+    final String trimmed = _capForRepair(brokenOutput);
+    final String userPrompt =
+        'The model response below was supposed to be a structured '
+        'image-caption JSON object.\n\n'
+        'Repair the response into one valid JSON object.\n\n'
+        'Model response:\n$trimmed';
+
+    final CaptionRequest request = CaptionRequest(
+      model: config.model,
+      maxTokens: maxTokens,
+      messages: <Message>[
+        Message(
+          role: 'system',
+          content: <Content>[Content(type: 'text', text: systemPrompt)],
+        ),
+        Message(
+          role: 'user',
+          content: <Content>[Content(type: 'text', text: userPrompt)],
+        ),
+      ],
+    );
+
+    final String url = buildUrl(config.url!);
+
+    final http.Response response = await _httpClient.post(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == 200) {
+      return _parseChatResponse(response);
+    } else {
+      _logger.severe('Error response: ${response.body}');
+      throw ApiException(
+        'Failed to repair JSON (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
+  /// Trims a broken model output to at most [limit] chars, keeping head + tail
+  /// (where JSON structural damage tends to sit) and dropping the middle.
+  String _capForRepair(String output, {int limit = 24000}) {
+    final String trimmed = output.trim();
+    if (trimmed.length <= limit) return trimmed;
+    final int half = limit ~/ 2;
+    return '${trimmed.substring(0, half).trim()}\n\n'
+        '... [middle omitted for JSON repair] ...\n\n'
+        '${trimmed.substring(trimmed.length - half).trim()}';
   }
 
   /// Parses a chat completions 200 response into the assistant message text.

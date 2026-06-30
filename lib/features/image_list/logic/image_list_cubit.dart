@@ -195,6 +195,32 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(currentImageId: displayed[previousIndex].id));
   }
 
+  /// Toggles global guidance injection (applies to both captioning paths).
+  void setGuidanceEnabled(bool enabled) {
+    emit(state.copyWith(guidanceEnabled: enabled));
+  }
+
+  /// Sets the ephemeral per-image guidance string. An empty [text] clears the
+  /// entry for [imagePath] so the map doesn't grow unbounded.
+  void setGuidance(String imagePath, String text) {
+    final Map<String, String> next =
+        Map<String, String>.from(state.imageGuidance);
+    if (text.isEmpty) {
+      next.remove(imagePath);
+    } else {
+      next[imagePath] = text;
+    }
+    emit(state.copyWith(imageGuidance: next));
+  }
+
+  /// Returns the guidance string to inject for [imagePath], or '' when
+  /// guidance is disabled or unset for that image. Centralizes the
+  /// enabled-and-nonempty check so both captioning cubits stay in sync.
+  String guidanceFor(String imagePath) {
+    if (!state.guidanceEnabled) return '';
+    return state.imageGuidance[imagePath] ?? '';
+  }
+
   Future<void> saveChanges() async {
     await _saveDb();
   }

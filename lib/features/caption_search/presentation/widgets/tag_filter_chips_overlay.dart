@@ -118,54 +118,47 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
       link: widget.link,
       targetAnchor: Alignment.bottomLeft,
       offset: const Offset(0, 4),
-      // UnconstrainedBox detaches the panel from the overlay's full-screen
-      // constraints so it shrinks to its own content; ConstrainedBox caps it.
+      // No SingleChildScrollView: its drag recognizer (~2px mouse slop)
+      // canceled chip taps on every real click (onTapDown -> onTapCancel).
+      // The Wrap sizes to content; UnconstrainedBox keeps it compact.
       child: UnconstrainedBox(
         alignment: Alignment.topLeft,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 320, maxHeight: 240),
+          constraints: const BoxConstraints(maxWidth: 320),
           child: Material(
             elevation: 8,
             borderRadius: BorderRadius.circular(8),
             color: darkGrey,
             child: Container(
               key: const Key('tagFilterChipsOverlay'),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Padding(
-                    padding: EdgeInsets.fromLTRB(12, 8, 12, 4),
-                    child: Text(
-                      'FILTER BY TAG',
-                      style: TextStyle(
-                        fontFamily: 'Orbitron',
-                        fontSize: 10,
-                        color: lightPink,
-                        letterSpacing: 0.8,
-                      ),
+                  const Text(
+                    'FILTER BY TAG',
+                    style: TextStyle(
+                      fontFamily: 'Orbitron',
+                      fontSize: 10,
+                      color: lightPink,
+                      letterSpacing: 0.8,
                     ),
                   ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
-                        child: Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: _chips
-                              .map(
-                                (_ChipData chip) => _TagChip(
-                                  key: ValueKey<String>('tagChip-${chip.label}'),
-                                  label: chip.label,
-                                  active: chip.active,
-                                  onTap: () => widget.onToggle(chip.label),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _chips
+                        .map(
+                          (_ChipData chip) => _TagChip(
+                            key: ValueKey<String>('tagChip-${chip.label}'),
+                            label: chip.label,
+                            active: chip.active,
+                            onTap: () => widget.onToggle(chip.label),
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
               ),

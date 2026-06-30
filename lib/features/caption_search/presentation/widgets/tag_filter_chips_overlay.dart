@@ -114,6 +114,7 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[TAGCHIP] _ChipsDropdown build');
     return CompositedTransformFollower(
       link: widget.link,
       targetAnchor: Alignment.bottomLeft,
@@ -198,6 +199,7 @@ class _TagChipState extends State<_TagChip> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[TAGCHIP] _TagChip build (label=${widget.label})');
     final bool showHover = _hovered && !widget.active;
     final Color background = widget.active
         ? pinkSurface

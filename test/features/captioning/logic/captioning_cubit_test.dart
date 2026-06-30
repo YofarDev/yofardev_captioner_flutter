@@ -849,5 +849,165 @@ void main() {
         );
       });
     });
+
+    test(
+      'runCaptioner appends JSON context to prompt when jsonContextCategory has a caption',
+      () async {
+        final AppImage image = AppImage(
+          id: '1',
+          image: File('img.jpg'),
+          captions: const <String, CaptionEntry>{
+            'json': CaptionEntry(text: '{"scene": "forest"}'),
+          },
+        );
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
+        );
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
+          (Invocation invocation) async =>
+              invocation.positionalArguments[1] as AppImage,
+        );
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        await captioningCubit.runCaptioner(
+          llm: llmConfig,
+          prompt: 'Describe this image.',
+          option: CaptionOptions.all,
+          jsonContextCategory: 'json',
+        );
+
+        verify(
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            image,
+            'Describe this image.\n\n'
+                'Existing structured analysis of this image (JSON), use as reference:\n'
+                '{"scene": "forest"}',
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'runCaptioner uses plain prompt when jsonContextCategory caption is empty',
+      () async {
+        final AppImage image = AppImage(
+          id: '1',
+          image: File('img.jpg'),
+          captions: const <String, CaptionEntry>{
+            'json': CaptionEntry(text: ''),
+          },
+        );
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
+        );
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
+          (Invocation invocation) async =>
+              invocation.positionalArguments[1] as AppImage,
+        );
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        await captioningCubit.runCaptioner(
+          llm: llmConfig,
+          prompt: 'Describe this image.',
+          option: CaptionOptions.all,
+          jsonContextCategory: 'json',
+        );
+
+        verify(
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            image,
+            'Describe this image.',
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'runCaptioner without jsonContextCategory passes prompt unchanged',
+      () async {
+        final AppImage image = AppImage(
+          id: '1',
+          image: File('img.jpg'),
+          captions: const <String, CaptionEntry>{
+            'json': CaptionEntry(text: '{"scene": "forest"}'),
+          },
+        );
+
+        when(mockImageListCubit.state).thenReturn(
+          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
+        );
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer(
+          (Invocation invocation) async =>
+              invocation.positionalArguments[1] as AppImage,
+        );
+
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+
+        await captioningCubit.runCaptioner(
+          llm: llmConfig,
+          prompt: 'Describe this image.',
+          option: CaptionOptions.all,
+        );
+
+        verify(
+          mockCaptioningRepository.captionImage(
+            llmConfig,
+            image,
+            'Describe this image.',
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).called(1);
+      },
+    );
   });
 }

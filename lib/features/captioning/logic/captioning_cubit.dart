@@ -31,6 +31,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     required String prompt,
     required CaptionOptions option,
     bool scopeToFiltered = false,
+    String? jsonContextCategory,
   }) async {
     // Reset or create cancel token.
     _cancelToken = CancelToken();
@@ -130,10 +131,19 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
+        final String jsonContext =
+            jsonContextCategory == null
+                ? ''
+                : (image.captions[jsonContextCategory]?.text ?? '');
+        final String effectivePrompt = jsonContext.isEmpty
+            ? prompt
+            : '$prompt\n\n'
+                'Existing structured analysis of this image (JSON), use as reference:\n'
+                '$jsonContext';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,
-          prompt,
+          effectivePrompt,
           category: category,
           cancelToken: _cancelToken,
         );

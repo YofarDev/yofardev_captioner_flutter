@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -38,6 +40,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   AutocompleteEngine? _autocompleteEngine;
   OverlayEntry? _suggestionsOverlay;
   OverlayEntry? _chipsOverlay;
+  StreamSubscription<CaptionSearchState>? _cubitSub;
 
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const double _searchBarWidth = 250.0;
@@ -103,7 +106,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   }
 
   void _setupCubitStateListener() {
-    context.read<CaptionSearchCubit>().stream.listen((
+    _cubitSub = context.read<CaptionSearchCubit>().stream.listen((
       CaptionSearchState state,
     ) {
       if (!mounted) return;
@@ -123,6 +126,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   @override
   void dispose() {
+    _cubitSub?.cancel();
     _dismissSuggestions();
     _dismissTagChips();
     _textController.removeListener(_onTextChangedForAutocomplete);

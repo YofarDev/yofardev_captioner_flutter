@@ -218,7 +218,10 @@ class _TagChipState extends State<_TagChip> {
       onExit: (PointerExitEvent _) => setState(() => _hovered = false),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onTap,
+        onTap: () {
+          debugPrint('[TAGCHIP] onTap fired (label=${widget.label})');
+          widget.onTap();
+        },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(

@@ -298,6 +298,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   }
 
   void _toggleTagChip(String tag) {
+    debugPrint('[TAGCHIP] _toggleTagChip entered (tag=$tag)');
     final String current = _textController.text;
     final bool isActive = _activeTagSet().contains(tag.toLowerCase());
     final String next = isActive

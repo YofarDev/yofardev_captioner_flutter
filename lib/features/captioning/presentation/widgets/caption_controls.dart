@@ -30,6 +30,7 @@ class CaptionControls extends StatefulWidget {
 class _CaptionControlsState extends State<CaptionControls> {
   CaptionOptions _selectedOption = CaptionOptions.values.first;
   bool _scopeToFiltered = false;
+  String? _jsonContextCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -221,6 +222,67 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
+  Widget _buildJsonContextControl(ImageListState imageState) {
+    final List<String> otherCategories = imageState.categories
+        .where((String c) => c != (imageState.activeCategory ?? 'default'))
+        .toList(growable: false);
+    if (otherCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Theme(
+            data: Theme.of(context).copyWith(
+              unselectedWidgetColor: lightPink.withAlpha(120),
+            ),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: Checkbox(
+                value: _jsonContextCategory != null,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _jsonContextCategory =
+                        (value ?? false) ? otherCategories.first : null;
+                  });
+                },
+                activeColor: lightPink,
+                checkColor: Colors.black,
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            'JSON context:',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withAlpha(220),
+            ),
+          ),
+          const SizedBox(width: 6),
+          DropdownButton<String?>(
+            value: _jsonContextCategory,
+            underline: const SizedBox.shrink(),
+            dropdownColor: panelRaised,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+            items: <DropdownMenuItem<String?>>[
+              const DropdownMenuItem<String?>(child: Text('None')),
+              for (final String c in otherCategories)
+                DropdownMenuItem<String?>(value: c, child: Text(c)),
+            ],
+            onChanged: (String? value) {
+              setState(() => _jsonContextCategory = value);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRunButton({
     required int count,
   }) => BlocBuilder<ImageListCubit, ImageListState>(
@@ -311,6 +373,10 @@ class _CaptionControlsState extends State<CaptionControls> {
           _buildScopeToFilteredCheckbox(imageListState),
           const SizedBox(width: 12),
         ],
+        if (!isIdeogram) ...<Widget>[
+          _buildJsonContextControl(imageListState),
+          const SizedBox(width: 12),
+        ],
         GestureDetector(
           onSecondaryTap: () {
             if (!isInProgress) {
@@ -362,6 +428,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                           prompt: configState.llmConfigs.selectedPrompt!,
                           option: _selectedOption,
                           scopeToFiltered: scoped,
+                          jsonContextCategory: _jsonContextCategory,
                         );
                       }
                     }

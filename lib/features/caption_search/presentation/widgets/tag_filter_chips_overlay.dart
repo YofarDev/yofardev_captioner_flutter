@@ -102,6 +102,7 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
 
   @override
   void dispose() {
+    debugPrint('[TAGCHIP] _ChipsDropdown dispose');
     widget.notifier.removeListener(_onChanged);
     super.dispose();
   }
@@ -196,6 +197,12 @@ class _TagChip extends StatefulWidget {
 
 class _TagChipState extends State<_TagChip> {
   bool _hovered = false;
+
+  @override
+  void dispose() {
+    debugPrint('[TAGCHIP] _TagChip dispose (label=${widget.label})');
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

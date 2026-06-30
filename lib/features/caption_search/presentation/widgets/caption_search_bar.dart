@@ -59,6 +59,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _onFocusChanged() {
     if (!mounted) return;
+    debugPrint('[TAGCHIP] _onFocusChanged hasFocus=${_focusNode.hasFocus}');
     _syncTagChipsOverlay(context.read<CaptionSearchCubit>().state);
   }
 
@@ -256,6 +257,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _syncTagChipsOverlay(CaptionSearchState state) {
     final bool should = _shouldShowTagChips(state);
+    debugPrint('[TAGCHIP] _syncTagChipsOverlay should=$should');
     if (!should) {
       _dismissTagChips();
       return;
@@ -282,6 +284,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _dismissTagChips() {
     if (_chipsOverlay != null) {
+      debugPrint('[TAGCHIP] _dismissTagChips (removing overlay)');
       TagFilterChipsOverlay.remove(_chipsOverlay!);
       _chipsOverlay = null;
     }

@@ -231,9 +231,27 @@ void main() {
       expect(find.text('mountain'), findsOneWidget);
     });
 
-    testWidgets('removes the chips overlay when the field loses focus', (
+    testWidgets('removes the chips overlay when the search bar collapses', (
       WidgetTester tester,
     ) async {
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
+
+      // Chips are gated on isExpanded (not focus), so collapsing dismisses.
+      captionSearchCubit.toggleExpanded();
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
+    });
+
+    testWidgets('keeps the chips overlay when the field loses focus', (
+      WidgetTester tester,
+    ) async {
+      // Regression: a focus flutter while clicking a chip must NOT tear the
+      // overlay down mid-tap (that caused onTapDown -> onTapCancel). Chips
+      // persist while the bar is expanded, regardless of momentary focus.
       await pumpBar(tester);
       await tester.tap(find.byType(TextField).first);
       await tester.pumpAndSettle();
@@ -242,7 +260,7 @@ void main() {
       FocusManager.instance.primaryFocus?.unfocus();
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
+      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
     });
 
     testWidgets('hides the chips overlay while typing a structured :filter: query', (

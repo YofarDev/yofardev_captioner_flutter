@@ -54,13 +54,6 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     _setupCubitStateListener();
     _setupKeyHandler();
     _textController.addListener(_onTextChangedForAutocomplete);
-    _focusNode.addListener(_onFocusChanged);
-  }
-
-  void _onFocusChanged() {
-    if (!mounted) return;
-    debugPrint('[TAGCHIP] _onFocusChanged hasFocus=${_focusNode.hasFocus}');
-    _syncTagChipsOverlay(context.read<CaptionSearchCubit>().state);
   }
 
   void _setupKeyHandler() {
@@ -246,7 +239,10 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   }
 
   bool _shouldShowTagChips(CaptionSearchState state) {
-    if (!state.isExpanded || !_focusNode.hasFocus) return false;
+    // Gate on `isExpanded`, NOT `_focusNode.hasFocus`: clicking a chip blurs
+    // the field (desktop focus behavior), and a focus-gated overlay would be
+    // torn down mid-tap -> onTapCancel. Expanded is the stable signal.
+    if (!state.isExpanded) return false;
     // Hide chips while the user is typing structured :filter: syntax — the
     // autocomplete overlay covers that path and renders the same tag values,
     // so showing both would collide (e.g. two `Text('sunset')`). `#value`
@@ -257,7 +253,6 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _syncTagChipsOverlay(CaptionSearchState state) {
     final bool should = _shouldShowTagChips(state);
-    debugPrint('[TAGCHIP] _syncTagChipsOverlay should=$should');
     if (!should) {
       _dismissTagChips();
       return;
@@ -284,7 +279,6 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   void _dismissTagChips() {
     if (_chipsOverlay != null) {
-      debugPrint('[TAGCHIP] _dismissTagChips (removing overlay)');
       TagFilterChipsOverlay.remove(_chipsOverlay!);
       _chipsOverlay = null;
     }
@@ -301,7 +295,6 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   }
 
   void _toggleTagChip(String tag) {
-    debugPrint('[TAGCHIP] _toggleTagChip entered (tag=$tag)');
     final String current = _textController.text;
     final bool isActive = _activeTagSet().contains(tag.toLowerCase());
     final String next = isActive

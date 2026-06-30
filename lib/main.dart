@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
@@ -15,9 +14,6 @@ import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // TEMP DEBUG: dump gesture-arena resolution for every pointer so we can see
-  // what cancels tag-chip taps live. Remove once diagnosed.
-  debugPrintGestureArenaDiagnostics = true;
   setupLocator();
 
   if (!Platform.isAndroid && !Platform.isIOS) {

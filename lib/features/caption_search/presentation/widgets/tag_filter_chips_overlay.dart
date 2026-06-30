@@ -102,7 +102,6 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
 
   @override
   void dispose() {
-    debugPrint('[TAGCHIP] _ChipsDropdown dispose');
     widget.notifier.removeListener(_onChanged);
     super.dispose();
   }
@@ -115,7 +114,6 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[TAGCHIP] _ChipsDropdown build');
     return CompositedTransformFollower(
       link: widget.link,
       targetAnchor: Alignment.bottomLeft,
@@ -199,14 +197,7 @@ class _TagChipState extends State<_TagChip> {
   bool _hovered = false;
 
   @override
-  void dispose() {
-    debugPrint('[TAGCHIP] _TagChip dispose (label=${widget.label})');
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    debugPrint('[TAGCHIP] _TagChip build (label=${widget.label})');
     final bool showHover = _hovered && !widget.active;
     final Color background = widget.active
         ? pinkSurface
@@ -224,14 +215,7 @@ class _TagChipState extends State<_TagChip> {
       onExit: (PointerExitEvent _) => setState(() => _hovered = false),
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTapDown: (TapDownDetails d) =>
-            debugPrint('[TAGCHIP] onTapDown (label=${widget.label})'),
-        onTapCancel: () =>
-            debugPrint('[TAGCHIP] onTapCancel (label=${widget.label})'),
-        onTap: () {
-          debugPrint('[TAGCHIP] onTap fired (label=${widget.label})');
-          widget.onTap();
-        },
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(

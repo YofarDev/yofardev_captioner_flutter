@@ -272,6 +272,31 @@ void main() {
         find.byType(TextField).first,
       );
       expect(field.controller!.text, '#sunset');
+      // Proves the full filter wire, not just the controller text:
+      // tap -> CaptionSearchCubit -> ImageListCubit.updateSearchQuery.
+      verify(mockImageListCubit.updateSearchQuery('#sunset')).called(1);
+    });
+
+    testWidgets('tapping a chip on its padding (not the text) toggles', (
+      WidgetTester tester,
+    ) async {
+      // Regression: the chip's GestureDetector must be HitTestBehavior.opaque
+      // so the whole chip body is tappable. With deferToChild only the Text
+      // glyphs are hit-testable, so a real click on the padding would miss.
+      await pumpBar(tester);
+      await tester.tap(find.byType(TextField).first);
+      await tester.pumpAndSettle();
+
+      // Tap inside the chip's padding, away from the '#' / label glyphs.
+      final Offset topLeft =
+          tester.getTopLeft(find.byKey(const Key('tagChip-sunset')));
+      await tester.tapAt(topLeft + const Offset(4, 2));
+      await tester.pump();
+
+      final TextField field = tester.widget<TextField>(
+        find.byType(TextField).first,
+      );
+      expect(field.controller!.text, '#sunset');
     });
 
     testWidgets('tapping an active chip removes the #tag', (

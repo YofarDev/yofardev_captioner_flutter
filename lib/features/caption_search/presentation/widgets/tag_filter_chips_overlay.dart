@@ -92,7 +92,6 @@ class _ChipsDropdown extends StatefulWidget {
 
 class _ChipsDropdownState extends State<_ChipsDropdown> {
   List<_ChipData> _chips = const <_ChipData>[];
-  String? _hoveredLabel;
 
   @override
   void initState() {
@@ -155,7 +154,16 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
                         child: Wrap(
                           spacing: 6,
                           runSpacing: 6,
-                          children: _chips.map(_buildChip).toList(),
+                          children: _chips
+                              .map(
+                                (_ChipData chip) => _TagChip(
+                                  key: ValueKey<String>('tagChip-${chip.label}'),
+                                  label: chip.label,
+                                  active: chip.active,
+                                  onTap: () => widget.onToggle(chip.label),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ),
                     ),
@@ -168,39 +176,55 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
       ),
     );
   }
+}
 
-  Widget _buildChip(_ChipData chip) {
-    final bool isHovered = _hoveredLabel == chip.label;
-    final Color background = chip.active
+/// A single toggle chip. Owns its own hover state so hovering rebuilds only
+/// this chip, not the whole dropdown (avoids hover jank).
+class _TagChip extends StatefulWidget {
+  const _TagChip({
+    super.key,
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  @override
+  State<_TagChip> createState() => _TagChipState();
+}
+
+class _TagChipState extends State<_TagChip> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool showHover = _hovered && !widget.active;
+    final Color background = widget.active
         ? pinkSurface
-        : (isHovered ? Colors.white.withValues(alpha: 0.06) : panelRaised);
-    final Color border = chip.active ? accentPink : hairline;
-    final Color textColor = chip.active ? lightPink : textPrimary;
-    final Color hashColor = chip.active
+        : (showHover ? Colors.white.withValues(alpha: 0.06) : panelRaised);
+    final Color border = widget.active ? accentPink : hairline;
+    final Color textColor = widget.active ? lightPink : textPrimary;
+    final Color hashColor = widget.active
         ? accentPink
         : textMuted.withValues(alpha: 0.7);
-    final FontWeight weight = chip.active ? FontWeight.w600 : FontWeight.w400;
+    final FontWeight weight = widget.active ? FontWeight.w600 : FontWeight.w400;
 
     return MouseRegion(
       cursor: SystemMouseCursors.click,
-      onEnter: (PointerEnterEvent _) {
-        setState(() {
-          _hoveredLabel = chip.label;
-        });
-      },
-      onExit: (PointerExitEvent _) {
-        setState(() {
-          _hoveredLabel = null;
-        });
-      },
+      onEnter: (PointerEnterEvent _) => setState(() => _hovered = true),
+      onExit: (PointerExitEvent _) => setState(() => _hovered = false),
       child: GestureDetector(
-        onTap: () => widget.onToggle(chip.label),
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 120),
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: border, width: chip.active ? 0.75 : 0.5),
+            border: Border.all(color: border, width: widget.active ? 0.75 : 0.5),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
           child: Row(
@@ -217,7 +241,7 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
               ),
               const SizedBox(width: 2),
               Text(
-                chip.label,
+                widget.label,
                 style: TextStyle(
                   color: textColor,
                   fontSize: 11,

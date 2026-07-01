@@ -83,9 +83,12 @@ void main() {
       expect: () => <ImageOperationsState>[],
       verify: (_) {
         verify(mockHelper.renameAllFiles('/test/folder')).called(1);
+        // Two forced refreshes: one before the rename (so it reconciles with
+        // current disk state, e.g. images deleted outside the app) and one
+        // after to reflect the new names. Dropping the pre-refresh breaks this.
         verify(
           mockImageListCubit.onFolderPicked('/test/folder', force: true),
-        ).called(1);
+        ).called(2);
       },
     );
 

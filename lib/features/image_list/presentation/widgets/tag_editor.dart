@@ -107,19 +107,17 @@ class _TagDialogState extends State<_TagDialog> {
   // Enter/comma split -> setTags normalizes+dedupes+persists in one DB write.
   void _commit() {
     final String value = _controller.text;
-    if (value.trim().isEmpty) return;
     final AppImage? image = widget.cubit.currentDisplayedImage;
-    if (image == null) return;
-    final List<String> parsed = value
-        .split(',')
-        .map((String p) => p.trim())
-        .where((String p) => p.isNotEmpty)
-        .toList();
-    if (parsed.isEmpty) {
-      _controller.clear();
-      return;
+    if (value.trim().isNotEmpty && image != null) {
+      final List<String> parsed = value
+          .split(',')
+          .map((String p) => p.trim())
+          .where((String p) => p.isNotEmpty)
+          .toList();
+      if (parsed.isNotEmpty) {
+        widget.cubit.setTags(<String>[...image.tags, ...parsed]);
+      }
     }
-    widget.cubit.setTags(<String>[...image.tags, ...parsed]);
     Navigator.of(context).pop();
   }
 
@@ -282,7 +280,7 @@ class _TagDialogState extends State<_TagDialog> {
             ),
             actions: <Widget>[
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: _commit,
                 style: TextButton.styleFrom(
                   foregroundColor: lightPink,
                   minimumSize: const Size(56, 30),

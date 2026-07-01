@@ -144,7 +144,10 @@ class CaptionService {
         final Match? match = regex.firstMatch(output);
 
         if (match != null && match.groupCount >= 1) {
-          return match.group(1)!.trim();
+          return match
+              .group(1)!
+              .replaceAll(RegExp('<thought>.*?</thought>', dotAll: true), '')
+              .trim();
         } else {
           _logger.severe('Could not parse caption from MLX output: $output');
           throw ApiException('Failed to parse caption from MLX output.');
@@ -407,7 +410,9 @@ class CaptionService {
             'output capacity.',
           );
         }
-        return choice.message.content;
+        return choice.message.content
+            .replaceAll(RegExp('<thought>.*?</thought>', dotAll: true), '')
+            .trim();
       } else {
         throw ApiException('Invalid response format: ${response.body}');
       }

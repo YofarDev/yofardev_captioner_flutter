@@ -9,6 +9,7 @@ import 'package:window_manager/window_manager.dart';
 import 'core/config/service_locator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/presentation/pages/home_page.dart';
+import 'core/services/route_observer.dart';
 import 'features/llm_config/logic/llm_configs_cubit.dart';
 import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        navigatorObservers: <NavigatorObserver>[routeObserver],
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(

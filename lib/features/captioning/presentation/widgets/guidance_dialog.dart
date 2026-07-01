@@ -17,28 +17,30 @@ class GuidanceDialog extends StatefulWidget {
 }
 
 class _GuidanceDialogState extends State<GuidanceDialog> {
+  late final ImageListCubit _cubit;
   late final TextEditingController _controller;
   late final String? _path;
 
   @override
   void initState() {
     super.initState();
-    final ImageListCubit cubit = context.read<ImageListCubit>();
-    _path = cubit.currentDisplayedImage?.image.path;
+    _cubit = context.read<ImageListCubit>();
+    _path = _cubit.currentDisplayedImage?.image.path;
     _controller = TextEditingController(
-      text: _path == null ? '' : (cubit.state.imageGuidance[_path] ?? ''),
+      text: _path == null ? '' : (_cubit.state.imageGuidance[_path] ?? ''),
     );
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    // Persist guidance to db.json so it survives across sessions.
+    _cubit.saveChanges();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ImageListCubit cubit = context.read<ImageListCubit>();
     return AlertDialog(
       backgroundColor: panelDark,
       title: const Text('Per-image guidance'),
@@ -85,7 +87,7 @@ class _GuidanceDialogState extends State<GuidanceDialog> {
               ),
               onChanged: (String value) {
                 if (_path != null) {
-                  cubit.setGuidance(_path, value);
+                  _cubit.setGuidance(_path, value);
                 }
               },
             ),

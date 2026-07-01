@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/route_observer.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../data/models/filter_query.dart';
 import '../../data/services/autocomplete_engine.dart';
@@ -30,7 +31,7 @@ class CaptionSearchBar extends StatefulWidget {
 }
 
 class _CaptionSearchBarState extends State<CaptionSearchBar>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RouteAware {
   late AnimationController _animationController;
   late Animation<double> _widthAnimation;
   final TextEditingController _textController = TextEditingController();
@@ -54,6 +55,31 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     _setupCubitStateListener();
     _setupKeyHandler();
     _textController.addListener(_onTextChangedForAutocomplete);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final PageRoute<dynamic>? route =
+        ModalRoute.of(context) as PageRoute<dynamic>?;
+    if (route != null) {
+      routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPushNext() {
+    // Another route (e.g. the structured editor) was pushed on top. Overlay
+    // entries are not torn down by ancestor route changes, so dismiss them
+    // explicitly or they keep floating over the new route.
+    _dismissSuggestions();
+    _dismissTagChips();
+  }
+
+  @override
+  void didPopNext() {
+    if (!mounted) return;
+    _syncTagChipsOverlay(context.read<CaptionSearchCubit>().state);
   }
 
   void _setupKeyHandler() {
@@ -120,6 +146,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _cubitSub?.cancel();
     _dismissSuggestions();
     _dismissTagChips();

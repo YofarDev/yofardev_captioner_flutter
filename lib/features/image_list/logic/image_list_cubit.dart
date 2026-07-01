@@ -137,6 +137,17 @@ class ImageListCubit extends Cubit<ImageListState> {
         return;
       }
 
+      // Rebuild path-keyed guidance from the id-keyed db map so it matches
+      // the in-memory key used by setGuidance/guidanceFor. Only images that
+      // still exist on disk are re-keyed; stale entries drop naturally.
+      final Map<String, String> guidanceByPath = <String, String>{};
+      for (final AppImage img in images) {
+        final String? g = db.imageGuidance[img.id];
+        if (g != null && g.isNotEmpty) {
+          guidanceByPath[img.image.path] = g;
+        }
+      }
+
       emit(
         state.copyWith(
           images: images,
@@ -144,6 +155,7 @@ class ImageListCubit extends Cubit<ImageListState> {
           categoryFormats: db.categoryFormats,
           activeCategory: db.activeCategory ?? 'default',
           currentImageId: images.isNotEmpty ? images[0].id : null,
+          imageGuidance: guidanceByPath,
         ),
       );
     } catch (e) {
@@ -200,8 +212,9 @@ class ImageListCubit extends Cubit<ImageListState> {
     emit(state.copyWith(guidanceEnabled: enabled));
   }
 
-  /// Sets the ephemeral per-image guidance string. An empty [text] clears the
-  /// entry for [imagePath] so the map doesn't grow unbounded.
+  /// Sets the per-image guidance string. An empty [text] clears the
+  /// entry for [imagePath] so the map doesn't grow unbounded. Persisted to
+  /// db.json on the next [_saveDb] (e.g. dialog close or any caption change).
   void setGuidance(String imagePath, String text) {
     final Map<String, String> next =
         Map<String, String>.from(state.imageGuidance);
@@ -428,11 +441,21 @@ class ImageListCubit extends Cubit<ImageListState> {
         )
         .toList();
 
+    // Translate path-keyed guidance to id-keyed so it survives folder moves.
+    final Map<String, String> guidanceById = <String, String>{};
+    for (final AppImage img in state.images) {
+      final String? g = state.imageGuidance[img.image.path];
+      if (g != null && g.isNotEmpty) {
+        guidanceById[img.id] = g;
+      }
+    }
+
     final CaptionDatabase db = CaptionDatabase(
       categories: state.categories,
       categoryFormats: state.categoryFormats,
       activeCategory: state.activeCategory,
       images: captionDataList,
+      imageGuidance: guidanceById,
     );
 
     await _fileUtils.writeDb(state.folderPath!, db);

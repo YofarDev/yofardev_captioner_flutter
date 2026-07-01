@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
+import 'package:yofardev_captioner/features/captioning/data/models/caption_data.dart';
+import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
@@ -215,5 +217,149 @@ void main() {
         );
       },
     );
+
+    // Regression: captions must follow their image through a sequential rename
+    // when the target names collide with still-pending source names.
+
+    Future<CaptionDatabase> seedDb(
+      List<({String filename, String caption})> entries,
+    ) async {
+      final CaptionDatabase db = CaptionDatabase(
+        categories: <String>['default'],
+        activeCategory: 'default',
+        images: <CaptionData>[
+          for (final ({String filename, String caption}) e in entries)
+            CaptionData(
+              id: 'id-${e.filename}',
+              filename: e.filename,
+              captions: <String, CaptionEntry>{
+                'default': CaptionEntry(text: e.caption),
+              },
+            ),
+        ],
+      );
+      await appFileUtils.writeDb(tempDir.path, db);
+      return db;
+    }
+
+    Future<Map<String, String>> readFilenameToCaptionMap() async {
+      final CaptionDatabase db = await appFileUtils.readDb(tempDir.path);
+      return <String, String>{
+        for (final CaptionData d in db.images)
+          d.filename: d.captions['default']?.text ?? '',
+      };
+    }
+
+    group('updateDbForRename', () {
+      test(
+        'keeps each caption attached to its image when names shift forward',
+        () async {
+          // Folder had 01/02/03 captioned; a new 00.jpg was added and refreshed
+          // (so an empty DB entry for 00.jpg exists), then rename-all runs.
+          await seedDb(<({String filename, String caption})>[
+            (filename: '00.jpg', caption: ''),
+            (filename: '01.jpg', caption: 'AAA'),
+            (filename: '02.jpg', caption: 'BBB'),
+            (filename: '03.jpg', caption: 'CCC'),
+          ]);
+
+          // Rename map produced by the helper (sorted insertion order):
+          // each image shifts one slot forward into the next sequential name.
+          await appFileUtils.updateDbForRename(
+            <String, String>{
+              '00.jpg': '01.jpg',
+              '01.jpg': '02.jpg',
+              '02.jpg': '03.jpg',
+              '03.jpg': '04.jpg',
+            },
+            tempDir.path,
+          );
+
+          // Physical files would land at these names; the DB must agree so a
+          // reload matches caption-by-filename to the correct image.
+          final Map<String, String> mapping = await readFilenameToCaptionMap();
+          expect(mapping['01.jpg'], '', reason: 'came from old 00.jpg');
+          expect(mapping['02.jpg'], 'AAA', reason: 'came from old 01.jpg');
+          expect(mapping['03.jpg'], 'BBB', reason: 'came from old 02.jpg');
+          expect(mapping['04.jpg'], 'CCC', reason: 'came from old 03.jpg');
+        },
+      );
+
+      test('leaves no stale or duplicate filenames after rename', () async {
+        await seedDb(<({String filename, String caption})>[
+          (filename: '01.jpg', caption: 'AAA'),
+          (filename: '02.jpg', caption: 'BBB'),
+          (filename: '03.jpg', caption: 'CCC'),
+        ]);
+
+        await appFileUtils.updateDbForRename(
+          <String, String>{
+            '01.jpg': '04.jpg',
+            '02.jpg': '05.jpg',
+            '03.jpg': '06.jpg',
+          },
+          tempDir.path,
+        );
+
+        final Map<String, String> mapping = await readFilenameToCaptionMap();
+        expect(mapping.keys, <String>{'04.jpg', '05.jpg', '06.jpg'});
+        expect(mapping['04.jpg'], 'AAA');
+        expect(mapping['05.jpg'], 'BBB');
+        expect(mapping['06.jpg'], 'CCC');
+      });
+    });
+
+    // A removed image leaves a hole; the surviving images must renumber into
+    // that hole WITHOUT the removed image's stale DB entry stealing a caption.
+    group('rename after image removal', () {
+      Future<void> writeImage(String name) async {
+        await File(p.join(tempDir.path, name)).writeAsBytes(<int>[0]);
+      }
+
+      Map<String, String> captionsByFile(List<AppImage> images) {
+        return <String, String>{
+          for (final AppImage i in images)
+            p.basename(i.image.path): i.captions['default']?.text ?? '',
+        };
+      }
+
+      test('stale DB entry for removed image does not collide on reload', () async {
+        await writeImage('01.jpg');
+        await writeImage('02.jpg');
+        await writeImage('03.jpg');
+        await seedDb(
+          <({String filename, String caption})>[
+            (filename: '01.jpg', caption: 'AAA'),
+            (filename: '02.jpg', caption: 'BBB'),
+            (filename: '03.jpg', caption: 'CCC'),
+          ],
+        );
+
+        // Image 02.jpg is removed (file gone). A refresh must drop its stale
+        // DB entry so it can't shadow a later rename target.
+        await File(p.join(tempDir.path, '02.jpg')).delete();
+        await appFileUtils.onFolderPicked(tempDir.path);
+
+        // Surviving files [01, 03] renumber to [01, 02]. Simulate the physical
+        // two-pass rename + the DB update exactly as the helper does it.
+        await File(p.join(tempDir.path, '03.jpg')).rename(
+          p.join(tempDir.path, '02.jpg'),
+        );
+        await appFileUtils.updateDbForRename(
+          <String, String>{'01.jpg': '01.jpg', '03.jpg': '02.jpg'},
+          tempDir.path,
+        );
+
+        final List<AppImage> reloaded = await appFileUtils.onFolderPicked(
+          tempDir.path,
+        );
+        final Map<String, String> byFile = captionsByFile(reloaded);
+
+        // No stale/duplicate filenames; captions follow their images.
+        expect(byFile.keys, <String>{'01.jpg', '02.jpg'});
+        expect(byFile['01.jpg'], 'AAA');
+        expect(byFile['02.jpg'], 'CCC', reason: 'was 03.jpg, not the removed 02.jpg');
+      });
+    });
   });
 }

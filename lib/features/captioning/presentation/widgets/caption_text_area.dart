@@ -282,6 +282,47 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         ),
                                       ),
                                     ),
+                                    Tooltip(
+                                      message: 'Remove caption',
+                                      child: InkWell(
+                                        onTap:
+                                            (captionText.trim().isEmpty ||
+                                                isThisImageBeingCaptioned)
+                                            ? null
+                                            : () {
+                                                context
+                                                    .read<ImageListCubit>()
+                                                    .updateCaption(caption: '');
+                                                NotificationOverlay.show(
+                                                  context,
+                                                  message: 'Caption removed',
+                                                );
+                                              },
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                (captionText.trim().isEmpty ||
+                                                    isThisImageBeingCaptioned)
+                                                ? Colors.white.withAlpha(20)
+                                                : destructive.withAlpha(40),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                          ),
+                                          child: Icon(
+                                            Icons.delete_outline,
+                                            size: 16,
+                                            color:
+                                                (captionText.trim().isEmpty ||
+                                                    isThisImageBeingCaptioned)
+                                                ? Colors.white.withAlpha(50)
+                                                : destructive,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                     const SizedBox(width: 8),
                                     Tooltip(
                                       message:

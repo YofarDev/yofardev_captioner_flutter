@@ -20,7 +20,7 @@ class StructuredEditorState extends Equatable {
     this.samBboxByIndex,
     this.showSamBboxes = false,
     this.samComputeStatus = SamComputeStatus.idle,
-    this.showBboxText = true,
+    this.showBboxText = false,
   });
 
   /// The mutable working copy of the caption.

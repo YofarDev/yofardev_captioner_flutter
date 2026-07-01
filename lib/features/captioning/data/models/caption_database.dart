@@ -13,12 +13,18 @@ class CaptionDatabase {
   final String? activeCategory;
   final List<CaptionData> images;
 
+  /// Per-image captioning guidance keyed by image id. Persisted across
+  /// sessions; rebuilt path-keyed into ImageListState.imageGuidance on open.
+  @JsonKey(defaultValue: <String, String>{})
+  final Map<String, String> imageGuidance;
+
   CaptionDatabase({
     this.version = 4,
     required this.categories,
     this.categoryFormats = const <String, String>{},
     this.activeCategory,
     required this.images,
+    this.imageGuidance = const <String, String>{},
   });
 
   factory CaptionDatabase.fromJson(Map<String, dynamic> json) =>

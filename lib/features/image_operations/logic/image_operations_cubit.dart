@@ -23,7 +23,10 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     if (_imageListCubit.state.folderPath == null) {
       return;
     }
-    await _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
+    await _imageListCubit.onFolderPicked(
+      _imageListCubit.state.folderPath!,
+      force: true,
+    );
     await _imageOperationsHelper.renameAllFiles(
       _imageListCubit.state.folderPath!,
     );

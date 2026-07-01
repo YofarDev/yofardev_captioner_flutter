@@ -16,9 +16,9 @@ class ImageListState extends Equatable {
   final Map<String, String> categoryFormats;
   final String? activeCategory;
 
-  /// Per-image captioning guidance keyed by image file path. Ephemeral — held
-  /// in memory for the session only, never persisted. When empty for an image,
-  /// no guidance is injected for it.
+  /// Per-image captioning guidance keyed by image file path. Persisted to
+  /// db.json (id-keyed) across sessions and rebuilt path-keyed on folder open.
+  /// When empty for an image, no guidance is injected for it.
   final Map<String, String> imageGuidance;
 
   /// Global enable for guidance injection. When false, [imageGuidance] is

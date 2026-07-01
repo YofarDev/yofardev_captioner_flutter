@@ -284,16 +284,17 @@ class AppFileUtils {
   ) async {
     final CaptionDatabase db = await readDb(folderPath);
 
+    // Snapshot current filenames before mutating: writing newName in place
+    // while still resolving by filename aliases entries when a target collides
+    // with a pending source name (e.g. 00->01, 01->02, ...).
+    final Map<String, CaptionData> byName = <String, CaptionData>{
+      for (final CaptionData d in db.images) d.filename: d,
+    };
+
     for (final MapEntry<String, String> entry in oldNameToNewName.entries) {
-      final String oldName = entry.key;
-      final String newName = entry.value;
-      try {
-        final CaptionData data = db.images.firstWhere(
-          (CaptionData d) => d.filename == oldName,
-        );
-        data.filename = newName;
-      } catch (e) {
-        // ignore
+      final CaptionData? data = byName[entry.key];
+      if (data != null) {
+        data.filename = entry.value;
       }
     }
 

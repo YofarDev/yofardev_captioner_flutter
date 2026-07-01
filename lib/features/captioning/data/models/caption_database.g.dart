@@ -21,6 +21,11 @@ CaptionDatabase _$CaptionDatabaseFromJson(Map<String, dynamic> json) =>
       images: (json['images'] as List<dynamic>)
           .map((e) => CaptionData.fromJson(e as Map<String, dynamic>))
           .toList(),
+      imageGuidance:
+          (json['imageGuidance'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          {},
     );
 
 Map<String, dynamic> _$CaptionDatabaseToJson(CaptionDatabase instance) =>
@@ -30,4 +35,5 @@ Map<String, dynamic> _$CaptionDatabaseToJson(CaptionDatabase instance) =>
       'categoryFormats': instance.categoryFormats,
       'activeCategory': instance.activeCategory,
       'images': instance.images.map((e) => e.toJson()).toList(),
+      'imageGuidance': instance.imageGuidance,
     };

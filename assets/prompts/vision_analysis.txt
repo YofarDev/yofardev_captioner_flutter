@@ -72,6 +72,7 @@ A 1-2 sentence observational summary. Starts immediately with the subject — no
 - gestures, poses, expressions, emotions
 - style or atmosphere
 - clothing, accessories, or physical attributes (hair color, skin tone, build)
+- medium (no manga, illustration, photograph, screencap, etc. — medium belongs in `style.medium`)
 
 ✓ CORRECT: "A man sits at a desk with two monitors in a white-walled room."
 ✗ WRONG: "A man in a blue shirt and pink shorts sits at a desk."

@@ -41,16 +41,10 @@ class _CaptionControlsState extends State<CaptionControls> {
     return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
       builder: (BuildContext context, LlmConfigsState configState) {
         final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
-        final int missingCount = imageState.images.where((AppImage img) {
-          final String text =
-              img.captions[imageState.activeCategory]?.text ?? '';
-          if (ideogramMode) {
-            return text.isEmpty ||
-                !IdeogramCaption.isIdeogramJson(text) ||
-                IdeogramCaption.hasEmptyHighLevelDescription(text);
-          }
-          return text.isEmpty;
-        }).length;
+        final String category = imageState.activeCategory ?? 'default';
+        final int missingCount = imageState.images
+            .where((AppImage img) => _isMissing(img, category, ideogramMode))
+            .length;
 
         return RadioGroup<CaptionOptions>(
           groupValue: _selectedOption,
@@ -168,13 +162,37 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
+  bool _isMissing(AppImage img, String category, bool ideogramMode) {
+    final String text = img.captions[category]?.text ?? '';
+    if (ideogramMode) {
+      return text.isEmpty ||
+          !IdeogramCaption.isIdeogramJson(text) ||
+          IdeogramCaption.hasEmptyHighLevelDescription(text);
+    }
+    return text.isEmpty;
+  }
+
   Widget _buildScopeToFilteredCheckbox(ImageListState imageState) {
     final bool hasActiveSearch = imageState.searchQuery.isNotEmpty;
     if (!hasActiveSearch) {
       return const SizedBox.shrink();
     }
     final ImageListCubit cubit = context.read<ImageListCubit>();
-    final int filteredCount = cubit.filteredImages.length;
+    final List<AppImage> filtered = cubit.filteredImages;
+    final int scopeCount;
+    if (_selectedOption == CaptionOptions.missing) {
+      final bool ideogramMode = context
+          .read<LlmConfigsCubit>()
+          .state
+          .llmConfigs
+          .ideogramJsonEnabled;
+      final String category = imageState.activeCategory ?? 'default';
+      scopeCount = filtered
+          .where((AppImage img) => _isMissing(img, category, ideogramMode))
+          .length;
+    } else {
+      scopeCount = filtered.length;
+    }
     final bool disabledForCurrent = _selectedOption == CaptionOptions.current;
     return Padding(
       padding: const EdgeInsets.only(left: 4),
@@ -206,7 +224,7 @@ class _CaptionControlsState extends State<CaptionControls> {
               ),
               const SizedBox(width: 4),
               Text(
-                'Limit to search results ($filteredCount)',
+                'Limit to search results ($scopeCount)',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
@@ -462,12 +480,16 @@ class _CaptionControlsState extends State<CaptionControls> {
                   imageListState.images.isNotEmpty &&
                       configState.llmConfigs.selectedConfigId != null &&
                       !isInProgress
-                  ? () {
+                  ? () async {
                       final LlmConfig llm = configState.llmConfigs.configs
                           .firstWhere(
                             (LlmConfig c) =>
                                 c.id == configState.llmConfigs.selectedConfigId,
                           );
+                      if (!await _confirmOverwriteAll(context) ||
+                          !context.mounted) {
+                        return;
+                      }
                       if (isIdeogram) {
                         context
                             .read<StructuredCaptioningCubit>()
@@ -593,6 +615,70 @@ class _CaptionControlsState extends State<CaptionControls> {
           ),
       ],
     );
+  }
+
+  /// For "All" runs, confirm before overwriting images that already have a
+  /// caption in the active category.
+  // ponytail: duplicates the cubits' all-option target selection; if their
+  // filter rules diverge this count drifts. Move into a shared domain preview.
+  Future<bool> _confirmOverwriteAll(BuildContext context) async {
+    if (_selectedOption != CaptionOptions.all) return true;
+    final ImageListCubit cubit = context.read<ImageListCubit>();
+    final ImageListState imgState = cubit.state;
+    final String category = imgState.activeCategory ?? 'default';
+    final bool scoped =
+        _scopeToFiltered && imgState.searchQuery.isNotEmpty;
+    final List<AppImage> base = scoped ? cubit.filteredImages : imgState.images;
+    final List<AppImage> target = scoped
+        ? base.toList()
+        : base.where((AppImage i) => !i.isCaptionEdited).toList();
+    final int wouldOverwrite = target
+        .where((AppImage i) => (i.captions[category]?.text ?? '').isNotEmpty)
+        .length;
+    if (wouldOverwrite == 0) return true;
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        backgroundColor: panelRaised,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        title: const Row(
+          children: <Widget>[
+            Icon(Icons.warning_amber_rounded, color: amberWarn, size: 22),
+            SizedBox(width: 10),
+            Text(
+              'Replace existing captions?',
+              style: TextStyle(color: Colors.white),
+            ),
+          ],
+        ),
+        content: Text(
+          'Captioning "All" will overwrite existing captions for '
+          '$wouldOverwrite image${wouldOverwrite == 1 ? '' : 's'}. '
+          'This action cannot be undone.',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: amberWarn,
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
   Widget _buildBatchApplyButton(

@@ -364,4 +364,40 @@ void main() {
       expect(result.plainTextQuery, isEmpty);
     });
   });
+
+  group('-#value negated hashtag shorthand', () {
+    test('parses -#man as NotFilter wrapping TagFilter', () {
+      final ParsedFilterQuery result = FilterParser.parse('-#man');
+      expect(result.filters, hasLength(1));
+      final NotFilter not = result.filters.single as NotFilter;
+      expect(not.inner, isA<TagFilter>());
+      expect((not.inner as TagFilter).tag, 'man');
+      expect(result.plainTextQuery, isEmpty);
+    });
+
+    test('combines positive and negative hashtags', () {
+      final ParsedFilterQuery result = FilterParser.parse('#woman -#man');
+      expect(result.filters, hasLength(2));
+      expect(result.filters[0], isA<TagFilter>());
+      expect(result.filters[1], isA<NotFilter>());
+    });
+
+    test('lone "-" is plain text', () {
+      final ParsedFilterQuery result = FilterParser.parse('-');
+      expect(result.filters, isEmpty);
+      expect(result.plainTextQuery, '-');
+    });
+
+    test('hyphenated word stays plain text', () {
+      final ParsedFilterQuery result = FilterParser.parse('red-blue');
+      expect(result.filters, isEmpty);
+      expect(result.plainTextQuery, 'red-blue');
+    });
+
+    test('lone "-#" is plain text', () {
+      final ParsedFilterQuery result = FilterParser.parse('-#');
+      expect(result.filters, isEmpty);
+      expect(result.plainTextQuery, '-#');
+    });
+  });
 }

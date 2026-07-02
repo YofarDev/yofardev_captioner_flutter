@@ -239,6 +239,174 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     _imageListCubit.updateImage(image: updatedImage.copyWith(clearError: true));
   }
 
+  /// Batch text-only conversion: reads each image's caption from
+  /// [sourceCategory], asks the LLM to transform it via [prompt], and writes
+  /// the result into the active category. No image is sent. Useful for
+  /// cross-format conversions such as JSON → natural language.
+  // ponytail: the loop skeleton (cancel checks, delay race, progress emit,
+  // error collection) is duplicated from runCaptioner. Extract a shared
+  // _runBatch(targets, perImageTransform) if a third batch variant appears.
+  Future<void> convertCaptionsBatch({
+    required LlmConfig llm,
+    required String sourceCategory,
+    required String prompt,
+    required CaptionOptions option,
+    bool scopeToFiltered = false,
+  }) async {
+    _cancelToken = CancelToken();
+    emit(
+      state.copyWith(
+        status: CaptioningStatus.inProgress,
+        progress: 0.0,
+        isCancelling: false,
+      ),
+    );
+
+    final List<AppImage> baseImages = scopeToFiltered
+        ? _imageListCubit.filteredImages
+        : _imageListCubit.state.images;
+    // Target is the active category; capture once so switching tabs mid-run
+    // doesn't redirect later writes.
+    final String targetCategory =
+        _imageListCubit.state.activeCategory ?? 'default';
+
+    List<AppImage> targets = <AppImage>[];
+    switch (option) {
+      case CaptionOptions.current:
+        final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+        if (currentImage == null) {
+          emit(
+            state.copyWith(
+              status: CaptioningStatus.failure,
+              error: 'No image selected',
+            ),
+          );
+          return;
+        }
+        targets = <AppImage>[currentImage];
+      case CaptionOptions.missing:
+        targets = baseImages
+            .where(
+              (AppImage image) =>
+                  (image.captions[targetCategory]?.text ?? '').isEmpty,
+            )
+            .toList();
+      case CaptionOptions.all:
+        targets = baseImages.toList();
+    }
+    // Drop anything with nothing to convert (empty source caption).
+    targets = targets
+        .where(
+          (AppImage image) =>
+              (image.captions[sourceCategory]?.text ?? '').trim().isNotEmpty,
+        )
+        .toList();
+
+    final int totalImagesCount = targets.length;
+    emit(state.copyWith(totalImages: totalImagesCount, processedImages: 0));
+    if (totalImagesCount == 0) {
+      emit(state.copyWith(status: CaptioningStatus.success, totalImages: 0));
+      return;
+    }
+
+    int processedImagesCount = 0;
+    final List<String> errors = <String>[];
+
+    for (final AppImage image in targets) {
+      if (_cancelToken?.isCancelled ?? false) {
+        emit(
+          state.copyWith(
+            status: CaptioningStatus.initial,
+            error: 'Captioning cancelled',
+          ),
+        );
+        _cancelToken = null;
+        return;
+      }
+
+      if (processedImagesCount > 0 && llm.delay > 0) {
+        await Future.any<void>(<Future<void>>[
+          Future<void>.delayed(Duration(milliseconds: llm.delay)),
+          if (_cancelToken != null) _cancelToken!.onCancel,
+        ]);
+        if (_cancelToken?.isCancelled ?? false) {
+          emit(
+            state.copyWith(
+              status: CaptioningStatus.initial,
+              error: 'Captioning cancelled',
+            ),
+          );
+          _cancelToken = null;
+          return;
+        }
+      }
+
+      emit(
+        state.copyWith(
+          currentlyCaptioningImage: image.image.path,
+          setCurrentlyCaptioningImage: true,
+        ),
+      );
+      try {
+        final AppImage updatedImage = await _captioningRepository
+            .transformCaption(
+              llm,
+              image,
+              sourceCategory,
+              targetCategory,
+              prompt,
+            );
+        _imageListCubit.updateImage(
+          image: updatedImage.copyWith(clearError: true),
+        );
+      } on CancellationException {
+        emit(
+          state.copyWith(
+            status: CaptioningStatus.initial,
+            error: 'Captioning cancelled',
+          ),
+        );
+        _cancelToken = null;
+        return;
+      } catch (e) {
+        errors.add('Failed to convert ${image.image.path}: $e');
+        final AppImage errorImage = image.copyWith(error: '$e');
+        _imageListCubit.updateImage(image: errorImage);
+      }
+      processedImagesCount++;
+      emit(
+        state.copyWith(
+          progress: processedImagesCount / totalImagesCount,
+          processedImages: processedImagesCount,
+          totalImages: totalImagesCount,
+          setCurrentlyCaptioningImage: true,
+        ),
+      );
+    }
+
+    if (errors.isNotEmpty) {
+      emit(
+        state.copyWith(
+          status: CaptioningStatus.failure,
+          error: errors.join('\n'),
+          processedImages: totalImagesCount - errors.length,
+          setCurrentlyCaptioningImage: true,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          status: CaptioningStatus.success,
+          processedImages: totalImagesCount,
+          totalImages: totalImagesCount,
+          error: '',
+          setCurrentlyCaptioningImage: true,
+        ),
+      );
+    }
+    _cancelToken = null;
+  }
+
   void cancelCaptioning() {
     _cancelToken?.cancel();
     emit(state.copyWith(isCancelling: true));

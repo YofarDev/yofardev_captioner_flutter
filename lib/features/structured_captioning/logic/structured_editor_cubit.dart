@@ -22,7 +22,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required ImageListCubit imageListCubit,
     StructuredCaptionRepository? repository,
     LayerTitleStore? layerTitleStore,
-    bool showBboxText = true,
+    bool showBboxText = false,
   }) : _imageListCubit = imageListCubit,
        _repository = repository ?? StructuredCaptionRepository(),
        _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),

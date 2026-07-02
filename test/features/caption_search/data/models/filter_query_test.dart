@@ -430,4 +430,26 @@ void main() {
       );
     });
   });
+
+  group('NotFilter', () {
+    test('negates a matching TagFilter', () {
+      const NotFilter filter = NotFilter(TagFilter(tag: 'sunset'));
+      expect(
+        filter.evaluate(
+          const FilterContext(captionText: '', tags: <String>['sunset']),
+        ),
+        isFalse,
+      );
+    });
+
+    test('negates a non-matching TagFilter', () {
+      const NotFilter filter = NotFilter(TagFilter(tag: 'sunset'));
+      expect(
+        filter.evaluate(
+          const FilterContext(captionText: '', tags: <String>['landscape']),
+        ),
+        isTrue,
+      );
+    });
+  });
 }

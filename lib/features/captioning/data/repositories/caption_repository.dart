@@ -30,4 +30,14 @@ class CaptionRepository {
   ) {
     return _captionService.rewriteCaption(config, currentCaption, instructions);
   }
+
+  /// Generic text-only transform driven entirely by [userPrompt]
+  /// (e.g. JSON → natural language).
+  Future<String> transformCaption(
+    LlmConfig config,
+    String sourceText,
+    String userPrompt,
+  ) {
+    return _captionService.transformCaption(config, sourceText, userPrompt);
+  }
 }

@@ -42,6 +42,8 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   OverlayEntry? _suggestionsOverlay;
   OverlayEntry? _chipsOverlay;
   StreamSubscription<CaptionSearchState>? _cubitSub;
+  // ponytail: suppresses chips re-show until the search bar collapses.
+  bool _chipsDismissedByUser = false;
 
   static const Duration _animationDuration = Duration(milliseconds: 200);
   static const double _searchBarWidth = 250.0;
@@ -270,6 +272,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     // the field (desktop focus behavior), and a focus-gated overlay would be
     // torn down mid-tap -> onTapCancel. Expanded is the stable signal.
     if (!state.isExpanded) return false;
+    if (_chipsDismissedByUser) return false;
     // Hide chips while the user is typing structured :filter: syntax — the
     // autocomplete overlay covers that path and renders the same tag values,
     // so showing both would collide (e.g. two `Text('sunset')`). `#value`
@@ -297,7 +300,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
         link: _layerLink,
         chips: chips,
         onToggle: _toggleTagChip,
-        onDismiss: _dismissTagChips,
+        onDismiss: _dismissTagChipsByUser,
       );
     } else {
       TagFilterChipsOverlay.update(_chipsOverlay!, chips);
@@ -309,6 +312,11 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
       TagFilterChipsOverlay.remove(_chipsOverlay!);
       _chipsOverlay = null;
     }
+  }
+
+  void _dismissTagChipsByUser() {
+    _chipsDismissedByUser = true;
+    _dismissTagChips();
   }
 
   /// Derives active tag filters from the current query text (single source
@@ -384,6 +392,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
     } else {
       _animationController.reverse();
       _focusNode.unfocus();
+      _chipsDismissedByUser = false;
     }
   }
 

@@ -421,6 +421,21 @@ class TagFilter extends FilterExpression {
   List<Object?> get props => <Object?>[tag];
 }
 
+/// Negates another filter.
+///
+/// Example: `-#tag` excludes images tagged with `tag`.
+class NotFilter extends FilterExpression {
+  const NotFilter(this.inner);
+
+  final FilterExpression inner;
+
+  @override
+  bool evaluate(FilterContext ctx) => !inner.evaluate(ctx);
+
+  @override
+  List<Object?> get props => <Object?>[inner];
+}
+
 /// Matches images that have no tags.
 ///
 /// Example: `:notag:`

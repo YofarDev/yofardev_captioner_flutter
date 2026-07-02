@@ -43,6 +43,18 @@ class FilterParser {
 
     int pos = 0;
     while (pos < query.length) {
+      // -#value hashtag shorthand -> negated TagFilter. A leading '-' before
+      // any other char stays plain text so hyphenated words still search.
+      if (query[pos] == '-' &&
+          pos + 1 < query.length &&
+          query[pos + 1] == '#') {
+        final _ParseResult? result = _tryParseHashtag(query, pos + 1);
+        if (result != null) {
+          filters.add(NotFilter(result.filter));
+          pos = result.endIndex;
+          continue;
+        }
+      }
       // #value hashtag shorthand -> TagFilter. A bare '#' always starts a
       // tag token; ':'-delimited hex (e.g. :color:#HEX:) is consumed by the
       // ':' branch below before we ever reach its '#' here.

@@ -19,6 +19,7 @@ import '../../logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../logic/batch_apply/batch_json_apply_state.dart';
 import '../../logic/captioning_cubit.dart';
 import '../widgets/batch_json_apply_dialog.dart';
+import 'convert_captions_dialog.dart';
 import 'guidance_dialog.dart';
 
 class CaptionControls extends StatefulWidget {
@@ -524,6 +525,42 @@ class _CaptionControlsState extends State<CaptionControls> {
             ),
           ),
         ),
+        if (!isIdeogram) ...<Widget>[
+          const SizedBox(width: 8),
+          Tooltip(
+            message:
+                'Convert captions between categories '
+                '(text-only, no image sent)',
+            child: AppButton(
+              text: 'Convert',
+              iconData: Icons.transform,
+              isOutline: true,
+              backgroundColor: lightPink,
+              foregroundColor: lightPink,
+              onTap: !isInProgress &&
+                      imageListState.categories.length > 1 &&
+                      configState.llmConfigs.selectedConfigId != null
+                  ? () => showDialog<void>(
+                      context: context,
+                      builder: (BuildContext _) => MultiBlocProvider(
+                        providers: <BlocProvider<dynamic>>[
+                          BlocProvider<CaptioningCubit>.value(
+                            value: context.read<CaptioningCubit>(),
+                          ),
+                          BlocProvider<ImageListCubit>.value(
+                            value: context.read<ImageListCubit>(),
+                          ),
+                          BlocProvider<LlmConfigsCubit>.value(
+                            value: context.read<LlmConfigsCubit>(),
+                          ),
+                        ],
+                        child: const ConvertCaptionsDialog(),
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+        ],
         if (isIdeogram) const SizedBox(width: 8),
         if (isIdeogram)
           _buildBatchApplyButton(context, configState, imageCount),

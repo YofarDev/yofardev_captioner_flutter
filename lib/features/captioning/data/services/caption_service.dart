@@ -97,6 +97,76 @@ class CaptionService {
     return _getRemoteRepair(config, brokenOutput, maxTokens: maxTokens);
   }
 
+  /// Generic text-only caption transform driven entirely by [userPrompt]
+  /// (e.g. JSON → natural language). No image is sent. The model returns only
+  /// the transformed text. Remote providers only; local MLX throws.
+  Future<String> transformCaption(
+    LlmConfig config,
+    String sourceText,
+    String userPrompt,
+  ) {
+    if (config.providerType == LlmProviderType.localMlx) {
+      throw ApiException(
+        'Caption transform requires a remote (API) provider; local MLX is vision-only.',
+      );
+    }
+    return _getRemoteTransform(config, sourceText, userPrompt);
+  }
+
+  Future<String> _getRemoteTransform(
+    LlmConfig config,
+    String sourceText,
+    String userPrompt,
+  ) async {
+    if (config.url == null || config.apiKey == null) {
+      throw ApiException('URL and API Key are required for remote providers.');
+    }
+    // ponytail: this POST+parse block duplicates _getRemoteRewrite /
+    // _getRemoteRepair. A shared _postChat(config, system, user, {maxTokens})
+    // would remove ~20 lines x3, but each has subtle differences (system
+    // prompt semantics, maxTokens handling). Extract if a 4th text path lands.
+    const String systemPrompt =
+        "You transform caption text according to the user's instructions. "
+        'Output ONLY the transformed text — no explanations, no preface, '
+        'no surrounding quotes, no markdown fencing.';
+    final String userBody = '$userPrompt\n\nSource caption:\n$sourceText';
+
+    final CaptionRequest request = CaptionRequest(
+      model: config.model,
+      messages: <Message>[
+        Message(
+          role: 'system',
+          content: <Content>[Content(type: 'text', text: systemPrompt)],
+        ),
+        Message(
+          role: 'user',
+          content: <Content>[Content(type: 'text', text: userBody)],
+        ),
+      ],
+    );
+
+    final String url = buildUrl(config.url!);
+
+    final http.Response response = await _httpClient.post(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+    );
+
+    if (response.statusCode == 200) {
+      return _parseChatResponse(response);
+    } else {
+      _logger.severe('Error response: ${response.body}');
+      throw ApiException(
+        'Failed to transform caption (${response.statusCode}): ${response.body}',
+      );
+    }
+  }
+
   Future<String> _getLocalCaption(
     LlmConfig config,
     File image,

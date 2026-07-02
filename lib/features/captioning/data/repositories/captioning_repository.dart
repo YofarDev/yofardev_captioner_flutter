@@ -84,4 +84,36 @@ class CaptioningRepository {
       );
     }
   }
+
+  /// Reads the caption from [sourceCategory], transforms it text-only via the
+  /// LLM using [userPrompt], and writes the result into [targetCategory]. No
+  /// image is sent. The target caption is marked edited so future vision "All"
+  /// batches skip it. Caller must ensure the source caption is non-empty.
+  Future<AppImage> transformCaption(
+    LlmConfig config,
+    AppImage image,
+    String sourceCategory,
+    String targetCategory,
+    String userPrompt,
+  ) async {
+    final String sourceText = image.captions[sourceCategory]?.text ?? '';
+    final String transformed = await _captionRepository.transformCaption(
+      config,
+      sourceText,
+      userPrompt,
+    );
+    final DateTime timestamp = DateTime.now();
+    return image.copyWith(
+      captions: <String, CaptionEntry>{
+        ...image.captions,
+        targetCategory: CaptionEntry(
+          text: transformed,
+          model: config.name,
+          timestamp: timestamp,
+          isEdited: true,
+        ),
+      },
+      lastModified: timestamp,
+    );
+  }
 }

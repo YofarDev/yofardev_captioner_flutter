@@ -72,7 +72,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
   late String _captionJson;
   late String _imageId;
   StructuredEditorCubit? _cubit;
-  bool _showBboxText = true;
+  bool _showBboxText = false;
 
   @override
   void initState() {
@@ -132,7 +132,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
     list.onImageSelected(target.id);
 
     setState(() {
-      _showBboxText = cubit?.state.showBboxText ?? true;
+      _showBboxText = cubit?.state.showBboxText ?? false;
       _imageFile = target!.image;
       _captionJson = target.captions[widget.activeCategory]?.text ?? '';
       _imageId = target.id;

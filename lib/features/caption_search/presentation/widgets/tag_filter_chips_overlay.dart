@@ -118,9 +118,8 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
       link: widget.link,
       targetAnchor: Alignment.bottomLeft,
       offset: const Offset(0, 4),
-      // No SingleChildScrollView: its drag recognizer (~2px mouse slop)
-      // canceled chip taps on every real click (onTapDown -> onTapCancel).
-      // The Wrap sizes to content; UnconstrainedBox keeps it compact.
+      // UnconstrainedBox lets the panel size to content; the chips list is
+      // capped (maxHeight) + wheel-scrollable so many tags can't overflow.
       child: UnconstrainedBox(
         alignment: Alignment.topLeft,
         child: ConstrainedBox(
@@ -141,29 +140,61 @@ class _ChipsDropdownState extends State<_ChipsDropdown> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  const Text(
-                    'FILTER BY TAG',
-                    style: TextStyle(
-                      fontFamily: 'Orbitron',
-                      fontSize: 10,
-                      color: lightPink,
-                      letterSpacing: 0.8,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: <Widget>[
+                      const Text(
+                        'FILTER BY TAG',
+                        style: TextStyle(
+                          fontFamily: 'Orbitron',
+                          fontSize: 10,
+                          color: lightPink,
+                          letterSpacing: 0.8,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: widget.onDismiss,
+                        child: MouseRegion(
+                          cursor: SystemMouseCursors.click,
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.close,
+                              size: 14,
+                              color: Colors.grey[400],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: _chips
-                        .map(
-                          (_ChipData chip) => _TagChip(
-                            key: ValueKey<String>('tagChip-${chip.label}'),
-                            label: chip.label,
-                            active: chip.active,
-                            onTap: () => widget.onToggle(chip.label),
-                          ),
-                        )
-                        .toList(),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 320),
+                    child: ScrollConfiguration(
+                      behavior: _WheelOnlyScrollBehavior(),
+                      child: SingleChildScrollView(
+                        // ponytail: drag disabled (see _WheelOnlyScrollBehavior)
+                        // so a click can't be claimed by the drag arena and cancel
+                        // chip taps; wheel/touch scrolling still works.
+                        child: Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: _chips
+                              .map(
+                                (_ChipData chip) => _TagChip(
+                                  key: ValueKey<String>(
+                                    'tagChip-${chip.label}',
+                                  ),
+                                  label: chip.label,
+                                  active: chip.active,
+                                  onTap: () => widget.onToggle(chip.label),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -252,4 +283,14 @@ class _TagChipState extends State<_TagChip> {
       ),
     );
   }
+}
+
+/// Allows wheel scrolling but excludes mouse-drag from the gesture arena, so
+/// a mouse click can't be misread as a drag and cancel chip taps (the
+/// ~2px mouse-slop issue). Touch drag is kept for touchscreen laptops.
+class _WheelOnlyScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => const <PointerDeviceKind>{
+    PointerDeviceKind.touch,
+  };
 }

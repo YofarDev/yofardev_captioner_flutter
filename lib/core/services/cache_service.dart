@@ -71,4 +71,16 @@ class CacheService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getInt(_activeTabIndexKey) ?? 0;
   }
+
+  static const String _convertPromptKey = 'convertPrompt';
+
+  static Future<void> saveConvertPrompt(String prompt) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_convertPromptKey, prompt);
+  }
+
+  static Future<String?> loadConvertPrompt() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_convertPromptKey);
+  }
 }

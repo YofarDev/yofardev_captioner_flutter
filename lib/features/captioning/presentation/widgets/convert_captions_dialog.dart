@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/services/cache_service.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
@@ -12,8 +13,6 @@ import '../../data/models/caption_options.dart';
 import '../../logic/captioning_cubit.dart';
 
 /// Default conversion prompt used to prefill the editable prompt field.
-// ponytail: not persisted. If users want a saved per-category transform
-// prompt, store it alongside LlmConfigs.selectedPrompt (shared_preferences).
 const String kDefaultConvertPrompt =
     'Write a very detailed natural language caption from the JSON caption '
     'below. Remove mention of color palette, style, atmosphere, but try to '
@@ -39,6 +38,8 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
   void initState() {
     super.initState();
     _promptController = TextEditingController(text: kDefaultConvertPrompt);
+    _promptController.addListener(_persistPrompt);
+    _loadSavedPrompt();
     final ImageListState imageState = context.read<ImageListCubit>().state;
     final String active = imageState.activeCategory ?? 'default';
     _sourceCategory = imageState.categories
@@ -49,8 +50,27 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
 
   @override
   void dispose() {
+    _promptController.removeListener(_persistPrompt);
     _promptController.dispose();
     super.dispose();
+  }
+
+  void _persistPrompt() {
+    CacheService.saveConvertPrompt(_promptController.text);
+  }
+
+  Future<void> _loadSavedPrompt() async {
+    final String? saved = await CacheService.loadConvertPrompt();
+    if (saved != null && saved.isNotEmpty && mounted) {
+      _promptController.text = saved;
+    }
+  }
+
+  void _restoreDefaultPrompt() {
+    _promptController.text = kDefaultConvertPrompt;
+    _promptController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _promptController.text.length),
+    );
   }
 
   Future<void> _submit() async {
@@ -161,7 +181,29 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
                       const SizedBox(height: 6),
                       _buildOptionDropdown(counts),
                       const SizedBox(height: 14),
-                      _label('Prompt'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          _label('Prompt'),
+                          TextButton(
+                            onPressed: _restoreDefaultPrompt,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                              ),
+                              minimumSize: const Size(0, 28),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Restore default',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: lightPink,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 6),
                       TextField(
                         controller: _promptController,

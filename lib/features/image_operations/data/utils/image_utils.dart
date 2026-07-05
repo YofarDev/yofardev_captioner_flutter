@@ -7,6 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
 import '../../../image_list/data/models/app_image.dart';
@@ -173,6 +174,19 @@ class ImageUtils {
       }
     }
 
+    // flutter_image_compress has no native implementation for Linux or Windows
+    // (only flutter_image_compress_macos is registered — see pubspec.lock), so
+    // calling it there throws UnimplementedError. Fall back to the pure-Dart
+    // `image` package on those platforms.
+    if (Platform.isLinux || Platform.isWindows) {
+      return _resizeWithImagePackage(
+        imageFile,
+        tempPath,
+        targetWidth,
+        targetHeight,
+      );
+    }
+
     // Convert to JPEG and resize if necessary, maintaining quality
     final XFile? result = await FlutterImageCompress.compressAndGetFile(
       imageFile.absolute.path,
@@ -219,5 +233,36 @@ class ImageUtils {
     }
 
     return compressedImageFile;
+  }
+
+  static Future<File> _resizeWithImagePackage(
+    File imageFile,
+    String tempPath,
+    int targetWidth,
+    int targetHeight,
+  ) async {
+    final Uint8List sourceBytes = await imageFile.readAsBytes();
+    final img.Image? decoded = img.decodeImage(sourceBytes);
+    if (decoded == null) {
+      return imageFile;
+    }
+    final img.Image resized = img.copyResize(
+      decoded,
+      width: targetWidth,
+      height: targetHeight,
+      interpolation: img.Interpolation.linear,
+    );
+
+    final File outFile = File(tempPath);
+    int quality = 95;
+    while (quality > 10) {
+      final Uint8List encoded = img.encodeJpg(resized, quality: quality);
+      await outFile.writeAsBytes(encoded);
+      if (await outFile.length() <= maxFileSize) {
+        return outFile;
+      }
+      quality -= 5;
+    }
+    return outFile;
   }
 }

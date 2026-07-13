@@ -19,6 +19,18 @@ import '../services/sam_process_service.dart';
 import '../services/structured_prompt_loader.dart';
 import '../utils/caption_hardening.dart';
 
+/// Selects how the structured pipeline produces its [VlmAnalysis].
+enum StructuredMode {
+  /// One VLM call emits the full JSON. The original path. Best for simple
+  /// images where the whole caption fits the token budget comfortably.
+  singleShot,
+
+  /// 1 enumerate call (terse per-object desc, focused on completeness) +
+  /// N parallel per-element enrich calls (cropped per bbox). Best for
+  /// object-heavy images that truncate or miss objects single-shot.
+  multiStage,
+}
+
 /// Orchestrates the structured captioning pipeline:
 /// global palette → VLM analysis → SAM detection → bbox matching → element
 /// palettes → build Ideogram4 JSON.
@@ -57,6 +69,7 @@ class StructuredCaptionRepository {
     bool disableSam = false,
     bool vlmEmitsXyxy = true,
     String guidance = '',
+    StructuredMode mode = StructuredMode.singleShot,
   }) async {
     // Step 1: Global color palette.
     onProgress('Extracting color palette...');
@@ -67,15 +80,25 @@ class StructuredCaptionRepository {
       _logger.warning('Global palette extraction failed: $e');
     }
 
-    // Step 2: VLM analysis.
-    final ({String rawPrompt, String rawResponse, VlmAnalysis analysis}) vision =
-        await _runVisionAnalysisSingleShot(
-      config,
-      imageFile,
-      onProgress: onProgress,
-      vlmEmitsXyxy: vlmEmitsXyxy,
-      guidance: guidance,
-    );
+    // Step 2: VLM analysis — branch on mode.
+    final ({String rawPrompt, String rawResponse, VlmAnalysis analysis}) vision;
+    if (mode == StructuredMode.multiStage) {
+      vision = await _runVisionAnalysisMultiStage(
+        config,
+        imageFile,
+        onProgress: onProgress,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+        guidance: guidance,
+      );
+    } else {
+      vision = await _runVisionAnalysisSingleShot(
+        config,
+        imageFile,
+        onProgress: onProgress,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+        guidance: guidance,
+      );
+    }
     final VlmAnalysis analysis = vision.analysis;
 
     return _finalizeCaption(
@@ -129,6 +152,185 @@ class StructuredCaptionRepository {
       vlmEmitsXyxy: vlmEmitsXyxy,
     );
     return (rawPrompt: prompt, rawResponse: vlmRawResponse, analysis: analysis);
+  }
+
+  // ponytail: fixed enrich pool of 4. Raise if the provider allows higher
+  // concurrency (e.g. cloud APIs with generous rate limits). Local MLX
+  // models are single-process; raising it there won't help.
+  static const int _enrichConcurrency = 4;
+
+  /// Multi-stage vision analysis: enumerate (terse) → enrich per element.
+  /// Returns the same record shape as [_runVisionAnalysisSingleShot] so the
+  /// shared [_finalizeCaption] tail can consume either path uniformly.
+  /// `rawResponse` is the enumerate response (useful for debug artifacts).
+  Future<({String rawPrompt, String rawResponse, VlmAnalysis analysis})>
+      _runVisionAnalysisMultiStage(
+    LlmConfig config,
+    File imageFile, {
+    required void Function(String step) onProgress,
+    required bool vlmEmitsXyxy,
+    required String guidance,
+  }) async {
+    onProgress('Enumerating objects (multi-stage VLM)...');
+    final String prompt = injectNoThink(
+      await _buildEnumeratePrompt(
+        imageFile,
+        guidance,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      ),
+    );
+    final String rawResponse = await _captionService.getCaption(
+      config,
+      imageFile,
+      prompt,
+      maxTokens: 8192,
+    );
+    final VlmAnalysis analysis = await _parseVlmResponseWithRepair(
+      stripThinking(rawResponse),
+      config,
+      vlmEmitsXyxy: vlmEmitsXyxy,
+    );
+
+    if (analysis.objects.isEmpty) {
+      return (rawPrompt: prompt, rawResponse: rawResponse, analysis: analysis);
+    }
+
+    onProgress('Enriching ${analysis.objects.length} elements...');
+    final List<VlmObject> enriched = await _enrichObjects(
+      config,
+      imageFile,
+      analysis.objects,
+      onProgress,
+    );
+
+    return (
+      rawPrompt: prompt,
+      rawResponse: rawResponse,
+      analysis: VlmAnalysis(
+        highLevelDescription: analysis.highLevelDescription,
+        style: analysis.style,
+        background: analysis.background,
+        objects: enriched,
+      ),
+    );
+  }
+
+  /// Builds the enumerate prompt, mirroring [_buildVisionPrompt] but loading
+  /// the enumerate template.
+  Future<String> _buildEnumeratePrompt(
+    File imageFile,
+    String guidance, {
+    bool vlmEmitsXyxy = true,
+  }) async {
+    final String template = await _promptLoader.loadVisionEnumeratePrompt();
+    final String aspectRatio = await _aspectRatioOfFile(imageFile);
+    final String bboxOrder =
+        vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
+    String prompt = template
+        .replaceAll('{{aspect_ratio}}', aspectRatio)
+        .replaceAll('{{bbox_order}}', bboxOrder);
+    if (guidance.trim().isNotEmpty) {
+      prompt +=
+          '\n\n## PER-IMAGE USER GUIDANCE (authoritative)\n'
+          'The instructions below are supplied by the user for THIS specific '
+          'image. Follow them exactly.\n\nUSER GUIDANCE:\n$guidance';
+    }
+    return prompt;
+  }
+
+  /// Runs the per-element enrich fan-out in chunks of [_enrichConcurrency].
+  /// Objects that fail to enrich (throw / unparseable / no bbox) keep their
+  /// terse enumerate desc — one bad element never fails the image.
+  Future<List<VlmObject>> _enrichObjects(
+    LlmConfig config,
+    File imageFile,
+    List<VlmObject> objects,
+    void Function(String step) onProgress,
+  ) async {
+    final List<VlmObject> result = List<VlmObject>.from(objects);
+    int done = 0;
+    for (int i = 0; i < objects.length; i += _enrichConcurrency) {
+      final int end = (i + _enrichConcurrency).clamp(0, objects.length);
+      final List<int> chunk = <int>[for (int j = i; j < end; j++) j];
+      final List<VlmObject?> outcomes = await Future.wait(
+        <Future<VlmObject?>>[
+          for (final int idx in chunk)
+            _enrichOne(config, imageFile, objects[idx]),
+        ],
+      );
+      for (int k = 0; k < chunk.length; k++) {
+        final VlmObject? e = outcomes[k];
+        if (e != null) {
+          result[chunk[k]] = e;
+        }
+      }
+      done += chunk.length;
+      onProgress('Enriched $done/${objects.length} elements...');
+    }
+    return result;
+  }
+
+  /// Enriches a single element via one VLM call on its cropped region.
+  /// Returns null on any failure → caller keeps the terse enumerate desc.
+  Future<VlmObject?> _enrichOne(
+    LlmConfig config,
+    File imageFile,
+    VlmObject obj,
+  ) async {
+    final List<int>? bbox = obj.bbox;
+    if (bbox == null) {
+      return null; // nothing to crop → skip, keep terse desc
+    }
+    String? tempPath;
+    try {
+      tempPath = await _bboxHighlightService.renderCroppedJpeg(
+        imageFile,
+        bbox,
+      );
+      final String template = await _promptLoader.loadElementEnrichPrompt();
+      final String prompt = template
+          .replaceAll('{name}', obj.name)
+          .replaceAll('{type}', obj.type);
+      final String raw = await _captionService.getCaption(
+        config,
+        File(tempPath),
+        prompt,
+      );
+      return _parseEnrichResponse(raw, obj);
+    } catch (e) {
+      _logger.warning('Element enrich failed for "${obj.name}": $e');
+      return null;
+    } finally {
+      if (tempPath != null) {
+        await _bboxHighlightService.cleanup(tempPath);
+      }
+    }
+  }
+
+  /// Parses a single-element enrich JSON response into a new [VlmObject]
+  /// carrying the rich desc. Returns null when the response is missing `desc`
+  /// or is unparseable (caller then retains the terse desc).
+  VlmObject? _parseEnrichResponse(String raw, VlmObject original) {
+    try {
+      final String cleaned = _stripMarkdownFences(raw);
+      final Map<String, dynamic> json =
+          jsonDecode(cleaned) as Map<String, dynamic>;
+      final String desc = (json['desc'] as String?)?.trim() ?? '';
+      if (desc.isEmpty) {
+        return null;
+      }
+      final String? text = json['text'] as String?;
+      return VlmObject(
+        name: original.name,
+        desc: desc,
+        type: original.type,
+        text: text ?? original.text,
+        bbox: original.bbox,
+      );
+    } catch (e) {
+      _logger.warning('Failed to parse enrich response: $e');
+      return null;
+    }
   }
 
   /// Shared tail for both vision paths: health check → SAM → element

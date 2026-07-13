@@ -255,6 +255,32 @@ class MockStructuredPromptLoader extends _i1.Mock
             ),
           )
           as _i3.Future<String>);
+
+  @override
+  _i3.Future<String> loadVisionEnumeratePrompt() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadVisionEnumeratePrompt, []),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#loadVisionEnumeratePrompt, []),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
+
+  @override
+  _i3.Future<String> loadElementEnrichPrompt() =>
+      (super.noSuchMethod(
+            Invocation.method(#loadElementEnrichPrompt, []),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#loadElementEnrichPrompt, []),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
 }
 
 /// A class which mocks [SamProcessService].

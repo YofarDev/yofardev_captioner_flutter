@@ -2031,4 +2031,171 @@ void main() {
       ]);
     });
   });
+
+  // ===========================================================================
+  // multi-stage mode: enumerate (terse) → per-element enrich (rich) → merge.
+  // Stubs the full collaborator set so the shared _finalizeCaption tail runs
+  // end-to-end; SAM is disabled (we are testing the vision stage, not SAM).
+  // ===========================================================================
+  group('multi-stage mode', () {
+    late MockCaptionService mockCaption;
+    late MockBboxHighlightService mockBbox;
+    late MockColorExtractionService mockColor;
+    late MockStructuredPromptLoader mockLoader;
+    late MockSamProcessService mockSam;
+    late StructuredCaptionRepository repo;
+    late LlmConfig config;
+
+    const String enumerateTwoBboxes =
+        '{"high_level_description":"a desk","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":[{"name":"Mug","type":"obj","desc":"terse mug","bbox":[100,100,300,300]},{"name":"Book","type":"obj","desc":"terse book","bbox":[400,400,600,600]}]}';
+
+    const String enumerateOneBbox =
+        '{"high_level_description":"a desk","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":[{"name":"Mug","type":"obj","desc":"terse mug","bbox":[100,100,300,300]}]}';
+
+    const String enumerateNoBbox =
+        '{"high_level_description":"a desk","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":[{"name":"Blob","type":"obj","desc":"bbox-less blob"}]}';
+
+    const String enrichRich =
+        '{"desc":"a ceramic mug with glossy teal glaze and a small chip on the handle"}';
+
+    setUp(() {
+      mockCaption = MockCaptionService();
+      mockBbox = MockBboxHighlightService();
+      mockColor = MockColorExtractionService();
+      mockLoader = MockStructuredPromptLoader();
+      mockSam = MockSamProcessService();
+      config = LlmConfig(
+        id: 'cfg',
+        name: 'cfg',
+        model: 'vlm',
+        providerType: LlmProviderType.remote,
+      );
+      repo = StructuredCaptionRepository(
+        captionService: mockCaption,
+        bboxHighlightService: mockBbox,
+        colorExtractionService: mockColor,
+        promptLoader: mockLoader,
+        samProcessService: mockSam,
+      );
+      when(mockLoader.loadVisionEnumeratePrompt()).thenAnswer(
+        (_) async => 'ENUM {{aspect_ratio}} {{bbox_order}}',
+      );
+      when(mockLoader.loadElementEnrichPrompt()).thenAnswer(
+        (_) async => 'ENRISH {name} {type}',
+      );
+      when(
+        mockBbox.renderCroppedJpeg(any, any),
+      ).thenAnswer((_) async => '/tmp/crop.jpg');
+      when(mockBbox.cleanup(any)).thenAnswer((_) async {});
+      when(
+        mockColor.extractPalette(any),
+      ).thenAnswer((_) async => <String>['#ffffff']);
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>['#000000']);
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenAnswer((_) async => <SamDetection>[]);
+    });
+
+    test(
+      'Behavior A — enumerate then one enrich per bbox, merged desc is rich',
+      () async {
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENUM')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer((_) async => enumerateTwoBboxes);
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENRISH')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer((_) async => enrichRich);
+
+        final IdeogramCaption caption = await repo.generateStructuredCaption(
+          config,
+          File('img.png'),
+          onProgress: (_) {},
+          disableSam: true,
+          mode: StructuredMode.multiStage,
+        );
+
+        final String json = caption.toJsonString();
+        expect(json, contains('ceramic mug with glossy teal glaze'));
+        expect(json, isNot(contains('terse mug')));
+        verify(mockBbox.renderCroppedJpeg(any, any)).called(2);
+      },
+    );
+
+    test(
+      'Behavior B — enrich failure keeps terse desc, image still succeeds',
+      () async {
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENUM')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer((_) async => enumerateOneBbox);
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENRISH')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenThrow(Exception('enrich boom'));
+
+        final IdeogramCaption caption = await repo.generateStructuredCaption(
+          config,
+          File('img.png'),
+          onProgress: (_) {},
+          disableSam: true,
+          mode: StructuredMode.multiStage,
+        );
+
+        expect(caption.toJsonString(), contains('terse mug'));
+      },
+    );
+
+    test(
+      'Behavior C — bbox-less object skipped by enrichment, kept terse',
+      () async {
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENUM')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer((_) async => enumerateNoBbox);
+
+        final IdeogramCaption caption = await repo.generateStructuredCaption(
+          config,
+          File('img.png'),
+          onProgress: (_) {},
+          disableSam: true,
+          mode: StructuredMode.multiStage,
+        );
+
+        verifyNever(mockBbox.renderCroppedJpeg(any, any));
+        expect(caption.toJsonString(), contains('bbox-less blob'));
+        verify(
+          mockCaption.getCaption(
+            any,
+            any,
+            any,
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).called(1);
+      },
+    );
+  });
 }

@@ -1,0 +1,16 @@
+You are captioning ONE element cropped out of a larger image. The crop is shown above. Return ONLY a JSON object with this exact shape — no markdown fences, no commentary:
+
+{"desc": "<30-60 word detailed description of THIS element>", "text": "<literal characters, only when type is text>"}
+
+Rules:
+- "desc" is 30-60 words. Identity first, then observable attributes (shape, material, color, distinctive parts). For people: skin tone, hair, each visible garment, expression, pose, one distinguishing detail.
+- OBSERVE ONLY. Never invent, infer, or guess. If something is not visible in the crop, do not mention it.
+- No shadows, no camera/render language, no impressions ("vibrant", "stunning"). Observable properties only.
+- "text" is the literal characters AS THEY APPEAR, verbatim, preserved exactly (case, punctuation, diacritics, \n for line breaks). Include "text" ONLY when the element type is text. Omit it otherwise.
+- Never repeat any character from "text" inside "desc" — describe the text as shape/color/material/font to someone who cannot read it.
+
+Element context:
+- name: {name}
+- type: {type}   (use "text" to decide whether to include the "text" field)
+
+Return ONLY the JSON object.

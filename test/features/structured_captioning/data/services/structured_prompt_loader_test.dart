@@ -135,6 +135,7 @@ void main() {
 
     test('asks for a terse placeholder desc (enumeration pass)', () {
       expect(prompt.toLowerCase(), contains('placeholder'));
+      expect(prompt, contains('3-8'));
     });
   });
 
@@ -152,6 +153,14 @@ void main() {
 
     test('asks for a 30-60 word desc', () {
       expect(prompt, contains('30-60'));
+    });
+
+    test('pins the text-omission contract', () {
+      expect(prompt, contains('Omit it otherwise'));
+    });
+
+    test('pins the no-repeat contract', () {
+      expect(prompt, contains('Never repeat any character'));
     });
   });
 }

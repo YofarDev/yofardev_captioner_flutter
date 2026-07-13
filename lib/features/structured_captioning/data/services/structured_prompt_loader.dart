@@ -8,6 +8,9 @@ class StructuredPromptLoader {
       'assets/prompts/element_recaption.txt';
   static const String _styleRecaptionPath =
       'assets/prompts/style_recaption.txt';
+  // ponytail: vision prompts use double-brace tokens ({{bbox_order}},
+  // {{aspect_ratio}}) substituted by the repository; element_enrich uses
+  // single-brace {name}/{type} like element_recaption's {existingJson}.
   static const String _visionEnumeratePath =
       'assets/prompts/vision_enumerate.txt';
   static const String _elementEnrichPath =
@@ -25,12 +28,11 @@ class StructuredPromptLoader {
   Future<String> loadStyleRecaptionPrompt() =>
       rootBundle.loadString(_styleRecaptionPath);
 
-  /// Loads the multi-stage vision ENUMERATION prompt (terse per-object desc).
+  /// Loads the multi-stage vision enumeration prompt from bundled assets.
   Future<String> loadVisionEnumeratePrompt() =>
       rootBundle.loadString(_visionEnumeratePath);
 
-  /// Loads the single-element ENRICHMENT prompt used by the multi-stage
-  /// pipeline to write the detailed 30-60 word desc for one cropped element.
+  /// Loads the single-element enrichment prompt from bundled assets.
   Future<String> loadElementEnrichPrompt() =>
       rootBundle.loadString(_elementEnrichPath);
 }

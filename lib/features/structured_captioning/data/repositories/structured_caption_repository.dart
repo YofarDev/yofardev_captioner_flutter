@@ -68,6 +68,41 @@ class StructuredCaptionRepository {
     }
 
     // Step 2: VLM analysis.
+    final ({String rawPrompt, String rawResponse, VlmAnalysis analysis}) vision =
+        await _runVisionAnalysisSingleShot(
+      config,
+      imageFile,
+      onProgress: onProgress,
+      vlmEmitsXyxy: vlmEmitsXyxy,
+      guidance: guidance,
+    );
+    final VlmAnalysis analysis = vision.analysis;
+
+    return _finalizeCaption(
+      config: config,
+      imageFile: imageFile,
+      analysis: analysis,
+      globalPalette: globalPalette,
+      vlmRawPrompt: vision.rawPrompt,
+      vlmRawResponse: vision.rawResponse,
+      onProgress: onProgress,
+      overrides: overrides,
+      debugMode: debugMode,
+      disableSam: disableSam,
+    );
+  }
+
+  /// Single-shot VLM analysis: one call produces the full VLM JSON. This is
+  /// the original structured-captioning vision path; a multi-stage path is
+  /// added in a later task.
+  Future<({String rawPrompt, String rawResponse, VlmAnalysis analysis})>
+      _runVisionAnalysisSingleShot(
+    LlmConfig config,
+    File imageFile, {
+    required void Function(String step) onProgress,
+    required bool vlmEmitsXyxy,
+    required String guidance,
+  }) async {
     onProgress('Analyzing image with VLM...');
     // `/no_think` prefix keeps reasoning models from burning the token budget
     // on an internal <think> block; harmless for models that don't recognize it.
@@ -93,7 +128,23 @@ class StructuredCaptionRepository {
       config,
       vlmEmitsXyxy: vlmEmitsXyxy,
     );
+    return (rawPrompt: prompt, rawResponse: vlmRawResponse, analysis: analysis);
+  }
 
+  /// Shared tail for both vision paths: health check → SAM → element
+  /// palettes → build Ideogram JSON → optional debug artifacts.
+  Future<IdeogramCaption> _finalizeCaption({
+    required LlmConfig config,
+    required File imageFile,
+    required VlmAnalysis analysis,
+    required List<String> globalPalette,
+    required String vlmRawPrompt,
+    required String vlmRawResponse,
+    required void Function(String step) onProgress,
+    StructuredBatchOverrides? overrides,
+    bool debugMode = false,
+    bool disableSam = false,
+  }) async {
     // Cheap structural health check before spending SAM + palette work on a
     // refusal / empty / degenerate output. Fatal issues abort the image
     // (retryable); soft issues are logged.
@@ -217,7 +268,7 @@ class StructuredCaptionRepository {
       onProgress('Saving debug artifacts...');
       await _saveDebugArtifacts(
         imageFile: imageFile,
-        prompt: prompt,
+        prompt: vlmRawPrompt,
         vlmRawResponse: vlmRawResponse,
         vlmObjects: analysis.objects,
         detections: matched,

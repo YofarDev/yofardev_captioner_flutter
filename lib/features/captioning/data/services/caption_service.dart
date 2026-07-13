@@ -186,7 +186,7 @@ class CaptionService {
         '--model',
         config.model,
         '--temperature',
-        '0.0',
+        '0.5',
         '--max-tokens',
         effectiveMaxTokens.toString(),
         '--prompt',

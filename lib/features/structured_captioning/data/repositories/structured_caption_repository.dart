@@ -20,6 +20,64 @@ import '../services/sam_process_service.dart';
 import '../services/structured_prompt_loader.dart';
 import '../utils/caption_hardening.dart';
 
+/// Quality report for a multi-stage run, describing which elements were
+/// enriched, skipped, pruned, or had their enrich responses rejected.
+class MultiStageQualityReport {
+  const MultiStageQualityReport({
+    this.fullCanvasBboxes = const <int>[],
+    this.nearFullCanvasBboxes = const <int>[],
+    this.duplicateCandidates = const <int>[],
+    this.skippedEnrichments = const <int>[],
+    this.enrichFailures = const <int>[],
+    this.enrichRejections = const <int>[],
+  });
+
+  final List<int> fullCanvasBboxes;
+  final List<int> nearFullCanvasBboxes;
+  final List<int> duplicateCandidates;
+  final List<int> skippedEnrichments;
+  final List<int> enrichFailures;
+  final List<int> enrichRejections;
+
+  bool get hasIssues =>
+      fullCanvasBboxes.isNotEmpty ||
+      nearFullCanvasBboxes.isNotEmpty ||
+      duplicateCandidates.isNotEmpty ||
+      enrichFailures.isNotEmpty ||
+      enrichRejections.isNotEmpty;
+
+  String toFormattedString() {
+    final StringBuffer buf = StringBuffer();
+    buf.writeln('quality_report');
+    buf.writeln('=============');
+    if (fullCanvasBboxes.isNotEmpty) {
+      buf.writeln('full-canvas bboxes: [${fullCanvasBboxes.join(', ')}]');
+    }
+    if (nearFullCanvasBboxes.isNotEmpty) {
+      buf.writeln(
+        'near-full-canvas bboxes (>80%): [${nearFullCanvasBboxes.join(', ')}]',
+      );
+    }
+    if (duplicateCandidates.isNotEmpty) {
+      buf.writeln(
+        'duplicate candidates (pruned): [${duplicateCandidates.join(', ')}]',
+      );
+    }
+    if (skippedEnrichments.isNotEmpty) {
+      buf.writeln('skipped enrichments: [${skippedEnrichments.join(', ')}]');
+    }
+    if (enrichFailures.isNotEmpty) {
+      buf.writeln('enrich parse failures: [${enrichFailures.join(', ')}]');
+    }
+    if (enrichRejections.isNotEmpty) {
+      buf.writeln(
+        'enrich sanity-check rejections: [${enrichRejections.join(', ')}]',
+      );
+    }
+    return buf.toString();
+  }
+}
+
 /// Selects how the structured pipeline produces its [VlmAnalysis].
 enum StructuredMode {
   /// One VLM call emits the full JSON. The original path. Best for simple
@@ -90,6 +148,7 @@ class StructuredCaptionRepository {
         onProgress: onProgress,
         vlmEmitsXyxy: vlmEmitsXyxy,
         guidance: guidance,
+        debugMode: debugMode,
       );
     } else {
       vision = await _runVisionAnalysisSingleShot(
@@ -120,7 +179,7 @@ class StructuredCaptionRepository {
   /// the original structured-captioning vision path; a multi-stage path is
   /// added in a later task.
   Future<({String rawPrompt, String rawResponse, VlmAnalysis analysis})>
-      _runVisionAnalysisSingleShot(
+  _runVisionAnalysisSingleShot(
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
@@ -161,64 +220,301 @@ class StructuredCaptionRepository {
   // and freeze the machine. See _enrichConcurrencyFor.
   static const int _enrichConcurrency = 4;
 
+  /// Hard cap on the number of elements the enumerate pass may emit.
+  /// Enforced both in the prompt and by the pre-enrich validation gate.
+  static const int _multiStageElementCap = 30;
+
   /// Per-provider enrich fan-out width. Local MLX is forced to 1 (each call is
   /// a heavyweight subprocess that reloads the model); remote providers fan out.
   int _enrichConcurrencyFor(LlmConfig config) =>
       config.providerType == LlmProviderType.localMlx ? 1 : _enrichConcurrency;
 
-  /// Multi-stage vision analysis: enumerate (terse) → enrich per element.
-  /// Returns the same record shape as [_runVisionAnalysisSingleShot] so the
-  /// shared [_finalizeCaption] tail can consume either path uniformly.
-  /// `rawResponse` is the enumerate response (useful for debug artifacts).
+  /// Multi-stage vision analysis: enumerate (terse) → validation gate (with
+  /// one bounded retry) → quality gate → enrich per eligible element. Returns
+  /// the same record shape as [_runVisionAnalysisSingleShot] so the shared
+  /// [_finalizeCaption] tail can consume either path uniformly.
+  ///
+  /// Debug mode saves the enumerate artifacts, per-element enrich artifacts,
+  /// and a quality report alongside the standard debug output.
   Future<({String rawPrompt, String rawResponse, VlmAnalysis analysis})>
-      _runVisionAnalysisMultiStage(
+  _runVisionAnalysisMultiStage(
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
     required bool vlmEmitsXyxy,
     required String guidance,
+    bool debugMode = false,
   }) async {
+    // ── Pass 1: enumerate ───────────────────────────────────────────────
     onProgress('Enumerating objects (multi-stage VLM)...');
-    final String prompt = injectNoThink(
+    String prompt = injectNoThink(
       await _buildEnumeratePrompt(
         imageFile,
         guidance,
         vlmEmitsXyxy: vlmEmitsXyxy,
       ),
     );
-    final String rawResponse = await _captionService.getCaption(
+    String rawResponse = await _captionService.getCaption(
       config,
       imageFile,
       prompt,
       maxTokens: 8192,
     );
-    final VlmAnalysis analysis = await _parseVlmResponseWithRepair(
-      stripThinking(rawResponse),
+    VlmAnalysis analysis = await _parseEnumerateResponse(
+      rawResponse,
       config,
       vlmEmitsXyxy: vlmEmitsXyxy,
     );
+    bool didRetry = false;
+    String? retryPrompt;
+    String? retryRawResponse;
+
+    // ── Validation gate ────────────────────────────────────────────────
+    final List<String> defects = _validateEnumerateOutput(analysis);
+    if (defects.isNotEmpty) {
+      _logger.warning(
+        'Enumerate validation found ${defects.length} defect(s): '
+        '${defects.join("; ")}',
+      );
+      // One bounded retry with defect feedback.
+      didRetry = true;
+      retryPrompt = injectNoThink(
+        await _buildEnumeratePrompt(
+          imageFile,
+          guidance +
+              '\n\n## PREVIOUS ATTEMPT DEFECTS — fix these issues:\n'
+              'Your previous output had these structural problems:\n'
+              '- ${defects.join("\n- ")}\n'
+              'Please fix ALL of the above issues in your new output. '
+              'Prioritize broad coverage over filling the element cap.',
+          vlmEmitsXyxy: vlmEmitsXyxy,
+        ),
+      );
+      retryRawResponse = await _captionService.getCaption(
+        config,
+        imageFile,
+        retryPrompt,
+        maxTokens: 8192,
+      );
+      final VlmAnalysis retryAnalysis = await _parseEnumerateResponse(
+        retryRawResponse,
+        config,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      );
+      // Use the retry output if it has objects, even if still imperfect.
+      // The original analysis is kept as fallback only if retry is empty.
+      if (retryAnalysis.objects.isNotEmpty) {
+        analysis = retryAnalysis;
+        prompt = retryPrompt;
+        rawResponse = retryRawResponse;
+      }
+    }
 
     if (analysis.objects.isEmpty) {
       return (rawPrompt: prompt, rawResponse: rawResponse, analysis: analysis);
     }
 
-    onProgress('Enriching ${analysis.objects.length} elements...');
-    final List<VlmObject> enriched = await _enrichObjects(
+    // ── Quality gates: prune duplicates, skip suspicious bboxes ────────
+    analysis = _pruneDuplicateObjects(analysis);
+    final MultiStageQualityReport qualityReport = _buildQualityReport(analysis);
+    final List<int> skippedIndices = <int>[
+      ...qualityReport.fullCanvasBboxes,
+      ...qualityReport.nearFullCanvasBboxes,
+    ];
+
+    final List<int> enrichableIndices = <int>[];
+    for (int i = 0; i < analysis.objects.length; i++) {
+      if (!skippedIndices.contains(i)) {
+        enrichableIndices.add(i);
+      }
+    }
+    if (enrichableIndices.isEmpty) {
+      return (rawPrompt: prompt, rawResponse: rawResponse, analysis: analysis);
+    }
+
+    // ── Enrichment fan-out ─────────────────────────────────────────────
+    onProgress('Enriching ${enrichableIndices.length} elements...');
+    final List<VlmObject?> enrichResults = await _enrichObjects(
       config,
       imageFile,
-      analysis.objects,
+      enrichableIndices.map((int i) => analysis.objects[i]).toList(),
       onProgress,
     );
+
+    // Merge enriched results back into the full object list.
+    final List<VlmObject> merged = List<VlmObject>.from(analysis.objects);
+    final List<int> failureIndices = <int>[];
+    for (int j = 0; j < enrichableIndices.length; j++) {
+      final VlmObject? enriched = enrichResults[j];
+      if (enriched != null) {
+        merged[enrichableIndices[j]] = enriched;
+      } else {
+        failureIndices.add(enrichableIndices[j]);
+      }
+    }
+
+    final VlmAnalysis enrichedAnalysis = VlmAnalysis(
+      highLevelDescription: analysis.highLevelDescription,
+      style: analysis.style,
+      background: analysis.background,
+      objects: merged,
+    );
+
+    // Debug artifacts for multi-stage.
+    if (debugMode) {
+      await _saveMultiStageDebugArtifacts(
+        imageFile: imageFile,
+        enumeratePrompt: didRetry ? retryPrompt! : prompt,
+        enumerateRawResponse: didRetry ? retryRawResponse! : rawResponse,
+        qualityReport: qualityReport,
+        enrichFailures: failureIndices,
+        preEnrichAnalysis: analysis,
+      );
+    }
 
     return (
       rawPrompt: prompt,
       rawResponse: rawResponse,
-      analysis: VlmAnalysis(
-        highLevelDescription: analysis.highLevelDescription,
-        style: analysis.style,
-        background: analysis.background,
-        objects: enriched,
-      ),
+      analysis: enrichedAnalysis,
+    );
+  }
+
+  /// Parses an enumerate VLM response, falling back to partial recovery on
+  /// malformed JSON.
+  Future<VlmAnalysis> _parseEnumerateResponse(
+    String raw,
+    LlmConfig config, {
+    bool vlmEmitsXyxy = true,
+  }) async {
+    try {
+      return await _parseVlmResponseWithRepair(
+        stripThinking(raw),
+        config,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      );
+    } on FormatException catch (e) {
+      final VlmAnalysis recovered = parsePartialVlmResponse(
+        stripThinking(raw),
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      );
+      _logger.warning(
+        'Multi-stage enumerate JSON was malformed; recovered '
+        '${recovered.objects.length} complete objects from prefix: $e',
+      );
+      return recovered;
+    }
+  }
+
+  // ── bbox quality helpers ────────────────────────────────────────────────
+
+  /// True when [bbox] is the exact full-canvas `[0, 0, 1000, 1000]`.
+  bool _isFullCanvasBbox(List<int>? bbox) {
+    if (bbox == null || bbox.length != 4) return false;
+    return bbox[0] == 0 && bbox[1] == 0 && bbox[2] == 1000 && bbox[3] == 1000;
+  }
+
+  /// Fraction of the full canvas (1000 × 1000) that [bbox] covers. Returns 0
+  /// for null or malformed input.
+  @visibleForTesting
+  double bboxAreaRatio(List<int>? bbox) {
+    if (bbox == null || bbox.length != 4) return 0.0;
+    final double h = (bbox[2] - bbox[0]).toDouble();
+    final double w = (bbox[3] - bbox[1]).toDouble();
+    if (h <= 0.0 || w <= 0.0) return 0.0;
+    return (h * w) / (1000.0 * 1000.0);
+  }
+
+  /// True when [bbox] covers more than 80 % of the full canvas.
+  bool _isNearFullCanvasBbox(List<int>? bbox) => bboxAreaRatio(bbox) > 0.80;
+
+  /// Simple name-similarity heuristic for duplicate detection: fraction of
+  /// words in the shorter name that appear in the longer name.
+  @visibleForTesting
+  double normalizedNameSimilarity(String a, String b) {
+    final Set<String> wordsA = a.toLowerCase().split(RegExp(r'\s+')).toSet();
+    final Set<String> wordsB = b.toLowerCase().split(RegExp(r'\s+')).toSet();
+    if (wordsA.isEmpty || wordsB.isEmpty) return 0.0;
+    final int intersection = wordsA.intersection(wordsB).length;
+    return intersection / min(wordsA.length, wordsB.length);
+  }
+
+  /// Prunes duplicate objects: when two objects share a bbox with IoU > 0.90
+  /// and have similar names, the second (and later) duplicate is dropped. The
+  /// first or most informative one is kept. Returns a new [VlmAnalysis] with
+  /// duplicates removed.
+  @visibleForTesting
+  VlmAnalysis pruneDuplicateObjects(VlmAnalysis analysis) {
+    if (analysis.objects.length < 2) return analysis;
+
+    final List<int> kept = <int>[];
+    for (int i = 0; i < analysis.objects.length; i++) {
+      bool isDuplicate = false;
+      final VlmObject obj = analysis.objects[i];
+      for (final int k in kept) {
+        final VlmObject existing = analysis.objects[k];
+        final double iou = computeIou(obj.bbox, existing.bbox);
+        if (iou > 0.90 &&
+            normalizedNameSimilarity(obj.name, existing.name) > 0.50) {
+          isDuplicate = true;
+          break;
+        }
+      }
+      if (!isDuplicate) {
+        kept.add(i);
+      }
+    }
+
+    if (kept.length == analysis.objects.length) return analysis;
+    return VlmAnalysis(
+      highLevelDescription: analysis.highLevelDescription,
+      style: analysis.style,
+      background: analysis.background,
+      objects: <VlmObject>[for (final int i in kept) analysis.objects[i]],
+    );
+  }
+
+  VlmAnalysis _pruneDuplicateObjects(VlmAnalysis analysis) =>
+      pruneDuplicateObjects(analysis);
+
+  /// Builds a quality report for the multi-stage analysis, identifying
+  /// full-canvas, near-full-canvas, and duplicate-prone elements.
+  MultiStageQualityReport _buildQualityReport(VlmAnalysis analysis) {
+    final List<int> fullCanvas = <int>[];
+    final List<int> nearFullCanvas = <int>[];
+    final List<int> duplicates = <int>[];
+    final Set<int> seen = <int>{};
+
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final List<int>? bbox = analysis.objects[i].bbox;
+      if (_isFullCanvasBbox(bbox)) {
+        fullCanvas.add(i);
+      } else if (_isNearFullCanvasBbox(bbox)) {
+        nearFullCanvas.add(i);
+      }
+      // Duplicate candidate detection (already pruned, but report what was
+      // found before pruning — we can only report what remains).
+      for (final int s in seen) {
+        final double iou = computeIou(
+          analysis.objects[s].bbox,
+          analysis.objects[i].bbox,
+        );
+        if (iou > 0.90 &&
+            normalizedNameSimilarity(
+                  analysis.objects[s].name,
+                  analysis.objects[i].name,
+                ) >
+                0.50) {
+          duplicates.add(i);
+          break;
+        }
+      }
+      seen.add(i);
+    }
+
+    return MultiStageQualityReport(
+      fullCanvasBboxes: fullCanvas,
+      nearFullCanvasBboxes: nearFullCanvas,
+      duplicateCandidates: duplicates,
     );
   }
 
@@ -231,11 +527,11 @@ class StructuredCaptionRepository {
   }) async {
     final String template = await _promptLoader.loadVisionEnumeratePrompt();
     final String aspectRatio = await _aspectRatioOfFile(imageFile);
-    final String bboxOrder =
-        vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
+    final String bboxOrder = vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
     String prompt = template
         .replaceAll('{{aspect_ratio}}', aspectRatio)
-        .replaceAll('{{bbox_order}}', bboxOrder);
+        .replaceAll('{{bbox_order}}', bboxOrder)
+        .replaceAll('{{element_cap}}', _multiStageElementCap.toString());
     if (guidance.trim().isNotEmpty) {
       prompt +=
           '\n\n## PER-IMAGE USER GUIDANCE (authoritative)\n'
@@ -243,6 +539,86 @@ class StructuredCaptionRepository {
           'image. Follow them exactly.\n\nUSER GUIDANCE:\n$guidance';
     }
     return prompt;
+  }
+
+  /// Validates enumerate output before enrichment fan-out.
+  ///
+  /// Returns a list of structural defect descriptions. An empty list means
+  /// the output is structurally sound and enrichment can proceed.
+  ///
+  /// Checks:
+  /// - Element cap not exceeded
+  /// - No exact duplicate bboxes
+  /// - No full-canvas bboxes
+  /// - No degenerate (null) bboxes for individual objects
+  List<String> _validateEnumerateOutput(VlmAnalysis analysis) {
+    final List<String> defects = <String>[];
+
+    if (analysis.objects.isEmpty) return defects;
+
+    // Cap check.
+    if (analysis.objects.length > _multiStageElementCap) {
+      defects.add(
+        'element cap exceeded: ${analysis.objects.length} > $_multiStageElementCap',
+      );
+    }
+
+    // Exact duplicate bbox check (same coordinates, any name).
+    // Null bboxes are skipped — they are silently excluded from enrichment.
+    final Set<String> bboxSigs = <String>{};
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final List<int>? bbox = analysis.objects[i].bbox;
+      if (bbox == null) continue;
+      final String sig = bbox.join(',');
+      if (!bboxSigs.add(sig)) {
+        defects.add(
+          'duplicate bbox at index $i for "${analysis.objects[i].name}": '
+          '[${bbox.join(", ")}]',
+        );
+      }
+    }
+
+    // Full-canvas bbox check.
+    for (int i = 0; i < analysis.objects.length; i++) {
+      if (_isFullCanvasBbox(analysis.objects[i].bbox)) {
+        defects.add(
+          'full-canvas bbox at index $i for "${analysis.objects[i].name}"',
+        );
+      }
+    }
+
+    return defects;
+  }
+
+  /// Post-merge structural defect check for the final analysis.
+  ///
+  /// Runs after enrichment merges and before SAM/palette work. Catches the
+  /// same issues as [_validateEnumerateOutput] but includes the cap check.
+  /// Unlike [_validateEnumerateOutput], this does not trigger a retry — it
+  /// either warns or (for cap violations) throws.
+  List<String> _postMergeDefects(VlmAnalysis analysis) {
+    final List<String> defects = <String>[];
+    if (analysis.objects.isEmpty) return defects;
+
+    if (analysis.objects.length > _multiStageElementCap) {
+      defects.add(
+        'element cap exceeded: ${analysis.objects.length} > $_multiStageElementCap',
+      );
+    }
+
+    final Set<String> bboxSigs = <String>{};
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final List<int>? bbox = analysis.objects[i].bbox;
+      if (bbox == null) continue;
+      final String sig = bbox.join(',');
+      if (!bboxSigs.add(sig)) {
+        defects.add(
+          'duplicate final bbox at index $i for '
+          '"${analysis.objects[i].name}": [${bbox.join(", ")}]',
+        );
+      }
+    }
+    return defects;
   }
 
   /// Runs the per-element enrich fan-out. Width is provider-aware via
@@ -262,12 +638,10 @@ class StructuredCaptionRepository {
     for (int i = 0; i < objects.length; i += concurrency) {
       final int end = (i + concurrency).clamp(0, objects.length);
       final List<int> chunk = <int>[for (int j = i; j < end; j++) j];
-      final List<VlmObject?> outcomes = await Future.wait(
-        <Future<VlmObject?>>[
-          for (final int idx in chunk)
-            _enrichOne(config, imageFile, objects[idx]),
-        ],
-      );
+      final List<VlmObject?> outcomes = await Future.wait(<Future<VlmObject?>>[
+        for (final int idx in chunk)
+          _enrichOne(config, imageFile, objects[idx]),
+      ]);
       for (int k = 0; k < chunk.length; k++) {
         final VlmObject? e = outcomes[k];
         if (e != null) {
@@ -281,7 +655,8 @@ class StructuredCaptionRepository {
   }
 
   /// Enriches a single element via one VLM call on its cropped region.
-  /// Returns null on any failure → caller keeps the terse enumerate desc.
+  /// Returns null on any failure or sanity-check rejection → caller keeps the
+  /// terse enumerate desc.
   Future<VlmObject?> _enrichOne(
     LlmConfig config,
     File imageFile,
@@ -293,20 +668,27 @@ class StructuredCaptionRepository {
     }
     String? tempPath;
     try {
-      tempPath = await _bboxHighlightService.renderCroppedJpeg(
-        imageFile,
-        bbox,
-      );
+      tempPath = await _bboxHighlightService.renderCroppedJpeg(imageFile, bbox);
       final String template = await _promptLoader.loadElementEnrichPrompt();
       final String prompt = template
           .replaceAll('{name}', obj.name)
-          .replaceAll('{type}', obj.type);
+          .replaceAll('{type}', obj.type)
+          .replaceAll('{desc}', obj.desc)
+          .replaceAll('{bbox}', _fmtBbox(bbox));
       final String raw = await _captionService.getCaption(
         config,
         File(tempPath),
         prompt,
       );
-      return _parseEnrichResponse(raw, obj);
+      final VlmObject? parsed = _parseEnrichResponse(raw, obj);
+      if (parsed == null) return null;
+      // Sanity check: reject descriptions that clearly describe the whole
+      // scene instead of the cropped element.
+      if (!_enrichResponsePassesSanity(parsed)) {
+        _logger.warning('Enrich sanity check failed for "${obj.name}"');
+        return null;
+      }
+      return parsed;
     } catch (e) {
       _logger.warning('Element enrich failed for "${obj.name}": $e');
       return null;
@@ -315,10 +697,69 @@ class StructuredCaptionRepository {
         try {
           await _bboxHighlightService.cleanup(tempPath);
         } catch (e) {
-          _logger.warning('Element enrich cleanup failed for "${obj.name}": $e');
+          _logger.warning(
+            'Element enrich cleanup failed for "${obj.name}": $e',
+          );
         }
       }
     }
+  }
+
+  /// Sanity check for a single-element enrich response.
+  ///
+  /// Rejects descriptions that:
+  /// - Refer to the whole scene instead of the cropped element
+  /// - Are too short (< 5 words) — insufficient enrichment
+  /// - Are too long (> 80 words) — likely padding or hallucination
+  /// - Describe a different subject than the original element name
+  ///
+  /// The word-count bounds are intentionally generous — they catch the worst
+  /// cases without rejecting legitimate concise descriptions for small objects.
+  bool _enrichResponsePassesSanity(VlmObject obj) {
+    final String desc = obj.desc.toLowerCase();
+    // Whole-scene indicators that a single-element crop should never mention.
+    const List<String> scenePhrases = <String>[
+      'the room',
+      'the scene',
+      'the image',
+      'the whole',
+      'the background',
+      'the foreground',
+      'the setting',
+      'the environment',
+      'the composition',
+      'the layout',
+      'in this image',
+      'in the scene',
+      'in the room',
+      'this image shows',
+      'the overall',
+      'the entire',
+    ];
+    if (scenePhrases.any((String phrase) => desc.contains(phrase))) {
+      _logger.fine(
+        'Enrich sanity rejected: scene phrase in "${obj.name}": "$desc"',
+      );
+      return false;
+    }
+
+    // Word count check.
+    final int wordCount =
+        desc.split(RegExp(r'\s+')).where((String w) => w.isNotEmpty).length;
+    if (wordCount < 5) {
+      _logger.fine(
+        'Enrich sanity rejected: too short (${wordCount}w) for "${obj.name}"',
+      );
+      return false;
+    }
+    if (wordCount > 80) {
+      _logger.fine(
+        'Enrich sanity rejected: too long (${wordCount}w) for "${obj.name}"',
+      );
+      return false;
+    }
+
+    return true;
   }
 
   /// Parses a single-element enrich JSON response into a new [VlmObject]
@@ -334,8 +775,9 @@ class StructuredCaptionRepository {
         return null;
       }
       final String? textRaw = json['text'] as String?;
-      final String? text =
-          (textRaw == null || textRaw.trim().isEmpty) ? null : textRaw;
+      final String? text = (textRaw == null || textRaw.trim().isEmpty)
+          ? null
+          : textRaw;
       return VlmObject(
         name: original.name,
         desc: desc,
@@ -376,6 +818,24 @@ class StructuredCaptionRepository {
       _logger.warning('Caption health issue for ${imageFile.path}: $issue');
     }
     _logger.info('VLM analysis parsed: ${analysis.objects.length} objects');
+
+    // Post-merge consistency invariants. These are hard checks that catch
+    // structural defects even after the multi-stage pipeline completes.
+    final List<String> postDefects = _postMergeDefects(analysis);
+    if (postDefects.isNotEmpty) {
+      for (final String defect in postDefects) {
+        _logger.warning(
+          'Final caption integrity issue for ${imageFile.path}: $defect',
+        );
+      }
+      // Cap violation is a hard failure — it means the element cap was
+      // exceeded even after VLM-level enforcement.
+      if (postDefects.any((String d) => d.contains('element cap exceeded'))) {
+        throw FormatException(
+          'Final caption exceeds element cap: ${postDefects.join('; ')}',
+        );
+      }
+    }
 
     // Step 3: SAM3 detection (skip group elements — SAM detects individuals).
     // When [disableSam] is set, the SAM refinement step is skipped entirely
@@ -838,6 +1298,34 @@ class StructuredCaptionRepository {
     return target.copyWith(desc: desc);
   }
 
+  /// Saves multi-stage-specific debug artifacts alongside the image in a
+  /// `debug/` subfolder. Called from [_runVisionAnalysisMultiStage] when
+  /// [debugMode] is true.
+  Future<void> _saveMultiStageDebugArtifacts({
+    required File imageFile,
+    required String enumeratePrompt,
+    required String enumerateRawResponse,
+    required MultiStageQualityReport qualityReport,
+    required List<int> enrichFailures,
+    required VlmAnalysis preEnrichAnalysis,
+  }) async {
+    final String stem = imageFile.path.replaceAll(RegExp(r'\.[^.]+$'), '');
+    final Directory debugDir = Directory('${imageFile.parent.path}/debug');
+    await debugDir.create(recursive: true);
+
+    // Pre-enrich parsed VlmAnalysis.
+    await File(
+      '${debugDir.path}/${stem.split('/').last}_enumerate_analysis.json',
+    ).writeAsString(
+      const JsonEncoder.withIndent('  ').convert(preEnrichAnalysis.toJson()),
+    );
+
+    // Quality report.
+    await File(
+      '${debugDir.path}/${stem.split('/').last}_quality_report.txt',
+    ).writeAsString(qualityReport.toFormattedString());
+  }
+
   /// Saves debug artifacts alongside the image in a `debug/` subfolder.
   Future<void> _saveDebugArtifacts({
     required File imageFile,
@@ -1152,6 +1640,166 @@ class StructuredCaptionRepository {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Recovers a usable [VlmAnalysis] from a truncated enumerate response.
+  ///
+  /// Local MLX cannot run the text-only JSON repair pass, and runaway
+  /// repetition can truncate an otherwise useful enumerate response before the
+  /// top-level object closes. This fallback parses the complete top-level
+  /// header and every complete object literal already emitted inside
+  /// `objects`, then lets the normal parser normalize bboxes and fields.
+  @visibleForTesting
+  VlmAnalysis parsePartialVlmResponse(String raw, {bool vlmEmitsXyxy = true}) {
+    final String s = _stripMarkdownFences(raw);
+    final int objectsKey = s.indexOf('"objects"');
+    if (objectsKey < 0) {
+      throw const FormatException(
+        'Failed to recover partial VLM JSON: no objects key found',
+      );
+    }
+    final int arrayStart = s.indexOf('[', objectsKey);
+    if (arrayStart < 0) {
+      throw const FormatException(
+        'Failed to recover partial VLM JSON: no objects array found',
+      );
+    }
+
+    final Map<String, dynamic> header = _parsePartialHeader(
+      s.substring(0, objectsKey),
+    );
+    final List<Map<String, dynamic>> objects = _parseCompleteObjectLiterals(
+      s.substring(arrayStart + 1),
+    );
+    if (objects.isEmpty) {
+      throw const FormatException(
+        'Failed to recover partial VLM JSON: no complete objects found',
+      );
+    }
+
+    return parseAnalysisJson(<String, dynamic>{
+      'high_level_description': header['high_level_description'] ?? '',
+      'style': header['style'] ?? <String, dynamic>{},
+      'background': header['background'] ?? '',
+      'objects': objects,
+    }, vlmEmitsXyxy: vlmEmitsXyxy);
+  }
+
+  Map<String, dynamic> _parsePartialHeader(String prefix) {
+    final String headerCandidate =
+        '${prefix.replaceFirst(RegExp(r',\s*$'), '')}}';
+    try {
+      return jsonDecode(headerCandidate) as Map<String, dynamic>;
+    } catch (_) {
+      return <String, dynamic>{
+        'high_level_description': _extractJsonStringField(
+          prefix,
+          'high_level_description',
+        ),
+        'style': _extractStyleObject(prefix),
+        'background': _extractJsonStringField(prefix, 'background'),
+      };
+    }
+  }
+
+  List<Map<String, dynamic>> _parseCompleteObjectLiterals(String arrayTail) {
+    final List<Map<String, dynamic>> objects = <Map<String, dynamic>>[];
+    int depth = 0;
+    int objectStart = -1;
+    bool inString = false;
+    bool escaped = false;
+
+    for (int i = 0; i < arrayTail.length; i++) {
+      final String ch = arrayTail[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch == '\\') {
+          escaped = true;
+        } else if (ch == '"') {
+          inString = false;
+        }
+        continue;
+      }
+
+      if (ch == '"') {
+        inString = true;
+        continue;
+      }
+      if (ch == '{') {
+        if (depth == 0) objectStart = i;
+        depth++;
+      } else if (ch == '}') {
+        if (depth == 0) continue;
+        depth--;
+        if (depth == 0 && objectStart >= 0) {
+          final String literal = arrayTail.substring(objectStart, i + 1);
+          try {
+            objects.add(jsonDecode(literal) as Map<String, dynamic>);
+          } catch (_) {
+            // Ignore malformed object fragments and keep scanning for later
+            // complete objects.
+          }
+          objectStart = -1;
+        }
+      } else if (ch == ']' && depth == 0) {
+        break;
+      }
+    }
+    return objects;
+  }
+
+  String _extractJsonStringField(String source, String field) {
+    final RegExp regex = RegExp(
+      '"$field"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"',
+      dotAll: true,
+    );
+    final RegExpMatch? match = regex.firstMatch(source);
+    if (match == null) return '';
+    try {
+      return jsonDecode('"${match.group(1)!}"') as String;
+    } catch (_) {
+      return match.group(1) ?? '';
+    }
+  }
+
+  Map<String, dynamic> _extractStyleObject(String source) {
+    final int styleKey = source.indexOf('"style"');
+    if (styleKey < 0) return <String, dynamic>{};
+    final int objectStart = source.indexOf('{', styleKey);
+    if (objectStart < 0) return <String, dynamic>{};
+    int depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (int i = objectStart; i < source.length; i++) {
+      final String ch = source[i];
+      if (inString) {
+        if (escaped) {
+          escaped = false;
+        } else if (ch == '\\') {
+          escaped = true;
+        } else if (ch == '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (ch == '"') {
+        inString = true;
+      } else if (ch == '{') {
+        depth++;
+      } else if (ch == '}') {
+        depth--;
+        if (depth == 0) {
+          try {
+            return jsonDecode(source.substring(objectStart, i + 1))
+                as Map<String, dynamic>;
+          } catch (_) {
+            return <String, dynamic>{};
+          }
+        }
+      }
+    }
+    return <String, dynamic>{};
   }
 
   String _stripMarkdownFences(String input) {

@@ -2077,12 +2077,12 @@ void main() {
         promptLoader: mockLoader,
         samProcessService: mockSam,
       );
-      when(mockLoader.loadVisionEnumeratePrompt()).thenAnswer(
-        (_) async => 'ENUM {{aspect_ratio}} {{bbox_order}}',
-      );
-      when(mockLoader.loadElementEnrichPrompt()).thenAnswer(
-        (_) async => 'ENRICH {name} {type}',
-      );
+      when(
+        mockLoader.loadVisionEnumeratePrompt(),
+      ).thenAnswer((_) async => 'ENUM {{aspect_ratio}} {{bbox_order}}');
+      when(
+        mockLoader.loadElementEnrichPrompt(),
+      ).thenAnswer((_) async => 'ENRICH {name} {type}');
       when(
         mockBbox.renderCroppedJpeg(any, any),
       ).thenAnswer((_) async => '/tmp/crop.jpg');
@@ -2339,6 +2339,340 @@ void main() {
       );
 
       expect(maxInflight, greaterThanOrEqualTo(2));
+    });
+  });
+
+  // =========================================================================
+  // bboxAreaRatio
+  // =========================================================================
+
+  group('bboxAreaRatio', () {
+    late StructuredCaptionRepository repo;
+
+    setUp(() {
+      repo = StructuredCaptionRepository();
+    });
+
+    test('full canvas returns 1.0', () {
+      expect(repo.bboxAreaRatio(<int>[0, 0, 1000, 1000]), closeTo(1.0, 0.001));
+    });
+
+    test('quarter canvas returns ~0.25', () {
+      expect(repo.bboxAreaRatio(<int>[0, 0, 500, 500]), closeTo(0.25, 0.001));
+    });
+
+    test('null returns 0.0', () {
+      expect(repo.bboxAreaRatio(null), 0.0);
+    });
+
+    test('zero-area returns 0.0', () {
+      expect(repo.bboxAreaRatio(<int>[100, 100, 100, 200]), 0.0);
+    });
+
+    test('malformed (wrong length) returns 0.0', () {
+      expect(repo.bboxAreaRatio(<int>[1, 2, 3]), 0.0);
+    });
+  });
+
+  // =========================================================================
+  // normalizedNameSimilarity
+  // =========================================================================
+
+  group('normalizedNameSimilarity', () {
+    late StructuredCaptionRepository repo;
+
+    setUp(() {
+      repo = StructuredCaptionRepository();
+    });
+
+    test('identical names return 1.0', () {
+      expect(repo.normalizedNameSimilarity('Plants', 'Plants'), 1.0);
+    });
+
+    test('overlapping words return fraction', () {
+      expect(repo.normalizedNameSimilarity('potted plants', 'plants'), 1.0);
+    });
+
+    test('partial overlap', () {
+      // "framed" is shared; "picture" ≠ "pictures" → 1/2 = 0.5.
+      expect(
+        repo.normalizedNameSimilarity('framed picture', 'framed pictures'),
+        0.5,
+      );
+    });
+
+    test('unrelated names return 0.0', () {
+      expect(repo.normalizedNameSimilarity('Sofa', 'Windows'), 0.0);
+    });
+
+    test('empty strings return 0.0', () {
+      expect(repo.normalizedNameSimilarity('', 'Sofa'), 0.0);
+    });
+  });
+
+  // =========================================================================
+  // pruneDuplicateObjects
+  // =========================================================================
+
+  group('pruneDuplicateObjects', () {
+    late StructuredCaptionRepository repo;
+
+    setUp(() {
+      repo = StructuredCaptionRepository();
+    });
+
+    VlmAnalysis analysisWith(List<VlmObject> objects) => VlmAnalysis(
+      highLevelDescription: 'test',
+      style: const VlmStyle(
+        medium: 'photograph',
+        aesthetics: '',
+        lighting: '',
+        photoOrArt: '',
+      ),
+      background: '',
+      objects: objects,
+    );
+
+    test('removes duplicate same-bbox same-name objects', () {
+      final VlmAnalysis analysis = analysisWith(<VlmObject>[
+        VlmObject(
+          name: 'Bookshelf',
+          desc: 'a',
+          bbox: <int>[500, 540, 650, 860],
+        ),
+        VlmObject(
+          name: 'Bookshelf',
+          desc: 'b',
+          bbox: <int>[500, 540, 650, 860],
+        ),
+      ]);
+      final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
+      expect(pruned.objects, hasLength(1));
+    });
+
+    test('keeps objects with different bboxes', () {
+      final VlmAnalysis analysis = analysisWith(<VlmObject>[
+        VlmObject(name: 'Lamp', desc: 'a', bbox: <int>[330, 410, 370, 470]),
+        VlmObject(name: 'Sofa', desc: 'b', bbox: <int>[100, 100, 500, 400]),
+      ]);
+      final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
+      expect(pruned.objects, hasLength(2));
+    });
+
+    test('single object is not pruned', () {
+      final VlmAnalysis analysis = analysisWith(<VlmObject>[
+        VlmObject(name: 'Lamp', desc: 'a', bbox: <int>[330, 410, 370, 470]),
+      ]);
+      final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
+      expect(pruned.objects, hasLength(1));
+    });
+
+    test('keeps objects with same bbox but different names (not similar)', () {
+      final VlmAnalysis analysis = analysisWith(<VlmObject>[
+        VlmObject(name: 'Sofa', desc: 'a', bbox: <int>[0, 0, 1000, 1000]),
+        VlmObject(name: 'Plants', desc: 'b', bbox: <int>[0, 0, 1000, 1000]),
+      ]);
+      final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
+      expect(pruned.objects, hasLength(2));
+    });
+  });
+
+  // =========================================================================
+  // parsePartialVlmResponse
+  // =========================================================================
+
+  group('parsePartialVlmResponse', () {
+    late StructuredCaptionRepository repo;
+
+    setUp(() {
+      repo = StructuredCaptionRepository();
+    });
+
+    test('recovers complete objects from a truncated enumerate response', () {
+      const String truncated =
+          '{"high_level_description":"apartment","style":{"medium":"illustration",'
+          '"aesthetics":"pastel","lighting":"bright","photo_or_art":"flat art"},'
+          '"background":"pink walls","objects":['
+          '{"name":"bed","type":"obj","desc":"yellow bed","bbox":[197,112,414,194]},'
+          '{"name":"sofa","type":"obj","desc":"orange sofa","bbox":[669,328,938,452]},'
+          '{"name":"plant","type":"obj","desc":"upper right plants","bbox":[790,102,975,228]},'
+          '{"name":"plant","type":"obj","desc":"lower left';
+
+      final VlmAnalysis analysis = repo.parsePartialVlmResponse(truncated);
+
+      expect(analysis.highLevelDescription, 'apartment');
+      expect(analysis.style.medium, 'illustration');
+      expect(analysis.background, 'pink walls');
+      expect(analysis.objects, hasLength(3));
+      expect(analysis.objects.map((VlmObject o) => o.name), <String>[
+        'bed',
+        'sofa',
+        'plant',
+      ]);
+    });
+  });
+
+  // =========================================================================
+  // Multi-stage quality gates
+  // =========================================================================
+
+  group('multi-stage quality gates', () {
+    late MockCaptionService mockCaption;
+    late MockBboxHighlightService mockBbox;
+    late MockColorExtractionService mockColor;
+    late MockStructuredPromptLoader mockLoader;
+    late MockSamProcessService mockSam;
+    late StructuredCaptionRepository repo;
+    late LlmConfig config;
+
+    setUp(() {
+      mockCaption = MockCaptionService();
+      mockBbox = MockBboxHighlightService();
+      mockColor = MockColorExtractionService();
+      mockLoader = MockStructuredPromptLoader();
+      mockSam = MockSamProcessService();
+      config = LlmConfig(
+        id: 'cfg',
+        name: 'cfg',
+        model: 'vlm',
+        providerType: LlmProviderType.remote,
+      );
+      repo = StructuredCaptionRepository(
+        captionService: mockCaption,
+        bboxHighlightService: mockBbox,
+        colorExtractionService: mockColor,
+        promptLoader: mockLoader,
+        samProcessService: mockSam,
+      );
+      when(
+        mockLoader.loadVisionEnumeratePrompt(),
+      ).thenAnswer((_) async => 'ENUM {{aspect_ratio}} {{bbox_order}}');
+      when(
+        mockLoader.loadElementEnrichPrompt(),
+      ).thenAnswer((_) async => 'ENRICH {name} {type} {desc} {bbox}');
+      when(
+        mockBbox.renderCroppedJpeg(any, any),
+      ).thenAnswer((_) async => '/tmp/crop.jpg');
+      when(mockBbox.cleanup(any)).thenAnswer((_) async {});
+      when(
+        mockColor.extractPalette(any),
+      ).thenAnswer((_) async => <String>['#ffffff']);
+      when(
+        mockColor.extractPaletteFromRegion(any, any),
+      ).thenAnswer((_) async => <String>['#000000']);
+      when(
+        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+      ).thenAnswer((_) async => <SamDetection>[]);
+    });
+
+    const String enumerateFullCanvas =
+        '{"high_level_description":"a room","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":['
+        '{"name":"Sofa","type":"obj","desc":"terse sofa","bbox":[0,0,1000,1000]},'
+        '{"name":"Table","type":"obj","desc":"terse table","bbox":[100,100,300,300]}]}';
+
+    test('full-canvas bbox skips enrichment, keeps terse desc', () async {
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENUM')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => enumerateFullCanvas);
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENRICH')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => '{"desc":"a wooden table with four visible legs and a dark surface finish"}');
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+        mode: StructuredMode.multiStage,
+      );
+
+      final String json = caption.toJsonString();
+      expect(json, contains('terse sofa'));
+      expect(json, contains('wooden table with four visible legs'));
+      verify(mockBbox.renderCroppedJpeg(any, any)).called(1);
+    });
+
+    const String enumerateNearFullCanvas =
+        '{"high_level_description":"a room","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":['
+        '{"name":"Floor","type":"obj","desc":"terse floor","bbox":[0,0,1000,900]},'
+        '{"name":"Chair","type":"obj","desc":"terse chair","bbox":[200,200,400,400]}]}';
+
+    test('near-full-canvas bbox skips enrichment, keeps terse desc', () async {
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENUM')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => enumerateNearFullCanvas);
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENRICH')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => '{"desc":"a wooden chair with a curved backrest and four tapered legs"}');
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+        mode: StructuredMode.multiStage,
+      );
+
+      final String json = caption.toJsonString();
+      expect(json, contains('terse floor'));
+      expect(json, contains('wooden chair with a curved backrest'));
+      verify(mockBbox.renderCroppedJpeg(any, any)).called(1);
+    });
+
+    const String enumerateOneBbox =
+        '{"high_level_description":"a desk","style":{"medium":"photograph","aesthetics":"x","lighting":"y","photo_or_art":"z"},"background":"wall","objects":[{"name":"Mug","type":"obj","desc":"terse mug","bbox":[100,100,300,300]}]}';
+
+    test('enrich sanity-check rejection keeps terse desc', () async {
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENUM')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => enumerateOneBbox);
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENRICH')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            '{"desc":"This is the room with a large sofa and table in the scene"}',
+      );
+
+      final IdeogramCaption caption = await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+        mode: StructuredMode.multiStage,
+      );
+
+      final String json = caption.toJsonString();
+      expect(json, contains('terse mug'));
     });
   });
 }

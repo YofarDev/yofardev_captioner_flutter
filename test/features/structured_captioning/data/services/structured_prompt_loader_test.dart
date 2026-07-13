@@ -151,16 +151,16 @@ void main() {
       prompt = await File('assets/prompts/vision_enumerate.txt').readAsString();
     });
 
-    test('has a GROUPING section', () {
-      expect(prompt, contains('GROUPING'));
+    test('has a grouping section', () {
+      expect(prompt.toLowerCase(), contains('group'));
     });
 
     test('forbids per-item enumeration of repeated instances', () {
       expect(prompt, contains('NEVER emit one element per repeated instance'));
     });
 
-    test('enforces a hard element cap', () {
-      expect(prompt, contains('AT MOST 30'));
+    test('enforces a hard element cap via token', () {
+      expect(prompt, contains('{{element_cap}}'));
     });
   });
 
@@ -176,16 +176,81 @@ void main() {
       expect(prompt, contains('{type}'));
     });
 
-    test('asks for a 30-60 word desc', () {
-      expect(prompt, contains('30-60'));
+    test('asks for a 12-40 word desc', () {
+      expect(prompt, contains('12-40'));
     });
 
     test('pins the text-omission contract', () {
       expect(prompt, contains('Omit it otherwise'));
     });
 
-    test('pins the no-repeat contract', () {
-      expect(prompt, contains('Never repeat any character'));
+    test('pins the no-invent contract', () {
+      expect(prompt, contains('Never invent'));
+    });
+
+    test('includes desc token for terse enumerate context', () {
+      expect(prompt, contains('{desc}'));
+    });
+
+    test('includes bbox token for element position context', () {
+      expect(prompt, contains('{bbox}'));
+    });
+
+    test('includes name and type tokens', () {
+      expect(prompt, contains('{name}'));
+      expect(prompt, contains('{type}'));
+    });
+
+    test('forbids whole-scene context leakage', () {
+      expect(prompt, contains('DO NOT describe'));
+      expect(prompt.toLowerCase(), contains('the room'));
+      expect(prompt, contains('the overall image'));
+      expect(prompt, contains('background'));
+    });
+  });
+
+  group('vision_enumerate prompt localization rules', () {
+    late String prompt;
+
+    setUpAll(() async {
+      prompt = await File('assets/prompts/vision_enumerate.txt').readAsString();
+    });
+
+    test('forbids full-image bboxes for individual objects', () {
+      expect(prompt, contains('NEVER use the full-image bbox'));
+    });
+
+    test('requires zone-based grouping for separated clusters', () {
+      expect(prompt, contains('SEPARATE zones'));
+      expect(prompt, contains('zone'));
+      expect(prompt, contains('SEPARATE grouped elements'));
+    });
+
+    test('gives interior subject examples', () {
+      expect(prompt, contains('sofas'));
+      expect(prompt, contains('shelves'));
+      expect(prompt, contains('plants'));
+      expect(prompt, contains('wall art'));
+    });
+
+    test('requires broad category coverage', () {
+      expect(prompt.toLowerCase(), contains('broad'));
+      expect(prompt, contains('seating'));
+      expect(prompt, contains('beds'));
+      expect(prompt, contains('tables'));
+      expect(prompt, contains('shelves'));
+      expect(prompt, contains('rugs'));
+      expect(prompt, contains('electronics'));
+    });
+
+    test('keeps element cap via token', () {
+      expect(prompt, contains('{{element_cap}}'));
+      expect(prompt, contains('AT MOST 4 zone-based groups'));
+    });
+
+    test('separates background from objects', () {
+      expect(prompt, contains('no duplicated'));
+      expect(prompt, contains('architectural shell'));
     });
   });
 }

@@ -93,5 +93,27 @@ void main() {
       );
       expect(issues, isEmpty);
     });
+
+    test('flags dominant object-kind collapse as a soft issue', () {
+      final List<String> issues = captionHealthIssues(
+        _analysis(
+          highLevelDescription: 'A furnished apartment interior.',
+          objects: const <VlmObject>[
+            VlmObject(name: 'potted plants', desc: 'upper left plants'),
+            VlmObject(name: 'plant', desc: 'lower plant'),
+            VlmObject(name: 'green plants', desc: 'right plants'),
+            VlmObject(name: 'hanging plant', desc: 'wall plant'),
+            VlmObject(name: 'small plant', desc: 'table plant'),
+            VlmObject(name: 'sofa', desc: 'orange sofa'),
+          ],
+        ),
+      );
+
+      expect(
+        issues.any((String s) => s.contains('collapsed onto one category')),
+        isTrue,
+      );
+      expect(hasFatalHealthIssue(issues), isFalse);
+    });
   });
 }

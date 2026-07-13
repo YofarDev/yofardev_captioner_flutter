@@ -77,6 +77,23 @@ bool _sliceEquals(List<String> words, int aStart, int bStart, int size) {
   return true;
 }
 
+String _objectKindKey(String name) {
+  final List<String> words = name
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9\s-]'), ' ')
+      .split(RegExp(r'\s+'))
+      .where((String w) => w.isNotEmpty)
+      .toList();
+  if (words.isEmpty) return '';
+  String key = words.last;
+  if (key.endsWith('ies') && key.length > 3) {
+    key = '${key.substring(0, key.length - 3)}y';
+  } else if (key.endsWith('s') && !key.endsWith('ss') && key.length > 3) {
+    key = key.substring(0, key.length - 1);
+  }
+  return key;
+}
+
 /// Cheap structural health checks on a parsed VLM analysis.
 ///
 /// Returns a list of human-readable issue strings; an empty list means the
@@ -115,6 +132,62 @@ List<String> captionHealthIssues(VlmAnalysis analysis) {
   }
   if (nonEmpty.any((String s) => _hasRunawayRepetition(s))) {
     issues.add('repetitive / degenerate text');
+  }
+
+  // Multi-stage quality warnings.
+  final Set<String> bboxSignatures = <String>{};
+  int fullCanvasCount = 0;
+  int duplicateBboxCount = 0;
+  int backgroundNameMatches = 0;
+  for (final VlmObject o in analysis.objects) {
+    if (o.bbox != null) {
+      final String sig = o.bbox!.join(',');
+      if (sig == '0,0,1000,1000') {
+        fullCanvasCount++;
+      }
+      if (!bboxSignatures.add(sig)) {
+        duplicateBboxCount++;
+      }
+    }
+    // Check if object names appear in background. A single clear violation
+    // is flagged — the old threshold of >1 missed solitary mismatches.
+    if (o.name.isNotEmpty &&
+        analysis.background.toLowerCase().contains(o.name.toLowerCase())) {
+      backgroundNameMatches++;
+    }
+  }
+  if (fullCanvasCount > 0) {
+    issues.add(
+      '$fullCanvasCount element(s) use full-canvas bbox [0, 0, 1000, 1000]',
+    );
+  }
+  if (duplicateBboxCount > 1) {
+    issues.add('$duplicateBboxCount elements share identical bboxes');
+  }
+  if (backgroundNameMatches >= 1) {
+    issues.add(
+      '$backgroundNameMatches object name(s) also appear in background',
+    );
+  }
+
+  final Map<String, int> kindCounts = <String, int>{};
+  for (final VlmObject o in analysis.objects) {
+    final String key = _objectKindKey(o.name);
+    if (key.isEmpty) continue;
+    kindCounts[key] = (kindCounts[key] ?? 0) + 1;
+  }
+  if (analysis.objects.length >= 5 && kindCounts.isNotEmpty) {
+    final MapEntry<String, int> dominant = kindCounts.entries.reduce(
+      (MapEntry<String, int> a, MapEntry<String, int> b) =>
+          a.value >= b.value ? a : b,
+    );
+    final double ratio = dominant.value / analysis.objects.length;
+    if (dominant.value >= 4 && ratio >= 0.70) {
+      issues.add(
+        'object list may have collapsed onto one category: '
+        '${dominant.value}/${analysis.objects.length} "$dominant.key" elements',
+      );
+    }
   }
   return issues;
 }

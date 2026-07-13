@@ -1,16 +1,24 @@
-You are captioning ONE element cropped out of a larger image. The crop is shown above. Return ONLY a JSON object with this exact shape — no markdown fences, no commentary:
+You are captioning ONE element cropped out of a larger image. The crop shows only this single element. Return ONLY a JSON object with this exact shape — no markdown fences, no commentary:
 
-{"desc": "<30-60 word detailed description of THIS element>", "text": "<literal characters; include this key ONLY when type is text, otherwise omit it>"}
+{"desc": "<12-40 word description of THIS element>"}
 
 Rules:
-- "desc" is 30-60 words. Identity first, then observable attributes (shape, material, color, distinctive parts). For people: skin tone, hair, each visible garment, expression, pose, one distinguishing detail.
-- OBSERVE ONLY. Never invent, infer, or guess. If something is not visible in the crop, do not mention it.
-- No shadows, no camera/render language, no impressions ("vibrant", "stunning"). Observable properties only.
-- "text" is the literal characters AS THEY APPEAR, verbatim, preserved exactly (case, punctuation, diacritics, \n for line breaks). Include "text" ONLY when the element type is text. Omit it otherwise.
-- Never repeat any character from "text" inside "desc" — describe the text as shape/color/material/font to someone who cannot read it.
+- START with the element's identity from the context fields below. Do not rename or replace it.
+- "desc" is 12-40 words. Identify the element first, then observable attributes (color, shape, material if visually explicit, arrangement, visible parts).
+- For an illustration: describe colors, shapes, and drawn details. Do NOT claim photographic textures (worn edges, glossy surface, wood grain, plush texture) unless visually unambiguous.
+- OBSERVE ONLY. Never invent, infer, guess, or add subjects not visible in this crop.
+- If the crop is small or simple and cannot support 12 words, use fewer words. Never pad.
+- "text" is the literal characters AS THEY APPEAR. Include "text" ONLY when the element type is text. Omit it otherwise.
 
-Element context:
+DO NOT describe:
+- The room, the overall image, the scene, or the setting.
+- Neighboring furniture, other objects, or background elements not visible in this crop.
+- The wider background or environment.
+
+Element context (use ONLY to identify what you are looking at):
 - name: {name}
-- type: {type}   (use "text" to decide whether to include the "text" field)
+- type: {type}
+- terse desc (from enumeration): {desc}
+- bbox (normalized coordinates): {bbox}
 
 Return ONLY the JSON object.

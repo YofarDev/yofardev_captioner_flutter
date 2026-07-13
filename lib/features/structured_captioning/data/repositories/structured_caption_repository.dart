@@ -279,7 +279,7 @@ class StructuredCaptionRepository {
   ) async {
     final List<int>? bbox = obj.bbox;
     if (bbox == null) {
-      return null; // nothing to crop → skip, keep terse desc
+      return null;
     }
     String? tempPath;
     try {
@@ -302,7 +302,11 @@ class StructuredCaptionRepository {
       return null;
     } finally {
       if (tempPath != null) {
-        await _bboxHighlightService.cleanup(tempPath);
+        try {
+          await _bboxHighlightService.cleanup(tempPath);
+        } catch (e) {
+          _logger.warning('Element enrich cleanup failed for "${obj.name}": $e');
+        }
       }
     }
   }
@@ -319,7 +323,9 @@ class StructuredCaptionRepository {
       if (desc.isEmpty) {
         return null;
       }
-      final String? text = json['text'] as String?;
+      final String? textRaw = json['text'] as String?;
+      final String? text =
+          (textRaw == null || textRaw.trim().isEmpty) ? null : textRaw;
       return VlmObject(
         name: original.name,
         desc: desc,

@@ -2081,7 +2081,7 @@ void main() {
         (_) async => 'ENUM {{aspect_ratio}} {{bbox_order}}',
       );
       when(mockLoader.loadElementEnrichPrompt()).thenAnswer(
-        (_) async => 'ENRISH {name} {type}',
+        (_) async => 'ENRICH {name} {type}',
       );
       when(
         mockBbox.renderCroppedJpeg(any, any),
@@ -2113,7 +2113,7 @@ void main() {
           mockCaption.getCaption(
             any,
             any,
-            argThat(contains('ENRISH')),
+            argThat(contains('ENRICH')),
             maxTokens: anyNamed('maxTokens'),
           ),
         ).thenAnswer((_) async => enrichRich);
@@ -2148,7 +2148,7 @@ void main() {
           mockCaption.getCaption(
             any,
             any,
-            argThat(contains('ENRISH')),
+            argThat(contains('ENRICH')),
             maxTokens: anyNamed('maxTokens'),
           ),
         ).thenThrow(Exception('enrich boom'));
@@ -2195,6 +2195,51 @@ void main() {
             maxTokens: anyNamed('maxTokens'),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'Behavior D — mixed success/failure fan-out preserves index mapping',
+      () async {
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('ENUM')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer((_) async => enumerateTwoBboxes);
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('Mug')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenAnswer(
+          (_) async => '{"desc":"rich mug description with ceramic glaze"}',
+        );
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            argThat(contains('Book')),
+            maxTokens: anyNamed('maxTokens'),
+          ),
+        ).thenThrow(Exception('book enrich boom'));
+
+        final IdeogramCaption caption = await repo.generateStructuredCaption(
+          config,
+          File('img.png'),
+          onProgress: (_) {},
+          disableSam: true,
+          mode: StructuredMode.multiStage,
+        );
+
+        final String json = caption.toJsonString();
+        expect(json, contains('rich mug description with ceramic glaze'));
+        expect(json, contains('terse book'));
+        verify(mockBbox.renderCroppedJpeg(any, any)).called(2);
       },
     );
   });

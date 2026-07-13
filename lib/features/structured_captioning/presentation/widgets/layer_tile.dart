@@ -76,11 +76,7 @@ class LayerTile extends StatelessWidget {
               index: data.index,
               child: const Padding(
                 padding: EdgeInsets.only(right: 4),
-                child: Icon(
-                  Icons.drag_indicator,
-                  size: 16,
-                  color: textMuted,
-                ),
+                child: Icon(Icons.drag_indicator, size: 16, color: textMuted),
               ),
             ),
             // Thumbnail

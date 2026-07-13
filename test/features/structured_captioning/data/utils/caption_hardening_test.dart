@@ -3,23 +3,22 @@ import 'package:yofardev_captioner/features/structured_captioning/data/models/vl
 import 'package:yofardev_captioner/features/structured_captioning/data/utils/caption_hardening.dart';
 
 VlmStyle _style() => const VlmStyle(
-      medium: 'photograph',
-      aesthetics: '',
-      lighting: '',
-      photoOrArt: '',
-    );
+  medium: 'photograph',
+  aesthetics: '',
+  lighting: '',
+  photoOrArt: '',
+);
 
 VlmAnalysis _analysis({
   required String highLevelDescription,
   String background = '',
   List<VlmObject> objects = const <VlmObject>[],
-}) =>
-    VlmAnalysis(
-      highLevelDescription: highLevelDescription,
-      style: _style(),
-      background: background,
-      objects: objects,
-    );
+}) => VlmAnalysis(
+  highLevelDescription: highLevelDescription,
+  style: _style(),
+  background: background,
+  objects: objects,
+);
 
 void main() {
   group('injectNoThink', () {
@@ -35,7 +34,8 @@ void main() {
 
   group('stripThinking', () {
     test('removes a think block and trims', () {
-      const String raw = '<think>let me reason</think>{"high_level_description":"x"}';
+      const String raw =
+          '<think>let me reason</think>{"high_level_description":"x"}';
       expect(stripThinking(raw), '{"high_level_description":"x"}');
     });
 
@@ -73,7 +73,9 @@ void main() {
       final List<String> issues = captionHealthIssues(
         _analysis(
           highLevelDescription: 'a desk a desk a desk a desk a desk a desk',
-          objects: <VlmObject>[const VlmObject(name: 'desk', desc: 'wooden desk')],
+          objects: <VlmObject>[
+            const VlmObject(name: 'desk', desc: 'wooden desk'),
+          ],
         ),
       );
       expect(issues.any((String s) => s.startsWith('repetitive')), isTrue);
@@ -84,7 +86,9 @@ void main() {
       final List<String> issues = captionHealthIssues(
         _analysis(
           highLevelDescription: 'A wooden desk in a white room.',
-          objects: <VlmObject>[const VlmObject(name: 'desk', desc: 'a brown wooden desk')],
+          objects: <VlmObject>[
+            const VlmObject(name: 'desk', desc: 'a brown wooden desk'),
+          ],
         ),
       );
       expect(issues, isEmpty);

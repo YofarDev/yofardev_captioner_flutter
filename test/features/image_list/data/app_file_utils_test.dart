@@ -265,15 +265,12 @@ void main() {
 
           // Rename map produced by the helper (sorted insertion order):
           // each image shifts one slot forward into the next sequential name.
-          await appFileUtils.updateDbForRename(
-            <String, String>{
-              '00.jpg': '01.jpg',
-              '01.jpg': '02.jpg',
-              '02.jpg': '03.jpg',
-              '03.jpg': '04.jpg',
-            },
-            tempDir.path,
-          );
+          await appFileUtils.updateDbForRename(<String, String>{
+            '00.jpg': '01.jpg',
+            '01.jpg': '02.jpg',
+            '02.jpg': '03.jpg',
+            '03.jpg': '04.jpg',
+          }, tempDir.path);
 
           // Physical files would land at these names; the DB must agree so a
           // reload matches caption-by-filename to the correct image.
@@ -292,14 +289,11 @@ void main() {
           (filename: '03.jpg', caption: 'CCC'),
         ]);
 
-        await appFileUtils.updateDbForRename(
-          <String, String>{
-            '01.jpg': '04.jpg',
-            '02.jpg': '05.jpg',
-            '03.jpg': '06.jpg',
-          },
-          tempDir.path,
-        );
+        await appFileUtils.updateDbForRename(<String, String>{
+          '01.jpg': '04.jpg',
+          '02.jpg': '05.jpg',
+          '03.jpg': '06.jpg',
+        }, tempDir.path);
 
         final Map<String, String> mapping = await readFilenameToCaptionMap();
         expect(mapping.keys, <String>{'04.jpg', '05.jpg', '06.jpg'});
@@ -323,43 +317,48 @@ void main() {
         };
       }
 
-      test('stale DB entry for removed image does not collide on reload', () async {
-        await writeImage('01.jpg');
-        await writeImage('02.jpg');
-        await writeImage('03.jpg');
-        await seedDb(
-          <({String filename, String caption})>[
+      test(
+        'stale DB entry for removed image does not collide on reload',
+        () async {
+          await writeImage('01.jpg');
+          await writeImage('02.jpg');
+          await writeImage('03.jpg');
+          await seedDb(<({String filename, String caption})>[
             (filename: '01.jpg', caption: 'AAA'),
             (filename: '02.jpg', caption: 'BBB'),
             (filename: '03.jpg', caption: 'CCC'),
-          ],
-        );
+          ]);
 
-        // Image 02.jpg is removed (file gone). A refresh must drop its stale
-        // DB entry so it can't shadow a later rename target.
-        await File(p.join(tempDir.path, '02.jpg')).delete();
-        await appFileUtils.onFolderPicked(tempDir.path);
+          // Image 02.jpg is removed (file gone). A refresh must drop its stale
+          // DB entry so it can't shadow a later rename target.
+          await File(p.join(tempDir.path, '02.jpg')).delete();
+          await appFileUtils.onFolderPicked(tempDir.path);
 
-        // Surviving files [01, 03] renumber to [01, 02]. Simulate the physical
-        // two-pass rename + the DB update exactly as the helper does it.
-        await File(p.join(tempDir.path, '03.jpg')).rename(
-          p.join(tempDir.path, '02.jpg'),
-        );
-        await appFileUtils.updateDbForRename(
-          <String, String>{'01.jpg': '01.jpg', '03.jpg': '02.jpg'},
-          tempDir.path,
-        );
+          // Surviving files [01, 03] renumber to [01, 02]. Simulate the physical
+          // two-pass rename + the DB update exactly as the helper does it.
+          await File(
+            p.join(tempDir.path, '03.jpg'),
+          ).rename(p.join(tempDir.path, '02.jpg'));
+          await appFileUtils.updateDbForRename(<String, String>{
+            '01.jpg': '01.jpg',
+            '03.jpg': '02.jpg',
+          }, tempDir.path);
 
-        final List<AppImage> reloaded = await appFileUtils.onFolderPicked(
-          tempDir.path,
-        );
-        final Map<String, String> byFile = captionsByFile(reloaded);
+          final List<AppImage> reloaded = await appFileUtils.onFolderPicked(
+            tempDir.path,
+          );
+          final Map<String, String> byFile = captionsByFile(reloaded);
 
-        // No stale/duplicate filenames; captions follow their images.
-        expect(byFile.keys, <String>{'01.jpg', '02.jpg'});
-        expect(byFile['01.jpg'], 'AAA');
-        expect(byFile['02.jpg'], 'CCC', reason: 'was 03.jpg, not the removed 02.jpg');
-      });
+          // No stale/duplicate filenames; captions follow their images.
+          expect(byFile.keys, <String>{'01.jpg', '02.jpg'});
+          expect(byFile['01.jpg'], 'AAA');
+          expect(
+            byFile['02.jpg'],
+            'CCC',
+            reason: 'was 03.jpg, not the removed 02.jpg',
+          );
+        },
+      );
     });
   });
 }

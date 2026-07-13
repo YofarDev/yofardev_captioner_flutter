@@ -63,8 +63,9 @@ class _GuidanceDialogState extends State<GuidanceDialog> {
               style: const TextStyle(color: textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 isDense: true,
-                hintText:
-                    _path == null ? 'No image selected' : "e.g. Name the character 'Mira'",
+                hintText: _path == null
+                    ? 'No image selected'
+                    : "e.g. Name the character 'Mira'",
                 hintStyle: const TextStyle(color: textMuted, fontSize: 12),
                 filled: true,
                 fillColor: shellBackground,

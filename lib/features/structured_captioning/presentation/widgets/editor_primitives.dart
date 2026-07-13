@@ -140,12 +140,12 @@ class _EditorTextFieldState extends State<EditorTextField> {
   @override
   void didUpdateWidget(covariant EditorTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.value != oldWidget.value &&
-        widget.value != _controller.text) {
+    if (widget.value != oldWidget.value && widget.value != _controller.text) {
       final int sel = _controller.selection.baseOffset;
       _controller.text = widget.value;
-      _controller.selection =
-          TextSelection.collapsed(offset: sel.clamp(0, widget.value.length));
+      _controller.selection = TextSelection.collapsed(
+        offset: sel.clamp(0, widget.value.length),
+      );
     }
   }
 

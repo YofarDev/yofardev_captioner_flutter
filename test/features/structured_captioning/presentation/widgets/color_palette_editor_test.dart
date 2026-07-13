@@ -45,7 +45,9 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byTooltip('Add color (eyedropper)\nlong-press to paste from clipboard'),
+      find.byTooltip(
+        'Add color (eyedropper)\nlong-press to paste from clipboard',
+      ),
       findsOneWidget,
     );
   });
@@ -57,7 +59,9 @@ void main() {
 
     expect(find.byType(GestureDetector), findsOneWidget); // add button only
     expect(
-      find.byTooltip('Add color (eyedropper)\nlong-press to paste from clipboard'),
+      find.byTooltip(
+        'Add color (eyedropper)\nlong-press to paste from clipboard',
+      ),
       findsOneWidget,
     );
   });

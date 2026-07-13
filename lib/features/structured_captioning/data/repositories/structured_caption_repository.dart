@@ -391,6 +391,83 @@ class StructuredCaptionRepository {
         .replaceAll('{existingJson}', currentCaption.toJsonString());
   }
 
+  /// Recaptions ONLY the four style fields (medium, photo/art, aesthetics,
+  /// lighting) via one VLM call on the full image. The existing
+  /// [IdeogramStyleDescription.colorPalette] is preserved — it has its own
+  /// extraction flow.
+  ///
+  /// Returns a NEW [IdeogramStyleDescription] with all four text fields swapped
+  /// from the VLM response. If the VLM flips `medium` (e.g. photograph →
+  /// painting), the `photo`/`artStyle` field switches type accordingly, the
+  /// same way a fresh full caption would.
+  ///
+  /// Throws [FormatException] if the response is missing `medium`, is not a
+  /// JSON object, or is otherwise unparseable. Re-throws any error from
+  /// [CaptionService].
+  Future<IdeogramStyleDescription> recaptionStyle({
+    required LlmConfig config,
+    required File imageFile,
+    required IdeogramCaption currentCaption,
+  }) async {
+    final String template = await _promptLoader.loadStyleRecaptionPrompt();
+    final String prompt = template.replaceAll(
+      '{existingJson}',
+      currentCaption.toJsonString(),
+    );
+
+    final String raw = await _captionService.getCaption(
+      config,
+      imageFile,
+      prompt,
+    );
+
+    return _mapStyleResponse(raw, currentCaption.styleDescription.colorPalette);
+  }
+
+  /// Parses the style-recaption VLM response and maps it to an
+  /// [IdeogramStyleDescription], routing `photo_or_art` into `photo` or
+  /// `artStyle` based on `medium` (mirroring [buildIdeogramCaption]).
+  IdeogramStyleDescription mapStyleResponse(
+    String raw,
+    List<String> colorPalette,
+  ) => _mapStyleResponse(raw, colorPalette);
+
+  IdeogramStyleDescription _mapStyleResponse(
+    String raw,
+    List<String> colorPalette,
+  ) {
+    final Map<String, dynamic> json;
+    final String medium;
+    try {
+      final String cleaned = _stripMarkdownFences(raw);
+      json = jsonDecode(cleaned) as Map<String, dynamic>;
+      medium = (json['medium'] as String?)?.trim() ?? '';
+    } catch (e) {
+      _logger.warning('Failed to parse style recaption response: $e');
+      _logger.fine('Raw response was: $raw');
+      throw FormatException('Failed to parse style recaption JSON: $e');
+    }
+
+    if (medium.isEmpty) {
+      _logger.warning('Style recaption response missing medium. Raw: $raw');
+      throw const FormatException('Style recaption response missing "medium"');
+    }
+
+    final String aesthetics = (json['aesthetics'] as String?)?.trim() ?? '';
+    final String lighting = (json['lighting'] as String?)?.trim() ?? '';
+    final String photoOrArt = (json['photo_or_art'] as String?)?.trim() ?? '';
+    final bool isPhoto = medium == 'photograph';
+
+    return IdeogramStyleDescription(
+      aesthetics: aesthetics,
+      lighting: lighting,
+      medium: medium,
+      photo: isPhoto ? photoOrArt : null,
+      artStyle: isPhoto ? null : photoOrArt,
+      colorPalette: colorPalette,
+    );
+  }
+
   /// Builds the vision-analysis prompt, injecting the image's real aspect
   /// ratio so the VLM sizes bboxes correctly (a `[0,0,500,500]` box is square
   /// only on a square frame). When [guidance] is non-empty it is appended as
@@ -407,8 +484,7 @@ class StructuredCaptionRepository {
     // Ask the VLM for whichever bbox order it actually emits well. The stored
     // Ideogram4 JSON is always yxyx — the normalizer reinterprets the response
     // using the same flag, so asking + interpreting must agree here.
-    final String bboxOrder =
-        vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
+    final String bboxOrder = vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
     String prompt = template
         .replaceAll('{{aspect_ratio}}', aspectRatio)
         .replaceAll('{{bbox_order}}', bboxOrder);

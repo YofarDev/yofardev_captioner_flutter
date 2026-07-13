@@ -35,8 +35,13 @@ class TagFilterChipsOverlay {
   }) {
     final ValueNotifier<List<_ChipData>> notifier =
         ValueNotifier<List<_ChipData>>(
-      chips.map((({String label, bool active}) c) => _ChipData(c.label, c.active)).toList(),
-    );
+          chips
+              .map(
+                (({String label, bool active}) c) =>
+                    _ChipData(c.label, c.active),
+              )
+              .toList(),
+        );
 
     late OverlayEntry entry;
     entry = OverlayEntry(
@@ -60,8 +65,11 @@ class TagFilterChipsOverlay {
   ) {
     final ValueNotifier<List<_ChipData>>? notifier = _notifiers[entry];
     if (notifier != null) {
-      notifier.value =
-          chips.map((({String label, bool active}) c) => _ChipData(c.label, c.active)).toList();
+      notifier.value = chips
+          .map(
+            (({String label, bool active}) c) => _ChipData(c.label, c.active),
+          )
+          .toList();
     }
   }
 
@@ -252,7 +260,10 @@ class _TagChipState extends State<_TagChip> {
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(5),
-            border: Border.all(color: border, width: widget.active ? 0.75 : 0.5),
+            border: Border.all(
+              color: border,
+              width: widget.active ? 0.75 : 0.5,
+            ),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
           child: Row(

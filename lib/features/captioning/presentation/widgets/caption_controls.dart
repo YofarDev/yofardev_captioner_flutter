@@ -263,9 +263,9 @@ class _CaptionControlsState extends State<CaptionControls> {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           Theme(
-            data: Theme.of(context).copyWith(
-              unselectedWidgetColor: lightPink.withAlpha(120),
-            ),
+            data: Theme.of(
+              context,
+            ).copyWith(unselectedWidgetColor: lightPink.withAlpha(120)),
             child: SizedBox(
               width: 24,
               height: 24,
@@ -273,8 +273,9 @@ class _CaptionControlsState extends State<CaptionControls> {
                 value: selected != null,
                 onChanged: (bool? value) {
                   setState(() {
-                    _jsonContextCategory =
-                        (value ?? false) ? otherCategories.first : null;
+                    _jsonContextCategory = (value ?? false)
+                        ? otherCategories.first
+                        : null;
                   });
                 },
                 activeColor: lightPink,
@@ -417,8 +418,9 @@ class _CaptionControlsState extends State<CaptionControls> {
             activeTrackColor: lightPink.withValues(alpha: 0.35),
             inactiveThumbColor: textSecondary,
             inactiveTrackColor: hairline,
-            trackOutlineColor:
-                WidgetStateProperty.all<Color>(Colors.transparent),
+            trackOutlineColor: WidgetStateProperty.all<Color>(
+              Colors.transparent,
+            ),
           ),
         ],
       ),
@@ -537,7 +539,8 @@ class _CaptionControlsState extends State<CaptionControls> {
               isOutline: true,
               backgroundColor: lightPink,
               foregroundColor: lightPink,
-              onTap: !isInProgress &&
+              onTap:
+                  !isInProgress &&
                       imageListState.categories.length > 1 &&
                       configState.llmConfigs.selectedConfigId != null
                   ? () => showDialog<void>(
@@ -663,8 +666,7 @@ class _CaptionControlsState extends State<CaptionControls> {
     final ImageListCubit cubit = context.read<ImageListCubit>();
     final ImageListState imgState = cubit.state;
     final String category = imgState.activeCategory ?? 'default';
-    final bool scoped =
-        _scopeToFiltered && imgState.searchQuery.isNotEmpty;
+    final bool scoped = _scopeToFiltered && imgState.searchQuery.isNotEmpty;
     final List<AppImage> base = scoped ? cubit.filteredImages : imgState.images;
     final List<AppImage> target = scoped
         ? base.toList()
@@ -677,9 +679,7 @@ class _CaptionControlsState extends State<CaptionControls> {
       context: context,
       builder: (BuildContext ctx) => AlertDialog(
         backgroundColor: panelRaised,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         title: const Row(
           children: <Widget>[
             Icon(Icons.warning_amber_rounded, color: amberWarn, size: 22),

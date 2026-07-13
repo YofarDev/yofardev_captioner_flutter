@@ -140,10 +140,9 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
-        final String jsonContext =
-            jsonContextCategory == null
-                ? ''
-                : (image.captions[jsonContextCategory]?.text ?? '');
+        final String jsonContext = jsonContextCategory == null
+            ? ''
+            : (image.captions[jsonContextCategory]?.text ?? '');
         // Per-image guidance: appended (not replacing) the user prompt so it
         // composes with both the settings prompt and any JSON reference. In a
         // batch run this is the displayed image's guidance broadcast to all.
@@ -154,8 +153,8 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         final String effectivePrompt = jsonContext.isEmpty
             ? '$prompt$guidanceBlock'
             : '$prompt\n\n'
-                'Existing structured analysis of this image (JSON), use as reference:\n'
-                '$jsonContext$guidanceBlock';
+                  'Existing structured analysis of this image (JSON), use as reference:\n'
+                  '$jsonContext$guidanceBlock';
         AppImage updatedImage = await _captioningRepository.captionImage(
           llm,
           image,

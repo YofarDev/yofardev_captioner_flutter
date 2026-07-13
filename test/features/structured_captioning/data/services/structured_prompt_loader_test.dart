@@ -16,8 +16,7 @@ void main() {
     late String prompt;
 
     setUpAll(() async {
-      prompt =
-          await File('assets/prompts/vision_analysis.txt').readAsString();
+      prompt = await File('assets/prompts/vision_analysis.txt').readAsString();
     });
 
     test('parameterizes bbox order via the {{bbox_order}} token', () {
@@ -57,8 +56,9 @@ void main() {
     late String prompt;
 
     setUpAll(() async {
-      prompt =
-          await File('assets/prompts/element_recaption.txt').readAsString();
+      prompt = await File(
+        'assets/prompts/element_recaption.txt',
+      ).readAsString();
     });
 
     test('references the stored element bbox in yxyx order', () {
@@ -69,6 +69,42 @@ void main() {
 
     test('never uses xyxy ordering', () {
       expect(prompt, isNot(contains('[x1, y1, x2, y2]')));
+    });
+  });
+
+  group('style_recaption prompt', () {
+    late String prompt;
+
+    setUpAll(() async {
+      prompt = await File('assets/prompts/style_recaption.txt').readAsString();
+    });
+
+    test('exists and asks for the four style keys only', () {
+      // The whole point of style recaption: only these four fields.
+      expect(prompt, contains('"medium"'));
+      expect(prompt, contains('"aesthetics"'));
+      expect(prompt, contains('"lighting"'));
+      expect(prompt, contains('"photo_or_art"'));
+    });
+
+    test('substitutes the existing caption via the {existingJson} token', () {
+      expect(prompt, contains('{existingJson}'));
+    });
+
+    test('does not deal with bbox ordering', () {
+      // Style regen is whole-image; it must not carry the vision-analysis
+      // bbox contract forward.
+      expect(prompt, isNot(contains('{{bbox_order}}')));
+      expect(prompt.toLowerCase(), isNot(contains('y1 < y2')));
+    });
+
+    test('return template pins exactly the four style keys', () {
+      // The return contract is the four-key object — nothing else may sneak in.
+      expect(prompt, contains('"medium"'));
+      expect(prompt, contains('"aesthetics"'));
+      expect(prompt, contains('"lighting"'));
+      expect(prompt, contains('"photo_or_art"'));
+      expect(prompt, contains('Return ONLY a JSON object'));
     });
   });
 }

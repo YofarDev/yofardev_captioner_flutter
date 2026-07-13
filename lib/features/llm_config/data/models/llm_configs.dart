@@ -43,16 +43,16 @@ class LlmConfigs extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        configs,
-        prompts,
-        selectedConfigId,
-        selectedPrompt,
-        ideogramJsonEnabled,
-        debugMode,
-        disableSam,
-        vlmEmitsXyxy,
-        structuredBatchOverrides,
-      ];
+    configs,
+    prompts,
+    selectedConfigId,
+    selectedPrompt,
+    ideogramJsonEnabled,
+    debugMode,
+    disableSam,
+    vlmEmitsXyxy,
+    structuredBatchOverrides,
+  ];
 
   LlmConfigs copyWith({
     List<LlmConfig>? configs,

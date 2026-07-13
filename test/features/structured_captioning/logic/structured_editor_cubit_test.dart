@@ -609,6 +609,153 @@ void main() {
       });
     });
 
+    group('recaptionStyle', () {
+      late MockStructuredCaptionRepository mockRepo;
+
+      setUp(() {
+        mockRepo = MockStructuredCaptionRepository();
+      });
+
+      StructuredEditorCubit buildCubit() {
+        final StructuredEditorCubit c = StructuredEditorCubit(
+          initialCaption: baseCaption(),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          imageListCubit: mockImageListCubit,
+          repository: mockRepo,
+        );
+        return c;
+      }
+
+      test('recaptioningStyle true while in flight, style swapped on success',
+          () async {
+        final StructuredEditorCubit c = buildCubit();
+        final Completer<IdeogramStyleDescription> completer =
+            Completer<IdeogramStyleDescription>();
+
+        when(
+          mockRepo.recaptionStyle(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final Future<void> done = c.recaptionStyle(config: _dummyConfig());
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(c.state.status, StructuredEditorStatus.recaptioning);
+        expect(c.state.recaptioningStyle, isTrue);
+
+        completer.complete(
+          const IdeogramStyleDescription(
+            aesthetics: 'fresh-aesthetics',
+            lighting: 'fresh-lighting',
+            medium: 'painting',
+            artStyle: 'oil',
+            colorPalette: <String>['#000000'],
+          ),
+        );
+        await done;
+
+        expect(c.state.caption.styleDescription.aesthetics, 'fresh-aesthetics');
+        expect(c.state.caption.styleDescription.medium, 'painting');
+        expect(c.state.caption.styleDescription.artStyle, 'oil');
+        expect(c.state.recaptioningStyle, isFalse);
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('original style byte-identical on repo error', () async {
+        final StructuredEditorCubit c = buildCubit();
+        final IdeogramStyleDescription original =
+            c.state.caption.styleDescription;
+        when(
+          mockRepo.recaptionStyle(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+          ),
+        ).thenThrow(Exception('boom'));
+
+        await c.recaptionStyle(config: _dummyConfig());
+
+        expect(c.state.status, StructuredEditorStatus.error);
+        expect(c.state.caption.styleDescription, original);
+        expect(c.state.recaptioningStyle, isFalse);
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('concurrent call is a no-op while one is in flight', () async {
+        final StructuredEditorCubit c = buildCubit();
+        final Completer<IdeogramStyleDescription> completer =
+            Completer<IdeogramStyleDescription>();
+        when(
+          mockRepo.recaptionStyle(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final Future<void> first = c.recaptionStyle(config: _dummyConfig());
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        await c.recaptionStyle(config: _dummyConfig());
+
+        verify(
+          mockRepo.recaptionStyle(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+          ),
+        ).called(1);
+
+        completer.complete(
+          baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+        );
+        await first;
+        await c.flushSave();
+        await c.close();
+      });
+
+      test('flushSave awaits an in-flight style recaption', () async {
+        final StructuredEditorCubit c = buildCubit();
+        final Completer<IdeogramStyleDescription> completer =
+            Completer<IdeogramStyleDescription>();
+        when(
+          mockRepo.recaptionStyle(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final Future<void> recaptionFuture =
+            c.recaptionStyle(config: _dummyConfig());
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+
+        bool flushDone = false;
+        final Future<void> flush = c.flushSave().then((_) {
+          flushDone = true;
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(
+          flushDone,
+          isFalse,
+          reason: 'flushSave must wait for the in-flight style recaption',
+        );
+
+        completer.complete(
+          baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+        );
+        await recaptionFuture;
+        await flush;
+        expect(flushDone, isTrue);
+        await c.close();
+      });
+    });
+
     group('toggleSamBboxes', () {
       late MockStructuredCaptionRepository mockRepo;
 

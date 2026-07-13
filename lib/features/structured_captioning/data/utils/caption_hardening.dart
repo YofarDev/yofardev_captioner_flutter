@@ -99,8 +99,9 @@ List<String> captionHealthIssues(VlmAnalysis analysis) {
       o.text ?? '',
     ],
   ];
-  final List<String> nonEmpty =
-      texts.where((String s) => s.trim().isNotEmpty).toList();
+  final List<String> nonEmpty = texts
+      .where((String s) => s.trim().isNotEmpty)
+      .toList();
 
   if (analysis.highLevelDescription.trim().isEmpty &&
       analysis.objects.isEmpty) {

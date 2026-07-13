@@ -39,8 +39,8 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
            ),
          ),
        ) {
-     _loadTitles();
-   }
+    _loadTitles();
+  }
 
   final ImageListCubit _imageListCubit;
   final StructuredCaptionRepository _repository;
@@ -51,6 +51,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   bool _titlesMutated = false;
   Future<void>? _titleSaveInFlight;
   Future<void>? _recaptionInFlight;
+  Future<void>? _recaptionStyleInFlight;
   Future<void>? _samComputeInFlight;
 
   // -- Description --
@@ -325,6 +326,61 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     } finally {
       inflight.complete();
       _recaptionInFlight = null;
+    }
+  }
+
+  // -- Whole-style recaption --
+
+  /// Re-runs the VLM to regenerate ALL four style fields at once (medium,
+  /// photo/art, aesthetics, lighting). The existing color palette is
+  /// preserved. No-op if another style recaption is already in flight.
+  ///
+  /// Emits `status: recaptioning` + `recaptioningStyle: true` while awaiting.
+  /// On success, swaps the [IdeogramStyleDescription] in place and triggers
+  /// debounced save. On error, emits `status: error` and leaves the original
+  /// style untouched.
+  Future<void> recaptionStyle({required LlmConfig config}) async {
+    if (_recaptionStyleInFlight != null) return;
+
+    final Completer<void> inflight = Completer<void>();
+    _recaptionStyleInFlight = inflight.future;
+
+    emit(
+      state.copyWith(
+        status: StructuredEditorStatus.recaptioning,
+        recaptioningStyle: true,
+        clearError: true,
+      ),
+    );
+
+    try {
+      final IdeogramStyleDescription updated = await _repository.recaptionStyle(
+        config: config,
+        imageFile: state.imageFile,
+        currentCaption: state.caption,
+      );
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          caption: state.caption.copyWith(styleDescription: updated),
+          status: StructuredEditorStatus.saved,
+          clearRecaptioningStyle: true,
+        ),
+      );
+      _scheduleSave();
+    } catch (e) {
+      _logger.warning('recaptionStyle failed: $e');
+      if (isClosed) return;
+      emit(
+        state.copyWith(
+          status: StructuredEditorStatus.error,
+          error: e.toString(),
+          clearRecaptioningStyle: true,
+        ),
+      );
+    } finally {
+      inflight.complete();
+      _recaptionStyleInFlight = null;
     }
   }
 
@@ -674,6 +730,10 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     final Future<void>? pending = _recaptionInFlight;
     if (pending != null) {
       await pending;
+    }
+    final Future<void>? stylePending = _recaptionStyleInFlight;
+    if (stylePending != null) {
+      await stylePending;
     }
     final Future<void>? titleSave = _titleSaveInFlight;
     if (titleSave != null) {

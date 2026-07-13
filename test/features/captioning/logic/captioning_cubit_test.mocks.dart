@@ -467,4 +467,35 @@ class MockCaptioningRepository extends _i1.Mock
             ),
           )
           as _i4.Future<_i3.AppImage>);
+
+  @override
+  _i4.Future<_i3.AppImage> transformCaption(
+    _i8.LlmConfig? config,
+    _i3.AppImage? image,
+    String? sourceCategory,
+    String? targetCategory,
+    String? userPrompt,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#transformCaption, [
+              config,
+              image,
+              sourceCategory,
+              targetCategory,
+              userPrompt,
+            ]),
+            returnValue: _i4.Future<_i3.AppImage>.value(
+              _FakeAppImage_1(
+                this,
+                Invocation.method(#transformCaption, [
+                  config,
+                  image,
+                  sourceCategory,
+                  targetCategory,
+                  userPrompt,
+                ]),
+              ),
+            ),
+          )
+          as _i4.Future<_i3.AppImage>);
 }

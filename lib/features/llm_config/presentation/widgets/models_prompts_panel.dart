@@ -147,8 +147,9 @@ class _ModelsPromptsPanelState extends State<ModelsPromptsPanel> {
   }
 
   Widget _buildModelsList(LlmConfigsState state) {
-    final List<LlmConfig> sorted =
-        _sortedGroupedConfigs(state.llmConfigs.configs);
+    final List<LlmConfig> sorted = _sortedGroupedConfigs(
+      state.llmConfigs.configs,
+    );
     // Flat row list: a String entry is a group header, an LlmConfig is a card.
     final List<Object> rows = <Object>[];
     String? currentGroup;
@@ -259,14 +260,13 @@ class _EmptyState extends StatelessWidget {
 /// Sorts configs by provider label (case-insensitive) then by name
 /// (case-insensitive). Mirrors the ordering used by the model dropdown.
 List<LlmConfig> _sortedGroupedConfigs(List<LlmConfig> configs) {
-  return List<LlmConfig>.of(configs)
-    ..sort((LlmConfig a, LlmConfig b) {
-      final int groupCmp = a.providerLabel
-          .toLowerCase()
-          .compareTo(b.providerLabel.toLowerCase());
-      if (groupCmp != 0) return groupCmp;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+  return List<LlmConfig>.of(configs)..sort((LlmConfig a, LlmConfig b) {
+    final int groupCmp = a.providerLabel.toLowerCase().compareTo(
+      b.providerLabel.toLowerCase(),
+    );
+    if (groupCmp != 0) return groupCmp;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
 }
 
 class _GroupHeader extends StatelessWidget {

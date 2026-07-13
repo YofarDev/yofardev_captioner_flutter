@@ -83,11 +83,7 @@ class LayersPanel extends StatelessWidget {
                         borderRadius: BorderRadius.circular(4),
                         child: const Padding(
                           padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.add,
-                            size: 16,
-                            color: accentPink,
-                          ),
+                          child: Icon(Icons.add, size: 16, color: accentPink),
                         ),
                       ),
                     ),
@@ -120,8 +116,7 @@ class LayersPanel extends StatelessWidget {
                             onTap: () => cubit.selectElement(index),
                             onToggleVisibility: () =>
                                 cubit.toggleElementVisibility(index),
-                            onToggleLock: () =>
-                                cubit.toggleElementLock(index),
+                            onToggleLock: () => cubit.toggleElementLock(index),
                             onDuplicate: () => cubit.duplicateElement(index),
                             onDelete: () => cubit.removeElement(index),
                             onEditTitle: () => _editLayerTitle(

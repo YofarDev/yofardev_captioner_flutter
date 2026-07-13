@@ -359,10 +359,7 @@ void main() {
       test('keeps [y1,x1,y2,x2] input as-is (no swap)', () {
         // VLM obeyed the yxyx instruction → input already yxyx, no swap.
         expect(
-          repo.normalizeBbox(
-            <int>[100, 200, 300, 400],
-            vlmEmitsXyxy: false,
-          ),
+          repo.normalizeBbox(<int>[100, 200, 300, 400], vlmEmitsXyxy: false),
           <int>[100, 200, 300, 400],
         );
       });
@@ -370,10 +367,7 @@ void main() {
       test('clamps out-of-range values to [0,1000] without swapping', () {
         // Input [y1,x1,y2,x2] = [-50, 200, 1500, 400] → clamp only.
         expect(
-          repo.normalizeBbox(
-            <int>[-50, 200, 1500, 400],
-            vlmEmitsXyxy: false,
-          ),
+          repo.normalizeBbox(<int>[-50, 200, 1500, 400], vlmEmitsXyxy: false),
           <int>[0, 200, 1000, 400],
         );
       });
@@ -381,10 +375,7 @@ void main() {
       test('orders inverted corners (yxyx interpretation)', () {
         // Input read as [y2,x2,y1,x1] effectively → still normalized correctly.
         expect(
-          repo.normalizeBbox(
-            <int>[300, 400, 100, 200],
-            vlmEmitsXyxy: false,
-          ),
+          repo.normalizeBbox(<int>[300, 400, 100, 200], vlmEmitsXyxy: false),
           <int>[100, 200, 300, 400],
         );
       });
@@ -442,8 +433,9 @@ void main() {
           };
 
       test('default (xyxy) swaps to yxyx', () {
-        final VlmAnalysis analysis =
-            repo.parseAnalysisJson(singleObjectBbox(<int>[100, 200, 300, 400]));
+        final VlmAnalysis analysis = repo.parseAnalysisJson(
+          singleObjectBbox(<int>[100, 200, 300, 400]),
+        );
         expect(analysis.objects[0].bbox, <int>[200, 100, 400, 300]);
       });
 
@@ -970,37 +962,40 @@ void main() {
         objects: <VlmObject>[VlmObject(name: 'Cat', desc: 'a cat')],
       );
 
-      test('applies enabled medium/aesthetics/lighting/background overrides', () {
-        const StructuredBatchOverrides overrides = StructuredBatchOverrides(
-          enabled: true,
-          overrideMedium: true,
-          medium: 'oil painting',
-          overrideAesthetics: true,
-          aesthetics: 'moody',
-          overrideLighting: true,
-          lighting: 'chiaroscuro',
-          overrideBackground: true,
-          background: 'studio',
-        );
+      test(
+        'applies enabled medium/aesthetics/lighting/background overrides',
+        () {
+          const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+            enabled: true,
+            overrideMedium: true,
+            medium: 'oil painting',
+            overrideAesthetics: true,
+            aesthetics: 'moody',
+            overrideLighting: true,
+            lighting: 'chiaroscuro',
+            overrideBackground: true,
+            background: 'studio',
+          );
 
-        final IdeogramCaption caption = repo.buildIdeogramCaption(
-          <String>[],
-          baseAnalysis,
-          <SamDetection>[const SamDetection(name: 'Cat')],
-          <int, List<String>>{},
-          overrides,
-        );
+          final IdeogramCaption caption = repo.buildIdeogramCaption(
+            <String>[],
+            baseAnalysis,
+            <SamDetection>[const SamDetection(name: 'Cat')],
+            <int, List<String>>{},
+            overrides,
+          );
 
-        final IdeogramStyleDescription style = caption.styleDescription;
-        expect(style.medium, 'oil painting');
-        expect(style.aesthetics, 'moody');
-        expect(style.lighting, 'chiaroscuro');
-        expect(caption.compositionalDeconstruction.background, 'studio');
-        // Non-photograph medium → isPhoto false → artStyle falls back to
-        // photoOrArt, photo is null.
-        expect(style.photo, isNull);
-        expect(style.artStyle, 'orig-photoOrArt');
-      });
+          final IdeogramStyleDescription style = caption.styleDescription;
+          expect(style.medium, 'oil painting');
+          expect(style.aesthetics, 'moody');
+          expect(style.lighting, 'chiaroscuro');
+          expect(caption.compositionalDeconstruction.background, 'studio');
+          // Non-photograph medium → isPhoto false → artStyle falls back to
+          // photoOrArt, photo is null.
+          expect(style.photo, isNull);
+          expect(style.artStyle, 'orig-photoOrArt');
+        },
+      );
 
       test('routes styleMode=photo into the photo field', () {
         const StructuredBatchOverrides overrides = StructuredBatchOverrides(
@@ -1075,7 +1070,10 @@ void main() {
         expect(style.medium, 'photograph');
         expect(style.aesthetics, 'orig-aesthetics');
         expect(style.lighting, 'orig-lighting');
-        expect(caption.compositionalDeconstruction.background, 'orig-background');
+        expect(
+          caption.compositionalDeconstruction.background,
+          'orig-background',
+        );
         // isPhoto true + no styleMode override → photo from photoOrArt.
         expect(style.photo, 'orig-photoOrArt');
       });
@@ -1473,6 +1471,217 @@ void main() {
     });
   });
 
+  group('recaptionStyle', () {
+    late MockCaptionService mockCaption;
+    late MockStructuredPromptLoader mockLoader;
+    late StructuredCaptionRepository repo;
+
+    final LlmConfig config = LlmConfig(
+      id: 'cfg',
+      name: 'cfg',
+      model: 'vlm',
+      providerType: LlmProviderType.remote,
+    );
+
+    const IdeogramCaption caption = IdeogramCaption(
+      highLevelDescription: 'a desk',
+      styleDescription: IdeogramStyleDescription(
+        aesthetics: 'old-aesthetics',
+        lighting: 'old-lighting',
+        medium: 'photograph',
+        photo: 'old camera',
+        colorPalette: <String>['#111111', '#222222'],
+      ),
+      compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+        background: 'wall',
+        elements: <IdeogramElement>[IdeogramElement(type: 'obj', desc: 'mug')],
+      ),
+    );
+
+    setUp(() {
+      mockCaption = MockCaptionService();
+      mockLoader = MockStructuredPromptLoader();
+      when(
+        mockLoader.loadStyleRecaptionPrompt(),
+      ).thenAnswer((_) async => 'STYLE PROMPT {existingJson}');
+      repo = StructuredCaptionRepository(
+        captionService: mockCaption,
+        promptLoader: mockLoader,
+      );
+    });
+
+    test(
+      'swaps all four photo-medium fields and preserves colorPalette',
+      () async {
+        when(mockCaption.getCaption(any, any, any)).thenAnswer(
+          (_) async =>
+              '{"medium": "photograph", "aesthetics": "moody", '
+              '"lighting": "golden hour", "photo_or_art": "50mm f/1.8"}',
+        );
+
+        final IdeogramStyleDescription updated = await repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        );
+
+        expect(updated.medium, 'photograph');
+        expect(updated.aesthetics, 'moody');
+        expect(updated.lighting, 'golden hour');
+        expect(updated.photo, '50mm f/1.8');
+        expect(updated.artStyle, isNull);
+        // Palette untouched — it has its own extraction flow.
+        expect(updated.colorPalette, <String>['#111111', '#222222']);
+      },
+    );
+
+    test(
+      'medium flip routes photo_or_art into artStyle and nulls photo',
+      () async {
+        when(mockCaption.getCaption(any, any, any)).thenAnswer(
+          (_) async =>
+              '{"medium": "painting", "aesthetics": "baroque", '
+              '"lighting": "chiaroscuro", "photo_or_art": "oil on canvas"}',
+        );
+
+        final IdeogramStyleDescription updated = await repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        );
+
+        expect(updated.medium, 'painting');
+        expect(updated.artStyle, 'oil on canvas');
+        expect(updated.photo, isNull);
+      },
+    );
+
+    test('preserves existing colorPalette when VLM omits it', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async =>
+            '{"medium": "photograph", "aesthetics": "a", '
+            '"lighting": "l", "photo_or_art": "p"}',
+      );
+
+      final IdeogramStyleDescription updated = await repo.recaptionStyle(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+      );
+
+      expect(updated.colorPalette, caption.styleDescription.colorPalette);
+    });
+
+    test('substitutes the {existingJson} token into the prompt', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async =>
+            '{"medium": "photograph", "aesthetics": "a", '
+            '"lighting": "l", "photo_or_art": "p"}',
+      );
+
+      await repo.recaptionStyle(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+      );
+
+      final String capturedPrompt =
+          verify(mockCaption.getCaption(any, any, captureAny)).captured.single
+              as String;
+      expect(capturedPrompt, contains('STYLE PROMPT'));
+      // The existing caption JSON is injected for context.
+      expect(capturedPrompt, contains('high_level_description'));
+      expect(capturedPrompt, contains('a desk'));
+    });
+
+    test('parses fenced JSON', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async =>
+            '```json\n{"medium": "photograph", "aesthetics": "a", '
+            '"lighting": "l", "photo_or_art": "p"}\n```',
+      );
+
+      final IdeogramStyleDescription updated = await repo.recaptionStyle(
+        config: config,
+        imageFile: File('img.png'),
+        currentCaption: caption,
+      );
+
+      expect(updated.medium, 'photograph');
+    });
+
+    test('throws FormatException when medium is missing', () async {
+      when(mockCaption.getCaption(any, any, any)).thenAnswer(
+        (_) async =>
+            '{"aesthetics": "a", "lighting": "l", '
+            '"photo_or_art": "p"}',
+      );
+      await expectLater(
+        repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('throws FormatException on unparseable response', () async {
+      when(
+        mockCaption.getCaption(any, any, any),
+      ).thenAnswer((_) async => 'not json at all');
+      await expectLater(
+        repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('throws FormatException when response is a JSON array', () async {
+      when(
+        mockCaption.getCaption(any, any, any),
+      ).thenAnswer((_) async => '["photograph"]');
+      await expectLater(
+        repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        ),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('propagates CaptionService errors', () async {
+      when(
+        mockCaption.getCaption(any, any, any),
+      ).thenThrow(Exception('network down'));
+      await expectLater(
+        repo.recaptionStyle(
+          config: config,
+          imageFile: File('img.png'),
+          currentCaption: caption,
+        ),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('mapStyleResponse routes photo medium into photo field', () {
+      const String raw =
+          '{"medium": "photograph", "aesthetics": "a", '
+          '"lighting": "l", "photo_or_art": "dslr"}';
+      final IdeogramStyleDescription mapped = repo.mapStyleResponse(
+        raw,
+        <String>['#abc'],
+      );
+      expect(mapped.photo, 'dslr');
+      expect(mapped.artStyle, isNull);
+      expect(mapped.colorPalette, <String>['#abc']);
+    });
+  });
+
   group('computeSamBboxes', () {
     late StructuredCaptionRepository repo;
     late MockSamProcessService mockSam;
@@ -1663,21 +1872,27 @@ void main() {
         colorExtractionService: mockColor,
         promptLoader: mockLoader,
       );
-      when(mockLoader.loadVisionAnalysisPrompt()).thenAnswer(
-        (_) async => 'PROMPT aspect={{aspect_ratio}}',
-      );
-      when(mockCaption.getCaption(any, any, any, maxTokens: 8192)).thenAnswer(
-        (_) async => vlmResponse,
-      );
+      when(
+        mockLoader.loadVisionAnalysisPrompt(),
+      ).thenAnswer((_) async => 'PROMPT aspect={{aspect_ratio}}');
+      when(
+        mockCaption.getCaption(any, any, any, maxTokens: 8192),
+      ).thenAnswer((_) async => vlmResponse);
     });
 
     test('runs the full pipeline and emits progress for each step', () async {
-      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>['#GLOBAL']);
+      when(
+        mockColor.extractPalette(any),
+      ).thenAnswer((_) async => <String>['#GLOBAL']);
       // Cat bbox normalizes [x1,y1,x2,y2]=[100,200,300,400] → [200,100,400,300].
       when(
-        mockSam.detectObjects('img.png', <String>['Cat'], vlmBboxes: <List<int>?>[
-          <int>[200, 100, 400, 300],
-        ]),
+        mockSam.detectObjects(
+          'img.png',
+          <String>['Cat'],
+          vlmBboxes: <List<int>?>[
+            <int>[200, 100, 400, 300],
+          ],
+        ),
       ).thenAnswer(
         (_) async => <SamDetection>[
           const SamDetection(name: 'Cat', bbox: <int>[210, 110, 410, 310]),
@@ -1706,44 +1921,51 @@ void main() {
       // Both objects became elements.
       expect(caption.compositionalDeconstruction.elements, hasLength(2));
       // SAM refined the Cat; Books fell back to its VLM bbox.
-      expect(
-        caption.compositionalDeconstruction.elements[0].bbox,
-        <int>[210, 110, 410, 310],
-      );
+      expect(caption.compositionalDeconstruction.elements[0].bbox, <int>[
+        210,
+        110,
+        410,
+        310,
+      ]);
       // VLM Books bbox [600,700,800,900](x1,y1,x2,y2) → [700,600,900,800].
-      expect(
-        caption.compositionalDeconstruction.elements[1].bbox,
-        <int>[700, 600, 900, 800],
-      );
+      expect(caption.compositionalDeconstruction.elements[1].bbox, <int>[
+        700,
+        600,
+        900,
+        800,
+      ]);
     });
 
-    test('only sends singular objects to SAM (group elements skipped)', () async {
-      when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
-      when(
-        mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
-      ).thenAnswer((_) async => <SamDetection>[]);
-      when(
-        mockColor.extractPaletteFromRegion(any, any),
-      ).thenAnswer((_) async => <String>[]);
+    test(
+      'only sends singular objects to SAM (group elements skipped)',
+      () async {
+        when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
+        when(
+          mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
+        ).thenAnswer((_) async => <SamDetection>[]);
+        when(
+          mockColor.extractPaletteFromRegion(any, any),
+        ).thenAnswer((_) async => <String>[]);
 
-      await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-      );
+        await repo.generateStructuredCaption(
+          config,
+          File('img.png'),
+          onProgress: (_) {},
+        );
 
-      // "Books" is plural → must NOT be sent to SAM; only "Cat" is.
-      verify(
-        mockSam.detectObjects('img.png', <String>['Cat'], vlmBboxes: anyNamed('vlmBboxes')),
-      ).called(1);
-      verifyNever(
-        mockSam.detectObjects(
-          'img.png',
-          <String>['Books'],
-          vlmBboxes: anyNamed('vlmBboxes'),
-        ),
-      );
-    });
+        // "Books" is plural → must NOT be sent to SAM; only "Cat" is.
+        verify(
+          mockSam.detectObjects('img.png', <String>[
+            'Cat',
+          ], vlmBboxes: anyNamed('vlmBboxes')),
+        ).called(1);
+        verifyNever(
+          mockSam.detectObjects('img.png', <String>[
+            'Books',
+          ], vlmBboxes: anyNamed('vlmBboxes')),
+        );
+      },
+    );
 
     test('skips SAM entirely when disableSam is true', () async {
       when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
@@ -1801,10 +2023,12 @@ void main() {
       );
 
       // SAM failed → Cat element uses its VLM bbox [200,100,400,300].
-      expect(
-        caption.compositionalDeconstruction.elements[0].bbox,
-        <int>[200, 100, 400, 300],
-      );
+      expect(caption.compositionalDeconstruction.elements[0].bbox, <int>[
+        200,
+        100,
+        400,
+        300,
+      ]);
     });
   });
 }

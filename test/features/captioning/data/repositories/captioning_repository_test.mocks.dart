@@ -88,4 +88,29 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
             ),
           )
           as _i3.Future<String>);
+
+  @override
+  _i3.Future<String> transformCaption(
+    _i4.LlmConfig? config,
+    String? sourceText,
+    String? userPrompt,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#transformCaption, [
+              config,
+              sourceText,
+              userPrompt,
+            ]),
+            returnValue: _i3.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#transformCaption, [
+                  config,
+                  sourceText,
+                  userPrompt,
+                ]),
+              ),
+            ),
+          )
+          as _i3.Future<String>);
 }

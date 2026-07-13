@@ -67,10 +67,7 @@ void main() {
       findRichTextContaining(':tag:favorite: — Images tagged "favorite"'),
       findsOneWidget,
     );
-    expect(
-      findRichTextContaining('#favorite — Images tagged'),
-      findsOneWidget,
-    );
+    expect(findRichTextContaining('#favorite — Images tagged'), findsOneWidget);
   });
 
   testWidgets('close button dismisses the dialog and completes the future', (

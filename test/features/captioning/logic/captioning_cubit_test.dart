@@ -903,8 +903,8 @@ void main() {
             llmConfig,
             image,
             'Describe this image.\n\n'
-                'Existing structured analysis of this image (JSON), use as reference:\n'
-                '{"scene": "forest"}',
+            'Existing structured analysis of this image (JSON), use as reference:\n'
+            '{"scene": "forest"}',
             category: anyNamed('category'),
             cancelToken: anyNamed('cancelToken'),
           ),

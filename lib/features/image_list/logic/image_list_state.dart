@@ -78,19 +78,19 @@ class ImageListState extends Equatable {
 
   @override
   List<Object?> get props => <Object?>[
-        images,
-        sortBy,
-        sortAscending,
-        folderPath,
-        currentImageId,
-        occurrencesCount,
-        occurrenceFileNames,
-        searchQuery,
-        caseSensitive,
-        categories,
-        categoryFormats,
-        activeCategory,
-        imageGuidance,
-        guidanceEnabled,
-      ];
+    images,
+    sortBy,
+    sortAscending,
+    folderPath,
+    currentImageId,
+    occurrencesCount,
+    occurrenceFileNames,
+    searchQuery,
+    caseSensitive,
+    categories,
+    categoryFormats,
+    activeCategory,
+    imageGuidance,
+    guidanceEnabled,
+  ];
 }

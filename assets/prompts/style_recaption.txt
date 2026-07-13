@@ -1,0 +1,28 @@
+You are re-describing ONLY the visual STYLE of an already-analyzed image.
+
+Look at the image and re-read its style from scratch. Ignore any prior style
+text — your job is a fresh read of medium, aesthetics, lighting, and the
+camera/art detail only.
+
+Existing full caption (context only; do NOT rewrite objects, background, or
+anything else):
+{existingJson}
+
+Return ONLY a JSON object with these four keys, no surrounding prose:
+{"medium": "...", "aesthetics": "...", "lighting": "...", "photo_or_art": "..."}
+
+Rules:
+- "medium" — EXACTLY one token from: `photograph`, `illustration`,
+  `3d_render`, `painting`, `graphic_design`. Read it from the image; do not
+  impose a default.
+- "aesthetics" — short comma-separated keywords
+  (`moody, cinematic, desaturated` / `warm, playful, vibrant`).
+- "lighting" — actual lighting: direction, quality, contrast, color of the
+  light. Describe a warm-colored source concretely (`amber pool from a
+  candle`); never use the bare word `warm` as a grade.
+- "photo_or_art" — if photograph: camera/lens/depth-of-field details.
+  If not photograph: art-style/technique description.
+- No hedge phrasings ("appears to be", "likely", "might be"). Commit to one
+  observable value, or omit the claim entirely.
+- Do NOT return objects, bboxes, background, or a high-level description.
+  Only the four style keys above.

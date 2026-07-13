@@ -10,8 +10,9 @@ class LlmConfigWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
       builder: (BuildContext context, LlmConfigsState state) {
-        final List<DropdownMenuItem<String>> items =
-            _buildGroupedItems(state.llmConfigs.configs);
+        final List<DropdownMenuItem<String>> items = _buildGroupedItems(
+          state.llmConfigs.configs,
+        );
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
@@ -81,10 +82,7 @@ class LlmConfigWidget extends StatelessWidget {
         );
       }
       items.add(
-        DropdownMenuItem<String>(
-          value: config.id,
-          child: Text(config.name),
-        ),
+        DropdownMenuItem<String>(value: config.id, child: Text(config.name)),
       );
     }
     return items;
@@ -94,12 +92,11 @@ class LlmConfigWidget extends StatelessWidget {
 /// Sorts configs by provider label (case-insensitive) then by name
 /// (case-insensitive).
 List<LlmConfig> _sortedGrouped(List<LlmConfig> configs) {
-  return List<LlmConfig>.of(configs)
-    ..sort((LlmConfig a, LlmConfig b) {
-      final int groupCmp = a.providerLabel
-          .toLowerCase()
-          .compareTo(b.providerLabel.toLowerCase());
-      if (groupCmp != 0) return groupCmp;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-    });
+  return List<LlmConfig>.of(configs)..sort((LlmConfig a, LlmConfig b) {
+    final int groupCmp = a.providerLabel.toLowerCase().compareTo(
+      b.providerLabel.toLowerCase(),
+    );
+    if (groupCmp != 0) return groupCmp;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
 }

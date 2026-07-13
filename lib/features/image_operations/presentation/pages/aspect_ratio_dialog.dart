@@ -55,8 +55,7 @@ class AspectRatioDialog extends StatelessWidget {
     final Map<String, int> tagCounts = context
         .read<ImageListCubit>()
         .getTagCounts();
-    final List<MapEntry<String, int>> sortedTags = tagCounts.entries
-        .toList()
+    final List<MapEntry<String, int>> sortedTags = tagCounts.entries.toList()
       ..sort(
         (MapEntry<String, int> a, MapEntry<String, int> b) =>
             b.value.compareTo(a.value),
@@ -91,26 +90,11 @@ class AspectRatioDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               if (landscape.isNotEmpty)
-                _buildSection(
-                  context,
-                  'Landscape',
-                  Icons.landscape,
-                  landscape,
-                ),
+                _buildSection(context, 'Landscape', Icons.landscape, landscape),
               if (portrait.isNotEmpty)
-                _buildSection(
-                  context,
-                  'Portrait',
-                  Icons.portrait,
-                  portrait,
-                ),
+                _buildSection(context, 'Portrait', Icons.portrait, portrait),
               if (square.isNotEmpty)
-                _buildSection(
-                  context,
-                  'Square',
-                  Icons.crop_square,
-                  square,
-                ),
+                _buildSection(context, 'Square', Icons.crop_square, square),
               if (others.isNotEmpty)
                 _buildSection(context, 'Others', Icons.help_outline, others),
               if (sortedTags.isNotEmpty)

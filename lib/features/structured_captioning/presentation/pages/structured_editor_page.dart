@@ -271,9 +271,7 @@ class _StructuredEditorView extends StatelessWidget {
                     ? 'Hide bbox labels'
                     : 'Show bbox labels',
                 onPressed: () {
-                  context
-                      .read<StructuredEditorCubit>()
-                      .toggleBboxText();
+                  context.read<StructuredEditorCubit>().toggleBboxText();
                 },
               );
             },

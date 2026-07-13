@@ -42,8 +42,10 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
     _loadSavedPrompt();
     final ImageListState imageState = context.read<ImageListCubit>().state;
     final String active = imageState.activeCategory ?? 'default';
-    _sourceCategory = imageState.categories
-        .firstWhere((String c) => c != active, orElse: () => active);
+    _sourceCategory = imageState.categories.firstWhere(
+      (String c) => c != active,
+      orElse: () => active,
+    );
     final LlmConfigsState configState = context.read<LlmConfigsCubit>().state;
     _selectedConfigId = configState.llmConfigs.selectedConfigId;
   }
@@ -132,8 +134,7 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
             final List<LlmConfig> configs = configState.llmConfigs.configs;
             if (_selectedConfigId != null &&
                 !configs.any((LlmConfig c) => c.id == _selectedConfigId)) {
-              _selectedConfigId =
-                  configs.isNotEmpty ? configs.first.id : null;
+              _selectedConfigId = configs.isNotEmpty ? configs.first.id : null;
             }
 
             final _ConvertCounts counts = _computeCounts(
@@ -196,10 +197,7 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
                             ),
                             child: const Text(
                               'Restore default',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: lightPink,
-                              ),
+                              style: TextStyle(fontSize: 11, color: lightPink),
                             ),
                           ),
                         ],
@@ -285,10 +283,7 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
         style: const TextStyle(color: textPrimary, fontSize: 14),
         items: sourceCategories
             .map<DropdownMenuItem<String>>(
-              (String c) => DropdownMenuItem<String>(
-                value: c,
-                child: Text(c),
-              ),
+              (String c) => DropdownMenuItem<String>(value: c, child: Text(c)),
             )
             .toList(),
         onChanged: (String? value) {
@@ -317,9 +312,7 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
           ),
           DropdownMenuItem<CaptionOptions>(
             value: CaptionOptions.missing,
-            child: Text(
-              'Missing in target, has source (${counts.missing})',
-            ),
+            child: Text('Missing in target, has source (${counts.missing})'),
           ),
           DropdownMenuItem<CaptionOptions>(
             value: CaptionOptions.all,
@@ -351,10 +344,8 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
         style: const TextStyle(color: textPrimary, fontSize: 14),
         items: configs
             .map<DropdownMenuItem<String>>(
-              (LlmConfig c) => DropdownMenuItem<String>(
-                value: c.id,
-                child: Text(c.name),
-              ),
+              (LlmConfig c) =>
+                  DropdownMenuItem<String>(value: c.id, child: Text(c.name)),
             )
             .toList(),
         onChanged: (String? id) {
@@ -373,11 +364,7 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
       ),
       child: Row(
         children: <Widget>[
-          Icon(
-            Icons.info_outline,
-            size: 14,
-            color: lightPink.withAlpha(180),
-          ),
+          Icon(Icons.info_outline, size: 14, color: lightPink.withAlpha(180)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -396,10 +383,8 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
     );
   }
 
-  BoxDecoration _boxDecoration() => BoxDecoration(
-    color: lightGrey,
-    borderRadius: BorderRadius.circular(8),
-  );
+  BoxDecoration _boxDecoration() =>
+      BoxDecoration(color: lightGrey, borderRadius: BorderRadius.circular(8));
 
   InputDecoration _fieldDecoration(String hint) => InputDecoration(
     hintText: hint,
@@ -432,8 +417,9 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
         missing++;
       }
     }
-    final AppImage? displayed =
-        context.read<ImageListCubit>().currentDisplayedImage;
+    final AppImage? displayed = context
+        .read<ImageListCubit>()
+        .currentDisplayedImage;
     if (displayed != null && hasSource) {
       current = (displayed.captions[source]?.text ?? '').trim().isNotEmpty
           ? 1

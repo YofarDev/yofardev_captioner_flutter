@@ -59,8 +59,14 @@ class _FakeIdeogramElement_2 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeVlmAnalysis_3 extends _i1.SmartFake implements _i4.VlmAnalysis {
-  _FakeVlmAnalysis_3(Object parent, Invocation parentInvocation)
+class _FakeIdeogramStyleDescription_3 extends _i1.SmartFake
+    implements _i3.IdeogramStyleDescription {
+  _FakeIdeogramStyleDescription_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeVlmAnalysis_4 extends _i1.SmartFake implements _i4.VlmAnalysis {
+  _FakeVlmAnalysis_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -530,6 +536,45 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as _i6.Future<_i3.IdeogramElement>);
 
   @override
+  _i6.Future<_i3.IdeogramStyleDescription> recaptionStyle({
+    required _i10.LlmConfig? config,
+    required _i11.File? imageFile,
+    required _i3.IdeogramCaption? currentCaption,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#recaptionStyle, [], {
+              #config: config,
+              #imageFile: imageFile,
+              #currentCaption: currentCaption,
+            }),
+            returnValue: _i6.Future<_i3.IdeogramStyleDescription>.value(
+              _FakeIdeogramStyleDescription_3(
+                this,
+                Invocation.method(#recaptionStyle, [], {
+                  #config: config,
+                  #imageFile: imageFile,
+                  #currentCaption: currentCaption,
+                }),
+              ),
+            ),
+          )
+          as _i6.Future<_i3.IdeogramStyleDescription>);
+
+  @override
+  _i3.IdeogramStyleDescription mapStyleResponse(
+    String? raw,
+    List<String>? colorPalette,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#mapStyleResponse, [raw, colorPalette]),
+            returnValue: _FakeIdeogramStyleDescription_3(
+              this,
+              Invocation.method(#mapStyleResponse, [raw, colorPalette]),
+            ),
+          )
+          as _i3.IdeogramStyleDescription);
+
+  @override
   String computeAspectRatio(int? width, int? height) =>
       (super.noSuchMethod(
             Invocation.method(#computeAspectRatio, [width, height]),
@@ -567,7 +612,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               [json],
               {#vlmEmitsXyxy: vlmEmitsXyxy},
             ),
-            returnValue: _FakeVlmAnalysis_3(
+            returnValue: _FakeVlmAnalysis_4(
               this,
               Invocation.method(
                 #parseAnalysisJson,

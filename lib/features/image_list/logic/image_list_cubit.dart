@@ -216,8 +216,9 @@ class ImageListCubit extends Cubit<ImageListState> {
   /// entry for [imagePath] so the map doesn't grow unbounded. Persisted to
   /// db.json on the next [_saveDb] (e.g. dialog close or any caption change).
   void setGuidance(String imagePath, String text) {
-    final Map<String, String> next =
-        Map<String, String>.from(state.imageGuidance);
+    final Map<String, String> next = Map<String, String>.from(
+      state.imageGuidance,
+    );
     if (text.isEmpty) {
       next.remove(imagePath);
     } else {

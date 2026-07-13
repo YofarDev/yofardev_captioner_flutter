@@ -85,7 +85,10 @@ class FilterHelpDialog extends StatelessWidget {
                 ),
                 _buildExample(':nocaption:', 'Uncaptioned images'),
                 _buildExample(':tag:favorite:', 'Images tagged "favorite"'),
-                _buildExample('#favorite', 'Images tagged "favorite" (or click a chip in the search bar)'),
+                _buildExample(
+                  '#favorite',
+                  'Images tagged "favorite" (or click a chip in the search bar)',
+                ),
                 _buildExample('-#favorite', 'Images NOT tagged "favorite"'),
                 _buildExample(':notag:', 'Untagged images'),
                 const SizedBox(height: 8),
@@ -137,7 +140,10 @@ class FilterHelpDialog extends StatelessWidget {
         _filterRow(':nocaption:', 'No caption'),
         _filterRow(':tag:value:', 'Has a tag equal to value'),
         _filterRow(':notag:', 'No tags assigned'),
-        _filterRow('#value', 'Has a tag equal to value (shorthand for :tag:value:)'),
+        _filterRow(
+          '#value',
+          'Has a tag equal to value (shorthand for :tag:value:)',
+        ),
         _filterRow('-#value', 'Excludes images tagged with value'),
       ],
     );

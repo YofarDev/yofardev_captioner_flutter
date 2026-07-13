@@ -109,10 +109,9 @@ void main() {
   ) async {
     final MockImageListCubit cubit = MockImageListCubit();
     when(cubit.getAspectRatioCounts()).thenReturn(<String, int>{'1:1': 4});
-    when(cubit.getTagCounts()).thenReturn(<String, int>{
-      'sketch': 3,
-      'painting': 1,
-    });
+    when(
+      cubit.getTagCounts(),
+    ).thenReturn(<String, int>{'sketch': 3, 'painting': 1});
     await tester.pumpWidget(
       MaterialApp(
         home: Scaffold(

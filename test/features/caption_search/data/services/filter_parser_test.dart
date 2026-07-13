@@ -326,8 +326,7 @@ void main() {
     });
 
     test('coexists with :tag:value: syntax', () {
-      final ParsedFilterQuery result =
-          FilterParser.parse(':tag:foo: #bar');
+      final ParsedFilterQuery result = FilterParser.parse(':tag:foo: #bar');
       final List<TagFilter> tags = result.filters
           .whereType<TagFilter>()
           .toList();

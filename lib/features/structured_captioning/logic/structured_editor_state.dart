@@ -17,6 +17,7 @@ class StructuredEditorState extends Equatable {
     this.status = StructuredEditorStatus.initial,
     this.error,
     this.recaptioningElementIndex,
+    this.recaptioningStyle = false,
     this.samBboxByIndex,
     this.showSamBboxes = false,
     this.samComputeStatus = SamComputeStatus.idle,
@@ -51,6 +52,10 @@ class StructuredEditorState extends Equatable {
   /// Index of the element currently being recaptioned, or null. Drives the
   /// per-element spinner in the UI.
   final int? recaptioningElementIndex;
+
+  /// True while a whole-style recaption is in flight. Drives the style-section
+  /// spinner and disables the style fields.
+  final bool recaptioningStyle;
 
   /// Cached SAM3 detections, keyed by element index. `null` = not yet
   /// computed for this image; empty map = computed but SAM found nothing.
@@ -94,6 +99,8 @@ class StructuredEditorState extends Equatable {
     bool clearError = false,
     int? recaptioningElementIndex,
     bool clearRecaptioning = false,
+    bool? recaptioningStyle,
+    bool clearRecaptioningStyle = false,
     Map<int, List<int>>? samBboxByIndex,
     bool? showSamBboxes,
     SamComputeStatus? samComputeStatus,
@@ -115,6 +122,9 @@ class StructuredEditorState extends Equatable {
       recaptioningElementIndex: clearRecaptioning
           ? null
           : (recaptioningElementIndex ?? this.recaptioningElementIndex),
+      recaptioningStyle:
+          !clearRecaptioningStyle &&
+          (recaptioningStyle ?? this.recaptioningStyle),
       samBboxByIndex: clearSamCache
           ? null
           : (samBboxByIndex ?? this.samBboxByIndex),
@@ -138,6 +148,7 @@ class StructuredEditorState extends Equatable {
     status,
     error,
     recaptioningElementIndex,
+    recaptioningStyle,
     samBboxByIndex,
     showSamBboxes,
     samComputeStatus,

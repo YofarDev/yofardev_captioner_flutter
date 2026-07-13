@@ -27,9 +27,7 @@ void main() {
     when(
       mockImageListCubit.getAllUniqueMediums(),
     ).thenReturn(<String>{'photograph', 'oil painting'});
-    captionSearchCubit = CaptionSearchCubit(
-      imageListCubit: mockImageListCubit,
-    );
+    captionSearchCubit = CaptionSearchCubit(imageListCubit: mockImageListCubit);
   });
 
   tearDown(() {
@@ -43,9 +41,7 @@ void main() {
           body: MultiBlocProvider(
             providers: <BlocProvider<dynamic>>[
               BlocProvider<ImageListCubit>.value(value: mockImageListCubit),
-              BlocProvider<CaptionSearchCubit>.value(
-                value: captionSearchCubit,
-              ),
+              BlocProvider<CaptionSearchCubit>.value(value: captionSearchCubit),
             ],
             child: const CaptionSearchBar(),
           ),
@@ -263,18 +259,19 @@ void main() {
       expect(find.byKey(const Key('tagFilterChipsOverlay')), findsOneWidget);
     });
 
-    testWidgets('hides the chips overlay while typing a structured :filter: query', (
-      WidgetTester tester,
-    ) async {
-      await pumpBar(tester);
-      await tester.tap(find.byType(TextField).first);
-      await tester.pumpAndSettle();
+    testWidgets(
+      'hides the chips overlay while typing a structured :filter: query',
+      (WidgetTester tester) async {
+        await pumpBar(tester);
+        await tester.tap(find.byType(TextField).first);
+        await tester.pumpAndSettle();
 
-      await typeText(tester, ':tag:');
+        await typeText(tester, ':tag:');
 
-      // Autocomplete owns the :filter: space; the chips overlay must yield.
-      expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
-    });
+        // Autocomplete owns the :filter: space; the chips overlay must yield.
+        expect(find.byKey(const Key('tagFilterChipsOverlay')), findsNothing);
+      },
+    );
 
     testWidgets('tapping a chip injects #tag into the query', (
       WidgetTester tester,
@@ -306,8 +303,9 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap inside the chip's padding, away from the '#' / label glyphs.
-      final Offset topLeft =
-          tester.getTopLeft(find.byKey(const Key('tagChip-sunset')));
+      final Offset topLeft = tester.getTopLeft(
+        find.byKey(const Key('tagChip-sunset')),
+      );
       await tester.tapAt(topLeft + const Offset(4, 2));
       await tester.pump();
 

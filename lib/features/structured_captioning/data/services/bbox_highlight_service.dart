@@ -240,11 +240,18 @@ class BboxHighlightService {
     final int y2 = (bbox[2] / 1000 * imgH).round().clamp(y1 + 1, imgH);
     final int x2 = (bbox[3] / 1000 * imgW).round().clamp(x1 + 1, imgW);
 
-    img.Image cropped = img.copyCrop(decoded, x: x1, y: y1, width: x2 - x1, height: y2 - y1);
+    img.Image cropped = img.copyCrop(
+      decoded,
+      x: x1,
+      y: y1,
+      width: x2 - x1,
+      height: y2 - y1,
+    );
 
     // Downscale if needed.
     if (cropped.width > _maxDimension || cropped.height > _maxDimension) {
-      final double scale = _maxDimension /
+      final double scale =
+          _maxDimension /
           (cropped.width > cropped.height ? cropped.width : cropped.height);
       cropped = img.copyResize(
         cropped,

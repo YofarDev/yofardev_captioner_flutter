@@ -223,7 +223,10 @@ class FilterParser {
     }
     final String value = query.substring(start, end).trim();
     if (value.isEmpty) return null;
-    return _ParseResult(filter: TagFilter(tag: value), endIndex: end);
+    return _ParseResult(
+      filter: TagFilter(tag: value),
+      endIndex: end,
+    );
   }
 
   /// Creates a flag-only filter from its name.

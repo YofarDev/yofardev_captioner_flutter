@@ -138,9 +138,9 @@ class ElementDetailSection extends StatelessWidget {
                           final List<String> palette =
                               await ColorExtractionService()
                                   .extractPaletteFromRegion(
-                            state.imageFile,
-                            element.bbox!,
-                          );
+                                    state.imageFile,
+                                    element.bbox!,
+                                  );
                           if (palette.isNotEmpty) {
                             cubit.updateElementColorPalette(palette);
                           }
@@ -296,15 +296,16 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
     }
 
     final List<LlmConfig> configs = _usableConfigs(llmState);
-    final String? effectiveId = _selectedConfigId != null &&
+    final String? effectiveId =
+        _selectedConfigId != null &&
             configs.any((LlmConfig c) => c.id == _selectedConfigId)
         ? _selectedConfigId
         : (configs.isNotEmpty ? configs.first.id : null);
     final LlmConfig? config = effectiveId != null
         ? configs.cast<LlmConfig?>().firstWhere(
-              (LlmConfig? c) => c?.id == effectiveId,
-              orElse: () => null,
-            )
+            (LlmConfig? c) => c?.id == effectiveId,
+            orElse: () => null,
+          )
         : null;
 
     final bool canRecaption = config != null && widget.element.bbox != null;
@@ -364,9 +365,7 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
                     onChanged: (String? id) {
                       if (id != null) setState(() => _selectedConfigId = id);
                     },
-                    items: configs.map<DropdownMenuItem<String>>((
-                      LlmConfig c,
-                    ) {
+                    items: configs.map<DropdownMenuItem<String>>((LlmConfig c) {
                       return DropdownMenuItem<String>(
                         value: c.id,
                         child: Padding(
@@ -470,7 +469,9 @@ class _ChipToggle extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: selected ? accentPink.withValues(alpha: 0.22) : Colors.transparent,
+          color: selected
+              ? accentPink.withValues(alpha: 0.22)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(4),
           border: Border.all(color: selected ? accentPink : hairline),
         ),

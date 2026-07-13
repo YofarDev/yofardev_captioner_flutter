@@ -34,6 +34,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     bool debugMode = false,
     bool disableSam = false,
     bool vlmEmitsXyxy = true,
+    bool multiStage = false,
     bool scopeToFiltered = false,
   }) async {
     _cancelCompleter = Completer<void>();
@@ -143,6 +144,9 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
               disableSam: disableSam,
               vlmEmitsXyxy: vlmEmitsXyxy,
               guidance: runGuidance,
+              mode: multiStage
+                  ? StructuredMode.multiStage
+                  : StructuredMode.singleShot,
             );
 
         // Store JSON string as caption in active category.

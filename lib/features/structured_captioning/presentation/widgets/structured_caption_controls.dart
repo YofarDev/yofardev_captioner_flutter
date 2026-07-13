@@ -163,6 +163,8 @@ class _StructuredCaptionControlsState extends State<StructuredCaptionControls> {
                                         configState.llmConfigs.disableSam,
                                     vlmEmitsXyxy:
                                         configState.llmConfigs.vlmEmitsXyxy,
+                                    multiStage:
+                                        configState.llmConfigs.multiStage,
                                   );
                             }
                           : null,

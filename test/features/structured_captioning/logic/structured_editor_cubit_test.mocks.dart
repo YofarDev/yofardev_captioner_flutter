@@ -451,6 +451,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
     bool? disableSam = false,
     bool? vlmEmitsXyxy = true,
     String? guidance = '',
+    _i9.StructuredMode? mode = _i9.StructuredMode.singleShot,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -463,6 +464,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #disableSam: disableSam,
                 #vlmEmitsXyxy: vlmEmitsXyxy,
                 #guidance: guidance,
+                #mode: mode,
               },
             ),
             returnValue: _i6.Future<_i3.IdeogramCaption>.value(
@@ -478,6 +480,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                     #disableSam: disableSam,
                     #vlmEmitsXyxy: vlmEmitsXyxy,
                     #guidance: guidance,
+                    #mode: mode,
                   },
                 ),
               ),

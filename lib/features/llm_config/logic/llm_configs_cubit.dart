@@ -291,6 +291,17 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     LlmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
+  /// Sets whether the structured pipeline runs in multi-stage mode (enumerate
+  /// + per-element enrich) instead of single-shot.
+  void setMultiStage(bool enabled) {
+    emit(
+      state.copyWith(
+        llmConfigs: state.llmConfigs.copyWith(multiStage: enabled),
+      ),
+    );
+    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+  }
+
   /// Updates the structured batch overrides for the JSON captioning pipeline.
   void updateStructuredBatchOverrides(StructuredBatchOverrides overrides) {
     emit(

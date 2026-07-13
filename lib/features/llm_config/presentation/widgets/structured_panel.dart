@@ -67,6 +67,19 @@ class StructuredPanel extends StatelessWidget {
                     context.read<LlmConfigsCubit>().setVlmEmitsXyxy(v),
               ),
               const SizedBox(height: 16),
+              _ToggleCard(
+                accentColor: Colors.green[300]!,
+                icon: Icons.dynamic_feed_outlined,
+                title: 'Multi-stage (detailed)',
+                subtitle:
+                    'Enumerate all objects first, then caption each one '
+                    'separately. Best for images with many objects that '
+                    'truncate or miss items in one pass. More API calls.',
+                value: state.llmConfigs.multiStage,
+                onChanged: (bool v) =>
+                    context.read<LlmConfigsCubit>().setMultiStage(v),
+              ),
+              const SizedBox(height: 16),
               _OverridesCard(
                 overrides: state.llmConfigs.structuredBatchOverrides,
               ),

@@ -511,6 +511,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                               debugMode: configState.llmConfigs.debugMode,
                               disableSam: configState.llmConfigs.disableSam,
                               vlmEmitsXyxy: configState.llmConfigs.vlmEmitsXyxy,
+                              multiStage: configState.llmConfigs.multiStage,
                               scopeToFiltered: scoped,
                             );
                       } else {

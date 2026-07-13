@@ -27,6 +27,11 @@ class LlmConfigs extends Equatable {
   /// always `[y1, x1, y2, x2]` regardless of this flag.
   final bool vlmEmitsXyxy;
 
+  /// When true, the structured pipeline runs in multi-stage mode (1 enumerate
+  /// call + N per-element enrich calls) instead of one single-shot call.
+  /// Better for object-heavy images that truncate or miss objects single-shot.
+  final bool multiStage;
+
   final StructuredBatchOverrides structuredBatchOverrides;
 
   const LlmConfigs({
@@ -38,6 +43,7 @@ class LlmConfigs extends Equatable {
     this.debugMode = false,
     this.disableSam = false,
     this.vlmEmitsXyxy = true,
+    this.multiStage = false,
     this.structuredBatchOverrides = const StructuredBatchOverrides(),
   });
 
@@ -51,6 +57,7 @@ class LlmConfigs extends Equatable {
     debugMode,
     disableSam,
     vlmEmitsXyxy,
+    multiStage,
     structuredBatchOverrides,
   ];
 
@@ -64,6 +71,7 @@ class LlmConfigs extends Equatable {
     bool? debugMode,
     bool? disableSam,
     bool? vlmEmitsXyxy,
+    bool? multiStage,
     StructuredBatchOverrides? structuredBatchOverrides,
   }) {
     return LlmConfigs(
@@ -77,6 +85,7 @@ class LlmConfigs extends Equatable {
       debugMode: debugMode ?? this.debugMode,
       disableSam: disableSam ?? this.disableSam,
       vlmEmitsXyxy: vlmEmitsXyxy ?? this.vlmEmitsXyxy,
+      multiStage: multiStage ?? this.multiStage,
       structuredBatchOverrides:
           structuredBatchOverrides ?? this.structuredBatchOverrides,
     );
@@ -97,6 +106,7 @@ class LlmConfigs extends Equatable {
       debugMode: json['debugMode'] as bool? ?? false,
       disableSam: json['disableSam'] as bool? ?? false,
       vlmEmitsXyxy: json['vlmEmitsXyxy'] as bool? ?? true,
+      multiStage: json['multiStage'] as bool? ?? false,
       structuredBatchOverrides: StructuredBatchOverrides.fromJson(
         json['structuredBatchOverrides'] as Map<String, dynamic>? ??
             <String, dynamic>{},
@@ -113,6 +123,7 @@ class LlmConfigs extends Equatable {
       'debugMode': debugMode,
       'disableSam': disableSam,
       'vlmEmitsXyxy': vlmEmitsXyxy,
+      'multiStage': multiStage,
       'structuredBatchOverrides': structuredBatchOverrides.toJson(),
     };
   }

@@ -139,6 +139,31 @@ void main() {
     });
   });
 
+  // Locks the anti-degenerate-repetition contract. Local VLMs (greedy
+  // decoding) can otherwise emit hundreds of near-identical entries for scenes
+  // with many repeated elements (e.g. a balcony full of plants), exhausting
+  // the token budget and truncating the JSON into an unparseable mess. The
+  // grouping rule + hard cap prevent that pathology at the source.
+  group('vision_enumerate prompt grouping/cap rules', () {
+    late String prompt;
+
+    setUpAll(() async {
+      prompt = await File('assets/prompts/vision_enumerate.txt').readAsString();
+    });
+
+    test('has a GROUPING section', () {
+      expect(prompt, contains('GROUPING'));
+    });
+
+    test('forbids per-item enumeration of repeated instances', () {
+      expect(prompt, contains('NEVER emit one element per repeated instance'));
+    });
+
+    test('enforces a hard element cap', () {
+      expect(prompt, contains('AT MOST 30'));
+    });
+  });
+
   group('element_enrich prompt', () {
     late String prompt;
 

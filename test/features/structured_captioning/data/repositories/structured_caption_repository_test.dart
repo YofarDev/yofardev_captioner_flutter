@@ -2242,5 +2242,103 @@ void main() {
         verify(mockBbox.renderCroppedJpeg(any, any)).called(2);
       },
     );
+
+    // Concurrency contract. Local MLX spawns a subprocess that reloads the
+    // full model per call, so parallel enrich calls load multiple model
+    // copies and freeze the machine. The fan-out MUST be serial for local
+    // MLX and parallel for remote.
+    const String enumerateFiveBboxes =
+        '{"high_level_description":"a shelf","style":{"medium":"photograph",'
+        '"aesthetics":"x","lighting":"y","photo_or_art":"z"},'
+        '"background":"wall","objects":['
+        '{"name":"O1","type":"obj","desc":"a","bbox":[10,10,100,100]},'
+        '{"name":"O2","type":"obj","desc":"b","bbox":[110,110,200,200]},'
+        '{"name":"O3","type":"obj","desc":"c","bbox":[210,210,300,300]},'
+        '{"name":"O4","type":"obj","desc":"d","bbox":[310,310,400,400]},'
+        '{"name":"O5","type":"obj","desc":"e","bbox":[410,410,500,500]}]}';
+
+    test('local MLX enrich runs serially (max in-flight == 1)', () async {
+      int current = 0;
+      int maxInflight = 0;
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENUM')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => enumerateFiveBboxes);
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENRICH')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async {
+        current++;
+        if (current > maxInflight) {
+          maxInflight = current;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        current--;
+        return '{"desc":"rich desc"}';
+      });
+
+      final LlmConfig localConfig = LlmConfig(
+        id: 'local',
+        name: 'local',
+        model: 'qwen3-vl-4b',
+        providerType: LlmProviderType.localMlx,
+      );
+      await repo.generateStructuredCaption(
+        localConfig,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+        mode: StructuredMode.multiStage,
+      );
+
+      expect(maxInflight, 1);
+    });
+
+    test('remote enrich fans out in parallel (max in-flight >= 2)', () async {
+      int current = 0;
+      int maxInflight = 0;
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENUM')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async => enumerateFiveBboxes);
+      when(
+        mockCaption.getCaption(
+          any,
+          any,
+          argThat(contains('ENRICH')),
+          maxTokens: anyNamed('maxTokens'),
+        ),
+      ).thenAnswer((_) async {
+        current++;
+        if (current > maxInflight) {
+          maxInflight = current;
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 30));
+        current--;
+        return '{"desc":"rich desc"}';
+      });
+
+      await repo.generateStructuredCaption(
+        config,
+        File('img.png'),
+        onProgress: (_) {},
+        disableSam: true,
+        mode: StructuredMode.multiStage,
+      );
+
+      expect(maxInflight, greaterThanOrEqualTo(2));
+    });
   });
 }

@@ -10,6 +10,7 @@ import 'package:logging/logging.dart';
 import '../../../../core/config/service_locator.dart';
 import '../../../captioning/data/services/caption_service.dart';
 import '../../../llm_config/data/models/llm_config.dart';
+import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../../../llm_config/data/models/structured_batch_overrides.dart';
 import '../models/ideogram_caption.dart';
 import '../models/vlm_analysis.dart';
@@ -154,10 +155,16 @@ class StructuredCaptionRepository {
     return (rawPrompt: prompt, rawResponse: vlmRawResponse, analysis: analysis);
   }
 
-  // ponytail: fixed enrich pool of 4. Raise if the provider allows higher
-  // concurrency (e.g. cloud APIs with generous rate limits). Local MLX
-  // models are single-process; raising it there won't help.
+  // ponytail: fixed enrich pool of 4 for REMOTE providers (parallel HTTP is
+  // cheap). Local MLX MUST run serially: each call spawns a subprocess that
+  // reloads the full model into RAM, so N parallel calls load N model copies
+  // and freeze the machine. See _enrichConcurrencyFor.
   static const int _enrichConcurrency = 4;
+
+  /// Per-provider enrich fan-out width. Local MLX is forced to 1 (each call is
+  /// a heavyweight subprocess that reloads the model); remote providers fan out.
+  int _enrichConcurrencyFor(LlmConfig config) =>
+      config.providerType == LlmProviderType.localMlx ? 1 : _enrichConcurrency;
 
   /// Multi-stage vision analysis: enumerate (terse) → enrich per element.
   /// Returns the same record shape as [_runVisionAnalysisSingleShot] so the
@@ -238,7 +245,9 @@ class StructuredCaptionRepository {
     return prompt;
   }
 
-  /// Runs the per-element enrich fan-out in chunks of [_enrichConcurrency].
+  /// Runs the per-element enrich fan-out. Width is provider-aware via
+  /// [_enrichConcurrencyFor]: serial (1) for local MLX so we never load
+  /// multiple model copies, parallel (up to [_enrichConcurrency]) for remote.
   /// Objects that fail to enrich (throw / unparseable / no bbox) keep their
   /// terse enumerate desc — one bad element never fails the image.
   Future<List<VlmObject>> _enrichObjects(
@@ -248,9 +257,10 @@ class StructuredCaptionRepository {
     void Function(String step) onProgress,
   ) async {
     final List<VlmObject> result = List<VlmObject>.from(objects);
+    final int concurrency = _enrichConcurrencyFor(config);
     int done = 0;
-    for (int i = 0; i < objects.length; i += _enrichConcurrency) {
-      final int end = (i + _enrichConcurrency).clamp(0, objects.length);
+    for (int i = 0; i < objects.length; i += concurrency) {
+      final int end = (i + concurrency).clamp(0, objects.length);
       final List<int> chunk = <int>[for (int j = i; j < end; j++) j];
       final List<VlmObject?> outcomes = await Future.wait(
         <Future<VlmObject?>>[

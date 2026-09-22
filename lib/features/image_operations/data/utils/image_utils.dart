@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../image_list/data/models/app_image.dart';
 import 'bash_scripts_runner.dart';
+import 'image_header_parser.dart';
 
 /// A utility class for image-related operations.
 ///
@@ -26,6 +27,15 @@ class ImageUtils {
   /// [imagePath]: The file path of the image.
   /// Returns a [Future] that completes with a [Size] object representing the image's dimensions.
   static Future<Size> getImageDimensions(String imagePath) async {
+    // Header-only parse avoids a full pixel decode; this runs once per image
+    // when a folder is loaded, so decode cost would dominate folder-open time.
+    final ImageHeader? header = await ImageHeaderParser.parseFile(
+      File(imagePath),
+    );
+    if (header != null) {
+      return Size(header.width.toDouble(), header.height.toDouble());
+    }
+    // Fallback for formats the header parser doesn't know: full decode.
     final File imageFile = File(imagePath);
     final Uint8List bytes = await imageFile.readAsBytes();
     final ui.Codec codec = await ui.instantiateImageCodec(bytes);

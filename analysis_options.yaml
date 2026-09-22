@@ -3,6 +3,10 @@ include: package:lint/analysis_options.yaml
 analyzer:
   exclude:
       - '**/*.g.dart'
+      - build/**
+      - windows/**
+      - macos/**
+      - linux/**
 linter:
   rules:
     # ------ Disable individual rules ----- #

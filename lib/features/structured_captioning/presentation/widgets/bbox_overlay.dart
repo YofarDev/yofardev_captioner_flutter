@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
+
+import '../../../image_operations/data/utils/image_header_parser.dart';
 
 /// Displays an image with bounding box overlays from an Ideogram4 JSON caption.
 ///
@@ -46,18 +46,22 @@ class _BboxOverlayImageState extends State<BboxOverlayImage> {
   }
 
   Future<void> _loadImageDimensions() async {
-    try {
-      final Uint8List bytes = await widget.imageFile.readAsBytes();
-      final img.Image? image = img.decodeImage(bytes);
-      if (image != null && mounted) {
-        setState(() {
-          _imageWidth = image.width;
-          _imageHeight = image.height;
-          _loaded = true;
-        });
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loaded = true);
+    // Header-only parse: a full decode here would stall the UI thread for
+    // large images, and only the dimensions are needed for bbox mapping.
+    final ImageHeader? header = await ImageHeaderParser.parseFile(
+      widget.imageFile,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (header != null) {
+      setState(() {
+        _imageWidth = header.width;
+        _imageHeight = header.height;
+        _loaded = true;
+      });
+    } else {
+      setState(() => _loaded = true);
     }
   }
 

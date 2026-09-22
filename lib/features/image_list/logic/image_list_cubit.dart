@@ -6,6 +6,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../features/image_operations/data/utils/image_utils.dart';
 import '../../caption_search/data/models/filter_query.dart';
@@ -273,19 +274,17 @@ class ImageListCubit extends Cubit<ImageListState> {
 
   void onImageSelected(String imageId) async {
     emit(state.copyWith(currentImageId: imageId));
-    if (!(await _checkAllFiles())) {
-      onFolderPicked(state.folderPath!);
+    // Cheap liveness probe: stat only the selected file instead of the whole
+    // folder, so selecting an image in a large folder stays O(1).
+    final int index = state.images.indexWhere((AppImage i) => i.id == imageId);
+    if (index == -1) {
+      return;
     }
-  }
-
-  Future<bool> _checkAllFiles() async {
-    for (final AppImage image in state.images) {
-      final bool exists = await image.image.exists();
-      if (!exists) {
-        return false;
+    if (!await state.images[index].image.exists()) {
+      if (state.folderPath != null) {
+        await onFolderPicked(state.folderPath!, force: true);
       }
     }
-    return true;
   }
 
   Future<void> _getImagesSizeSync() async {
@@ -814,12 +813,27 @@ class ImageListCubit extends Cubit<ImageListState> {
     await _saveDb();
   }
 
-  /// Evicts all current image thumbnails from Flutter's global ImageCache.
-  /// Prevents stale thumbnails when files are added, renamed, or replaced.
+  /// Evicts all cached decodings of the current images (full-resolution and
+  /// the downscaled variants used by the list thumbs and the blurred
+  /// backdrop). Prevents stale images when files are added, renamed, or
+  /// replaced.
   void _evictImageCache() {
     final ImageCache cache = PaintingBinding.instance.imageCache;
     for (final AppImage image in state.images) {
-      cache.evict(FileImage(image.image));
+      final FileImage provider = FileImage(image.image);
+      cache.evict(provider);
+      cache.evict(
+        ResizeImage(
+          provider,
+          width: AppConstants.imageListThumbDecodeWidth,
+        ),
+      );
+      cache.evict(
+        ResizeImage(
+          provider,
+          width: AppConstants.currentImageBackdropDecodeWidth,
+        ),
+      );
     }
   }
 }

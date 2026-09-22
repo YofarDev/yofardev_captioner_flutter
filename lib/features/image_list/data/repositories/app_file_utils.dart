@@ -27,6 +27,13 @@ class AppFileUtils {
     final List<AppImage> images = <AppImage>[];
     final List<String> foundFilenames = <String>[];
 
+    // Filename-keyed index of db entries so per-file lookups stay O(1) —
+    // first occurrence wins, matching the previous firstWhere semantics.
+    final Map<String, CaptionData> dbByName = <String, CaptionData>{};
+    for (final CaptionData d in db.images) {
+      dbByName.putIfAbsent(d.filename, () => d);
+    }
+
     for (final FileSystemEntity file in files) {
       if (file is File) {
         final String extension = p.extension(file.path).toLowerCase();
@@ -37,17 +44,17 @@ class AppFileUtils {
           final String filename = p.basename(file.path);
           foundFilenames.add(filename);
 
-          final CaptionData captionData = db.images.firstWhere(
-            (CaptionData d) => d.filename == filename,
-            orElse: () {
-              dbWasModified = true;
-              return CaptionData(
+          final CaptionData? existingData = dbByName[filename];
+          final CaptionData captionData =
+              existingData ??
+              CaptionData(
                 id: const Uuid().v4(),
                 filename: filename,
                 captions: <String, CaptionEntry>{},
               );
-            },
-          );
+          if (existingData == null) {
+            dbWasModified = true;
+          }
 
           final CaptionData hydratedCaptionData =
               await _hydrateCaptionDataFromLegacyTxt(
@@ -59,11 +66,12 @@ class AppFileUtils {
             dbWasModified = true;
           }
 
-          if (!db.images.contains(captionData)) {
+          if (existingData == null) {
             db.images.add(hydratedCaptionData);
-          } else if (!identical(hydratedCaptionData, captionData)) {
-            final int existingIndex = db.images.indexOf(captionData);
-            db.images[existingIndex] = hydratedCaptionData;
+            dbByName[filename] = hydratedCaptionData;
+          } else if (!identical(hydratedCaptionData, existingData)) {
+            db.images[db.images.indexOf(existingData)] = hydratedCaptionData;
+            dbByName[filename] = hydratedCaptionData;
           }
 
           images.add(
@@ -80,14 +88,12 @@ class AppFileUtils {
       }
     }
 
-    bool removedItems = false;
-    db.images.removeWhere((CaptionData d) {
-      final bool shouldRemove = !foundFilenames.contains(d.filename);
-      if (shouldRemove) {
-        removedItems = true;
-      }
-      return shouldRemove;
-    });
+    final Set<String> foundFilenameSet = foundFilenames.toSet();
+    final int dbCountBeforeRemove = db.images.length;
+    db.images.removeWhere(
+      (CaptionData d) => !foundFilenameSet.contains(d.filename),
+    );
+    final bool removedItems = db.images.length != dbCountBeforeRemove;
 
     if (dbWasModified || removedItems) {
       await writeDb(folderPath, db);
@@ -107,11 +113,12 @@ class AppFileUtils {
       p.join(folderPath, p.setExtension(filename, '.txt')),
     );
 
-    if (!await txtFile.exists()) {
+    try {
+      return await txtFile.readAsString();
+    } on FileSystemException {
+      // Missing or unreadable sidecar file — nothing to hydrate.
       return null;
     }
-
-    return txtFile.readAsString();
   }
 
   bool _hasAnyNonEmptyCaption(Map<String, CaptionEntry> captions) {

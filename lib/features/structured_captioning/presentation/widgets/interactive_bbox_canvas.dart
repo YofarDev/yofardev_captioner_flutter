@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:image/image.dart' as img;
 
+import '../../../image_operations/data/utils/image_header_parser.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
@@ -41,16 +41,15 @@ class _InteractiveBboxCanvasState extends State<InteractiveBboxCanvas> {
     final StructuredEditorState state = context
         .read<StructuredEditorCubit>()
         .state;
-    try {
-      final Uint8List bytes = await state.imageFile.readAsBytes();
-      final img.Image? image = img.decodeImage(bytes);
-      if (image != null && mounted) {
-        setState(() {
-          _imageSize = Size(image.width.toDouble(), image.height.toDouble());
-        });
-      }
-    } catch (_) {
-      // Leave imageSize null — fallback to image-only display
+    // Header-only parse: a full decode here would stall the UI thread for
+    // large images, and only the dimensions are needed for bbox mapping.
+    final ImageHeader? header = await ImageHeaderParser.parseFile(
+      state.imageFile,
+    );
+    if (header != null && mounted) {
+      setState(() {
+        _imageSize = Size(header.width.toDouble(), header.height.toDouble());
+      });
     }
   }
 

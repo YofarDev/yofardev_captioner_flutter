@@ -1,0 +1,86 @@
+<Rive version="1" kind="fragment">
+    <Artboard defaultStateMachineId="0:7" styleId="0:5" width="140" height="120" name="NoResults" id="0:2">
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+
+        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1" id="0:40"/>
+
+        <Shape x="108" y="28" name="Sparkle" id="0:50">
+            <Star points="4" innerRadius="0.3" width="12" height="12" name="Glow"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FFE89BAC" name="AccentPink"/>
+            </Fill>
+        </Shape>
+
+        <Node x="70" y="46" name="Mag" id="0:60">
+            <Shape x="0" y="0" name="Lens" id="0:61">
+                <Ellipse width="36" height="36" name="Glass"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="0DFFFFFF" name="GlassTint"/>
+                </Fill>
+                <Stroke thickness="3.5" cap="round" name="Rim">
+                    <SolidColor colorValue="FF9A9A9A" name="TextSecondary"/>
+                </Stroke>
+            </Shape>
+            <Shape x="13" y="13" rotation="0.785" name="Handle" id="0:62">
+                <Rectangle width="6" height="20" originX="0" originY="0" cornerRadiusTL="3" cornerRadiusTR="3" cornerRadiusBL="3" cornerRadiusBR="3" name="Grip"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FF9A9A9A" name="TextSecondary"/>
+                </Fill>
+            </Shape>
+        </Node>
+
+        <Shape x="70" y="82" name="Row1" id="0:71">
+            <Rectangle width="96" height="6" cornerRadiusTL="3" cornerRadiusTR="3" cornerRadiusBL="3" cornerRadiusBR="3" name="Bar"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FF2C2C2C" name="Hairline"/>
+            </Fill>
+        </Shape>
+        <Shape x="70" y="94" name="Row2" id="0:72">
+            <Rectangle width="72" height="6" cornerRadiusTL="3" cornerRadiusTR="3" cornerRadiusBL="3" cornerRadiusBR="3" name="Bar"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FF2C2C2C" name="Hairline"/>
+            </Fill>
+        </Shape>
+        <Shape x="70" y="106" name="Row3" id="0:73">
+            <Rectangle width="48" height="6" cornerRadiusTL="3" cornerRadiusTR="3" cornerRadiusBL="3" cornerRadiusBR="3" name="Bar"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FF2C2C2C" name="Hairline"/>
+            </Fill>
+        </Shape>
+
+        <LinearAnimation loopValue="1" duration="140" name="Sweep" id="0:6">
+            <KeyedObject objectId="0:60">
+                <KeyedProperty propertyKey="13">
+                    <KeyFrameDouble value="54" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="86" interpolationType="2" interpolatorId="0:40" frame="70"/>
+                    <KeyFrameDouble value="54" interpolationType="2" interpolatorId="0:40" frame="140"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="15">
+                    <KeyFrameDouble value="-0.09" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="0.09" interpolationType="2" interpolatorId="0:40" frame="70"/>
+                    <KeyFrameDouble value="-0.09" interpolationType="2" interpolatorId="0:40" frame="140"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:50">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="30"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="60"/>
+                    <KeyFrameDouble value="0.8" interpolationType="2" interpolatorId="0:40" frame="110"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="140"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <StateMachine name="State Machine 1" id="0:7">
+            <StateMachineLayer name="Layer 1" id="0:8">
+                <AnyState x="200" y="-120"/>
+                <ExitState x="400" y="-120"/>
+                <EntryState>
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+                <AnimationState x="200" animationId="0:6" id="0:12"/>
+            </StateMachineLayer>
+        </StateMachine>
+    </Artboard>
+</Rive>

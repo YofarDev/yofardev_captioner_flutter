@@ -35,6 +35,7 @@ dependencies:
   intl: ^0.20.2
   timeago: ^3.7.1
   package_info_plus: ^10.2.0
+  rive: ^0.14.11
 
 dev_dependencies:
   test: ^1.25.8
@@ -55,6 +56,7 @@ flutter:
     - assets/scripts/
     - assets/icons/
     - assets/prompts/
+    - assets/rive/
   
   fonts:
     - family: Orbitron

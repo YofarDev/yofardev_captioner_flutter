@@ -1,0 +1,4 @@
+name: empty_state_hero
+logs:
+  file: build/rive.log
+  problems: build/problems.log

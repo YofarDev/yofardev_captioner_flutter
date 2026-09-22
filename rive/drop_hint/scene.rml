@@ -1,0 +1,138 @@
+<Rive version="1" kind="fragment">
+    <Artboard defaultStateMachineId="0:7" styleId="0:5" width="128" height="104" name="DropHint" id="0:2">
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+
+        <CubicEaseInterpolator x1="0.42" y1="0" x2="0.58" y2="1" id="0:40"/>
+
+        <Shape x="26" y="22" name="Sparkle1" id="0:50">
+            <Star points="4" innerRadius="0.28" width="12" height="12" name="Glow"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FFF4C3D3" name="LightPink"/>
+            </Fill>
+        </Shape>
+
+        <Shape x="103" y="40" name="Sparkle2" id="0:51">
+            <Star points="4" innerRadius="0.28" width="9" height="9" name="Glow"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FFE89BAC" name="AccentPink"/>
+            </Fill>
+        </Shape>
+
+        <Node x="64" y="28" name="ChipFloat" id="0:60">
+          <Node x="0" y="0" name="ChipSquash" id="0:64">
+            <Shape x="-9" y="-6" name="Sun" id="0:61">
+                <Ellipse width="8" height="8" name="Dot"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FF6E4A55" name="PinkDim"/>
+                </Fill>
+            </Shape>
+            <Shape x="6" y="5" name="Mountain" id="0:62">
+                <Triangle width="16" height="10" name="Peak"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFE89BAC" name="AccentPink"/>
+                </Fill>
+            </Shape>
+            <Shape x="0" y="0" name="Chip" id="0:63">
+                <Rectangle width="38" height="30" cornerRadiusTL="7" cornerRadiusTR="7" cornerRadiusBL="7" cornerRadiusBR="7" name="Card"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFF4C3D3" name="LightPink"/>
+                </Fill>
+            </Shape>
+          </Node>
+        </Node>
+
+        <Node x="64" y="74" name="Folder" id="0:70">
+            <Shape x="0" y="5" name="FrontPlate" id="0:71">
+                <Rectangle width="72" height="26" cornerRadiusTL="7" cornerRadiusTR="7" cornerRadiusBL="7" cornerRadiusBR="7" name="Plate"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FF2A1C22" name="PinkSurface"/>
+                </Fill>
+                <Stroke thickness="2" cap="round" name="Outline">
+                    <SolidColor colorValue="FFE89BAC" name="AccentPink"/>
+                </Stroke>
+            </Shape>
+            <Shape x="0" y="-4" name="BackPlate" id="0:72">
+                <Rectangle width="72" height="36" cornerRadiusTL="8" cornerRadiusTR="8" cornerRadiusBL="8" cornerRadiusBR="8" name="Plate"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FF141414" name="PanelDark"/>
+                </Fill>
+                <Stroke thickness="2" cap="round" name="Outline">
+                    <SolidColor colorValue="FF6E4A55" name="PinkDim"/>
+                </Stroke>
+            </Shape>
+            <Shape x="-22" y="-24" name="Tab" id="0:73">
+                <Rectangle width="28" height="13" cornerRadiusTL="5" cornerRadiusTR="5" cornerRadiusBL="0" cornerRadiusBR="0" name="Tab"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FF2A1C22" name="PinkSurface"/>
+                </Fill>
+                <Stroke thickness="2" name="Outline">
+                    <SolidColor colorValue="FFE89BAC" name="AccentPink"/>
+                </Stroke>
+            </Shape>
+        </Node>
+
+        <LinearAnimation loopValue="1" duration="96" name="Bob" id="0:6">
+            <KeyedObject objectId="0:64">
+                <KeyedProperty propertyKey="17">
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="0.93" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="58"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="16">
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1.05" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="58"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:60">
+                <KeyedProperty propertyKey="14">
+                    <KeyFrameDouble value="28" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="35" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="28" interpolationType="2" interpolatorId="0:40" frame="96"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="15">
+                    <KeyFrameDouble value="-0.05" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="0.05" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="-0.05" interpolationType="2" interpolatorId="0:40" frame="96"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:70">
+                <KeyedProperty propertyKey="14">
+                    <KeyFrameDouble value="74" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="72" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="74" interpolationType="2" interpolatorId="0:40" frame="96"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:50">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="24"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="48"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="72"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="96"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:51">
+                <KeyedProperty propertyKey="18">
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="12"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="36"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="60"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="84"/>
+                    <KeyFrameDouble value="0.15" interpolationType="2" interpolatorId="0:40" frame="96"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <StateMachine name="State Machine 1" id="0:7">
+            <StateMachineLayer name="Layer 1" id="0:8">
+                <AnyState x="200" y="-120"/>
+                <ExitState x="400" y="-120"/>
+                <EntryState>
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+                <AnimationState x="200" animationId="0:6" id="0:12"/>
+            </StateMachineLayer>
+        </StateMachine>
+    </Artboard>
+</Rive>

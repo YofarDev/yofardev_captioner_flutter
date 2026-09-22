@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
+import '../../../../core/widgets/rive_animations.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/presentation/widgets/controls_widgets.dart';
@@ -579,6 +580,8 @@ class _CaptionControlsState extends State<CaptionControls> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
+                const RiveProcessingIndicator(size: 15),
+                const SizedBox(width: 8),
                 if (stepLabel != null)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),

@@ -1,0 +1,67 @@
+<Rive version="1" kind="fragment">
+    <Artboard defaultStateMachineId="0:7" styleId="0:5" width="48" height="48" name="Processing" id="0:2">
+        <LayoutComponentStyle name="Artboard Style" id="0:5"/>
+
+        <CubicEaseInterpolator x1="0.4" y1="0" x2="0.6" y2="1" id="0:40"/>
+
+        <Shape x="24" y="24" opacity="0.9" name="Center" id="0:20">
+            <Ellipse width="10" height="10" name="Dot"/>
+            <Fill name="Fill">
+                <SolidColor colorValue="FFFFFFFF" name="White"/>
+            </Fill>
+        </Shape>
+
+        <Node x="24" y="24" name="Orbit" id="0:30">
+            <Shape x="0" y="-14" name="Comet" id="0:31">
+                <Ellipse width="9" height="9" name="Dot"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFFFFFFF" name="White"/>
+                </Fill>
+            </Shape>
+            <Shape x="12.12" y="7" opacity="0.65" name="Mid" id="0:32">
+                <Ellipse width="7" height="7" name="Dot"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFFFFFFF" name="White"/>
+                </Fill>
+            </Shape>
+            <Shape x="-12.12" y="7" opacity="0.35" name="Tail" id="0:33">
+                <Ellipse width="6" height="6" name="Dot"/>
+                <Fill name="Fill">
+                    <SolidColor colorValue="FFFFFFFF" name="White"/>
+                </Fill>
+            </Shape>
+        </Node>
+
+        <LinearAnimation loopValue="1" duration="72" name="Spin" id="0:6">
+            <KeyedObject objectId="0:30">
+                <KeyedProperty propertyKey="15">
+                    <KeyFrameDouble value="0" interpolationType="1"/>
+                    <KeyFrameDouble value="6.2831855" interpolationType="1" frame="72"/>
+                </KeyedProperty>
+            </KeyedObject>
+            <KeyedObject objectId="0:20">
+                <KeyedProperty propertyKey="16">
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1.35" interpolationType="2" interpolatorId="0:40" frame="36"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="72"/>
+                </KeyedProperty>
+                <KeyedProperty propertyKey="17">
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40"/>
+                    <KeyFrameDouble value="1.35" interpolationType="2" interpolatorId="0:40" frame="36"/>
+                    <KeyFrameDouble value="1" interpolationType="2" interpolatorId="0:40" frame="72"/>
+                </KeyedProperty>
+            </KeyedObject>
+        </LinearAnimation>
+
+        <StateMachine name="State Machine 1" id="0:7">
+            <StateMachineLayer name="Layer 1" id="0:8">
+                <AnyState x="200" y="-120"/>
+                <ExitState x="400" y="-120"/>
+                <EntryState>
+                    <StateTransition stateToId="0:12"/>
+                </EntryState>
+                <AnimationState x="200" animationId="0:6" id="0:12"/>
+            </StateMachineLayer>
+        </StateMachine>
+    </Artboard>
+</Rive>

@@ -64,9 +64,9 @@ class ControlsView extends StatelessWidget {
               'Generate Captions',
               style: TextStyle(
                 fontSize: 10,
-                fontWeight: FontWeight.w700,
-                color: textMuted,
-                letterSpacing: 0.9,
+                fontWeight: FontWeight.w600,
+                color: textSecondary,
+                letterSpacing: 0.3,
               ),
             ),
           ],

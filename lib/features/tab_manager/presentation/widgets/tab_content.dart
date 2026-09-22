@@ -83,13 +83,15 @@ class TabContentState extends State<TabContent>
       child: Row(
         children: <Widget>[
           Container(
-            color: lightGrey,
+            // Recessed library column — sits below the shell so the caption
+            // editor stays the brightest (focal) surface.
+            color: panelDark,
             height: double.infinity,
             width: 240,
             child: const ImagesListView(),
           ),
           const Expanded(
-            child: ColoredBox(color: darkGrey, child: MainAreaView()),
+            child: ColoredBox(color: shellBackground, child: MainAreaView()),
           ),
         ],
       ),

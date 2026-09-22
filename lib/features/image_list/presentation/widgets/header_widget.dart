@@ -12,13 +12,10 @@ import 'sort_by_widget.dart';
 class HeaderWidget extends StatelessWidget {
   const HeaderWidget({super.key});
 
-  static const double _iconSize = 12;
+  static const double _iconSize = 13;
   static const double _spacing = 8.0;
-  static const double _fontSize = 10;
-  static const EdgeInsets _padding = EdgeInsets.symmetric(
-    horizontal: 16.0,
-    vertical: 8,
-  );
+  static const double _fontSize = 11;
+  static const EdgeInsets _padding = EdgeInsets.fromLTRB(16.0, 12, 16, 10);
 
   @override
   Widget build(BuildContext context) {
@@ -26,22 +23,19 @@ class HeaderWidget extends StatelessWidget {
       builder: (BuildContext context, ImageListState state) {
         return InkWell(
           onTap: () => _showAspectRatioDialog(context),
-          child: ColoredBox(
-            color: Colors.black.withAlpha(50),
-            child: Padding(
-              padding: _padding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  _buildFolderInfoRow(context, state),
-                  const SizedBox(height: 6),
-                  _buildImageCountRow(state.images, state.activeCategory),
-                  const SizedBox(height: 6),
-                  _buildWordsPerCaptionRow(context),
-                  const SizedBox(height: 12),
-                  const SortByWidget(),
-                ],
-              ),
+          child: Padding(
+            padding: _padding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                _buildFolderInfoRow(context, state),
+                const SizedBox(height: 6),
+                _buildImageCountRow(state.images, state.activeCategory),
+                const SizedBox(height: 6),
+                _buildWordsPerCaptionRow(context),
+                const SizedBox(height: 10),
+                const SortByWidget(),
+              ],
             ),
           ),
         );
@@ -69,13 +63,17 @@ class HeaderWidget extends StatelessWidget {
               FolderUtils.openFolderWithDefaultApp(state.folderPath ?? ''),
           child: Row(
             children: <Widget>[
-              Image.asset('assets/icons/folder.png', width: _iconSize),
+              Image.asset(
+                'assets/icons/folder.png',
+                width: _iconSize,
+                color: textMuted,
+              ),
               const SizedBox(width: _spacing),
               Text(
                 cubit.getTotalImagesSize().readableFileSize,
                 style: const TextStyle(
                   fontSize: _fontSize,
-                  color: Colors.white,
+                  color: textPrimary,
                 ),
               ),
             ],
@@ -88,7 +86,11 @@ class HeaderWidget extends StatelessWidget {
             onTap: state.folderPath == null
                 ? null
                 : () => cubit.onFolderPicked(state.folderPath!, force: true),
-            child: const Icon(Icons.refresh, size: _iconSize),
+            child: const Icon(
+              Icons.refresh,
+              size: _iconSize,
+              color: textMuted,
+            ),
           ),
         ),
       ],
@@ -105,13 +107,17 @@ class HeaderWidget extends StatelessWidget {
 
     return Row(
       children: <Widget>[
-        Image.asset('assets/icons/image.png', width: _iconSize),
+        Image.asset(
+          'assets/icons/image.png',
+          width: _iconSize,
+          color: textMuted,
+        ),
         const SizedBox(width: _spacing),
         RichText(
           text: TextSpan(
             style: const TextStyle(
               fontSize: _fontSize,
-              color: Colors.white,
+              color: textPrimary,
               fontFamily: 'Inter',
             ),
             children: <TextSpan>[
@@ -120,10 +126,7 @@ class HeaderWidget extends StatelessWidget {
                 const TextSpan(text: ' ('),
                 TextSpan(
                   text: activeCategory,
-                  style: const TextStyle(
-                    color: lightPink,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: const TextStyle(color: lightPink),
                 ),
                 const TextSpan(text: ')'),
               ],
@@ -144,11 +147,15 @@ class HeaderWidget extends StatelessWidget {
       message: 'Average words per caption',
       child: Row(
         children: <Widget>[
-          Image.asset('assets/icons/words.png', width: _iconSize),
+          Image.asset(
+            'assets/icons/words.png',
+            width: _iconSize,
+            color: textMuted,
+          ),
           const SizedBox(width: _spacing),
           Text(
-            "$avgWords words / caption",
-            style: const TextStyle(fontSize: _fontSize),
+            '$avgWords words / caption',
+            style: const TextStyle(fontSize: _fontSize, color: textPrimary),
           ),
         ],
       ),

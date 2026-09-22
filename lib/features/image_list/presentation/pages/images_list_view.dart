@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../data/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 import '../widgets/header_widget.dart';
@@ -22,11 +23,13 @@ class ImagesListView extends StatelessWidget {
         return Column(
           children: <Widget>[
             const HeaderWidget(),
-            Container(height: 1, color: Colors.black.withAlpha(80)),
+            Container(height: 1, color: hairline),
             Expanded(
-              child: ListView.builder(
+              child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: displayedImages.length,
+                separatorBuilder: (BuildContext context, int index) =>
+                    Container(height: 1, color: hairline.withAlpha(120)),
                 itemBuilder: (BuildContext context, int index) {
                   final AppImage image = displayedImages[index];
                   return ImageListItem(

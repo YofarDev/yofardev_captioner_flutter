@@ -81,3 +81,18 @@ const Color tabActiveBg = panelRaised;
 const Color tabActiveFg = textPrimary;
 const Color tabInactiveFg = textMuted;
 const Color tabActiveAccent = accentPink; // underline / marker on the live tab
+
+// Overlays / states ──────────────────────────────────────────────────────────
+
+/// Hover wash over any surface (list rows, tabs, menu targets).
+const Color hoverOverlay = Color(0x21FFFFFF); // white @ 8%
+
+/// Interaction ───────────────────────────────────────────────────────────────
+//
+// Radius scale. Three values, no in-betweens:
+//   • radiusSm — inputs, chips, thumbnails, small badges
+//   • radiusMd — cards, panels, the caption editor
+//   • radiusLg — dialogs and sheets
+const double radiusSm = 8;
+const double radiusMd = 12;
+const double radiusLg = 14;

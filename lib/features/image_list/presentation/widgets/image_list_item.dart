@@ -44,22 +44,16 @@ class _ImageListItemState extends State<ImageListItem> {
     return '';
   }
 
-  Color _getBackgroundColor() {
-    if (widget.isSelected) {
-      return darkGrey;
-    }
-    if (_isHovered) {
-      return Colors.white.withAlpha(20);
-    }
-    return Colors.transparent;
-  }
-
   @override
   Widget build(BuildContext context) {
     final String sizeCategory = _getSizeCategory();
     final bool hasPresetRatio = AppConstants.aspectRatioStrings.contains(
       widget.image.aspectRatio,
     );
+    final bool hasCaption =
+        (widget.image.captions[widget.activeCategory]?.text ?? '')
+            .trim()
+            .isNotEmpty;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -73,30 +67,48 @@ class _ImageListItemState extends State<ImageListItem> {
           color: widget.image.error != null
               ? destructive.withAlpha(20)
               : Colors.transparent,
-          child: ColoredBox(
-            color: _getBackgroundColor(),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 80),
+            color: widget.isSelected
+                ? panelRaised
+                : _isHovered
+                ? hoverOverlay
+                : Colors.transparent,
             child: Stack(
-              alignment: Alignment.centerRight,
               children: <Widget>[
+                // Terminal marker — the pink edge that says "you are here".
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 80),
+                    width: 3,
+                    color: widget.isSelected ? accentPink : Colors.transparent,
+                  ),
+                ),
                 Row(
                   children: <Widget>[
                     Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Container(
                         decoration: BoxDecoration(
-                          border: !hasPresetRatio
-                              ? Border.all(color: destructive, width: 2)
-                              : null,
-                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: !hasPresetRatio
+                                ? destructive.withAlpha(180)
+                                : hairline,
+                          ),
+                          borderRadius: BorderRadius.circular(radiusSm),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(radiusSm),
                           child: Image.file(
                             key: ValueKey<String>(widget.image.id),
                             widget.image.image,
                             width: 80,
                             height: 80,
                             fit: BoxFit.cover,
+                            cacheWidth: AppConstants.imageListThumbDecodeWidth,
                           ),
                         ),
                       ),
@@ -105,45 +117,36 @@ class _ImageListItemState extends State<ImageListItem> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
-                          Row(
-                            children: <Widget>[
-                              Flexible(
-                                child: Text(
-                                  widget.image.image.path.split('/').last,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: widget.isSelected
-                                        ? lightPink
-                                        : Colors.white,
-                                    fontWeight: widget.isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
                           Text(
-                            "(${widget.image.size.readableFileSize})",
+                            widget.image.image.path.split('/').last,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 13,
+                              height: 1.3,
                               color: widget.isSelected
-                                  ? lightPink.withAlpha(150)
-                                  : Colors.white70,
+                                  ? lightPink
+                                  : textPrimary,
                               fontWeight: widget.isSelected
-                                  ? FontWeight.bold
-                                  : FontWeight.normal,
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "${widget.image.size.readableFileSize}"
+                            "${sizeCategory.isEmpty ? '' : ' · $sizeCategory'}",
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: widget.isSelected
+                                  ? lightPink.withAlpha(160)
+                                  : textMuted,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    if ((widget.image.captions[widget.activeCategory]?.text ??
-                            '')
-                        .trim()
-                        .isEmpty)
+                    if (!hasCaption)
                       Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: Tooltip(
@@ -153,79 +156,85 @@ class _ImageListItemState extends State<ImageListItem> {
                             size: 14,
                             color: widget.isSelected
                                 ? lightPink.withAlpha(100)
-                                : Colors.white.withAlpha(50),
+                                : textMuted,
                           ),
                         ),
                       ),
+                    const SizedBox(width: 8),
+                    _RemoveButton(
+                      imageId: widget.image.id,
+                      isSelected: widget.isSelected,
+                    ),
                     const SizedBox(width: 12),
-                    Tooltip(
-                      message: 'Remove this image and its caption',
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          final ImageListCubit imageListCubit = context
-                              .read<ImageListCubit>();
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: const Text('Remove Image'),
-                                content: const Text(
-                                  'Are you sure you want to remove this image and its caption?',
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    child: const Text('Cancel'),
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: const Text('Remove'),
-                                    onPressed: () {
-                                      imageListCubit.removeImage(
-                                        widget.image.id,
-                                      );
-                                      Navigator.of(context).pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                        child: Icon(
-                          Icons.delete,
-                          size: 18,
-                          color: widget.isSelected ? lightPink : Colors.white70,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
                   ],
-                ),
-                if (sizeCategory.isNotEmpty)
-                  Positioned(
-                    right: 8,
-                    bottom: 8,
-                    child: Text(
-                      sizeCategory,
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: widget.isSelected
-                            ? lightPink.withAlpha(150)
-                            : Colors.white.withAlpha(75),
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(color: darkGrey.withAlpha(100), height: 1),
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RemoveButton extends StatefulWidget {
+  const _RemoveButton({required this.imageId, required this.isSelected});
+
+  final String imageId;
+  final bool isSelected;
+
+  @override
+  State<_RemoveButton> createState() => _RemoveButtonState();
+}
+
+class _RemoveButtonState extends State<_RemoveButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Tooltip(
+        message: 'Remove this image and its caption',
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () {
+            final ImageListCubit imageListCubit = context.read<ImageListCubit>();
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Remove Image'),
+                  content: const Text(
+                    'Are you sure you want to remove this image and its caption?',
+                  ),
+                  actions: <Widget>[
+                    TextButton(
+                      child: const Text('Cancel'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: destructive),
+                      child: const Text('Remove'),
+                      onPressed: () {
+                        imageListCubit.removeImage(widget.imageId);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          child: Icon(
+            Icons.delete_outline,
+            size: 18,
+            color: _isHovered
+                ? destructive
+                : (widget.isSelected ? lightPink.withAlpha(140) : textMuted),
           ),
         ),
       ),

@@ -125,7 +125,7 @@ class CategoryTabBar extends StatelessWidget {
     final ImageListCubit imageListCubit = context.read<ImageListCubit>();
     showModalBottomSheet(
       context: context,
-      backgroundColor: darkGrey,
+      backgroundColor: panelRaised,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
@@ -141,30 +141,21 @@ class CategoryTabBar extends StatelessWidget {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(50),
+                      color: hairline,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(height: 16),
                   ListTile(
-                    leading: const Icon(
-                      Icons.edit_outlined,
-                      color: Colors.white,
-                    ),
-                    title: const Text(
-                      'Rename category',
-                      style: TextStyle(color: Colors.white),
-                    ),
+                    leading: const Icon(Icons.edit_outlined),
+                    title: const Text('Rename category'),
                     onTap: () {
                       Navigator.pop(sheetContext);
                       _showRenameDialog(context, category);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(
-                      Icons.delete_outline,
-                      color: destructive,
-                    ),
+                    leading: const Icon(Icons.delete_outline, color: destructive),
                     title: const Text(
                       'Delete category',
                       style: TextStyle(color: destructive),
@@ -213,42 +204,22 @@ class CategoryTabBar extends StatelessWidget {
       builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
         value: imageListCubit,
         child: AlertDialog(
-          backgroundColor: darkGrey,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          title: const Text(
-            'Delete Category',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          ),
+          title: const Text('Delete Category'),
           content: Text(
             'Delete "$category"? All captions in this category will be lost.',
-            style: const TextStyle(color: Colors.white70),
           ),
           actions: <Widget>[
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(color: Colors.white.withAlpha(150)),
-              ),
+              child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 imageListCubit.removeCategory(category);
                 Navigator.pop(context);
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: destructive,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Delete',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              style: TextButton.styleFrom(foregroundColor: destructive),
+              child: const Text('Delete'),
             ),
           ],
         ),
@@ -306,8 +277,15 @@ class _CategoryTabState extends State<_CategoryTab> {
               color: widget.isActive
                   ? lightGrey
                   : _isHovered
-                  ? Colors.white.withAlpha(8)
-                  : Colors.white.withAlpha(6),
+                  ? hoverOverlay
+                  : Colors.transparent,
+              border: widget.isActive
+                  ? null
+                  : const Border(
+                      top: BorderSide(color: hairline),
+                      left: BorderSide(color: hairline),
+                      right: BorderSide(color: hairline),
+                    ),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(12),
                 topRight: Radius.circular(12),
@@ -324,8 +302,8 @@ class _CategoryTabState extends State<_CategoryTab> {
                         ? FontWeight.w500
                         : FontWeight.w400,
                     color: widget.isActive
-                        ? Colors.white
-                        : Colors.white.withAlpha(140),
+                        ? textPrimary
+                        : textSecondary,
                     height: 1.0,
                   ),
                 ),
@@ -363,10 +341,10 @@ class _MenuButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.all(2),
-          child: Icon(
+          child: const Icon(
             Icons.more_horiz,
             size: 13,
-            color: Colors.white.withAlpha(120),
+            color: textMuted,
           ),
         ),
       ),
@@ -389,10 +367,10 @@ class _AddCategoryButton extends StatelessWidget {
           topLeft: Radius.circular(6),
           topRight: Radius.circular(6),
         ),
-        child: SizedBox(
+        child: const SizedBox(
           height: CategoryTabBar._height,
           width: CategoryTabBar._height,
-          child: Icon(Icons.add, size: 16, color: Colors.white.withAlpha(100)),
+          child: Icon(Icons.add, size: 16, color: textMuted),
         ),
       ),
     );
@@ -421,39 +399,13 @@ class _CategoryDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: darkGrey,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+      title: Text(title),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           TextField(
             controller: controller,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: TextStyle(color: Colors.white.withAlpha(100)),
-              filled: true,
-              fillColor: Colors.white.withAlpha(10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.white.withAlpha(25)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.white.withAlpha(25)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: lightPink.withAlpha(150)),
-              ),
-            ),
+            decoration: InputDecoration(hintText: hintText),
             autofocus: true,
             onSubmitted: (_) {
               onConfirm();
@@ -465,31 +417,19 @@ class _CategoryDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withAlpha(25)),
+                color: panelDark,
+                borderRadius: BorderRadius.circular(radiusSm),
+                border: Border.all(color: hairline),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: format,
                   isExpanded: true,
-                  dropdownColor: darkGrey,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    color: Colors.white70,
-                  ),
+                  dropdownColor: panelRaised,
+                  icon: const Icon(Icons.keyboard_arrow_down),
                   items: const <DropdownMenuItem<String>>[
-                    DropdownMenuItem<String>(
-                      value: 'txt',
-                      child: Text('TXT', style: TextStyle(color: Colors.white)),
-                    ),
-                    DropdownMenuItem<String>(
-                      value: 'json',
-                      child: Text(
-                        'JSON',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
+                    DropdownMenuItem<String>(value: 'txt', child: Text('TXT')),
+                    DropdownMenuItem<String>(value: 'json', child: Text('JSON')),
                   ],
                   onChanged: onFormatChanged,
                 ),
@@ -501,10 +441,7 @@ class _CategoryDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Cancel',
-            style: TextStyle(color: Colors.white.withAlpha(150)),
-          ),
+          child: const Text('Cancel'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -514,14 +451,8 @@ class _CategoryDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: lightPink,
             foregroundColor: Colors.black,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
-          child: Text(
-            confirmText,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
+          child: Text(confirmText),
         ),
       ],
     );

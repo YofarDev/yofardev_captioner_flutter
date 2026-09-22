@@ -674,6 +674,9 @@ class _JsonViewerState extends State<_JsonViewer> {
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          filled: false,
                         ),
                       ),
                       if (_parseError != null) ...<Widget>[

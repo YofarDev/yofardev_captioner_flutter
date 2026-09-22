@@ -8,7 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../core/constants/app_colors.dart';
 import '../../../core/services/cache_service.dart';
+import '../../../core/widgets/rive_animations.dart';
 import '../../../features/image_list/logic/image_list_cubit.dart';
 import '../../../features/tab_manager/data/models/app_tab.dart';
 import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
@@ -253,7 +255,7 @@ class _HomePageState extends State<HomePage> {
                   opacity: _isDragging ? 1.0 : 0.0,
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                    child: Container(color: Colors.black.withAlpha(150)),
+                    child: Container(color: Colors.black.withAlpha(140)),
                   ),
                 ),
               ),
@@ -265,16 +267,36 @@ class _HomePageState extends State<HomePage> {
                   child: Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 64,
-                        vertical: 128,
+                        horizontal: 56,
+                        vertical: 40,
                       ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white),
+                        color: pinkSurface.withAlpha(220),
+                        borderRadius: BorderRadius.circular(radiusLg),
+                        border: Border.all(color: accentPink, width: 1.5),
                       ),
-                      child: const Text(
-                        "Drag a file or folder here",
-                        style: TextStyle(color: Colors.white, fontSize: 15),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          const RiveDropHint(),
+                          const SizedBox(height: 14),
+                          const Text(
+                            'Drop to open',
+                            style: TextStyle(
+                              color: lightPink,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'A folder of images, or a single image',
+                            style: TextStyle(
+                              color: lightPink.withAlpha(150),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),

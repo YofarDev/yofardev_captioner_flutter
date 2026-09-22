@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../logic/image_list_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
@@ -11,27 +12,27 @@ class SortByWidget extends StatelessWidget {
       builder: (BuildContext context, ImageListState state) {
         return Row(
           children: <Widget>[
-            const Text('Sort by:', style: TextStyle(fontSize: 12)),
+            const Text('Sort by:', style: TextStyle(fontSize: 11, color: textMuted)),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.white.withAlpha(10),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.white.withAlpha(30)),
+                color: panelRaised,
+                borderRadius: BorderRadius.circular(radiusSm),
+                border: Border.all(color: hairline),
               ),
               child: DropdownButton<SortBy>(
                 value: state.sortBy,
                 isDense: true,
                 style: const TextStyle(
                   fontSize: 12,
-                  color: Colors.white,
+                  color: textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
-                dropdownColor: Colors.grey[850],
+                dropdownColor: panelRaised,
                 icon: const Icon(
                   Icons.arrow_drop_down,
-                  color: Colors.white70,
+                  color: textSecondary,
                   size: 20,
                 ),
                 underline: const SizedBox.shrink(),
@@ -62,7 +63,7 @@ class SortByWidget extends StatelessWidget {
             const SizedBox(width: 8),
             InkWell(
               child: Icon(
-                color: Colors.white,
+                color: textSecondary,
                 size: 16,
                 state.sortAscending ? Icons.arrow_downward : Icons.arrow_upward,
               ),

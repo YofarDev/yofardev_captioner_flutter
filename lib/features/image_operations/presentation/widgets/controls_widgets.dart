@@ -129,12 +129,13 @@ class RenameAllFilesButton extends StatelessWidget {
 }
 
 class ConvertAllImagesButton extends StatelessWidget {
-  const ConvertAllImagesButton({super.key});
+  const ConvertAllImagesButton();
 
   @override
   Widget build(BuildContext context) {
     return AppButton(
-      text: '📸  Convert all images',
+      text: 'Convert all images',
+      iconData: Icons.photo_size_select_large,
       onTap: () {
         showDialog(
           context: context,

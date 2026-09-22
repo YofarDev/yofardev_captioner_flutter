@@ -169,7 +169,13 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                     textAlignVertical: TextAlignVertical.top,
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
+                                      enabledBorder: InputBorder.none,
+                                      focusedBorder: InputBorder.none,
                                       isDense: true,
+                                      // Transparent ink over the caption box —
+                                      // opts out of the global filled input
+                                      // theme so the lightGrey box shows.
+                                      filled: false,
                                     ),
                                   ),
                           ),
@@ -188,14 +194,16 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                         vertical: 4,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withAlpha(50),
-                                        borderRadius: BorderRadius.circular(6),
+                                        color: panelDark.withAlpha(160),
+                                        borderRadius: BorderRadius.circular(
+                                          radiusSm,
+                                        ),
                                       ),
                                       child: Text(
                                         "${captionText.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length} words",
                                         style: const TextStyle(
                                           fontSize: 11,
-                                          color: Colors.white54,
+                                          color: textSecondary,
                                         ),
                                       ),
                                     ),

@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
+import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
@@ -29,19 +31,34 @@ class CurrentImageView extends StatelessWidget {
           if (state.images.isNotEmpty && state.searchQuery.isNotEmpty) {
             return SizedBox(
               height: MediaQuery.of(context).size.height * 0.5,
-              child: const Center(
+              child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    Icon(Icons.search_off, size: 48, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
+                    const Icon(
+                      Icons.search_off,
+                      size: 40,
+                      color: textMuted,
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
                       'No results found',
                       style: TextStyle(
                         fontSize: 18,
-                        color: Colors.grey,
                         fontFamily: 'Orbitron',
+                        color: textPrimary,
                       ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'No image matches the current filters',
+                      style: TextStyle(fontSize: 12, color: textMuted),
+                    ),
+                    const SizedBox(height: 18),
+                    TextButton(
+                      onPressed: () => cubit.clearSearch(),
+                      style: TextButton.styleFrom(foregroundColor: lightPink),
+                      child: const Text('Clear search'),
                     ),
                   ],
                 ),
@@ -74,6 +91,8 @@ class CurrentImageView extends StatelessWidget {
                             currentImage.image,
                             width: double.infinity,
                             fit: BoxFit.cover,
+                            cacheWidth:
+                                AppConstants.currentImageBackdropDecodeWidth,
                           ),
                           BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -137,7 +156,7 @@ class CurrentImageView extends StatelessWidget {
                       },
                       icon: const Icon(
                         Icons.crop,
-                        color: Colors.white,
+                        color: textSecondary,
                         size: 16,
                       ),
                     ),
@@ -157,7 +176,7 @@ class CurrentImageView extends StatelessWidget {
                       },
                       icon: const Icon(
                         Icons.perm_media_outlined,
-                        color: Colors.white,
+                        color: textSecondary,
                         size: 16,
                       ),
                     ),
@@ -174,7 +193,7 @@ class CurrentImageView extends StatelessWidget {
   Widget _buildTimestamp(BuildContext context, AppImage currentImage) {
     final DateFormat formatter = DateFormat('d/MM/y • h:mm');
     final String timestampMessage =
-        '🤖 First caption ▶ ${formatter.format(currentImage.captionTimestamp!)}${currentImage.lastModified != null ? '\n✍ Last modified ▶ ${formatter.format(currentImage.lastModified!)}' : ''}';
+        'First caption\n${formatter.format(currentImage.captionTimestamp!)}${currentImage.lastModified != null ? '\n\nLast modified\n${formatter.format(currentImage.lastModified!)}' : ''}';
     return Padding(
       padding: const EdgeInsets.only(left: 32),
       child: GestureDetector(
@@ -191,7 +210,7 @@ class CurrentImageView extends StatelessWidget {
             Text(
               '${currentImage.captionModel} • ${timeago.format(currentImage.lastModified ?? currentImage.captionTimestamp!)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.white.withAlpha(100),
+                color: textMuted,
                 fontSize: 11,
               ),
             ),
@@ -204,14 +223,14 @@ class CurrentImageView extends StatelessWidget {
   Widget _buildSizeInfos(AppImage image) {
     if (image.width == -1 || image.height == -1) {
       return Shimmer.fromColors(
-        baseColor: Colors.grey,
-        highlightColor: Colors.white,
-        child: const Text("..."),
+        baseColor: textMuted,
+        highlightColor: textSecondary,
+        child: const Text('...'),
       );
     }
     return Text(
-      "${image.width}x${image.height} (${ImageUtils.getSimplifiedAspectRatio(image.width, image.height)})",
-      style: const TextStyle(fontSize: 11),
+      '${image.width}x${image.height} (${ImageUtils.getSimplifiedAspectRatio(image.width, image.height)})',
+      style: const TextStyle(fontSize: 11, color: textMuted),
     );
   }
 }

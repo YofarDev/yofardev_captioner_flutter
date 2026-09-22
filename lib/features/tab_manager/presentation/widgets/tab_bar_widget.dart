@@ -14,7 +14,10 @@ class TabBarWidget extends StatelessWidget {
       builder: (BuildContext context, TabManagerState state) {
         return Container(
           height: 36,
-          color: tabBarBg,
+          decoration: const BoxDecoration(
+            color: tabBarBg,
+            border: Border(bottom: BorderSide(color: hairline)),
+          ),
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -44,7 +47,7 @@ class TabBarWidget extends StatelessWidget {
   }
 }
 
-class _TabItem extends StatelessWidget {
+class _TabItem extends StatefulWidget {
   const _TabItem({
     required this.tab,
     required this.isActive,
@@ -60,62 +63,134 @@ class _TabItem extends StatelessWidget {
   final VoidCallback onClose;
 
   @override
+  State<_TabItem> createState() => _TabItemState();
+}
+
+class _TabItemState extends State<_TabItem> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: isActive ? tabActiveBg : tabInactiveBg,
-          border: Border(
-            bottom: BorderSide(
-              width: 2,
-              color: isActive ? tabActiveAccent : Colors.transparent,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 80),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: widget.isActive
+                ? tabActiveBg
+                : _isHovered
+                ? hoverOverlay
+                : tabInactiveBg,
+            border: Border(
+              bottom: BorderSide(
+                width: 2,
+                color: widget.isActive
+                    ? tabActiveAccent
+                    : _isHovered
+                    ? hairline
+                    : Colors.transparent,
+              ),
             ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-        ),
-        constraints: const BoxConstraints(maxWidth: 180),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Flexible(
-              child: Text(
-                tab.displayName,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: isActive ? tabActiveFg : tabInactiveFg,
-                  fontSize: 12,
-                  fontFamily: 'Inter',
+          constraints: const BoxConstraints(maxWidth: 180),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Flexible(
+                child: Text(
+                  widget.tab.displayName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: widget.isActive
+                        ? tabActiveFg
+                        : _isHovered
+                        ? textSecondary
+                        : tabInactiveFg,
+                    fontSize: 12,
+                    fontFamily: 'Inter',
+                  ),
                 ),
               ),
-            ),
-            if (canClose) ...<Widget>[
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: onClose,
-                child: const Icon(Icons.close, size: 14, color: tabInactiveFg),
-              ),
+              if (widget.canClose) ...<Widget>[
+                const SizedBox(width: 4),
+                _TabCloseButton(onClose: widget.onClose),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _AddTabButton extends StatelessWidget {
+class _TabCloseButton extends StatefulWidget {
+  const _TabCloseButton({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  State<_TabCloseButton> createState() => _TabCloseButtonState();
+}
+
+class _TabCloseButtonState extends State<_TabCloseButton> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onClose,
+        child: Icon(
+          Icons.close,
+          size: 13,
+          color: _isHovered ? destructive : tabInactiveFg,
+        ),
+      ),
+    );
+  }
+}
+
+class _AddTabButton extends StatefulWidget {
   const _AddTabButton({required this.onPressed});
 
   final VoidCallback onPressed;
 
   @override
+  State<_AddTabButton> createState() => _AddTabButtonState();
+}
+
+class _AddTabButtonState extends State<_AddTabButton> {
+  bool _isHovered = false;
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 8),
-        child: Center(child: Icon(Icons.add, size: 16, color: tabInactiveFg)),
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onPressed,
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          decoration: BoxDecoration(
+            color: _isHovered ? hoverOverlay : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Center(
+            child: Icon(
+              Icons.add,
+              size: 16,
+              color: _isHovered ? textSecondary : tabInactiveFg,
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_colors.dart';
+
 class NotificationOverlay {
   static void show(
     BuildContext context, {
     required String message,
     Duration duration = const Duration(seconds: 3),
-    Color backgroundColor = Colors.black87,
-    Color textColor = Colors.white,
+    Color backgroundColor = panelRaised,
+    Color textColor = textPrimary,
   }) {
     final OverlayState overlayState = Overlay.of(context);
     late OverlayEntry overlayEntry;
@@ -106,27 +108,39 @@ class _NotificationWidgetState extends State<_NotificationWidget>
         opacity: _fadeAnimation,
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: widget.backgroundColor,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: <BoxShadow>[
+            borderRadius: BorderRadius.circular(radiusSm),
+            border: Border.all(color: hairline),
+            boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: Colors.black.withAlpha(100),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+                color: Color(0x66000000),
+                blurRadius: 12,
+                offset: Offset(0, 4),
               ),
             ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Icon(Icons.check_circle, color: widget.textColor, size: 20),
-              const SizedBox(width: 8),
+              Icon(
+                Icons.check_circle,
+                color: widget.textColor == textPrimary
+                    ? success
+                    : widget.textColor,
+                size: 18,
+              ),
+              const SizedBox(width: 10),
               Flexible(
                 child: Text(
                   widget.message,
-                  style: TextStyle(color: widget.textColor, fontSize: 14),
+                  style: TextStyle(
+                    color: widget.textColor,
+                    fontSize: 13,
+                    height: 1.35,
+                  ),
                 ),
               ),
             ],

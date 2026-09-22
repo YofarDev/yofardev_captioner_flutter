@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../constants/app_colors.dart';
+import 'rive_animations.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -26,11 +27,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildChild() {
     if (isLoading) {
-      return const SizedBox(
-        width: 16,
-        height: 16,
-        child: CircularProgressIndicator(color: accentPink),
-      );
+      return const RiveProcessingIndicator();
     }
 
     return Row(
@@ -39,7 +36,11 @@ class AppButton extends StatelessWidget {
         if (iconAssetPath != null)
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: Image.asset(iconAssetPath!, width: 20),
+            child: Image.asset(
+              iconAssetPath!,
+              width: 20,
+              color: foregroundColor ?? buttonPrimaryFg,
+            ),
           ),
         if (iconData != null)
           Padding(
@@ -47,7 +48,7 @@ class AppButton extends StatelessWidget {
             child: Icon(
               iconData,
               size: 16,
-              color: foregroundColor ?? textPrimary,
+              color: foregroundColor ?? buttonPrimaryFg,
             ),
           ),
         Text(text, style: TextStyle(color: foregroundColor ?? buttonPrimaryFg)),
@@ -57,14 +58,22 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final Color fg = foregroundColor ?? (isOutline
+        ? buttonOutlineFg
+        : buttonPrimaryFg);
+    final Color? overlay = onTap == null ? null : fg.withValues(alpha: 0.12);
+
     if (isOutline) {
       return OutlinedButton(
         style: OutlinedButton.styleFrom(
-          foregroundColor: foregroundColor ?? buttonOutlineFg,
+          foregroundColor: fg,
           side: BorderSide(color: backgroundColor ?? buttonOutlineBorder),
           backgroundColor: Colors.transparent,
+          overlayColor: overlay,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(radiusSm),
+          ),
         ),
         onPressed: isLoading ? null : onTap,
         child: _buildChild(),
@@ -73,10 +82,16 @@ class AppButton extends StatelessWidget {
 
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        foregroundColor: foregroundColor ?? buttonPrimaryFg,
+        foregroundColor: fg,
         backgroundColor: backgroundColor ?? buttonPrimaryBg,
+        disabledBackgroundColor: panelRaised,
+        disabledForegroundColor: buttonDisabledFg,
+        overlayColor: overlay,
+        elevation: 0,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(radiusSm),
+        ),
       ),
       onPressed: isLoading ? null : onTap,
       child: _buildChild(),

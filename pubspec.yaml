@@ -8,20 +8,20 @@ environment:
   sdk: ^3.9.2
 
 dependencies:
-  equatable: ^2.0.8
-  file_picker: ^12.0.0-beta.7
+  equatable: ^3.0.0
+  file_picker: ^13.1.0
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
   path: ^1.9.1
   screen_retriever: ^0.2.0
   shared_preferences: ^2.5.4
-  shimmer: ^3.0.0
+  shimmer: ^4.0.0
   window_manager: ^0.5.1
   http: ^1.6.0
   uuid: ^4.5.2
   archive: ^4.0.7
-  desktop_drop: ^0.7.0
+  desktop_drop: ^0.8.4
   nested: ^1.0.0
   macos_secure_bookmarks: ^0.2.1
   flutter_launcher_icons: ^0.14.4

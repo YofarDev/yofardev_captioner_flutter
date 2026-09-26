@@ -219,6 +219,81 @@ void main() {
         expect(result, 'A beautiful sunset');
       });
 
+      test(
+        'parses caption after empty <think> block and single newline',
+        () async {
+          // Reasoning models echo the full templated prompt and wrap their
+          // reply in `<think>` — only one newline after the assistant marker.
+          when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
+            return ProcessResult(
+              0,
+              0,
+              '==========\n'
+                  "Files: ['/tmp/01_compressed.jpg'] \n"
+                  '\n'
+                  'Prompt: <|im_start|>user\n'
+                  '<|vision_start|><|image_pad|><|vision_end|>Write a caption<|im_end|>\n'
+                  '<|im_start|>assistant\n'
+                  '<think>\n'
+                  '\n'
+                  '</think>\n'
+                  '\n'
+                  '\n'
+                  'A beautiful sunset\n'
+                  '==========\n'
+                  'Prompt: 254 tokens, 59.071 tokens-per-sec\n'
+                  'Generation: 166 tokens, 29.809 tokens-per-sec\n'
+                  'Peak memory: 6.931 GB',
+              '',
+            );
+          });
+
+          final LlmConfig config = LlmConfig(
+            name: 'mlx',
+            model: 'test',
+            providerType: LlmProviderType.localMlx,
+          );
+
+          final String result = await service.getCaption(
+            config,
+            File('/test/img.jpg'),
+            'prompt',
+          );
+
+          expect(result, 'A beautiful sunset');
+        },
+      );
+
+      test('strips non-empty <think> reasoning blocks', () async {
+        when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
+          return ProcessResult(
+            0,
+            0,
+            '<|im_start|>assistant\n'
+                '<think>\n'
+                'Let me look at the image carefully.\n'
+                '</think>\n'
+                'A beautiful sunset\n'
+                '==========',
+            '',
+          );
+        });
+
+        final LlmConfig config = LlmConfig(
+          name: 'mlx',
+          model: 'test',
+          providerType: LlmProviderType.localMlx,
+        );
+
+        final String result = await service.getCaption(
+          config,
+          File('/test/img.jpg'),
+          'prompt',
+        );
+
+        expect(result, 'A beautiful sunset');
+      });
+
       test('throws ApiException when MLX output does not match regex', () {
         when(mockProcessRunner.run(any, any)).thenAnswer((_) async {
           return ProcessResult(0, 0, 'unparsable output', '');

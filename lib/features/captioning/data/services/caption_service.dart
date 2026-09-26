@@ -207,8 +207,11 @@ class CaptionService {
       if (result.exitCode == 0) {
         final String output = result.stdout.toString();
         _logger.info('MLX output: $output');
+        // \s* after the assistant marker: chat templates differ in how many
+        // newlines they echo (some models emit `<think>` right after a single
+        // newline); both `think` and `thought` reasoning blocks are stripped.
         final RegExp regex = RegExp(
-          r'<\|im_start\|>assistant\n\n(.*?)\n==========',
+          r'<\|im_start\|>assistant\s*(.*?)\n==========',
           dotAll: true,
         );
         final Match? match = regex.firstMatch(output);
@@ -216,7 +219,10 @@ class CaptionService {
         if (match != null && match.groupCount >= 1) {
           return match
               .group(1)!
-              .replaceAll(RegExp('<thought>.*?</thought>', dotAll: true), '')
+              .replaceAll(
+                RegExp(r'<(thought|think)>.*?</\1>', dotAll: true),
+                '',
+              )
               .trim();
         } else {
           _logger.severe('Could not parse caption from MLX output: $output');

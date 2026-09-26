@@ -94,9 +94,8 @@ class _ImageListItemState extends State<ImageListItem> {
                       child: Container(
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: !hasPresetRatio
-                                ? destructive.withAlpha(180)
-                                : hairline,
+                            color: !hasPresetRatio ? destructive : hairline,
+                            width: !hasPresetRatio ? 2 : 1,
                           ),
                           borderRadius: BorderRadius.circular(radiusSm),
                         ),

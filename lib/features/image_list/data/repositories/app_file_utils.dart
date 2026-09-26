@@ -356,7 +356,7 @@ class AppFileUtils {
       final Uint8List zipBytes = await File(tempPath).readAsBytes();
       await File(tempPath).delete();
 
-      final String? outputFile = await FilePicker.saveFile(
+      final Uri? outputFile = await FilePicker.saveFile(
         dialogTitle: 'Please select an output file',
         fileName: fileName,
         initialDirectory: downloadsPath,

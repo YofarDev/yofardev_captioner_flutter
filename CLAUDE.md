@@ -132,7 +132,7 @@ The project uses strict linting with these notable customizations:
 1. User configures LLM API in settings (stored via `LlmConfigService`)
 2. `CaptioningCubit` receives request to caption image(s)
 3. `CaptioningRepository` makes API call to configured endpoint
-4. Response is parsed and saved to `.txt` file alongside image
+4. Response is parsed and stored in the folder's `db.json` (keyed by category); `.txt`/`.json` sidecars are only written on explicit export
 5. UI updates with new caption
 
 ### Image Operations
@@ -147,6 +147,53 @@ The project uses strict linting with these notable customizations:
 - File picker: `file_picker` package
 - macOS secure bookmarks: `macos_secure_bookmarks` for sustained file access
 - Last folder caching: `shared_preferences`
+
+## Agent API
+
+The app embeds a local REST API (`lib/features/agent_api/`) so external AI agents (Claude Code, ZCode, scripts) can read saved prompts and write captions using **their own vision**, without touching `db.json` directly. Implemented with `shelf` + `shelf_router` (`AgentApiService`, started from `main()` when the `agentApiEnabled` pref is true — default true).
+
+- Binds `127.0.0.1` only (default port 8765, `agentApiPort` pref; falls back to an ephemeral port if busy).
+- Every route except `GET /api/health` requires `Authorization: Bearer <token>`. The token (random uuid, `agentApiToken` pref) and actual port are written to a discovery file on start and removed on stop:
+  - macOS: `~/Library/Application Support/fr.yofardev.yofardevCaptioner/agent-api.json`
+  - Linux: `~/.local/share/<app>/agent-api.json` — Windows: `%APPDATA%\<app>\agent-api.json` (both via `path_provider`)
+  - The exact path and token are also shown in Settings → Agent API.
+- Never write `db.json` from outside the app while it runs: the app rewrites the whole file from in-memory state on every save, so external edits get clobbered. The API exists precisely to avoid that — `POST /api/captions` routes through the open tab's `ImageListCubit` when the folder is open (`mode: "live"`), and does a direct read-modify-write only for folders not open in any tab (`mode: "file"`).
+
+Endpoints (all JSON):
+
+| Method + path | Body / params | Returns |
+|---|---|---|
+| `GET /api/health` | — | `{status, app, version}` (no auth) |
+| `GET /api/prompts` | — | `{prompts: [...], selectedPrompt}` from `LlmConfigsCubit` |
+| `GET /api/folders` | — | `{tabs: [{id, folderPath, displayName, active}]}` |
+| `GET /api/images` | `?folder=/abs/path` | `{categories, activeCategory, images: [{id, filename, path, captions, tags, guidance}]}` — live state when the folder is open, disk scan + `readDb` otherwise |
+| `POST /api/captions` | `{folder, filename, text, category?, model?, tags?}` | Writes a caption entry (`model` defaults to `"agent"`, `isEdited` false, `timestamp` now). `tags` merge into existing. 404 if image missing, 400 with valid `categories` on unknown category |
+| `POST /api/folders/refresh` | `{folder}` | Forces a re-scan of the open tab (picks up externally added files); `refreshed: false` if the folder isn't open |
+
+Agent workflow example (from a coding agent's shell):
+
+```bash
+CONF="$HOME/Library/Application Support/fr.yofardev.yofardevCaptioner/agent-api.json"
+PORT=$(sed -E 's/.*"port": ?([0-9]+).*/\1/' "$CONF")
+TOKEN=$(sed -E 's/.*"token": ?"([^"]+)".*/\1/' "$CONF")
+API="http://127.0.0.1:$PORT/api"
+AUTH="Authorization: Bearer $TOKEN"
+
+curl -s "$API/images?folder=$FOLDER" -H "$AUTH"          # list images + existing captions
+curl -s "$API/prompts" -H "$AUTH"                        # read saved captioning prompts
+curl -s -X POST "$API/captions" -H "$AUTH" -H "Content-Type: application/json" \
+  -d "{\"folder\":\"$FOLDER\",\"filename\":\"cat.jpg\",\"text\":\"<caption>\",\"model\":\"claude-code\"}"
+```
+
+### MCP server
+
+`tool/captioner_mcp.dart` is a dependency-free stdio MCP server (newline-delimited JSON-RPC) exposing the Agent API as tools: `status`, `list_prompts`, `list_folders`, `list_images`, `write_caption`, `refresh_folder`. It resolves the port and bearer token from the discovery file on every call, so the registration never needs credentials and survives port changes. Registered once with:
+
+```bash
+claude mcp add -s user captioner dart /path/to/yofardev_captioner/tool/captioner_mcp.dart
+```
+
+A global `captioner` skill (`~/.agents/skills/captioner/` for ZCode, `~/.claude/skills/captioner/` for Claude Code) documents the same workflow as curl, so agents can use the API even without the MCP server registered.
 
 ## External Dependencies
 

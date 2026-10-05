@@ -46,4 +46,4 @@ app.*.map.json
 .claude
 docs
 GEMINI.md
-CLAUDE.md
+CLAUDE.md.zcode/

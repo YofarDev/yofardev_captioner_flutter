@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cache_service.dart';
+import '../../../agent_api/presentation/widgets/agent_api_panel.dart';
 import '../widgets/models_prompts_panel.dart';
 import '../widgets/structured_panel.dart';
 
@@ -49,7 +50,11 @@ class _LlmSettingsScreenState extends State<LlmSettingsScreen> {
           Expanded(
             child: IndexedStack(
               index: _tab,
-              children: const <Widget>[ModelsPromptsPanel(), StructuredPanel()],
+              children: const <Widget>[
+                ModelsPromptsPanel(),
+                AgentApiPanel(),
+                StructuredPanel(),
+              ],
             ),
           ),
           const _MaxImageSizeBar(),
@@ -184,6 +189,7 @@ class _SegmentedTabs extends StatelessWidget {
 
   static const List<_TabSpec> _tabs = <_TabSpec>[
     _TabSpec(index: '01', label: 'Models & Prompts'),
+    _TabSpec(index: '02', label: 'Agent API'),
     _TabSpec(index: '03', label: 'Structured'),
   ];
 

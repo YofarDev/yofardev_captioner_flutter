@@ -1,8 +1,10 @@
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
+import '../../features/agent_api/data/services/agent_api_service.dart';
 import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
+import '../../features/image_list/data/repositories/app_file_utils.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 
 final GetIt locator = GetIt.instance;
@@ -13,6 +15,8 @@ void setupLocator() {
   locator.registerLazySingleton(() => LlmConfigService());
   locator.registerLazySingleton(() => CaptionRepository());
   locator.registerLazySingleton(() => CaptioningRepository());
+  locator.registerLazySingleton(() => AppFileUtils());
+  locator.registerLazySingleton(() => AgentApiService());
 
   // Logging
   Logger.root.level = Level.ALL;

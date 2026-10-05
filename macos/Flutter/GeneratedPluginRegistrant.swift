@@ -6,7 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import desktop_drop
-import file_picker
+import file_picker_darwin
 import flutter_image_compress_macos
 import macos_secure_bookmarks
 import package_info_plus

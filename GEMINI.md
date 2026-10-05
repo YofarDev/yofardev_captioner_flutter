@@ -38,3 +38,7 @@ To build and run the project, you need to have Flutter installed.
     * `utils`: Includes general utility functions used across the application.
     * `main.dart`: The entry point of the application.
 * **Testing:** The `test` folder contains the tests for the application. There are some unit and integration tests, but the coverage is not complete.
+
+## Agent API
+
+The app embeds a local REST API (`lib/features/agent_api/`, `shelf` on `127.0.0.1`, default port 8765) so external AI agents can read saved prompts and write captions with their own vision. Everything except `GET /api/health` requires `Authorization: Bearer <token>`; port and token are published in `agent-api.json` inside the application-support directory while the app runs (macOS: `~/Library/Application Support/fr.yofardev.yofardevCaptioner/`). Endpoints: `/api/prompts`, `/api/folders`, `/api/images?folder=`, `POST /api/captions`, `POST /api/folders/refresh`. Never write a folder's `db.json` from outside the app — it is rewritten from memory and external edits get clobbered; use `POST /api/captions` instead. `tool/captioner_mcp.dart` is an optional stdio MCP server exposing the same API as tools. Full contract: see the "Agent API" section of `CLAUDE.md`.

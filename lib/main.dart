@@ -9,7 +9,9 @@ import 'package:window_manager/window_manager.dart';
 import 'core/config/service_locator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/presentation/pages/home_page.dart';
+import 'core/services/cache_service.dart';
 import 'core/services/route_observer.dart';
+import 'features/agent_api/data/services/agent_api_service.dart';
 import 'features/llm_config/logic/llm_configs_cubit.dart';
 import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -34,22 +36,43 @@ void main() async {
       await windowManager.focus();
     });
   }
-  runApp(const MyApp());
+
+  // Root cubits are created here instead of inside BlocProviders so the
+  // AgentApiService can reach their live state through get_it.
+  final LlmConfigsCubit llmConfigsCubit = LlmConfigsCubit()..onInit();
+  final TabManagerCubit tabManagerCubit = TabManagerCubit();
+  locator
+    ..registerSingleton<LlmConfigsCubit>(llmConfigsCubit)
+    ..registerSingleton<TabManagerCubit>(tabManagerCubit);
+
+  if (await CacheService.loadAgentApiEnabled()) {
+    await locator<AgentApiService>().start();
+  }
+
+  runApp(
+    MyApp(
+      llmConfigsCubit: llmConfigsCubit,
+      tabManagerCubit: tabManagerCubit,
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({
+    super.key,
+    required this.llmConfigsCubit,
+    required this.tabManagerCubit,
+  });
+
+  final LlmConfigsCubit llmConfigsCubit;
+  final TabManagerCubit tabManagerCubit;
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
-        BlocProvider<LlmConfigsCubit>(
-          create: (BuildContext context) => LlmConfigsCubit()..onInit(),
-        ),
-        BlocProvider<TabManagerCubit>(
-          create: (BuildContext context) => TabManagerCubit(),
-        ),
+        BlocProvider<LlmConfigsCubit>.value(value: llmConfigsCubit),
+        BlocProvider<TabManagerCubit>.value(value: tabManagerCubit),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

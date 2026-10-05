@@ -83,4 +83,39 @@ class CacheService {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString(_convertPromptKey);
   }
+
+  static const String _agentApiEnabledKey = 'agentApiEnabled';
+  static const String _agentApiPortKey = 'agentApiPort';
+  static const String _agentApiTokenKey = 'agentApiToken';
+  static const int defaultAgentApiPort = 8765;
+
+  static Future<void> saveAgentApiEnabled(bool enabled) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_agentApiEnabledKey, enabled);
+  }
+
+  static Future<bool> loadAgentApiEnabled() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_agentApiEnabledKey) ?? true;
+  }
+
+  static Future<void> saveAgentApiPort(int port) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_agentApiPortKey, port);
+  }
+
+  static Future<int> loadAgentApiPort() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getInt(_agentApiPortKey) ?? defaultAgentApiPort;
+  }
+
+  static Future<void> saveAgentApiToken(String token) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_agentApiTokenKey, token);
+  }
+
+  static Future<String?> loadAgentApiToken() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_agentApiTokenKey);
+  }
 }

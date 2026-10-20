@@ -22,8 +22,23 @@ import 'image_list_cubit_test.mocks.dart';
 void main() {
   // Mockito cannot synthesize Either dummies for the new repository
   // signatures; provide them up front.
-  provideDummy<Either<Failure, List<AppImage>>>(
-    const Right<Failure, List<AppImage>>(<AppImage>[]),
+  provideDummy<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >(
+    Right<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >((
+      images: <AppImage>[],
+      db: CaptionDatabase(
+        categories: <String>['default'],
+        images: <CaptionData>[],
+      ),
+      dbFailure: null,
+    )),
   );
   provideDummy<Either<Failure, CaptionDatabase>>(
     Right<Failure, CaptionDatabase>(
@@ -105,7 +120,22 @@ void main() {
       'onFolderPicked loads images when folder changes',
       build: () {
         when(mockAppFileUtils.onFolderPicked(any)).thenAnswer(
-          (_) async => Right<Failure, List<AppImage>>(<AppImage>[testImage]),
+          (_) async =>
+              Right<
+                Failure,
+                ({
+                  List<AppImage> images,
+                  CaptionDatabase db,
+                  Failure? dbFailure,
+                })
+              >((
+                images: <AppImage>[testImage],
+                db: CaptionDatabase(
+                  categories: <String>['default'],
+                  images: <CaptionData>[],
+                ),
+                dbFailure: null,
+              )),
         );
         when(mockAppFileUtils.readDb(any)).thenAnswer(
           (_) async => Right<Failure, CaptionDatabase>(
@@ -164,7 +194,22 @@ void main() {
       'onFolderPicked reloads images when folder is same AND force is TRUE',
       build: () {
         when(mockAppFileUtils.onFolderPicked(any)).thenAnswer(
-          (_) async => Right<Failure, List<AppImage>>(<AppImage>[testImage]),
+          (_) async =>
+              Right<
+                Failure,
+                ({
+                  List<AppImage> images,
+                  CaptionDatabase db,
+                  Failure? dbFailure,
+                })
+              >((
+                images: <AppImage>[testImage],
+                db: CaptionDatabase(
+                  categories: <String>['default'],
+                  images: <CaptionData>[],
+                ),
+                dbFailure: null,
+              )),
         );
         when(mockAppFileUtils.readDb(any)).thenAnswer(
           (_) async => Right<Failure, CaptionDatabase>(

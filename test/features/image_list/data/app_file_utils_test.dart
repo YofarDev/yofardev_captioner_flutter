@@ -352,7 +352,7 @@ void main() {
 
           final List<AppImage> reloaded = (await appFileUtils.onFolderPicked(
             tempDir.path,
-          )).getRight().toNullable()!;
+          )).getRight().toNullable()!.images;
           final Map<String, String> byFile = captionsByFile(reloaded);
 
           // No stale/duplicate filenames; captions follow their images.

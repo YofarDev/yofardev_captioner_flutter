@@ -51,9 +51,30 @@ class _TestSession {
 
 class _NoopFileStore implements CaptionFileStore {
   @override
-  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) =>
-      Future<Either<Failure, List<AppImage>>>.value(
-        const Right<Failure, List<AppImage>>(<AppImage>[]),
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  onFolderPicked(String folderPath) =>
+      Future<
+        Either<
+          Failure,
+          ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+        >
+      >.value(
+        Right<
+          Failure,
+          ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+        >((
+          images: <AppImage>[],
+          db: CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
+          dbFailure: null,
+        )),
       );
 
   @override

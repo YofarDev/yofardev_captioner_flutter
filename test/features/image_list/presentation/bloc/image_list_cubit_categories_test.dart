@@ -15,8 +15,23 @@ import 'image_list_cubit_categories_test.mocks.dart';
 void main() {
   // Mockito cannot synthesize Either dummies for the new repository
   // signatures; provide them up front.
-  provideDummy<Either<Failure, List<AppImage>>>(
-    const Right<Failure, List<AppImage>>(<AppImage>[]),
+  provideDummy<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >(
+    Right<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >((
+      images: <AppImage>[],
+      db: CaptionDatabase(
+        categories: <String>['default'],
+        images: <CaptionData>[],
+      ),
+      dbFailure: null,
+    )),
   );
   provideDummy<Either<Failure, CaptionDatabase>>(
     Right<Failure, CaptionDatabase>(

@@ -41,7 +41,7 @@ void main() {
     final AppFileUtils utils = AppFileUtils();
     final List<AppImage> images = (await utils.onFolderPicked(
       tempDir.path,
-    )).getRight().toNullable()!;
+    )).getRight().toNullable()!.images;
 
     expect(images, hasLength(1));
     expect(images.single.tags, <String>[]);
@@ -66,7 +66,7 @@ void main() {
     final AppFileUtils utils = AppFileUtils();
     final List<AppImage> images = (await utils.onFolderPicked(
       tempDir.path,
-    )).getRight().toNullable()!;
+    )).getRight().toNullable()!.images;
 
     expect(images.single.tags, <String>['sunset', 'wide']);
   });

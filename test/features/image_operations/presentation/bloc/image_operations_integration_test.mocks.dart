@@ -385,20 +385,52 @@ class MockAppFileUtils extends _i1.Mock implements _i8.AppFileUtils {
   }
 
   @override
-  _i6.Future<_i9.Either<_i10.Failure, List<_i4.AppImage>>> onFolderPicked(
-    String? folderPath,
-  ) =>
+  _i6.Future<
+    _i9.Either<
+      _i10.Failure,
+      ({
+        _i11.CaptionDatabase db,
+        _i10.Failure? dbFailure,
+        List<_i4.AppImage> images,
+      })
+    >
+  >
+  onFolderPicked(String? folderPath) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath]),
             returnValue:
-                _i6.Future<_i9.Either<_i10.Failure, List<_i4.AppImage>>>.value(
-                  _i7.dummyValue<_i9.Either<_i10.Failure, List<_i4.AppImage>>>(
-                    this,
-                    Invocation.method(#onFolderPicked, [folderPath]),
-                  ),
+                _i6.Future<
+                  _i9.Either<
+                    _i10.Failure,
+                    ({
+                      _i11.CaptionDatabase db,
+                      _i10.Failure? dbFailure,
+                      List<_i4.AppImage> images,
+                    })
+                  >
+                >.value(
+                  _i7.dummyValue<
+                    _i9.Either<
+                      _i10.Failure,
+                      ({
+                        _i11.CaptionDatabase db,
+                        _i10.Failure? dbFailure,
+                        List<_i4.AppImage> images,
+                      })
+                    >
+                  >(this, Invocation.method(#onFolderPicked, [folderPath])),
                 ),
           )
-          as _i6.Future<_i9.Either<_i10.Failure, List<_i4.AppImage>>>);
+          as _i6.Future<
+            _i9.Either<
+              _i10.Failure,
+              ({
+                _i11.CaptionDatabase db,
+                _i10.Failure? dbFailure,
+                List<_i4.AppImage> images,
+              })
+            >
+          >);
 
   @override
   _i6.Future<_i9.Either<_i10.Failure, _i11.CaptionDatabase>> readDb(

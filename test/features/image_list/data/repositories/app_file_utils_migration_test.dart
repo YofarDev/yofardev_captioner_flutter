@@ -99,7 +99,7 @@ void main() {
 
         final List<AppImage> images = (await fileUtils.onFolderPicked(
           tempDir.path,
-        )).getRight().toNullable()!;
+        )).getRight().toNullable()!.images;
         final CaptionDatabase updatedDb = (await fileUtils.readDb(
           tempDir.path,
         )).getRight().toNullable()!;
@@ -126,7 +126,7 @@ void main() {
 
         final List<AppImage> images = (await fileUtils.onFolderPicked(
           tempDir.path,
-        )).getRight().toNullable()!;
+        )).getRight().toNullable()!.images;
         final CaptionDatabase updatedDb = (await fileUtils.readDb(
           tempDir.path,
         )).getRight().toNullable()!;

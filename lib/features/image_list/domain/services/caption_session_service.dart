@@ -17,7 +17,13 @@ import 'caption_session_snapshot.dart';
 /// the data layer by `AppFileUtils` so the domain service stays free of
 /// data-layer and Flutter dependencies.
 abstract class CaptionFileStore {
-  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath);
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  onFolderPicked(String folderPath);
   Future<Either<Failure, CaptionDatabase>> readDb(String folderPath);
   Future<void> writeDb(String folderPath, CaptionDatabase db);
   Future<void> removeImage(File imageFile);
@@ -236,9 +242,13 @@ class CaptionSessionService {
     );
 
     try {
-      final Either<Failure, List<AppImage>> pickResult = await _fileStore
-          .onFolderPicked(folderPath);
-      final List<AppImage>? picked = pickResult.getRight().toNullable();
+      final Either<
+        Failure,
+        ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+      >
+      pickResult = await _fileStore.onFolderPicked(folderPath);
+      final ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})?
+      picked = pickResult.getRight().toNullable();
       if (picked == null) {
         // Folder load failed at the file boundary; clear the list like the
         // old catch path did and surface the failure to the UI.
@@ -248,20 +258,9 @@ class CaptionSessionService {
         );
         return;
       }
-      final List<AppImage> images = picked;
-
-      // Load database to get categories
-      final Either<Failure, CaptionDatabase> dbResult = await _fileStore.readDb(
-        folderPath,
-      );
-      final CaptionDatabase? db = dbResult.getRight().toNullable();
-      if (db == null) {
-        // Corrupt db.json: images still load, but captions were not loaded —
-        // the UI shows a non-blocking warning banner.
-        final Failure f = dbResult.getLeft().toNullable()!;
-        _update(_state.copyWith(dbLoadError: failureMessage(f)));
-        return;
-      }
+      final List<AppImage> images = picked.images;
+      final CaptionDatabase db = picked.db;
+      final Failure? dbFailure = picked.dbFailure;
 
       if (_state.folderPath != folderPath) {
         return;
@@ -286,9 +285,15 @@ class CaptionSessionService {
           activeCategory: db.activeCategory ?? 'default',
           currentImageId: images.isNotEmpty ? images[0].id : null,
           imageGuidance: guidanceByPath,
-          clearDbLoadError: true,
         ),
       );
+      if (dbFailure != null) {
+        // Corrupt db.json: images loaded with empty captions — surface the
+        // non-blocking warning banner instead of failing the folder load.
+        _update(_state.copyWith(dbLoadError: failureMessage(dbFailure)));
+      } else {
+        _update(_state.copyWith(clearDbLoadError: true));
+      }
     } catch (e) {
       // Clear state if folder couldn't be loaded (e.g., folder was removed)
       _update(const ImageListState());

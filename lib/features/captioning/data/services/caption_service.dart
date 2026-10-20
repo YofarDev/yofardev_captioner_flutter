@@ -163,6 +163,7 @@ class CaptionService {
       _logger.severe('Error response: ${response.body}');
       throw ApiException(
         'Failed to transform caption (${response.statusCode}): ${response.body}',
+        statusCode: response.statusCode,
       );
     }
   }
@@ -304,6 +305,7 @@ class CaptionService {
         _logger.severe('Error response: ${response.body}');
         throw ApiException(
           'Failed to load caption (${response.statusCode}): ${response.body}',
+          statusCode: response.statusCode,
         );
       }
     } finally {
@@ -379,6 +381,7 @@ class CaptionService {
       _logger.severe('Error response: ${response.body}');
       throw ApiException(
         'Failed to rewrite caption (${response.statusCode}): ${response.body}',
+        statusCode: response.statusCode,
       );
     }
   }
@@ -443,6 +446,7 @@ class CaptionService {
       _logger.severe('Error response: ${response.body}');
       throw ApiException(
         'Failed to repair JSON (${response.statusCode}): ${response.body}',
+        statusCode: response.statusCode,
       );
     }
   }
@@ -572,7 +576,12 @@ class CaptionService {
 class ApiException implements Exception {
   final String message;
 
-  ApiException(this.message);
+  /// HTTP status code when the failure came from an HTTP response, used by
+  /// repositories to classify unauthorized vs server errors without parsing
+  /// [message]. Null for non-HTTP failures.
+  final int? statusCode;
+
+  ApiException(this.message, {this.statusCode});
 
   @override
   String toString() => 'ApiException: $message';

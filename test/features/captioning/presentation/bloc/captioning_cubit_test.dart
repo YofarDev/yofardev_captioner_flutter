@@ -29,9 +29,30 @@ class _FakeFileStore implements CaptionFileStore {
   final List<CaptionDatabase> writtenDbs = <CaptionDatabase>[];
 
   @override
-  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) =>
-      Future<Either<Failure, List<AppImage>>>.value(
-        const Right<Failure, List<AppImage>>(<AppImage>[]),
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  onFolderPicked(String folderPath) =>
+      Future<
+        Either<
+          Failure,
+          ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+        >
+      >.value(
+        Right<
+          Failure,
+          ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+        >((
+          images: <AppImage>[],
+          db: CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
+          dbFailure: null,
+        )),
       );
 
   @override
@@ -662,6 +683,8 @@ void main() {
       captioningCubit.clearErrors();
 
       expect(captioningCubit.state.status, CaptioningStatus.initial);
+      // The staleness fix under test: the error is cleared, not left set.
+      expect(captioningCubit.state.error, isNull);
     });
 
     test('runCaptioner emits progress updates', () async {

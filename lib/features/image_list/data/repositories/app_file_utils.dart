@@ -34,15 +34,32 @@ class AppFileUtils implements CaptionFileStore {
   final CacheService _cacheService;
 
   @override
-  Future<Either<Failure, List<AppImage>>> onFolderPicked(
-    String folderPath,
-  ) async {
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  onFolderPicked(String folderPath) async {
     try {
       final Directory dir = await _managePersistentPermission(folderPath);
       final Either<Failure, CaptionDatabase> dbResult = await readDb(
         folderPath,
       );
-      final CaptionDatabase db = dbResult.getRight().toNullable()!;
+      // A corrupt/unreadable db.json must not fail the whole folder load:
+      // images still enumerate (with empty captions) and the db failure is
+      // surfaced so the UI can show its warning banner. Propagate the Left
+      // as data instead of unwrapping it — never `!` a Left.
+      late final CaptionDatabase db;
+      Failure? dbFailure;
+      dbResult.fold((Failure f) {
+        dbFailure = f;
+        db = CaptionDatabase(
+          categories: <String>['default'],
+          activeCategory: 'default',
+          images: <CaptionData>[],
+        );
+      }, (CaptionDatabase d) => db = d);
       bool dbWasModified = false;
 
       final List<FileSystemEntity> files = dir.listSync();
@@ -117,16 +134,24 @@ class AppFileUtils implements CaptionFileStore {
       );
       final bool removedItems = db.images.length != dbCountBeforeRemove;
 
-      if (dbWasModified || removedItems) {
+      // Never rewrite db.json when it could not be read — writing an empty
+      // database over a corrupt (possibly recoverable) file would destroy it.
+      if ((dbWasModified || removedItems) && dbFailure == null) {
         await writeDb(folderPath, db);
       }
 
       images.sort(
         (AppImage a, AppImage b) => compareNatural(a.image.path, b.image.path),
       );
-      return Right<Failure, List<AppImage>>(images);
+      return Right<
+        Failure,
+        ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+      >((images: images, db: db, dbFailure: dbFailure));
     } catch (e, st) {
-      return Left<Failure, List<AppImage>>(
+      return Left<
+        Failure,
+        ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+      >(
         mapExceptionToFailure(
           e,
           stackTrace: st,

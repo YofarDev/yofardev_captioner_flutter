@@ -18,7 +18,13 @@ import 'package:yofardev_captioner/features/image_list/domain/services/filter_pa
 /// Hand-rolled fake of the [CaptionFileStore] port — the service tests assert
 /// session behavior, so the store is configurable and records writes.
 class _FakeFileStore implements CaptionFileStore {
-  Future<Either<Failure, List<AppImage>>> Function(String folderPath)?
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  Function(String folderPath)?
   listImagesOverride;
   Future<Either<Failure, CaptionDatabase>> Function(String folderPath)?
   readDbOverride;
@@ -28,11 +34,32 @@ class _FakeFileStore implements CaptionFileStore {
   int duplicateCalls = 0;
 
   @override
-  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) {
+  Future<
+    Either<
+      Failure,
+      ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+    >
+  >
+  onFolderPicked(String folderPath) {
     listImagesCalls++;
     return listImagesOverride?.call(folderPath) ??
-        Future<Either<Failure, List<AppImage>>>.value(
-          const Right<Failure, List<AppImage>>(<AppImage>[]),
+        Future<
+          Either<
+            Failure,
+            ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+          >
+        >.value(
+          Right<
+            Failure,
+            ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+          >((
+            images: <AppImage>[],
+            db: CaptionDatabase(
+              categories: <String>['default'],
+              images: <CaptionData>[],
+            ),
+            dbFailure: null,
+          )),
         );
   }
 
@@ -143,7 +170,17 @@ void main() {
 
     test('onFolderPicked loads images when folder changes', () async {
       store.listImagesOverride = (_) async =>
-          Right<Failure, List<AppImage>>(<AppImage>[testImage]);
+          Right<
+            Failure,
+            ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+          >((
+            images: <AppImage>[testImage],
+            db: CaptionDatabase(
+              categories: <String>['default'],
+              images: <CaptionData>[],
+            ),
+            dbFailure: null,
+          ));
       store.readDbOverride = (_) async => Right<Failure, CaptionDatabase>(
         CaptionDatabase(
           categories: <String>['default'],
@@ -180,7 +217,17 @@ void main() {
       'onFolderPicked reloads when folder is same AND force is true',
       () async {
         store.listImagesOverride = (_) async =>
-            Right<Failure, List<AppImage>>(<AppImage>[testImage]);
+            Right<
+              Failure,
+              ({List<AppImage> images, CaptionDatabase db, Failure? dbFailure})
+            >((
+              images: <AppImage>[testImage],
+              db: CaptionDatabase(
+                categories: <String>['default'],
+                images: <CaptionData>[],
+              ),
+              dbFailure: null,
+            ));
         store.readDbOverride = (_) async => Right<Failure, CaptionDatabase>(
           CaptionDatabase(
             categories: <String>['default'],

@@ -9,10 +9,10 @@ import 'dart:io' as _i9;
 
 import 'package:fpdart/fpdart.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:mockito/src/dummies.dart' as _i8;
 import 'package:yofardev_captioner/core/errors/failure.dart' as _i6;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i2;
-import 'package:yofardev_captioner/core/models/caption_database.dart' as _i8;
+import 'package:yofardev_captioner/core/models/caption_database.dart' as _i7;
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart'
     as _i3;
 
@@ -42,53 +42,100 @@ class _FakeAppImage_0 extends _i1.SmartFake implements _i2.AppImage {
 /// See the documentation for Mockito's code generation for more information.
 class MockAppFileUtils extends _i1.Mock implements _i3.AppFileUtils {
   @override
-  _i4.Future<_i5.Either<_i6.Failure, List<_i2.AppImage>>> onFolderPicked(
-    String? folderPath,
-  ) =>
+  _i4.Future<
+    _i5.Either<
+      _i6.Failure,
+      ({
+        _i7.CaptionDatabase db,
+        _i6.Failure? dbFailure,
+        List<_i2.AppImage> images,
+      })
+    >
+  >
+  onFolderPicked(String? folderPath) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath]),
             returnValue:
-                _i4.Future<_i5.Either<_i6.Failure, List<_i2.AppImage>>>.value(
-                  _i7.dummyValue<_i5.Either<_i6.Failure, List<_i2.AppImage>>>(
-                    this,
-                    Invocation.method(#onFolderPicked, [folderPath]),
-                  ),
+                _i4.Future<
+                  _i5.Either<
+                    _i6.Failure,
+                    ({
+                      _i7.CaptionDatabase db,
+                      _i6.Failure? dbFailure,
+                      List<_i2.AppImage> images,
+                    })
+                  >
+                >.value(
+                  _i8.dummyValue<
+                    _i5.Either<
+                      _i6.Failure,
+                      ({
+                        _i7.CaptionDatabase db,
+                        _i6.Failure? dbFailure,
+                        List<_i2.AppImage> images,
+                      })
+                    >
+                  >(this, Invocation.method(#onFolderPicked, [folderPath])),
                 ),
             returnValueForMissingStub:
-                _i4.Future<_i5.Either<_i6.Failure, List<_i2.AppImage>>>.value(
-                  _i7.dummyValue<_i5.Either<_i6.Failure, List<_i2.AppImage>>>(
-                    this,
-                    Invocation.method(#onFolderPicked, [folderPath]),
-                  ),
+                _i4.Future<
+                  _i5.Either<
+                    _i6.Failure,
+                    ({
+                      _i7.CaptionDatabase db,
+                      _i6.Failure? dbFailure,
+                      List<_i2.AppImage> images,
+                    })
+                  >
+                >.value(
+                  _i8.dummyValue<
+                    _i5.Either<
+                      _i6.Failure,
+                      ({
+                        _i7.CaptionDatabase db,
+                        _i6.Failure? dbFailure,
+                        List<_i2.AppImage> images,
+                      })
+                    >
+                  >(this, Invocation.method(#onFolderPicked, [folderPath])),
                 ),
           )
-          as _i4.Future<_i5.Either<_i6.Failure, List<_i2.AppImage>>>);
+          as _i4.Future<
+            _i5.Either<
+              _i6.Failure,
+              ({
+                _i7.CaptionDatabase db,
+                _i6.Failure? dbFailure,
+                List<_i2.AppImage> images,
+              })
+            >
+          >);
 
   @override
-  _i4.Future<_i5.Either<_i6.Failure, _i8.CaptionDatabase>> readDb(
+  _i4.Future<_i5.Either<_i6.Failure, _i7.CaptionDatabase>> readDb(
     String? folderPath,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#readDb, [folderPath]),
             returnValue:
-                _i4.Future<_i5.Either<_i6.Failure, _i8.CaptionDatabase>>.value(
-                  _i7.dummyValue<_i5.Either<_i6.Failure, _i8.CaptionDatabase>>(
+                _i4.Future<_i5.Either<_i6.Failure, _i7.CaptionDatabase>>.value(
+                  _i8.dummyValue<_i5.Either<_i6.Failure, _i7.CaptionDatabase>>(
                     this,
                     Invocation.method(#readDb, [folderPath]),
                   ),
                 ),
             returnValueForMissingStub:
-                _i4.Future<_i5.Either<_i6.Failure, _i8.CaptionDatabase>>.value(
-                  _i7.dummyValue<_i5.Either<_i6.Failure, _i8.CaptionDatabase>>(
+                _i4.Future<_i5.Either<_i6.Failure, _i7.CaptionDatabase>>.value(
+                  _i8.dummyValue<_i5.Either<_i6.Failure, _i7.CaptionDatabase>>(
                     this,
                     Invocation.method(#readDb, [folderPath]),
                   ),
                 ),
           )
-          as _i4.Future<_i5.Either<_i6.Failure, _i8.CaptionDatabase>>);
+          as _i4.Future<_i5.Either<_i6.Failure, _i7.CaptionDatabase>>);
 
   @override
-  _i4.Future<void> writeDb(String? folderPath, _i8.CaptionDatabase? db) =>
+  _i4.Future<void> writeDb(String? folderPath, _i7.CaptionDatabase? db) =>
       (super.noSuchMethod(
             Invocation.method(#writeDb, [folderPath, db]),
             returnValue: _i4.Future<void>.value(),
@@ -120,7 +167,7 @@ class MockAppFileUtils extends _i1.Mock implements _i3.AppFileUtils {
       (super.noSuchMethod(
             Invocation.method(#exportAsArchive, [folderPath, images, category]),
             returnValue: _i4.Future<_i5.Either<_i6.Failure, void>>.value(
-              _i7.dummyValue<_i5.Either<_i6.Failure, void>>(
+              _i8.dummyValue<_i5.Either<_i6.Failure, void>>(
                 this,
                 Invocation.method(#exportAsArchive, [
                   folderPath,
@@ -131,7 +178,7 @@ class MockAppFileUtils extends _i1.Mock implements _i3.AppFileUtils {
             ),
             returnValueForMissingStub:
                 _i4.Future<_i5.Either<_i6.Failure, void>>.value(
-                  _i7.dummyValue<_i5.Either<_i6.Failure, void>>(
+                  _i8.dummyValue<_i5.Either<_i6.Failure, void>>(
                     this,
                     Invocation.method(#exportAsArchive, [
                       folderPath,

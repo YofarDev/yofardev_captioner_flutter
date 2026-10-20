@@ -42,7 +42,7 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<AgentApiService>(
     () => AgentApiService(
       cacheService: locator<CacheService>(),
-      llmConfigService: locator<LlmConfigService>(),
+      llmConfigRepository: locator<ILlmConfigRepository>(),
     ),
   );
 

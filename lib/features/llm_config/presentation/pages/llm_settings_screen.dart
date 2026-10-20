@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cache_service.dart';
-import '../../../agent_api/presentation/widgets/agent_api_panel.dart';
+import '../../../agent_api/agent_api.dart';
 import '../widgets/models_prompts_panel.dart';
 import '../widgets/structured_panel.dart';
 

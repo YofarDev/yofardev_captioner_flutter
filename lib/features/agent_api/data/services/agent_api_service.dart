@@ -21,6 +21,7 @@ import '../../../../core/services/cache_service.dart';
 import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../../tab_manager/domain/services/tab_session_registry.dart';
 
 /// Local REST API for external AI agents (Claude Code, ZCode, scripts).
@@ -39,13 +40,13 @@ class AgentApiService {
   AgentApiService({
     String? discoveryDirPath,
     CacheService? cacheService,
-    LlmConfigService? llmConfigService,
+    ILlmConfigRepository? llmConfigRepository,
   }) : _discoveryDirPath = discoveryDirPath,
        _cacheService = cacheService ?? const CacheService(),
-       _llmConfigService = llmConfigService ?? LlmConfigService();
+       _llmConfigRepository = llmConfigRepository ?? LlmConfigService();
 
   final CacheService _cacheService;
-  final LlmConfigService _llmConfigService;
+  final ILlmConfigRepository _llmConfigRepository;
 
   static const String _discoveryFileName = 'agent-api.json';
   static const String _defaultModel = 'agent';
@@ -186,7 +187,7 @@ class AgentApiService {
   }
 
   Future<Response> _handlePrompts(Request request) async {
-    final LlmConfigs? saved = await _llmConfigService.loadLlmConfigs();
+    final LlmConfigs? saved = await _llmConfigRepository.loadLlmConfigs();
     // Before anything is saved, mirror the defaults the settings UI shows.
     final LlmConfigs configs = saved ?? const LlmConfigs.defaults();
     return _jsonResponse(200, <String, dynamic>{

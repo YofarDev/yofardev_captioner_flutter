@@ -4,18 +4,81 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_data.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_captioning_cubit.dart';
 
 import 'structured_captioning_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit, StructuredCaptionRepository])
+@GenerateMocks(<Type>[StructuredCaptionRepository])
+/// Hand-rolled fake of the [CaptionFileStore] port (ported from
+/// caption_session_service_test.dart) — records db writes, serves empty
+/// folders, never touches the filesystem beyond in-memory state.
+class _FakeFileStore implements CaptionFileStore {
+  @override
+  Future<List<AppImage>> onFolderPicked(String folderPath) =>
+      Future<List<AppImage>>.value(<AppImage>[]);
+
+  @override
+  Future<CaptionDatabase> readDb(String folderPath) async =>
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+
+  @override
+  Future<void> writeDb(String folderPath, CaptionDatabase db) async {}
+
+  @override
+  Future<void> removeImage(File imageFile) async {}
+
+  @override
+  Future<void> writeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+    String format,
+  ) async {}
+
+  @override
+  Future<void> removeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+  ) async {}
+
+  @override
+  Future<AppImage> duplicateImage(AppImage originalImage) async =>
+      originalImage;
+
+  @override
+  int compareNatural(String a, String b) => a.compareTo(b);
+
+  @override
+  Future<List<AppImage>> getImagesSize(List<AppImage> images) async => images;
+
+  @override
+  Future<AppImage> getSingleImageSize(AppImage image) async => image;
+}
+
+/// Filter engine that passes images through unchanged by default; tests stub
+/// [filtered] to scope a run.
+class _StubFilterEngine implements CaptionFilterEngine {
+  List<AppImage>? filtered;
+
+  @override
+  List<AppImage> filter(
+    List<AppImage> images, {
+    required String category,
+    required String query,
+    required bool caseSensitive,
+  }) => filtered ?? images;
+}
+
 void main() {
   IdeogramCaption fakeCaption() => const IdeogramCaption(
     highLevelDescription: 'desc',
@@ -40,26 +103,29 @@ void main() {
 
   group('StructuredCaptioningCubit', () {
     late StructuredCaptioningCubit cubit;
-    late MockImageListCubit mockImageListCubit;
+    late CaptionSessionService session;
+    late _StubFilterEngine filterEngine;
     late MockStructuredCaptionRepository mockRepository;
 
+    /// Seeds the session state (adopt: no snapshot emitted, state visible
+    /// immediately). Guidance is disabled by default so `guidanceFor`
+    /// returns '' — keeping the omit-the-named-arg stub/verify matchers valid.
+    void seed(ImageListState state) => session.adopt(state);
+
     setUp(() {
-      mockImageListCubit = MockImageListCubit();
-      mockRepository = MockStructuredCaptionRepository();
-      // guidanceFor defaults to '' so the cubit passes the default `guidance`
-      // value, keeping the existing omit-the-named-arg stub/verify matchers valid.
-      when(mockImageListCubit.guidanceFor(any)).thenReturn('');
-      // The captioner now reads the displayed image once to broadcast its
-      // guidance across a batch run. Default to null so broadcast no-ops here;
-      // tests that exercise guidance stub this explicitly.
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
-      cubit = StructuredCaptioningCubit(
-        mockImageListCubit,
-        repository: mockRepository,
+      filterEngine = _StubFilterEngine();
+      session = CaptionSessionService(
+        fileStore: _FakeFileStore(),
+        filterEngine: filterEngine,
       );
+      mockRepository = MockStructuredCaptionRepository();
+      cubit = StructuredCaptioningCubit(session, repository: mockRepository);
     });
 
-    tearDown(() => cubit.close());
+    tearDown(() {
+      cubit.close();
+      session.dispose();
+    });
 
     test('initial state is initial', () {
       expect(cubit.state.status, StructuredCaptioningStatus.initial);
@@ -69,10 +135,7 @@ void main() {
     });
 
     test('fails when current image selected but none displayed', () async {
-      when(
-        mockImageListCubit.state,
-      ).thenReturn(const ImageListState(folderPath: '/tmp'));
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
+      seed(const ImageListState(folderPath: '/tmp'));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -102,10 +165,13 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
-        ImageListState(images: <AppImage>[image1, image2], folderPath: '/tmp'),
+      seed(
+        ImageListState(
+          images: <AppImage>[image1, image2],
+          folderPath: '/tmp',
+          currentImageId: '2',
+        ),
       );
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(image2);
       when(
         mockRepository.generateStructuredCaption(
           any,
@@ -149,7 +215,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(
           images: <AppImage>[withCaption, withoutCaption],
           folderPath: '/tmp',
@@ -201,7 +267,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(images: <AppImage>[edited, fresh], folderPath: '/tmp'),
       );
       when(
@@ -238,9 +304,7 @@ void main() {
     });
 
     test('succeeds with zero images', () async {
-      when(
-        mockImageListCubit.state,
-      ).thenReturn(const ImageListState(folderPath: '/tmp'));
+      seed(const ImageListState(folderPath: '/tmp'));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -265,9 +329,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
-        ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-      );
+      seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
       when(
         mockRepository.generateStructuredCaption(
           any,
@@ -299,7 +361,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(images: <AppImage>[image1, image2], folderPath: '/tmp'),
       );
       when(
@@ -340,17 +402,16 @@ void main() {
           captions: const <String, CaptionEntry>{},
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(
             images: <AppImage>[image1, image2],
             folderPath: '/tmp',
+            currentImageId: '1',
+            guidanceEnabled: true,
+            imageGuidance: <String, String>{image1.image.path: 'NAME IT MIRA'},
           ),
         );
         // Displayed image (image1) carries guidance; image2 has none of its own.
-        when(mockImageListCubit.currentDisplayedImage).thenReturn(image1);
-        when(
-          mockImageListCubit.guidanceFor(image1.image.path),
-        ).thenReturn('NAME IT MIRA');
         when(
           mockRepository.generateStructuredCaption(
             any,
@@ -392,10 +453,7 @@ void main() {
     });
 
     test('clearErrors resets status to initial', () async {
-      when(
-        mockImageListCubit.state,
-      ).thenReturn(const ImageListState(folderPath: '/tmp'));
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
+      seed(const ImageListState(folderPath: '/tmp'));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -415,9 +473,7 @@ void main() {
       );
       void Function(String)? capturedProgress;
 
-      when(mockImageListCubit.state).thenReturn(
-        ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-      );
+      seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
       when(
         mockRepository.generateStructuredCaption(
           any,
@@ -467,13 +523,13 @@ void main() {
           captions: const <String, CaptionEntry>{},
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(
             images: <AppImage>[image1, image2],
             folderPath: '/tmp',
           ),
         );
-        when(mockImageListCubit.filteredImages).thenReturn(<AppImage>[image1]);
+        filterEngine.filtered = <AppImage>[image1];
 
         when(
           mockRepository.generateStructuredCaption(
@@ -522,12 +578,10 @@ void main() {
           isCaptionEdited: true,
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
         );
-        when(
-          mockImageListCubit.filteredImages,
-        ).thenReturn(<AppImage>[editedImage]);
+        filterEngine.filtered = <AppImage>[editedImage];
 
         when(
           mockRepository.generateStructuredCaption(

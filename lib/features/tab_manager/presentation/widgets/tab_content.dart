@@ -52,7 +52,7 @@ class TabContentState extends State<TabContent>
       _session,
       captioningRepository: locator<CaptioningRepository>(),
     );
-    _structuredCaptioningCubit = StructuredCaptioningCubit(_imageListCubit);
+    _structuredCaptioningCubit = StructuredCaptioningCubit(_session);
     _imageOperationsCubit = ImageOperationsCubit(_imageListCubit);
     _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);
     _batchJsonApplyCubit = BatchJsonApplyCubit(_imageListCubit);

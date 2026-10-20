@@ -8,7 +8,7 @@ import '../../../core/models/caption_entry.dart';
 import '../../../core/models/llm_config.dart';
 import '../../../core/models/structured_batch_overrides.dart';
 import '../../captioning/data/models/caption_options.dart';
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
 import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 
@@ -16,12 +16,12 @@ part 'structured_captioning_state.dart';
 
 class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   StructuredCaptioningCubit(
-    this._imageListCubit, {
+    this._session, {
     StructuredCaptionRepository? repository,
   }) : _repository = repository ?? StructuredCaptionRepository(),
        super(const StructuredCaptioningState());
 
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
   final StructuredCaptionRepository _repository;
 
   Completer<void>? _cancelCompleter;
@@ -50,12 +50,12 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     List<AppImage> imagesToProcess = <AppImage>[];
     // Capture the base set ONCE: filtered list when scoped, otherwise everything.
     final List<AppImage> baseImages = scopeToFiltered
-        ? _imageListCubit.filteredImages
-        : _imageListCubit.state.images;
+        ? _session.current.filteredImages
+        : _session.state.images;
 
     switch (option) {
       case CaptionOptions.current:
-        final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+        final AppImage? currentImage = _session.current.currentDisplayedImage;
         if (currentImage == null) {
           emit(
             state.copyWith(
@@ -67,8 +67,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         }
         imagesToProcess = <AppImage>[currentImage];
       case CaptionOptions.missing:
-        final String category =
-            _imageListCubit.state.activeCategory ?? 'default';
+        final String category = _session.state.activeCategory ?? 'default';
         imagesToProcess = baseImages.where((AppImage image) {
           final String text = image.captions[category]?.text ?? '';
           return text.isEmpty ||
@@ -103,10 +102,10 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     // single guidance entry covers a whole filtered Run-All instead of only
     // the image it was keyed to. For the "current" option the source IS the
     // processed image, so behavior there is unchanged.
-    final AppImage? guidanceSource = _imageListCubit.currentDisplayedImage;
+    final AppImage? guidanceSource = _session.current.currentDisplayedImage;
     final String runGuidance = guidanceSource == null
         ? ''
-        : _imageListCubit.guidanceFor(guidanceSource.image.path);
+        : _session.guidanceFor(guidanceSource.image.path);
 
     for (final AppImage image in imagesToProcess) {
       // Check cancellation.
@@ -150,8 +149,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
             );
 
         // Store JSON string as caption in active category.
-        final String category =
-            _imageListCubit.state.activeCategory ?? 'default';
+        final String category = _session.state.activeCategory ?? 'default';
         final AppImage updatedImage = image.copyWith(
           captions: <String, CaptionEntry>{
             ...image.captions,
@@ -164,11 +162,11 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
           lastModified: DateTime.now(),
           clearError: true,
         );
-        _imageListCubit.updateImage(image: updatedImage);
+        _session.updateImage(image: updatedImage);
       } catch (e) {
         errors.add('Failed to caption ${image.image.path}: $e');
         final AppImage errorImage = image.copyWith(error: '$e');
-        _imageListCubit.updateImage(image: errorImage);
+        _session.updateImage(image: errorImage);
       }
 
       processed++;

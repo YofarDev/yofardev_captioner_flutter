@@ -13,6 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^9.1.1
+  fpdart: ^1.1.1
   path: ^1.9.1
   screen_retriever: ^0.2.0
   shared_preferences: ^2.5.4
@@ -40,6 +41,7 @@ dependencies:
   shelf_router: ^1.1.4
 
 dev_dependencies:
+  analyzer: ^13.3.0
   test: ^1.25.8
   flutter_test:
     sdk: flutter

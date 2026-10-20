@@ -12,7 +12,7 @@ class ImageResizer {
 
   Future<File> resizeImageIfNecessary(File imageFile) async {
     final int maxDimension = await CacheService.loadMaxImageDimension();
-    return ImageUtils.resizeImageIfNecessary(
+    return await ImageUtils.resizeImageIfNecessary(
       imageFile,
       maxDimension: maxDimension,
     );

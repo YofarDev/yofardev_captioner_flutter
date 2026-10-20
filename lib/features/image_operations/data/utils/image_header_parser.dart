@@ -84,16 +84,23 @@ class ImageHeaderParser {
     if (bytes.length < 16) {
       return null;
     }
-    if (bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E &&
+    if (bytes[0] == 0x89 &&
+        bytes[1] == 0x50 &&
+        bytes[2] == 0x4E &&
         bytes[3] == 0x47) {
       return _parsePng(bytes);
     }
     if (bytes[0] == 0xFF && bytes[1] == 0xD8) {
       return _parseJpeg(bytes);
     }
-    if (bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 &&
-        bytes[3] == 0x46 && bytes[8] == 0x57 && bytes[9] == 0x45 &&
-        bytes[10] == 0x42 && bytes[11] == 0x50) {
+    if (bytes[0] == 0x52 &&
+        bytes[1] == 0x49 &&
+        bytes[2] == 0x46 &&
+        bytes[3] == 0x46 &&
+        bytes[8] == 0x57 &&
+        bytes[9] == 0x45 &&
+        bytes[10] == 0x42 &&
+        bytes[11] == 0x50) {
       return _parseWebP(bytes);
     }
     return null;
@@ -111,14 +118,10 @@ class ImageHeaderParser {
         bytes[15] != 0x52) {
       return null;
     }
-    final int width = (bytes[16] << 24) |
-        (bytes[17] << 16) |
-        (bytes[18] << 8) |
-        bytes[19];
-    final int height = (bytes[20] << 24) |
-        (bytes[21] << 16) |
-        (bytes[22] << 8) |
-        bytes[23];
+    final int width =
+        (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+    final int height =
+        (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
     if (width <= 0 || height <= 0) {
       return null;
     }
@@ -128,9 +131,7 @@ class ImageHeaderParser {
   static ImageHeader? _parseJpeg(Uint8List bytes) {
     // Standalone markers carry no length payload.
     bool isStandalone(int marker) =>
-        marker == 0xD8 ||
-        marker == 0x01 ||
-        (marker >= 0xD0 && marker <= 0xD7);
+        marker == 0xD8 || marker == 0x01 || (marker >= 0xD0 && marker <= 0xD7);
 
     // SOF0..SOF15 except DHT (C4), JPG (C8), and DAC (CC).
     bool isStartOfFrame(int marker) =>
@@ -225,10 +226,8 @@ class ImageHeaderParser {
       if (bytes.length < 25 || bytes[20] != 0x2F) {
         return null;
       }
-      final int bits = bytes[21] |
-          (bytes[22] << 8) |
-          (bytes[23] << 16) |
-          (bytes[24] << 24);
+      final int bits =
+          bytes[21] | (bytes[22] << 8) | (bytes[23] << 16) | (bytes[24] << 24);
       final int width = (bits & 0x3FFF) + 1;
       final int height = ((bits >> 14) & 0x3FFF) + 1;
       if (width <= 0 || height <= 0) {

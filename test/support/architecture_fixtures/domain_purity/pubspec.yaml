@@ -1,0 +1,3 @@
+name: fixture_domain_purity
+environment:
+  sdk: ^3.0.0

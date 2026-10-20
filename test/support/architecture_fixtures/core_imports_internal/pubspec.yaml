@@ -1,0 +1,3 @@
+name: fixture_core_imports_internal
+environment:
+  sdk: ^3.0.0

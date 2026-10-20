@@ -35,11 +35,7 @@ class CurrentImageView extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
-                    const Icon(
-                      Icons.search_off,
-                      size: 40,
-                      color: textMuted,
-                    ),
+                    const Icon(Icons.search_off, size: 40, color: textMuted),
                     const SizedBox(height: 14),
                     const Text(
                       'No results found',
@@ -209,10 +205,9 @@ class CurrentImageView extends StatelessWidget {
           children: <Widget>[
             Text(
               '${currentImage.captionModel} • ${timeago.format(currentImage.lastModified ?? currentImage.captionTimestamp!)}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: textMuted,
-                fontSize: 11,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: textMuted, fontSize: 11),
             ),
           ],
         ),

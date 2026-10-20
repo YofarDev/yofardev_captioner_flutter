@@ -199,7 +199,8 @@ class _RemoveButtonState extends State<_RemoveButton> {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () {
-            final ImageListCubit imageListCubit = context.read<ImageListCubit>();
+            final ImageListCubit imageListCubit = context
+                .read<ImageListCubit>();
             showDialog(
               context: context,
               builder: (BuildContext context) {

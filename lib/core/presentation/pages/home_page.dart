@@ -8,14 +8,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/services/cache_service.dart';
-import '../../../core/widgets/rive_animations.dart';
 import '../../../features/image_list/logic/image_list_cubit.dart';
 import '../../../features/tab_manager/data/models/app_tab.dart';
 import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
 import '../../../features/tab_manager/presentation/widgets/tab_bar_widget.dart';
 import '../../../features/tab_manager/presentation/widgets/tab_content.dart';
+import '../../constants/app_colors.dart';
+import '../../services/cache_service.dart';
+import '../../widgets/rive_animations.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

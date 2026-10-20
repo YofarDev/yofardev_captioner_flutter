@@ -143,7 +143,8 @@ class AgentApiService {
         if (authorization == null || authorization != 'Bearer $_token') {
           return _jsonResponse(401, <String, dynamic>{
             'error': 'unauthorized',
-            'hint': 'send "Authorization: Bearer <token>" — find the token in '
+            'hint':
+                'send "Authorization: Bearer <token>" — find the token in '
                 'the agent-api.json discovery file or the app settings',
           });
         }
@@ -160,7 +161,9 @@ class AgentApiService {
             e,
             st,
           );
-          return _jsonResponse(500, <String, dynamic>{'error': 'internal error'});
+          return _jsonResponse(500, <String, dynamic>{
+            'error': 'internal error',
+          });
         }
       };
 
@@ -232,17 +235,17 @@ class AgentApiService {
         'activeCategory': state.activeCategory,
         'images': <Map<String, dynamic>>[
           for (final AppImage image in state.images)
-            _imageJson(
-              image,
-              guidance: state.imageGuidance[image.image.path],
-            ),
+            _imageJson(image, guidance: state.imageGuidance[image.image.path]),
         ],
       });
     }
 
     final AppFileUtils fileUtils = locator<AppFileUtils>();
     final CaptionDatabase db = await fileUtils.readDb(normalized);
-    return _jsonResponse(200, await _imagesPayloadFromDisk(fileUtils, normalized, db));
+    return _jsonResponse(
+      200,
+      await _imagesPayloadFromDisk(fileUtils, normalized, db),
+    );
   }
 
   Future<Response> _handlePostCaption(Request request) {
@@ -280,8 +283,9 @@ class AgentApiService {
           'error': '"tags" must be an array of strings',
         });
       }
-      final List<String>? extraTags =
-          rawTags is List ? rawTags.whereType<String>().toList() : null;
+      final List<String>? extraTags = rawTags is List
+          ? rawTags.whereType<String>().toList()
+          : null;
 
       final File imageFile = File(p.join(normalizedFolder, filename));
       if (!await imageFile.exists()) {
@@ -318,7 +322,9 @@ class AgentApiService {
     try {
       body = await _readJsonBody(request);
     } on FormatException {
-      return _jsonResponse(400, <String, dynamic>{'error': 'invalid JSON body'});
+      return _jsonResponse(400, <String, dynamic>{
+        'error': 'invalid JSON body',
+      });
     }
     final String? folder = body['folder'] as String?;
     if (folder == null || folder.isEmpty) {
@@ -330,8 +336,9 @@ class AgentApiService {
 
     final TabManagerCubit? tabManager = _tabManagerIfReady();
     final AppTab? tab = tabManager?.findTabByFolderPath(normalized);
-    final ImageListCubit? cubit =
-        tab == null ? null : tabManager!.getCubitForTab(tab.id);
+    final ImageListCubit? cubit = tab == null
+        ? null
+        : tabManager!.getCubitForTab(tab.id);
     if (cubit == null) {
       return _jsonResponse(200, <String, dynamic>{
         'ok': true,
@@ -371,7 +378,8 @@ class AgentApiService {
     }
     if (target == null) {
       return _jsonResponse(404, <String, dynamic>{
-        'error': 'image not loaded in the open tab — POST /api/folders/refresh '
+        'error':
+            'image not loaded in the open tab — POST /api/folders/refresh '
             'first, then retry',
         'filename': filename,
       });
@@ -458,10 +466,8 @@ class AgentApiService {
         'filename': updated.filename,
         'path': p.join(folder, filename),
         'captions': updated.captions.map(
-          (String key, CaptionEntry value) => MapEntry<String, dynamic>(
-            key,
-            value.toJson(),
-          ),
+          (String key, CaptionEntry value) =>
+              MapEntry<String, dynamic>(key, value.toJson()),
         ),
         'tags': updated.tags,
       },
@@ -527,19 +533,19 @@ class AgentApiService {
         'id': data?.id,
         'filename': filename,
         'path': entity.path,
-        'captions': data?.captions.map(
+        'captions':
+            data?.captions.map(
               (String key, CaptionEntry value) =>
                   MapEntry<String, dynamic>(key, value.toJson()),
             ) ??
             <String, dynamic>{},
         'tags': data?.tags ?? <String>[],
-        'guidance':
-            data == null ? '' : (db.imageGuidance[data.id] ?? ''),
+        'guidance': data == null ? '' : (db.imageGuidance[data.id] ?? ''),
       });
     }
     images.sort(
-      (Map<String, dynamic> a, Map<String, dynamic> b) => fileUtils
-          .compareNatural(a['path'] as String, b['path'] as String),
+      (Map<String, dynamic> a, Map<String, dynamic> b) =>
+          fileUtils.compareNatural(a['path'] as String, b['path'] as String),
     );
 
     return <String, dynamic>{
@@ -593,9 +599,11 @@ class AgentApiService {
       final File file = await _discoveryFile();
       await file.parent.create(recursive: true);
       await file.writeAsString(
-        jsonEncode(
-          <String, dynamic>{'port': _server?.port, 'token': _token, 'pid': pid},
-        ),
+        jsonEncode(<String, dynamic>{
+          'port': _server?.port,
+          'token': _token,
+          'pid': pid,
+        }),
       );
     } catch (e) {
       _logger.warning('Failed to write agent API discovery file: $e');

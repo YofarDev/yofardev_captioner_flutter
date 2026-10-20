@@ -161,7 +161,7 @@ class StructuredCaptionRepository {
     }
     final VlmAnalysis analysis = vision.analysis;
 
-    return _finalizeCaption(
+    return await _finalizeCaption(
       config: config,
       imageFile: imageFile,
       analysis: analysis,
@@ -281,12 +281,7 @@ class StructuredCaptionRepository {
       retryPrompt = injectNoThink(
         await _buildEnumeratePrompt(
           imageFile,
-          guidance +
-              '\n\n## PREVIOUS ATTEMPT DEFECTS — fix these issues:\n'
-              'Your previous output had these structural problems:\n'
-              '- ${defects.join("\n- ")}\n'
-              'Please fix ALL of the above issues in your new output. '
-              'Prioritize broad coverage over filling the element cap.',
+          '$guidance\n\n## PREVIOUS ATTEMPT DEFECTS — fix these issues:\nYour previous output had these structural problems:\n- ${defects.join("\n- ")}\nPlease fix ALL of the above issues in your new output. Prioritize broad coverage over filling the element cap.',
           vlmEmitsXyxy: vlmEmitsXyxy,
         ),
       );
@@ -744,8 +739,10 @@ class StructuredCaptionRepository {
     }
 
     // Word count check.
-    final int wordCount =
-        desc.split(RegExp(r'\s+')).where((String w) => w.isNotEmpty).length;
+    final int wordCount = desc
+        .split(RegExp(r'\s+'))
+        .where((String w) => w.isNotEmpty)
+        .length;
     if (wordCount < 5) {
       _logger.fine(
         'Enrich sanity rejected: too short (${wordCount}w) for "${obj.name}"',

@@ -71,10 +71,7 @@ class HeaderWidget extends StatelessWidget {
               const SizedBox(width: _spacing),
               Text(
                 cubit.getTotalImagesSize().readableFileSize,
-                style: const TextStyle(
-                  fontSize: _fontSize,
-                  color: textPrimary,
-                ),
+                style: const TextStyle(fontSize: _fontSize, color: textPrimary),
               ),
             ],
           ),
@@ -86,11 +83,7 @@ class HeaderWidget extends StatelessWidget {
             onTap: state.folderPath == null
                 ? null
                 : () => cubit.onFolderPicked(state.folderPath!, force: true),
-            child: const Icon(
-              Icons.refresh,
-              size: _iconSize,
-              color: textMuted,
-            ),
+            child: const Icon(Icons.refresh, size: _iconSize, color: textMuted),
           ),
         ),
       ],

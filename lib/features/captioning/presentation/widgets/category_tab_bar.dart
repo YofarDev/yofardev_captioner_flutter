@@ -155,7 +155,10 @@ class CategoryTabBar extends StatelessWidget {
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.delete_outline, color: destructive),
+                    leading: const Icon(
+                      Icons.delete_outline,
+                      color: destructive,
+                    ),
                     title: const Text(
                       'Delete category',
                       style: TextStyle(color: destructive),
@@ -301,9 +304,7 @@ class _CategoryTabState extends State<_CategoryTab> {
                     fontWeight: widget.isActive
                         ? FontWeight.w500
                         : FontWeight.w400,
-                    color: widget.isActive
-                        ? textPrimary
-                        : textSecondary,
+                    color: widget.isActive ? textPrimary : textSecondary,
                     height: 1.0,
                   ),
                 ),
@@ -341,11 +342,7 @@ class _MenuButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(4),
         child: Container(
           padding: const EdgeInsets.all(2),
-          child: const Icon(
-            Icons.more_horiz,
-            size: 13,
-            color: textMuted,
-          ),
+          child: const Icon(Icons.more_horiz, size: 13, color: textMuted),
         ),
       ),
     );
@@ -429,7 +426,10 @@ class _CategoryDialog extends StatelessWidget {
                   icon: const Icon(Icons.keyboard_arrow_down),
                   items: const <DropdownMenuItem<String>>[
                     DropdownMenuItem<String>(value: 'txt', child: Text('TXT')),
-                    DropdownMenuItem<String>(value: 'json', child: Text('JSON')),
+                    DropdownMenuItem<String>(
+                      value: 'json',
+                      child: Text('JSON'),
+                    ),
                   ],
                   onChanged: onFormatChanged,
                 ),

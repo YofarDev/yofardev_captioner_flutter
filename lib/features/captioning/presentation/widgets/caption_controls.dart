@@ -19,7 +19,7 @@ import '../../data/models/caption_options.dart';
 import '../../logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../logic/batch_apply/batch_json_apply_state.dart';
 import '../../logic/captioning_cubit.dart';
-import '../widgets/batch_json_apply_dialog.dart';
+import 'batch_json_apply_dialog.dart';
 import 'convert_captions_dialog.dart';
 import 'guidance_dialog.dart';
 

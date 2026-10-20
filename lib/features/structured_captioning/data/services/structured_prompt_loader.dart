@@ -13,8 +13,7 @@ class StructuredPromptLoader {
   // single-brace {name}/{type} like element_recaption's {existingJson}.
   static const String _visionEnumeratePath =
       'assets/prompts/vision_enumerate.txt';
-  static const String _elementEnrichPath =
-      'assets/prompts/element_enrich.txt';
+  static const String _elementEnrichPath = 'assets/prompts/element_enrich.txt';
 
   /// Loads the VLM vision analysis prompt from bundled assets.
   Future<String> loadVisionAnalysisPrompt() =>

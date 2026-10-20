@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/utils/cancel_token.dart';
+import '../../../core/utils/cancel_token.dart';
 import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
 import '../../llm_config/data/models/llm_config.dart';

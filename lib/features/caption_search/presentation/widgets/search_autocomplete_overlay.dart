@@ -155,12 +155,11 @@ List<_SuggestionGroup> _groupByType(List<AutocompleteSuggestion> suggestions) {
   }
 
   return grouped.entries.map((MapEntry<Type, List<AutocompleteSuggestion>> e) {
-    final String header = switch (e.key) {
-      FilterNameSuggestion _ => 'Filters',
-      TagValueSuggestion _ => 'Tags',
-      HasTypeSuggestion _ => 'Types',
-      MediumValueSuggestion _ => 'Mediums',
-      _ => 'Suggestions',
+    final String header = switch (e.value.first) {
+      FilterNameSuggestion() => 'Filters',
+      TagValueSuggestion() => 'Tags',
+      HasTypeSuggestion() => 'Types',
+      MediumValueSuggestion() => 'Mediums',
     };
     return _SuggestionGroup(header: header, items: e.value);
   }).toList();

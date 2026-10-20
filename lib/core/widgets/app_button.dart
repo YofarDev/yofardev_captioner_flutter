@@ -58,9 +58,8 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color fg = foregroundColor ?? (isOutline
-        ? buttonOutlineFg
-        : buttonPrimaryFg);
+    final Color fg =
+        foregroundColor ?? (isOutline ? buttonOutlineFg : buttonPrimaryFg);
     final Color? overlay = onTap == null ? null : fg.withValues(alpha: 0.12);
 
     if (isOutline) {

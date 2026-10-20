@@ -90,11 +90,13 @@ void main() {
       );
 
       // 5. Verify duplicated image file has same content
-      expect(
-        await duplicatedImageFile.readAsBytes(),
-        <int>[1, 2, 3, 4, 5],
-        reason: 'Duplicated image should have same content',
-      );
+      expect(await duplicatedImageFile.readAsBytes(), <int>[
+        1,
+        2,
+        3,
+        4,
+        5,
+      ], reason: 'Duplicated image should have same content');
 
       // Note: With multi-category system, captions are stored in db.json,
       // not in individual .txt files, so we don't check for .txt file copying

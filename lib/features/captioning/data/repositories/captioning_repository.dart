@@ -4,7 +4,7 @@ import '../../../../core/utils/cancel_token.dart';
 import '../../../image_list/data/models/app_image.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../models/caption_entry.dart';
-import './caption_repository.dart';
+import 'caption_repository.dart';
 
 class CaptioningRepository {
   final CaptionRepository _captionRepository;

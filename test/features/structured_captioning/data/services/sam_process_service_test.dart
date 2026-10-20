@@ -20,7 +20,6 @@ void main() {
   });
 
   tearDown(() {
-    // ignore: invalid_use_of_visible_for_testing_member
     SamProcessService.cachedPythonPath = null;
   });
 
@@ -32,7 +31,6 @@ void main() {
       mockRunner = MockProcessRunner();
       service = SamProcessService(processRunner: mockRunner);
       // Skip asset extraction in all tests.
-      // ignore: invalid_use_of_visible_for_testing_member
       service.scriptPathOverride = '/fake/sam3_wrapper.py';
     });
 
@@ -100,7 +98,6 @@ void main() {
 
     group('detectObjects', () {
       test('returns parsed detections on success', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         const String imagePath = '/tmp/img.jpg';
@@ -143,7 +140,6 @@ void main() {
       });
 
       test('returns empty list on non-zero exit code', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         when(mockRunner.run('python3.11', any)).thenAnswer(
@@ -159,7 +155,6 @@ void main() {
       });
 
       test('returns empty list on empty stdout', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         when(
@@ -175,7 +170,6 @@ void main() {
       });
 
       test('returns empty list on exception', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         when(
@@ -191,7 +185,6 @@ void main() {
       });
 
       test('handles partial detections (some null bboxes)', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         const String imagePath = '/tmp/img.jpg';
@@ -237,7 +230,6 @@ void main() {
       });
 
       test('forwards --boxes when vlmBboxes is provided', () async {
-        // ignore: invalid_use_of_visible_for_testing_member
         SamProcessService.cachedPythonPath = 'python3.11';
 
         const String imagePath = '/tmp/img.jpg';
@@ -287,7 +279,6 @@ void main() {
       test(
         'omits --boxes when vlmBboxes is null (backwards compatible)',
         () async {
-          // ignore: invalid_use_of_visible_for_testing_member
           SamProcessService.cachedPythonPath = 'python3.11';
 
           when(

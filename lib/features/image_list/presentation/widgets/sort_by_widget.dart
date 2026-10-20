@@ -12,7 +12,10 @@ class SortByWidget extends StatelessWidget {
       builder: (BuildContext context, ImageListState state) {
         return Row(
           children: <Widget>[
-            const Text('Sort by:', style: TextStyle(fontSize: 11, color: textMuted)),
+            const Text(
+              'Sort by:',
+              style: TextStyle(fontSize: 11, color: textMuted),
+            ),
             const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

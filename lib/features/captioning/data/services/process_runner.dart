@@ -20,7 +20,7 @@ class ProcessRunner {
     CancelToken? cancelToken,
   }) async {
     if (cancelToken == null) {
-      return Process.run(executable, arguments);
+      return await Process.run(executable, arguments);
     }
 
     final Process process = await Process.start(executable, arguments);

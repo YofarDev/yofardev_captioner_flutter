@@ -69,7 +69,12 @@ void main() {
 
       test('rejects garbage after SOI', () {
         final Uint8List bytes = Uint8List.fromList(<int>[
-          0xFF, 0xD8, 0x00, 0x01, 0x02, 0x03,
+          0xFF,
+          0xD8,
+          0x00,
+          0x01,
+          0x02,
+          0x03,
         ]);
         expect(ImageHeaderParser.parse(bytes), isNull);
       });
@@ -246,19 +251,16 @@ Uint8List _riff(String fourcc, List<int> payload) {
 Uint8List _buildWebPVp8x(int width, int height) {
   int le24(int value) =>
       value & 0xFF | ((value >> 8) & 0xFF) << 8 | ((value >> 16) & 0xFF) << 16;
-  return _riff(
-    'VP8X',
-    <int>[
-      0x00, 0x00, 0x00, 0x00, // flags
-      le24(width - 1) & 0xFF,
-      (le24(width - 1) >> 8) & 0xFF,
-      (le24(width - 1) >> 16) & 0xFF,
-      le24(height - 1) & 0xFF,
-      (le24(height - 1) >> 8) & 0xFF,
-      (le24(height - 1) >> 16) & 0xFF,
-      ...List<int>.filled(4, 0),
-    ],
-  );
+  return _riff('VP8X', <int>[
+    0x00, 0x00, 0x00, 0x00, // flags
+    le24(width - 1) & 0xFF,
+    (le24(width - 1) >> 8) & 0xFF,
+    (le24(width - 1) >> 16) & 0xFF,
+    le24(height - 1) & 0xFF,
+    (le24(height - 1) >> 8) & 0xFF,
+    (le24(height - 1) >> 16) & 0xFF,
+    ...List<int>.filled(4, 0),
+  ]);
 }
 
 /// VP8 keyframe payload: 3-byte frame tag, sync code, LE16 dims.

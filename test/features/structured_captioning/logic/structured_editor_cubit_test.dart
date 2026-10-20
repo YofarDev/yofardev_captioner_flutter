@@ -627,43 +627,48 @@ void main() {
         return c;
       }
 
-      test('recaptioningStyle true while in flight, style swapped on success',
-          () async {
-        final StructuredEditorCubit c = buildCubit();
-        final Completer<IdeogramStyleDescription> completer =
-            Completer<IdeogramStyleDescription>();
+      test(
+        'recaptioningStyle true while in flight, style swapped on success',
+        () async {
+          final StructuredEditorCubit c = buildCubit();
+          final Completer<IdeogramStyleDescription> completer =
+              Completer<IdeogramStyleDescription>();
 
-        when(
-          mockRepo.recaptionStyle(
-            config: anyNamed('config'),
-            imageFile: anyNamed('imageFile'),
-            currentCaption: anyNamed('currentCaption'),
-          ),
-        ).thenAnswer((_) => completer.future);
+          when(
+            mockRepo.recaptionStyle(
+              config: anyNamed('config'),
+              imageFile: anyNamed('imageFile'),
+              currentCaption: anyNamed('currentCaption'),
+            ),
+          ).thenAnswer((_) => completer.future);
 
-        final Future<void> done = c.recaptionStyle(config: _dummyConfig());
-        await Future<void>.delayed(const Duration(milliseconds: 5));
-        expect(c.state.status, StructuredEditorStatus.recaptioning);
-        expect(c.state.recaptioningStyle, isTrue);
+          final Future<void> done = c.recaptionStyle(config: _dummyConfig());
+          await Future<void>.delayed(const Duration(milliseconds: 5));
+          expect(c.state.status, StructuredEditorStatus.recaptioning);
+          expect(c.state.recaptioningStyle, isTrue);
 
-        completer.complete(
-          const IdeogramStyleDescription(
-            aesthetics: 'fresh-aesthetics',
-            lighting: 'fresh-lighting',
-            medium: 'painting',
-            artStyle: 'oil',
-            colorPalette: <String>['#000000'],
-          ),
-        );
-        await done;
+          completer.complete(
+            const IdeogramStyleDescription(
+              aesthetics: 'fresh-aesthetics',
+              lighting: 'fresh-lighting',
+              medium: 'painting',
+              artStyle: 'oil',
+              colorPalette: <String>['#000000'],
+            ),
+          );
+          await done;
 
-        expect(c.state.caption.styleDescription.aesthetics, 'fresh-aesthetics');
-        expect(c.state.caption.styleDescription.medium, 'painting');
-        expect(c.state.caption.styleDescription.artStyle, 'oil');
-        expect(c.state.recaptioningStyle, isFalse);
-        await c.flushSave();
-        await c.close();
-      });
+          expect(
+            c.state.caption.styleDescription.aesthetics,
+            'fresh-aesthetics',
+          );
+          expect(c.state.caption.styleDescription.medium, 'painting');
+          expect(c.state.caption.styleDescription.artStyle, 'oil');
+          expect(c.state.recaptioningStyle, isFalse);
+          await c.flushSave();
+          await c.close();
+        },
+      );
 
       test('original style byte-identical on repo error', () async {
         final StructuredEditorCubit c = buildCubit();
@@ -731,8 +736,9 @@ void main() {
           ),
         ).thenAnswer((_) => completer.future);
 
-        final Future<void> recaptionFuture =
-            c.recaptionStyle(config: _dummyConfig());
+        final Future<void> recaptionFuture = c.recaptionStyle(
+          config: _dummyConfig(),
+        );
         await Future<void>.delayed(const Duration(milliseconds: 5));
 
         bool flushDone = false;

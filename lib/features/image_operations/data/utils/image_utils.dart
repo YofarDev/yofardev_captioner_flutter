@@ -189,7 +189,7 @@ class ImageUtils {
     // calling it there throws UnimplementedError. Fall back to the pure-Dart
     // `image` package on those platforms.
     if (Platform.isLinux || Platform.isWindows) {
-      return _resizeWithImagePackage(
+      return await _resizeWithImagePackage(
         imageFile,
         tempPath,
         targetWidth,

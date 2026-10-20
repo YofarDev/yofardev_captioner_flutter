@@ -30,7 +30,7 @@ void main() {
   // Valid 1x1 PNG so image decoding during folder scans doesn't error.
   final List<int> tinyPngBytes = base64Decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ'
-        'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+    'AAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   );
 
   late Directory tempDir;
@@ -44,11 +44,8 @@ void main() {
     'authorization': 'Bearer $token',
   };
 
-  Uri uri(String path, [Map<String, String>? query]) => Uri.http(
-    '127.0.0.1:$port',
-    path,
-    query,
-  );
+  Uri uri(String path, [Map<String, String>? query]) =>
+      Uri.http('127.0.0.1:$port', path, query);
 
   Future<Directory> makeImageFolder(String name, List<String> filenames) async {
     final Directory folder = Directory(p.join(tempDir.path, name))
@@ -59,18 +56,14 @@ void main() {
     return folder;
   }
 
-  Future<http.Response> postCaption(Map<String, dynamic> body) =>
-      client.post(
-        uri('/api/captions'),
-        headers: authHeader()
-          ..['content-type'] = 'application/json',
-        body: jsonEncode(body),
-      );
+  Future<http.Response> postCaption(Map<String, dynamic> body) => client.post(
+    uri('/api/captions'),
+    headers: authHeader()..['content-type'] = 'application/json',
+    body: jsonEncode(body),
+  );
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues(
-      <String, Object>{'agentApiPort': 0},
-    );
+    SharedPreferences.setMockInitialValues(<String, Object>{'agentApiPort': 0});
     await locator.reset();
     tempDir = await Directory.systemTemp.createTemp('agent_api_images');
     discoveryDir = await Directory.systemTemp.createTemp('agent_api_disc');
@@ -102,16 +95,12 @@ void main() {
   });
 
   test('protected endpoints reject missing or invalid token', () async {
-    expect(
-      (await client.get(uri('/api/prompts'))).statusCode,
-      401,
-    );
+    expect((await client.get(uri('/api/prompts'))).statusCode, 401);
     expect(
       (await client.get(
         uri('/api/prompts'),
         headers: <String, String>{'authorization': 'Bearer wrong'},
-      ))
-          .statusCode,
+      )).statusCode,
       401,
     );
   });
@@ -211,7 +200,9 @@ void main() {
   });
 
   test('caption write merges tags into an existing db entry', () async {
-    final Directory folder = await makeImageFolder('beta2', <String>['dog.png']);
+    final Directory folder = await makeImageFolder('beta2', <String>[
+      'dog.png',
+    ]);
     // Seed the db by writing once.
     await postCaption(<String, dynamic>{
       'folder': folder.path,
@@ -238,22 +229,26 @@ void main() {
     expect(image['tags'], containsAll(<String>['animal', 'cute']));
   });
 
-  test('caption write with unknown category returns 400 and valid ones',
-      () async {
-    final Directory folder = await makeImageFolder('gamma', <String>['x.png']);
+  test(
+    'caption write with unknown category returns 400 and valid ones',
+    () async {
+      final Directory folder = await makeImageFolder('gamma', <String>[
+        'x.png',
+      ]);
 
-    final http.Response res = await postCaption(<String, dynamic>{
-      'folder': folder.path,
-      'filename': 'x.png',
-      'text': 'nope',
-      'category': 'does-not-exist',
-    });
+      final http.Response res = await postCaption(<String, dynamic>{
+        'folder': folder.path,
+        'filename': 'x.png',
+        'text': 'nope',
+        'category': 'does-not-exist',
+      });
 
-    expect(res.statusCode, 400);
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    expect(body['categories'], contains('default'));
-  });
+      expect(res.statusCode, 400);
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      expect(body['categories'], contains('default'));
+    },
+  );
 
   test('caption write for missing image returns 404', () async {
     final Directory folder = await makeImageFolder('delta', <String>['y.png']);
@@ -267,51 +262,55 @@ void main() {
     expect(res.statusCode, 404);
   });
 
-  test('caption write routes through the open tab cubit and persists',
-      () async {
-    final Directory folder = await makeImageFolder('live', <String>[
-      'one.png',
-      'two.png',
-    ]);
-    final TabManagerCubit tabManager = TabManagerCubit();
-    locator.registerSingleton<TabManagerCubit>(tabManager);
-    tabManager.addTab(folder.path);
-    final String tabId = tabManager.state.tabs.last.id;
-    final ImageListCubit imageListCubit = ImageListCubit();
-    tabManager.registerTabCubit(tabId, imageListCubit);
-    await imageListCubit.onFolderPicked(folder.path);
+  test(
+    'caption write routes through the open tab cubit and persists',
+    () async {
+      final Directory folder = await makeImageFolder('live', <String>[
+        'one.png',
+        'two.png',
+      ]);
+      final TabManagerCubit tabManager = TabManagerCubit();
+      locator.registerSingleton<TabManagerCubit>(tabManager);
+      tabManager.addTab(folder.path);
+      final String tabId = tabManager.state.tabs.last.id;
+      final ImageListCubit imageListCubit = ImageListCubit();
+      tabManager.registerTabCubit(tabId, imageListCubit);
+      await imageListCubit.onFolderPicked(folder.path);
 
-    final http.Response res = await postCaption(<String, dynamic>{
-      'folder': folder.path,
-      'filename': 'one.png',
-      'text': 'live caption',
-    });
+      final http.Response res = await postCaption(<String, dynamic>{
+        'folder': folder.path,
+        'filename': 'one.png',
+        'text': 'live caption',
+      });
 
-    expect(res.statusCode, 200);
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    expect(body['mode'], 'live');
+      expect(res.statusCode, 200);
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      expect(body['mode'], 'live');
 
-    final AppImage updated = imageListCubit.state.images.firstWhere(
-      (AppImage image) => p.basename(image.image.path) == 'one.png',
-    );
-    expect(updated.captions['default']?.text, 'live caption');
-    expect(updated.captions['default']?.model, 'agent');
+      final AppImage updated = imageListCubit.state.images.firstWhere(
+        (AppImage image) => p.basename(image.image.path) == 'one.png',
+      );
+      expect(updated.captions['default']?.text, 'live caption');
+      expect(updated.captions['default']?.model, 'agent');
 
-    final Map<String, dynamic> db =
-        jsonDecode(await File(p.join(folder.path, 'db.json')).readAsString())
-            as Map<String, dynamic>;
-    final Map<String, dynamic> stored = (db['images'] as List<dynamic>).first
-        as Map<String, dynamic>;
-    expect(
-      ((stored['captions'] as Map<String, dynamic>)['default']
-              as Map<String, dynamic>)['text'],
-      'live caption',
-    );
-  });
+      final Map<String, dynamic> db =
+          jsonDecode(await File(p.join(folder.path, 'db.json')).readAsString())
+              as Map<String, dynamic>;
+      final Map<String, dynamic> stored =
+          (db['images'] as List<dynamic>).first as Map<String, dynamic>;
+      expect(
+        ((stored['captions'] as Map<String, dynamic>)['default']
+            as Map<String, dynamic>)['text'],
+        'live caption',
+      );
+    },
+  );
 
   test('folder refresh picks up newly added images for an open tab', () async {
-    final Directory folder = await makeImageFolder('refresh', <String>['r.png']);
+    final Directory folder = await makeImageFolder('refresh', <String>[
+      'r.png',
+    ]);
     final TabManagerCubit tabManager = TabManagerCubit();
     locator.registerSingleton<TabManagerCubit>(tabManager);
     tabManager.addTab(folder.path);
@@ -329,27 +328,26 @@ void main() {
     );
 
     expect(res.statusCode, 200);
-    expect(
-      (jsonDecode(res.body) as Map<String, dynamic>)['refreshed'],
-      isTrue,
-    );
+    expect((jsonDecode(res.body) as Map<String, dynamic>)['refreshed'], isTrue);
     expect(imageListCubit.state.images, hasLength(2));
   });
 
-  test('folder refresh for an unopened folder reports refreshed false',
-      () async {
-    final http.Response res = await client.post(
-      uri('/api/folders/refresh'),
-      headers: authHeader()..['content-type'] = 'application/json',
-      body: jsonEncode(<String, dynamic>{
-        'folder': p.join(tempDir.path, 'not_open'),
-      }),
-    );
+  test(
+    'folder refresh for an unopened folder reports refreshed false',
+    () async {
+      final http.Response res = await client.post(
+        uri('/api/folders/refresh'),
+        headers: authHeader()..['content-type'] = 'application/json',
+        body: jsonEncode(<String, dynamic>{
+          'folder': p.join(tempDir.path, 'not_open'),
+        }),
+      );
 
-    expect(res.statusCode, 200);
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    expect(body['ok'], isTrue);
-    expect(body['refreshed'], isFalse);
-  });
+      expect(res.statusCode, 200);
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      expect(body['ok'], isTrue);
+      expect(body['refreshed'], isFalse);
+    },
+  );
 }

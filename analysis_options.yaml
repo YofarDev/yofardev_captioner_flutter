@@ -7,6 +7,8 @@ analyzer:
       - windows/**
       - macos/**
       - linux/**
+      # Deliberately broken code samples used by test/architecture_test.dart.
+      - test/support/architecture_fixtures/**
 linter:
   rules:
     # ------ Disable individual rules ----- #

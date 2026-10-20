@@ -1,3 +1,6 @@
+// Long JSON literals are concatenated without separators on purpose.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
+
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -2435,12 +2438,12 @@ void main() {
 
     test('removes duplicate same-bbox same-name objects', () {
       final VlmAnalysis analysis = analysisWith(<VlmObject>[
-        VlmObject(
+        const VlmObject(
           name: 'Bookshelf',
           desc: 'a',
           bbox: <int>[500, 540, 650, 860],
         ),
-        VlmObject(
+        const VlmObject(
           name: 'Bookshelf',
           desc: 'b',
           bbox: <int>[500, 540, 650, 860],
@@ -2452,8 +2455,16 @@ void main() {
 
     test('keeps objects with different bboxes', () {
       final VlmAnalysis analysis = analysisWith(<VlmObject>[
-        VlmObject(name: 'Lamp', desc: 'a', bbox: <int>[330, 410, 370, 470]),
-        VlmObject(name: 'Sofa', desc: 'b', bbox: <int>[100, 100, 500, 400]),
+        const VlmObject(
+          name: 'Lamp',
+          desc: 'a',
+          bbox: <int>[330, 410, 370, 470],
+        ),
+        const VlmObject(
+          name: 'Sofa',
+          desc: 'b',
+          bbox: <int>[100, 100, 500, 400],
+        ),
       ]);
       final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
       expect(pruned.objects, hasLength(2));
@@ -2461,7 +2472,11 @@ void main() {
 
     test('single object is not pruned', () {
       final VlmAnalysis analysis = analysisWith(<VlmObject>[
-        VlmObject(name: 'Lamp', desc: 'a', bbox: <int>[330, 410, 370, 470]),
+        const VlmObject(
+          name: 'Lamp',
+          desc: 'a',
+          bbox: <int>[330, 410, 370, 470],
+        ),
       ]);
       final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
       expect(pruned.objects, hasLength(1));
@@ -2469,8 +2484,12 @@ void main() {
 
     test('keeps objects with same bbox but different names (not similar)', () {
       final VlmAnalysis analysis = analysisWith(<VlmObject>[
-        VlmObject(name: 'Sofa', desc: 'a', bbox: <int>[0, 0, 1000, 1000]),
-        VlmObject(name: 'Plants', desc: 'b', bbox: <int>[0, 0, 1000, 1000]),
+        const VlmObject(name: 'Sofa', desc: 'a', bbox: <int>[0, 0, 1000, 1000]),
+        const VlmObject(
+          name: 'Plants',
+          desc: 'b',
+          bbox: <int>[0, 0, 1000, 1000],
+        ),
       ]);
       final VlmAnalysis pruned = repo.pruneDuplicateObjects(analysis);
       expect(pruned.objects, hasLength(2));
@@ -2586,7 +2605,10 @@ void main() {
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
         ),
-      ).thenAnswer((_) async => '{"desc":"a wooden table with four visible legs and a dark surface finish"}');
+      ).thenAnswer(
+        (_) async =>
+            '{"desc":"a wooden table with four visible legs and a dark surface finish"}',
+      );
 
       final IdeogramCaption caption = await repo.generateStructuredCaption(
         config,
@@ -2623,7 +2645,10 @@ void main() {
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
         ),
-      ).thenAnswer((_) async => '{"desc":"a wooden chair with a curved backrest and four tapered legs"}');
+      ).thenAnswer(
+        (_) async =>
+            '{"desc":"a wooden chair with a curved backrest and four tapered legs"}',
+      );
 
       final IdeogramCaption caption = await repo.generateStructuredCaption(
         config,

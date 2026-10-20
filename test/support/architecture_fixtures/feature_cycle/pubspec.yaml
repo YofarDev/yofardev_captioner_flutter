@@ -1,0 +1,3 @@
+name: fixture_feature_cycle
+environment:
+  sdk: ^3.0.0

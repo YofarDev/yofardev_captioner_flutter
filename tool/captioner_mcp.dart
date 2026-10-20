@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+
 // Stdio MCP server proxying Yofardev Captioner's local Agent API.
 //
 // Register once (Claude Code):
@@ -20,9 +21,10 @@ const String _defaultProtocolVersion = '2025-06-18';
 
 Future<void> main() async {
   try {
-    await for (final String line in stdin
-        .transform<String>(utf8.decoder)
-        .transform<String>(const LineSplitter())) {
+    await for (final String line
+        in stdin
+            .transform<String>(utf8.decoder)
+            .transform<String>(const LineSplitter())) {
       await _handleLine(line);
     }
   } on FileSystemException {
@@ -81,8 +83,7 @@ Future<void> _handleLine(String line) async {
       case 'tools/call':
         final _ToolResult result = await _callTool(
           params['name'] as String? ?? '',
-          (params['arguments'] as Map<String, dynamic>?) ??
-              <String, dynamic>{},
+          (params['arguments'] as Map<String, dynamic>?) ?? <String, dynamic>{},
         );
         await _send(<String, dynamic>{
           'jsonrpc': '2.0',
@@ -119,103 +120,116 @@ Map<String, dynamic> _error(Object id, int code, String message) =>
 // Tools
 // -----------------------------------------------------------------------------
 
-List<Map<String, dynamic>> _toolDefinitions() =>
-    <Map<String, dynamic>>[
+List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
+  <String, dynamic>{
+    'name': 'status',
+    'description':
+        'Check whether the Yofardev Captioner desktop app is '
+        'running and its Agent API is reachable.',
+    'inputSchema': _schema(<String, dynamic>{}),
+  },
+  <String, dynamic>{
+    'name': 'list_prompts',
+    'description':
+        'List the captioning prompts saved in Yofardev '
+        'Captioner, plus the currently selected one. Follow one of these '
+        'prompts when writing captions unless the user asks otherwise.',
+    'inputSchema': _schema(<String, dynamic>{}),
+  },
+  <String, dynamic>{
+    'name': 'list_folders',
+    'description':
+        'List the image folders currently open as tabs in '
+        'Yofardev Captioner.',
+    'inputSchema': _schema(<String, dynamic>{}),
+  },
+  <String, dynamic>{
+    'name': 'list_images',
+    'description':
+        'List the images of a folder with their existing '
+        "captions, tags and the folder's categories. Works for folders "
+        'open in the app and for arbitrary folders on disk. Each entry '
+        'includes the absolute file path — read the image file yourself '
+        '(you have vision) to produce its caption.',
+    'inputSchema': _schema(
       <String, dynamic>{
-        'name': 'status',
-        'description': 'Check whether the Yofardev Captioner desktop app is '
-            'running and its Agent API is reachable.',
-        'inputSchema': _schema(<String, dynamic>{}),
+        'folder': <String, dynamic>{
+          'type': 'string',
+          'description': 'Absolute path of the image folder.',
+        },
       },
+      required: <String>['folder'],
+    ),
+  },
+  <String, dynamic>{
+    'name': 'write_caption',
+    'description':
+        'Write a caption for one image. Generate the caption '
+        'text yourself by looking at the image, optionally following a '
+        'prompt from list_prompts. Routing through the app keeps db.json '
+        'consistent with the UI.',
+    'inputSchema': _schema(
       <String, dynamic>{
-        'name': 'list_prompts',
-        'description': 'List the captioning prompts saved in Yofardev '
-            'Captioner, plus the currently selected one. Follow one of these '
-            'prompts when writing captions unless the user asks otherwise.',
-        'inputSchema': _schema(<String, dynamic>{}),
+        'folder': <String, dynamic>{
+          'type': 'string',
+          'description': 'Absolute path of the image folder.',
+        },
+        'filename': <String, dynamic>{
+          'type': 'string',
+          'description': 'Image filename within the folder, e.g. "cat.jpg".',
+        },
+        'text': <String, dynamic>{
+          'type': 'string',
+          'description': 'The caption text you produced.',
+        },
+        'category': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Caption category (defaults to "default"). Valid '
+              'values come back in the error on a wrong pick.',
+        },
+        'model': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Name recorded as the caption author '
+              '(defaults to "agent"; pass your agent name).',
+        },
+        'tags': <String, dynamic>{
+          'type': 'array',
+          'items': <String, dynamic>{'type': 'string'},
+          'description': "Optional tags to merge into the image's tags.",
+        },
       },
+      required: <String>['folder', 'filename', 'text'],
+    ),
+  },
+  <String, dynamic>{
+    'name': 'refresh_folder',
+    'description':
+        'Force the app to re-scan a folder so images added or '
+        'renamed externally show up.',
+    'inputSchema': _schema(
       <String, dynamic>{
-        'name': 'list_folders',
-        'description': 'List the image folders currently open as tabs in '
-            'Yofardev Captioner.',
-        'inputSchema': _schema(<String, dynamic>{}),
+        'folder': <String, dynamic>{
+          'type': 'string',
+          'description': 'Absolute path of the image folder.',
+        },
       },
-      <String, dynamic>{
-        'name': 'list_images',
-        'description': 'List the images of a folder with their existing '
-            "captions, tags and the folder's categories. Works for folders "
-            'open in the app and for arbitrary folders on disk. Each entry '
-            'includes the absolute file path — read the image file yourself '
-            '(you have vision) to produce its caption.',
-        'inputSchema': _schema(<String, dynamic>{
-          'folder': <String, dynamic>{
-            'type': 'string',
-            'description': 'Absolute path of the image folder.',
-          },
-        }, required: <String>['folder']),
-      },
-      <String, dynamic>{
-        'name': 'write_caption',
-        'description': 'Write a caption for one image. Generate the caption '
-            'text yourself by looking at the image, optionally following a '
-            'prompt from list_prompts. Routing through the app keeps db.json '
-            'consistent with the UI.',
-        'inputSchema': _schema(<String, dynamic>{
-          'folder': <String, dynamic>{
-            'type': 'string',
-            'description': 'Absolute path of the image folder.',
-          },
-          'filename': <String, dynamic>{
-            'type': 'string',
-            'description': 'Image filename within the folder, e.g. "cat.jpg".',
-          },
-          'text': <String, dynamic>{
-            'type': 'string',
-            'description': 'The caption text you produced.',
-          },
-          'category': <String, dynamic>{
-            'type': 'string',
-            'description': 'Caption category (defaults to "default"). Valid '
-                'values come back in the error on a wrong pick.',
-          },
-          'model': <String, dynamic>{
-            'type': 'string',
-            'description': 'Name recorded as the caption author '
-                '(defaults to "agent"; pass your agent name).',
-          },
-          'tags': <String, dynamic>{
-            'type': 'array',
-            'items': <String, dynamic>{'type': 'string'},
-            'description': "Optional tags to merge into the image's tags.",
-          },
-        }, required: <String>['folder', 'filename', 'text']),
-      },
-      <String, dynamic>{
-        'name': 'refresh_folder',
-        'description': 'Force the app to re-scan a folder so images added or '
-            'renamed externally show up.',
-        'inputSchema': _schema(<String, dynamic>{
-          'folder': <String, dynamic>{
-            'type': 'string',
-            'description': 'Absolute path of the image folder.',
-          },
-        }, required: <String>['folder']),
-      },
-    ];
+      required: <String>['folder'],
+    ),
+  },
+];
 
 Map<String, dynamic> _schema(
   Map<String, dynamic> properties, {
   List<String> required = const <String>[],
 }) => <String, dynamic>{
-    'type': 'object',
-    'properties': properties,
-    if (required.isNotEmpty) 'required': required,
-  };
+  'type': 'object',
+  'properties': properties,
+  if (required.isNotEmpty) 'required': required,
+};
 
-Future<_ToolResult> _callTool(
-  String name,
-  Map<String, dynamic> args,
-) async {
+Future<_ToolResult> _callTool(String name, Map<String, dynamic> args) async {
   switch (name) {
     case 'status':
       return await _api('GET', '/api/health');

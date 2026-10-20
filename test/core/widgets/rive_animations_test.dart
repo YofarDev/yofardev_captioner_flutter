@@ -8,7 +8,11 @@ import 'package:yofardev_captioner/core/widgets/rive_animations.dart';
 /// RiveWidget itself appearing in the tree.
 void main() {
   Future<void> pumpUntilLoaded(WidgetTester tester, Widget child) async {
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Center(child: child))));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: Center(child: child)),
+      ),
+    );
     for (int i = 0; i < 20; i++) {
       await tester.pump(const Duration(milliseconds: 50));
       if (find.byType(RiveWidget).evaluate().isNotEmpty) {

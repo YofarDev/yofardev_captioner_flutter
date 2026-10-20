@@ -50,10 +50,7 @@ void main() async {
   }
 
   runApp(
-    MyApp(
-      llmConfigsCubit: llmConfigsCubit,
-      tabManagerCubit: tabManagerCubit,
-    ),
+    MyApp(llmConfigsCubit: llmConfigsCubit, tabManagerCubit: tabManagerCubit),
   );
 }
 
@@ -85,19 +82,20 @@ class MyApp extends StatelessWidget {
 }
 
 ThemeData _buildTheme() {
-  final ColorScheme scheme = ColorScheme.fromSeed(
-    seedColor: lightPink,
-    brightness: Brightness.dark,
-  ).copyWith(
-    surface: shellBackground,
-    onSurface: textPrimary,
-    primary: accentPink,
-    onPrimary: Colors.black,
-    secondary: accentPink,
-    onSecondary: Colors.black,
-    error: destructive,
-    onError: Colors.white,
-  );
+  final ColorScheme scheme =
+      ColorScheme.fromSeed(
+        seedColor: lightPink,
+        brightness: Brightness.dark,
+      ).copyWith(
+        surface: shellBackground,
+        onSurface: textPrimary,
+        primary: accentPink,
+        onPrimary: Colors.black,
+        secondary: accentPink,
+        onSecondary: Colors.black,
+        error: destructive,
+        onError: Colors.white,
+      );
 
   return ThemeData(
     useMaterial3: true,
@@ -210,14 +208,12 @@ ThemeData _buildTheme() {
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> states) => states.contains(WidgetState.selected)
-            ? accentPink
-            : textMuted,
+        (Set<WidgetState> states) =>
+            states.contains(WidgetState.selected) ? accentPink : textMuted,
       ),
       trackColor: WidgetStateProperty.resolveWith(
-        (Set<WidgetState> states) => states.contains(WidgetState.selected)
-            ? pinkSurface
-            : panelRaised,
+        (Set<WidgetState> states) =>
+            states.contains(WidgetState.selected) ? pinkSurface : panelRaised,
       ),
     ),
     snackBarTheme: SnackBarThemeData(

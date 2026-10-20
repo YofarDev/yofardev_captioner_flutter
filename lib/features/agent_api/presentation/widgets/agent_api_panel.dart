@@ -79,9 +79,9 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
     if (value == null || value.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$label copied to clipboard')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$label copied to clipboard')));
   }
 
   @override
@@ -161,7 +161,11 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  const Icon(Icons.settings_ethernet, size: 18, color: lightPink),
+                  const Icon(
+                    Icons.settings_ethernet,
+                    size: 18,
+                    color: lightPink,
+                  ),
                   const SizedBox(width: 12),
                   const Expanded(
                     child: Text(
@@ -245,15 +249,15 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
               SizedBox(height: 10),
               Text(
                 'curl http://127.0.0.1:<port>/api/health\n'
-                    '\n'
-                    'curl http://127.0.0.1:<port>/api/prompts \\\n'
-                    '  -H "Authorization: Bearer <token>"\n'
-                    '\n'
-                    'curl -X POST http://127.0.0.1:<port>/api/captions \\\n'
-                    '  -H "Authorization: Bearer <token>" \\\n'
-                    '  -H "Content-Type: application/json" \\\n'
-                    '  -d \'{"folder": "/path/to/images", '
-                    '"filename": "cat.jpg", "text": "a cat"}\'',
+                '\n'
+                'curl http://127.0.0.1:<port>/api/prompts \\\n'
+                '  -H "Authorization: Bearer <token>"\n'
+                '\n'
+                'curl -X POST http://127.0.0.1:<port>/api/captions \\\n'
+                '  -H "Authorization: Bearer <token>" \\\n'
+                '  -H "Content-Type: application/json" \\\n'
+                '  -d \'{"folder": "/path/to/images", '
+                '"filename": "cat.jpg", "text": "a cat"}\'',
                 style: TextStyle(
                   color: textPrimary,
                   fontSize: 11.5,

@@ -438,6 +438,84 @@ void main() {
       expect(captioningCubit.state.processedImages, 0);
     });
 
+    test('one failing image does not abort the batch', () async {
+      final AppImage failing = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final AppImage succeeding = AppImage(
+        id: '2',
+        image: File('img2.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+
+      seed(
+        ImageListState(
+          images: <AppImage>[failing, succeeding],
+          folderPath: '/tmp',
+        ),
+      );
+      when(
+        mockCaptioningRepository.captionImage(
+          any,
+          any,
+          any,
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).thenAnswer((Invocation invocation) async {
+        final AppImage target = invocation.positionalArguments[1] as AppImage;
+        if (target.id == '1') {
+          return const Left<Failure, AppImage>(
+            Failure.serverError(message: 'batch-fail-marker'),
+          );
+        }
+        return Right<Failure, AppImage>(
+          target.copyWith(
+            captions: <String, CaptionEntry>{
+              'default': const CaptionEntry(text: 'new caption'),
+            },
+          ),
+        );
+      });
+
+      final LlmConfig llmConfig = LlmConfig(
+        id: '1',
+        name: 'Test',
+        model: 'gpt-4',
+        providerType: LlmProviderType.remote,
+      );
+
+      await captioningCubit.runCaptioner(
+        llm: llmConfig,
+        prompt: 'Prompt',
+        option: CaptionOptions.all,
+      );
+
+      // The failing image is recorded with its per-image error...
+      final ImageListState finalSessionState = session.state;
+      expect(finalSessionState.images[0].error, isNotNull);
+      expect(finalSessionState.images[0].error, isNotEmpty);
+      // ...and the second image was still captioned.
+      expect(
+        finalSessionState.images[1].captions['default']?.text,
+        'new caption',
+      );
+      // Both images were processed and the run reports the failure.
+      verify(
+        mockCaptioningRepository.captionImage(
+          llmConfig,
+          succeeding,
+          'Prompt',
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).called(1);
+      expect(captioningCubit.state.status, CaptioningStatus.failure);
+      expect(captioningCubit.state.error, contains('img1.jpg'));
+      expect(captioningCubit.state.processedImages, 1);
+      expect(captioningCubit.state.totalImages, 2);
+    });
+
     test(
       'runCaptioner keeps using the start category after the active tab changes',
       () async {

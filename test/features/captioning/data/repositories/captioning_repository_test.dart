@@ -167,5 +167,48 @@ void main() {
         expect(result.getLeft().toNullable(), isA<FailureInvalidData>());
       },
     );
+
+    group('propagates inner Left instead of throwing', () {
+      const Failure failure = Failure.unauthorized(message: 'bad api key');
+
+      test('captionImage returns Left when getCaption fails', () async {
+        when(
+          mockInner.getCaption(any, any, any),
+        ).thenAnswer((_) async => const Left<Failure, String>(failure));
+
+        final Either<Failure, AppImage> result = await repository.captionImage(
+          config,
+          image,
+          'prompt',
+        );
+
+        expect(result.getLeft().toNullable(), same(failure));
+      });
+
+      test('rewriteCaption returns Left when rewriteCaption fails', () async {
+        when(
+          mockInner.rewriteCaption(any, any, any),
+        ).thenAnswer((_) async => const Left<Failure, String>(failure));
+
+        final Either<Failure, AppImage> result = await repository
+            .rewriteCaption(config, image, 'instructions');
+
+        expect(result.getLeft().toNullable(), same(failure));
+      });
+
+      test(
+        'transformCaption returns Left when transformCaption fails',
+        () async {
+          when(
+            mockInner.transformCaption(any, any, any),
+          ).thenAnswer((_) async => const Left<Failure, String>(failure));
+
+          final Either<Failure, AppImage> result = await repository
+              .transformCaption(config, image, 'default', 'alt', 'prompt');
+
+          expect(result.getLeft().toNullable(), same(failure));
+        },
+      );
+    });
   });
 }

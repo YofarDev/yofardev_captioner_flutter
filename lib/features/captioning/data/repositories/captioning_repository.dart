@@ -26,7 +26,21 @@ class CaptioningRepository implements ICaptioningRepository {
   }) async {
     final Either<Failure, String> captionResult = await _captionRepository
         .getCaption(config, image, prompt, cancelToken: cancelToken);
-    final String caption = captionResult.getRight().toNullable()!;
+    // Never bang-unwrap a Left: an LLM/auth/network failure must propagate
+    // as Left(Failure) so per-image error handling in the cubit can kick in.
+    return captionResult.fold<Either<Failure, AppImage>>(
+      Left<Failure, AppImage>.new,
+      (String caption) =>
+          _buildCaptionedImage(config, image, category, caption),
+    );
+  }
+
+  Right<Failure, AppImage> _buildCaptionedImage(
+    LlmConfig config,
+    AppImage image,
+    String category,
+    String caption,
+  ) {
     final DateTime timestamp = DateTime.now();
     return Right<Failure, AppImage>(
       image.copyWith(
@@ -57,7 +71,12 @@ class CaptioningRepository implements ICaptioningRepository {
     final String currentCaption = image.captions[category]?.text ?? '';
     final Either<Failure, String> rewriteResult = await _captionRepository
         .rewriteCaption(config, currentCaption, instructions);
-    final String rewritten = rewriteResult.getRight().toNullable()!;
+    // Never bang-unwrap a Left (see captionImage).
+    final String? rewrittenOrFailure = rewriteResult.getRight().toNullable();
+    if (rewrittenOrFailure == null) {
+      return Left<Failure, AppImage>(rewriteResult.getLeft().toNullable()!);
+    }
+    final String rewritten = rewrittenOrFailure;
     final Failure? jsonFailure = _validateRewrittenJson(
       currentCaption,
       rewritten,
@@ -119,7 +138,12 @@ class CaptioningRepository implements ICaptioningRepository {
     final String sourceText = image.captions[sourceCategory]?.text ?? '';
     final Either<Failure, String> transformResult = await _captionRepository
         .transformCaption(config, sourceText, userPrompt);
-    final String transformed = transformResult.getRight().toNullable()!;
+    // Never bang-unwrap a Left (see captionImage).
+    final String? transformedOrNull = transformResult.getRight().toNullable();
+    if (transformedOrNull == null) {
+      return Left<Failure, AppImage>(transformResult.getLeft().toNullable()!);
+    }
+    final String transformed = transformedOrNull;
     final DateTime timestamp = DateTime.now();
     return Right<Failure, AppImage>(
       image.copyWith(

@@ -1,8 +1,12 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/models/llm_provider_type.dart';
@@ -27,10 +31,18 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
   /// If configurations are found, it emits a new state with the loaded
   /// configurations. Otherwise it defaults to an empty, unsaved configuration
   /// (plus a local MLX suggestion on macOS).
-  void onInit() async {
-    final LlmConfigs? configs = await _llmConfigService.loadLlmConfigs();
+  Future<void> onInit() async {
+    final Either<Failure, LlmConfigs?> result = await _llmConfigService
+        .loadLlmConfigs();
+    result.fold(
+      (Failure f) => emit(state.copyWith(error: failureMessage(f))),
+      (LlmConfigs? configs) => _onLoaded(configs),
+    );
+  }
+
+  void _onLoaded(LlmConfigs? configs) {
     if (configs != null) {
-      emit(state.copyWith(llmConfigs: configs));
+      emit(state.copyWith(llmConfigs: configs, clearError: true));
     } else if (Platform.isMacOS) {
       final LlmConfig localConfig = LlmConfig(
         id: 'Qwen3-VL-4B-Instruct-5bit',
@@ -68,7 +80,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Updates an existing [LlmConfig] in the list of configurations.
@@ -83,7 +95,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Deletes an [LlmConfig] with the given [id] from the list of configurations.
@@ -110,7 +122,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Duplicates an existing [LlmConfig] with the given [id].
@@ -144,7 +156,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Selects an [LlmConfig] with the given [id] as the active configuration.
@@ -156,7 +168,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(selectedConfigId: id),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   void addPrompt(String prompt) {
@@ -172,7 +184,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   void updatePromptByIndex(String prompt, int index) {
@@ -189,7 +201,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   void deletePrompt(String prompt) {
@@ -212,7 +224,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   void selectPrompt(String prompt) {
@@ -221,7 +233,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(selectedPrompt: prompt),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Duplicates an existing prompt.
@@ -241,7 +253,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Toggles the Ideogram JSON structured captioning mode.
@@ -251,7 +263,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(ideogramJsonEnabled: enabled),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Toggles debug artifact saving for structured captioning.
@@ -259,7 +271,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     emit(
       state.copyWith(llmConfigs: state.llmConfigs.copyWith(debugMode: enabled)),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Toggles SAM detection off in the structured pipeline.
@@ -269,7 +281,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(disableSam: enabled),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Sets whether the configured VLM emits `[x1,y1,x2,y2]` (xyxy, the common
@@ -281,7 +293,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(vlmEmitsXyxy: enabled),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Sets whether the structured pipeline runs in multi-stage mode (enumerate
@@ -292,7 +304,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(multiStage: enabled),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
   }
 
   /// Updates the structured batch overrides for the JSON captioning pipeline.
@@ -304,6 +316,21 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    _llmConfigService.saveLlmConfigs(state.llmConfigs);
+    _persist();
+  }
+
+  /// Fire-and-forget persistence; failures surface as a state error instead
+  /// of an unhandled async exception.
+  void _persist() {
+    unawaited(
+      _llmConfigService
+          .saveLlmConfigs(state.llmConfigs)
+          .then(
+            (Either<Failure, void> result) => result.fold(
+              (Failure f) => emit(state.copyWith(error: failureMessage(f))),
+              (void _) {},
+            ),
+          ),
+    );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
@@ -12,6 +13,8 @@ import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
@@ -19,7 +22,6 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../image_list/image_list.dart';
-import '../../../llm_config/data/repositories/llm_config_service.dart';
 import '../../../llm_config/llm_config.dart';
 import '../../../tab_manager/tab_manager.dart';
 
@@ -39,10 +41,10 @@ class AgentApiService {
   AgentApiService({
     String? discoveryDirPath,
     CacheService? cacheService,
-    ILlmConfigRepository? llmConfigRepository,
+    required ILlmConfigRepository llmConfigRepository,
   }) : _discoveryDirPath = discoveryDirPath,
        _cacheService = cacheService ?? const CacheService(),
-       _llmConfigRepository = llmConfigRepository ?? LlmConfigService();
+       _llmConfigRepository = llmConfigRepository;
 
   final CacheService _cacheService;
   final ILlmConfigRepository _llmConfigRepository;
@@ -186,9 +188,19 @@ class AgentApiService {
   }
 
   Future<Response> _handlePrompts(Request request) async {
-    final LlmConfigs? saved = await _llmConfigRepository.loadLlmConfigs();
+    final Either<Failure, LlmConfigs?> result = await _llmConfigRepository
+        .loadLlmConfigs();
+    if (result.isLeft()) {
+      final Failure f = result.getLeft().toNullable()!;
+      _logger.severe('GET /api/prompts failed to load LLM configs: $f');
+      return _jsonResponse(500, <String, dynamic>{
+        'error': 'Failed to load LLM configuration',
+        'detail': failureMessage(f),
+      });
+    }
     // Before anything is saved, mirror the defaults the settings UI shows.
-    final LlmConfigs configs = saved ?? const LlmConfigs.defaults();
+    final LlmConfigs configs =
+        result.getRight().toNullable() ?? const LlmConfigs.defaults();
     return _jsonResponse(200, <String, dynamic>{
       'prompts': configs.prompts,
       'selectedPrompt': configs.selectedPrompt,

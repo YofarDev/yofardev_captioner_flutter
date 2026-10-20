@@ -273,18 +273,21 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
     }
   }
 
-  List<LlmConfig> _usableConfigs(LlmConfigsState llmState) {
-    return llmState.llmConfigs.configs;
+  List<LlmConfig> _usableConfigs(List<LlmConfig> configs) {
+    return configs;
   }
 
   @override
   Widget build(BuildContext context) {
     final StructuredEditorCubit cubit = context.read<StructuredEditorCubit>();
 
-    // Watch for config additions/removals so the dropdown stays current.
-    final LlmConfigsState llmState;
+    // Select just the config list so the section rebuilds only when configs
+    // change — not on any other LlmConfigs state churn.
+    final List<LlmConfig> configs;
     try {
-      llmState = context.watch<LlmConfigsCubit>().state;
+      configs = context.select<LlmConfigsCubit, List<LlmConfig>>(
+        (LlmConfigsCubit c) => c.state.llmConfigs.configs,
+      );
     } on ProviderNotFoundException {
       // Defensive: no [LlmConfigsCubit] ancestor (tests).
       return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
@@ -295,14 +298,14 @@ class _RecaptionButtonState extends State<_RecaptionButton> {
       );
     }
 
-    final List<LlmConfig> configs = _usableConfigs(llmState);
+    final List<LlmConfig> usableConfigs = _usableConfigs(configs);
     final String? effectiveId =
         _selectedConfigId != null &&
-            configs.any((LlmConfig c) => c.id == _selectedConfigId)
+            usableConfigs.any((LlmConfig c) => c.id == _selectedConfigId)
         ? _selectedConfigId
-        : (configs.isNotEmpty ? configs.first.id : null);
+        : (usableConfigs.isNotEmpty ? usableConfigs.first.id : null);
     final LlmConfig? config = effectiveId != null
-        ? configs.cast<LlmConfig?>().firstWhere(
+        ? usableConfigs.cast<LlmConfig?>().firstWhere(
             (LlmConfig? c) => c?.id == effectiveId,
             orElse: () => null,
           )

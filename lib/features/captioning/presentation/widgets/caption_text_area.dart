@@ -84,11 +84,14 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
           if (currentImage == null) {
             return const SizedBox.shrink();
           }
-          return BlocBuilder<CaptioningCubit, CaptioningState>(
-            builder: (BuildContext context, CaptioningState captioningState) {
-              final String currentImagePath = currentImage.image.path;
+          // Only the in-flight image matters here; select on it so captioning
+          // progress ticks don't rebuild the whole editor area.
+          return BlocSelector<CaptioningCubit, CaptioningState, String?>(
+            selector: (CaptioningState captioningState) =>
+                captioningState.currentlyCaptioningImage,
+            builder: (BuildContext context, String? currentlyCaptioningImage) {
               final bool isThisImageBeingCaptioned =
-                  captioningState.currentlyCaptioningImage == currentImagePath;
+                  currentlyCaptioningImage == currentImage.image.path;
               final String category = state.activeCategory ?? 'default';
               final String captionText =
                   currentImage.captions[category]?.text ?? '';

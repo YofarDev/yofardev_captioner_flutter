@@ -17,9 +17,13 @@ class MainAreaView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ImageListCubit, ImageListState>(
-      builder: (BuildContext context, ImageListState state) {
-        if (state.images.isEmpty) {
+    // Only the emptiness of the list decides between the empty state and the
+    // editor shell — select on it so unrelated list changes don't rebuild the
+    // whole view.
+    return BlocSelector<ImageListCubit, ImageListState, bool>(
+      selector: (ImageListState state) => state.images.isEmpty,
+      builder: (BuildContext context, bool isEmpty) {
+        if (isEmpty) {
           return const _EmptyView();
         }
         return Stack(

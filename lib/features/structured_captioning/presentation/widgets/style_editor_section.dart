@@ -167,15 +167,18 @@ class _StyleRecaptchaButtonState extends State<_StyleRecaptionButton> {
   Widget build(BuildContext context) {
     final StructuredEditorCubit cubit = context.read<StructuredEditorCubit>();
 
-    final LlmConfigsState llmState;
+    // Select just the config list so the section rebuilds only when configs
+    // change — not on any other LlmConfigs state churn.
+    final List<LlmConfig> configs;
     try {
-      llmState = context.watch<LlmConfigsCubit>().state;
+      configs = context.select<LlmConfigsCubit, List<LlmConfig>>(
+        (LlmConfigsCubit c) => c.state.llmConfigs.configs,
+      );
     } on ProviderNotFoundException {
       // Defensive: no [LlmConfigsCubit] ancestor (tests).
       return const SizedBox.shrink();
     }
 
-    final List<LlmConfig> configs = llmState.llmConfigs.configs;
     final String? effectiveId =
         _selectedConfigId != null &&
             configs.any((LlmConfig c) => c.id == _selectedConfigId)

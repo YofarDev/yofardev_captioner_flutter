@@ -237,27 +237,34 @@ class _CaptionControlsState extends State<CaptionControls> {
           final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
 
           if (ideogramMode) {
-            return BlocBuilder<
+            return BlocSelector<
               StructuredCaptioningCubit,
-              StructuredCaptioningState
+              StructuredCaptioningState,
+              (bool, int, int, bool, String?, String?)
             >(
+              selector: (StructuredCaptioningState structuredState) => (
+                structuredState.status == StructuredCaptioningStatus.inProgress,
+                structuredState.processedImages,
+                structuredState.totalImages,
+                structuredState.isCancelling,
+                structuredState.stepLabel,
+                structuredState.error,
+              ),
               builder:
                   (
                     BuildContext context,
-                    StructuredCaptioningState structuredState,
+                    (bool, int, int, bool, String?, String?) progress,
                   ) {
                     return _buildRunRow(
                       context: context,
                       imageListState: imageListState,
                       configState: configState,
-                      isInProgress:
-                          structuredState.status ==
-                          StructuredCaptioningStatus.inProgress,
-                      processedImages: structuredState.processedImages,
-                      totalImages: structuredState.totalImages,
-                      isCancelling: structuredState.isCancelling,
-                      stepLabel: structuredState.stepLabel,
-                      error: structuredState.error,
+                      isInProgress: progress.$1,
+                      processedImages: progress.$2,
+                      totalImages: progress.$3,
+                      isCancelling: progress.$4,
+                      stepLabel: progress.$5,
+                      error: progress.$6,
                       isIdeogram: true,
                       imageCount: count,
                     );
@@ -265,23 +272,38 @@ class _CaptionControlsState extends State<CaptionControls> {
             );
           }
 
-          return BlocBuilder<CaptioningCubit, CaptioningState>(
-            builder: (BuildContext context, CaptioningState captioningState) {
-              return _buildRunRow(
-                context: context,
-                imageListState: imageListState,
-                configState: configState,
-                isInProgress:
-                    captioningState.status == CaptioningStatus.inProgress,
-                processedImages: captioningState.processedImages,
-                totalImages: captioningState.totalImages,
-                isCancelling: captioningState.isCancelling,
-                stepLabel: null,
-                error: captioningState.error,
-                isIdeogram: false,
-                imageCount: count,
-              );
-            },
+          return BlocSelector<
+            CaptioningCubit,
+            CaptioningState,
+            (bool, int, int, bool, String?, String?)
+          >(
+            selector: (CaptioningState captioningState) => (
+              captioningState.status == CaptioningStatus.inProgress,
+              captioningState.processedImages,
+              captioningState.totalImages,
+              captioningState.isCancelling,
+              null,
+              captioningState.error,
+            ),
+            builder:
+                (
+                  BuildContext context,
+                  (bool, int, int, bool, String?, String?) progress,
+                ) {
+                  return _buildRunRow(
+                    context: context,
+                    imageListState: imageListState,
+                    configState: configState,
+                    isInProgress: progress.$1,
+                    processedImages: progress.$2,
+                    totalImages: progress.$3,
+                    isCancelling: progress.$4,
+                    stepLabel: progress.$5,
+                    error: progress.$6,
+                    isIdeogram: false,
+                    imageCount: count,
+                  );
+                },
           );
         },
       );

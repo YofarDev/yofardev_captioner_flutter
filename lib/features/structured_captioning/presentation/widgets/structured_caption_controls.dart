@@ -122,167 +122,189 @@ class _StructuredCaptionControlsState extends State<StructuredCaptionControls> {
 
   Widget _buildRunButton() => BlocBuilder<ImageListCubit, ImageListState>(
     builder: (BuildContext context, ImageListState imageListState) {
-      return BlocBuilder<StructuredCaptioningCubit, StructuredCaptioningState>(
-        builder: (BuildContext context, StructuredCaptioningState captioningState) {
-          return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
-            builder: (BuildContext context, LlmConfigsState configState) {
-              final bool isCaptioning =
-                  captioningState.status ==
-                  StructuredCaptioningStatus.inProgress;
-              return Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Tooltip(
-                    message: 'Run structured VLM + SAM pipeline',
-                    child: AppButton(
-                      text: "▶  Structured",
-                      isLoading: isCaptioning,
-                      backgroundColor: Colors.teal.withAlpha(220),
-                      onTap:
-                          imageListState.images.isNotEmpty &&
-                              configState.llmConfigs.selectedConfigId != null &&
-                              !isCaptioning
-                          ? () {
-                              context
-                                  .read<StructuredCaptioningCubit>()
-                                  .runStructuredCaptioner(
-                                    llm: configState.llmConfigs.configs
-                                        .firstWhere(
-                                          (LlmConfig c) =>
-                                              c.id ==
-                                              configState
-                                                  .llmConfigs
-                                                  .selectedConfigId,
-                                        ),
-                                    option: _selectedOption,
-                                    overrides: configState
-                                        .llmConfigs
-                                        .structuredBatchOverrides,
-                                    debugMode: configState.llmConfigs.debugMode,
-                                    disableSam:
-                                        configState.llmConfigs.disableSam,
-                                    vlmEmitsXyxy:
-                                        configState.llmConfigs.vlmEmitsXyxy,
-                                    multiStage:
-                                        configState.llmConfigs.multiStage,
-                                  );
-                            }
-                          : null,
-                    ),
-                  ),
-                  if (isCaptioning) ...<Widget>[
-                    Container(
-                      margin: const EdgeInsets.only(left: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+      return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+        builder: (BuildContext context, LlmConfigsState configState) {
+          // Select only the progress fields the row renders — the full state
+          // also churns on per-image step/progress updates.
+          return BlocSelector<
+            StructuredCaptioningCubit,
+            StructuredCaptioningState,
+            (bool, String?, int, int, bool, String?)
+          >(
+            selector: (StructuredCaptioningState captioningState) => (
+              captioningState.status == StructuredCaptioningStatus.inProgress,
+              captioningState.stepLabel,
+              captioningState.processedImages,
+              captioningState.totalImages,
+              captioningState.isCancelling,
+              captioningState.error,
+            ),
+            builder:
+                (
+                  BuildContext context,
+                  (bool, String?, int, int, bool, String?) progress,
+                ) {
+                  final (
+                    bool isCaptioning,
+                    String? stepLabel,
+                    int processed,
+                    int total,
+                    bool isCancelling,
+                    String? error,
+                  ) = progress;
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Tooltip(
+                        message: 'Run structured VLM + SAM pipeline',
+                        child: AppButton(
+                          text: "▶  Structured",
+                          isLoading: isCaptioning,
+                          backgroundColor: Colors.teal.withAlpha(220),
+                          onTap:
+                              imageListState.images.isNotEmpty &&
+                                  configState.llmConfigs.selectedConfigId !=
+                                      null &&
+                                  !isCaptioning
+                              ? () {
+                                  context
+                                      .read<StructuredCaptioningCubit>()
+                                      .runStructuredCaptioner(
+                                        llm: configState.llmConfigs.configs
+                                            .firstWhere(
+                                              (LlmConfig c) =>
+                                                  c.id ==
+                                                  configState
+                                                      .llmConfigs
+                                                      .selectedConfigId,
+                                            ),
+                                        option: _selectedOption,
+                                        overrides: configState
+                                            .llmConfigs
+                                            .structuredBatchOverrides,
+                                        debugMode:
+                                            configState.llmConfigs.debugMode,
+                                        disableSam:
+                                            configState.llmConfigs.disableSam,
+                                        vlmEmitsXyxy:
+                                            configState.llmConfigs.vlmEmitsXyxy,
+                                        multiStage:
+                                            configState.llmConfigs.multiStage,
+                                      );
+                                }
+                              : null,
+                        ),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.teal.withAlpha(100),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          if (captioningState.stepLabel != null)
-                            Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Text(
-                                captioningState.stepLabel!,
+                      if (isCaptioning) ...<Widget>[
+                        Container(
+                          margin: const EdgeInsets.only(left: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.withAlpha(100),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: <Widget>[
+                              if (stepLabel != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Text(
+                                    stepLabel,
+                                    style: const TextStyle(
+                                      color: Colors.tealAccent,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              Text(
+                                "$processed/$total",
                                 style: const TextStyle(
-                                  color: Colors.tealAccent,
-                                  fontSize: 11,
+                                  color: Colors.teal,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                            ),
-                          Text(
-                            '${captioningState.processedImages}/${captioningState.totalImages}',
-                            style: const TextStyle(
-                              color: Colors.teal,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Tooltip(
-                            message: captioningState.isCancelling
-                                ? 'Waiting for last job...'
-                                : 'Cancel structured captioning',
-                            child: InkWell(
-                              onTap: captioningState.isCancelling
-                                  ? null
-                                  : () {
-                                      context
-                                          .read<StructuredCaptioningCubit>()
-                                          .cancelStructuredCaptioning();
-                                    },
-                              borderRadius: BorderRadius.circular(4),
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: captioningState.isCancelling
-                                      ? Colors.white.withAlpha(10)
-                                      : Colors.white.withAlpha(30),
+                              const SizedBox(width: 8),
+                              Tooltip(
+                                message: isCancelling
+                                    ? 'Waiting for last job...'
+                                    : 'Cancel structured captioning',
+                                child: InkWell(
+                                  onTap: isCancelling
+                                      ? null
+                                      : () {
+                                          context
+                                              .read<StructuredCaptioningCubit>()
+                                              .cancelStructuredCaptioning();
+                                        },
                                   borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: isCancelling
+                                          ? Colors.white.withAlpha(10)
+                                          : Colors.white.withAlpha(30),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: isCancelling
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                    Colors.white,
+                                                  ),
+                                            ),
+                                          )
+                                        : const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 16,
+                                          ),
+                                  ),
                                 ),
-                                child: captioningState.isCancelling
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.close,
-                                        color: Colors.white,
-                                        size: 16,
-                                      ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  if (captioningState.error != null &&
-                      captioningState.error!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Tooltip(
-                        message: captioningState.error,
-                        child: InkWell(
-                          onTap: () {
-                            Clipboard.setData(
-                              ClipboardData(text: captioningState.error!),
-                            );
-                            NotificationOverlay.show(
-                              context,
-                              message: 'Error copied to clipboard',
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: destructive.withAlpha(100),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.error_outline,
-                              color: destructive,
-                              size: 18,
+                        ),
+                      ],
+                      if (error != null && error.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Tooltip(
+                            message: error,
+                            child: InkWell(
+                              onTap: () {
+                                Clipboard.setData(ClipboardData(text: error));
+                                NotificationOverlay.show(
+                                  context,
+                                  message: 'Error copied to clipboard',
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: destructive.withAlpha(100),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.error_outline,
+                                  color: destructive,
+                                  size: 18,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
-              );
-            },
+                    ],
+                  );
+                },
           );
         },
       );

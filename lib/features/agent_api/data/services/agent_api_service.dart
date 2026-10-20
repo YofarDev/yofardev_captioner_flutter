@@ -22,9 +22,7 @@ import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/domain/services/caption_session_service.dart';
 import '../../../image_list/logic/image_list_state.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
-import '../../../llm_config/logic/llm_configs_cubit.dart';
-import '../../../tab_manager/data/models/app_tab.dart';
-import '../../../tab_manager/logic/tab_manager_cubit.dart';
+import '../../../tab_manager/domain/services/tab_session_registry.dart';
 
 /// Local REST API for external AI agents (Claude Code, ZCode, scripts).
 ///
@@ -189,32 +187,29 @@ class AgentApiService {
   }
 
   Future<Response> _handlePrompts(Request request) async {
-    LlmConfigs? configs;
-    if (locator.isRegistered<LlmConfigsCubit>()) {
-      configs = locator<LlmConfigsCubit>().state.llmConfigs;
-    } else {
-      configs = await _llmConfigService.loadLlmConfigs();
-    }
+    final LlmConfigs? saved = await _llmConfigService.loadLlmConfigs();
+    // Before anything is saved, mirror the defaults the settings UI shows.
+    final LlmConfigs configs = saved ?? const LlmConfigs.defaults();
     return _jsonResponse(200, <String, dynamic>{
-      'prompts': configs?.prompts ?? <String>[],
-      'selectedPrompt': configs?.selectedPrompt,
+      'prompts': configs.prompts,
+      'selectedPrompt': configs.selectedPrompt,
     });
   }
 
   Future<Response> _handleFolders(Request request) async {
-    final TabManagerCubit? tabManager = _tabManagerIfReady();
-    if (tabManager == null) {
+    final TabSessionRegistry? registry = _registryIfReady();
+    if (registry == null) {
       return _jsonResponse(503, <String, dynamic>{'error': 'app not ready'});
     }
-    final List<AppTab> tabs = tabManager.state.tabs;
+    final List<TabSessionInfo> tabs = registry.tabs;
     return _jsonResponse(200, <String, dynamic>{
       'tabs': <Map<String, dynamic>>[
-        for (int i = 0; i < tabs.length; i++)
+        for (final TabSessionInfo tab in tabs)
           <String, dynamic>{
-            'id': tabs[i].id,
-            'folderPath': tabs[i].folderPath,
-            'displayName': tabs[i].displayName,
-            'active': i == tabManager.state.activeTabIndex,
+            'id': tab.id,
+            'folderPath': tab.folderPath,
+            'displayName': tab.displayName,
+            'active': tab.isActive,
           },
       ],
     });
@@ -343,11 +338,11 @@ class AgentApiService {
     }
     final String normalized = p.normalize(folder);
 
-    final TabManagerCubit? tabManager = _tabManagerIfReady();
-    final AppTab? tab = tabManager?.findTabByFolderPath(normalized);
+    final TabSessionRegistry? registry = _registryIfReady();
+    final TabSessionInfo? tab = registry?.tabForFolder(normalized);
     final CaptionSessionService? session = tab == null
         ? null
-        : tabManager!.sessionFor(tab.id);
+        : registry!.sessionFor(tab.id);
     if (session == null) {
       return _jsonResponse(200, <String, dynamic>{
         'ok': true,
@@ -488,17 +483,17 @@ class AgentApiService {
   // Helpers
   // ---------------------------------------------------------------------------
 
-  TabManagerCubit? _tabManagerIfReady() {
-    if (!locator.isRegistered<TabManagerCubit>()) return null;
-    return locator<TabManagerCubit>();
+  TabSessionRegistry? _registryIfReady() {
+    if (!locator.isRegistered<TabSessionRegistry>()) return null;
+    return locator<TabSessionRegistry>();
   }
 
   CaptionSessionService? _openSessionFor(String folder) {
-    final TabManagerCubit? tabManager = _tabManagerIfReady();
-    if (tabManager == null) return null;
-    final AppTab? tab = tabManager.findTabByFolderPath(folder);
+    final TabSessionRegistry? registry = _registryIfReady();
+    if (registry == null) return null;
+    final TabSessionInfo? tab = registry.tabForFolder(folder);
     if (tab == null) return null;
-    final CaptionSessionService session = tabManager.sessionFor(tab.id);
+    final CaptionSessionService session = registry.sessionFor(tab.id);
     // A session that is mid-scan still points at its previous folder — treat
     // that as "not open" so callers fall through to the disk path.
     if (session.current.state.folderPath != folder) return null;

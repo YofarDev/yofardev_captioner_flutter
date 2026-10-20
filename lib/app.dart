@@ -7,24 +7,50 @@ import 'core/di/service_locator.dart';
 import 'core/presentation/pages/home_page.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/route_observer.dart';
+import 'features/image_list/data/repositories/app_file_utils.dart';
+import 'features/image_list/data/services/filter_parser_engine.dart';
+import 'features/llm_config/data/repositories/llm_config_service.dart';
 import 'features/llm_config/logic/llm_configs_cubit.dart';
+import 'features/tab_manager/domain/services/tab_session_registry.dart';
 import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
-/// Root widget. The root cubits are owned by the service locator (temporary
-/// bridge so AgentApiService can reach them); this widget only resolves and
-/// provides them.
-class App extends StatelessWidget {
+/// Root widget. Constructs the two root cubits (once, in [AppState.initState])
+/// from DI services and provides them to the tree. They are deliberately NOT
+/// registered in the service locator — no data-layer service depends on them.
+class App extends StatefulWidget {
   const App({super.key});
 
   @override
+  State<App> createState() => AppState();
+}
+
+class AppState extends State<App> {
+  late final LlmConfigsCubit _llmConfigsCubit;
+  late final TabManagerCubit _tabManagerCubit;
+
+  @override
+  void initState() {
+    super.initState();
+    // LlmConfigsCubit loads before the first frame, so the settings UI never
+    // shows an empty config list.
+    _llmConfigsCubit = LlmConfigsCubit(
+      llmConfigService: locator<LlmConfigService>(),
+    )..onInit();
+    _tabManagerCubit = TabManagerCubit(
+      cacheService: locator<CacheService>(),
+      fileUtils: locator<AppFileUtils>(),
+      filterEngine: const FilterParserCaptionEngine(),
+      sessionRegistry: locator<TabSessionRegistry>(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final LlmConfigsCubit llmConfigsCubit = locator<LlmConfigsCubit>();
-    final TabManagerCubit tabManagerCubit = locator<TabManagerCubit>();
     final CacheService cacheService = locator<CacheService>();
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
-        BlocProvider<LlmConfigsCubit>.value(value: llmConfigsCubit),
-        BlocProvider<TabManagerCubit>.value(value: tabManagerCubit),
+        BlocProvider<LlmConfigsCubit>.value(value: _llmConfigsCubit),
+        BlocProvider<TabManagerCubit>.value(value: _tabManagerCubit),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

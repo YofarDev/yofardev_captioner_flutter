@@ -4,6 +4,12 @@ import 'llm_config.dart';
 import 'structured_batch_overrides.dart';
 
 class LlmConfigs extends Equatable {
+  /// Built-in starter prompts shown before the user saves any configuration.
+  static const String defaultPrompt1 =
+      'Describe this image as one paragraph. Do not describe the atmosphere.';
+  static const String defaultPrompt2 =
+      'Describe this image as a list of keywords, separated by commas.';
+
   final List<LlmConfig> configs;
   final List<String> prompts;
   final String? selectedConfigId;
@@ -46,6 +52,19 @@ class LlmConfigs extends Equatable {
     this.multiStage = false,
     this.structuredBatchOverrides = const StructuredBatchOverrides(),
   });
+
+  /// The configuration used before anything has been saved.
+  const LlmConfigs.defaults()
+    : configs = const <LlmConfig>[],
+      prompts = const <String>[defaultPrompt1, defaultPrompt2],
+      selectedConfigId = null,
+      selectedPrompt = defaultPrompt1,
+      ideogramJsonEnabled = false,
+      debugMode = false,
+      disableSam = false,
+      vlmEmitsXyxy = true,
+      multiStage = false,
+      structuredBatchOverrides = const StructuredBatchOverrides();
 
   @override
   List<Object?> get props => <Object?>[

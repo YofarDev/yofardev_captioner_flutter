@@ -6,10 +6,8 @@ import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
-import '../../features/image_list/data/services/filter_parser_engine.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
-import '../../features/llm_config/logic/llm_configs_cubit.dart';
-import '../../features/tab_manager/logic/tab_manager_cubit.dart';
+import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
 
 final GetIt locator = GetIt.instance;
@@ -17,9 +15,9 @@ final GetIt locator = GetIt.instance;
 /// Single authoritative wiring layer. Every GetIt registration lives here;
 /// the architecture checker enforces it.
 ///
-/// Also performs the bootstrap side effects that used to live in main.dart:
-/// creating the two root cubits (temporary bridge for AgentApiService, see
-/// the ratchet marker below) and starting the Agent API when enabled.
+/// Also performs the bootstrap side effect of starting the Agent API when
+/// enabled. Root cubits are NOT registered here — they are constructed in
+/// `main()` and passed into `App` (presentation owns presentation).
 Future<void> setupServiceLocator() async {
   // Services
   locator.registerLazySingleton<CacheService>(() => const CacheService());
@@ -32,6 +30,9 @@ Future<void> setupServiceLocator() async {
   locator.registerLazySingleton<AppFileUtils>(
     () => AppFileUtils(cacheService: locator<CacheService>()),
   );
+  // Shared by TabManagerCubit (writes sessions + tab snapshot) and
+  // AgentApiService (reads them) so no data service needs a cubit.
+  locator.registerLazySingleton<TabSessionRegistry>(() => TabSessionRegistry());
   locator.registerLazySingleton<AgentApiService>(
     () => AgentApiService(
       cacheService: locator<CacheService>(),
@@ -46,23 +47,6 @@ Future<void> setupServiceLocator() async {
     print('${rec.level.name}: ${rec.time}: ${rec.message}');
   });
   locator.registerLazySingleton<Logger>(() => Logger('App'));
-
-  // Root cubits are created here instead of inside BlocProviders so the
-  // AgentApiService can reach their live state through get_it.
-  // ratchet: agent-api-cubit-access (temporary bridge, removed in Phase 2)
-  locator.registerLazySingleton<LlmConfigsCubit>(
-    () =>
-        LlmConfigsCubit(llmConfigService: locator<LlmConfigService>())
-          ..onInit(),
-  );
-  // ratchet: agent-api-cubit-access (temporary bridge, removed in Phase 2)
-  locator.registerLazySingleton<TabManagerCubit>(
-    () => TabManagerCubit(
-      cacheService: locator<CacheService>(),
-      fileUtils: locator<AppFileUtils>(),
-      filterEngine: const FilterParserCaptionEngine(),
-    ),
-  );
 
   if (await locator<CacheService>().loadAgentApiEnabled()) {
     await locator<AgentApiService>().start();

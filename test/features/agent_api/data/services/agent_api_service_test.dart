@@ -11,7 +11,7 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
+import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
 
 void main() {
@@ -105,20 +105,21 @@ void main() {
     );
   });
 
-  test('prompts come from the registered LlmConfigsCubit', () async {
-    locator.registerSingleton<LlmConfigsCubit>(LlmConfigsCubit());
+  test(
+    'prompts come from saved LLM configs (defaults before first save)',
+    () async {
+      final http.Response res = await client.get(
+        uri('/api/prompts'),
+        headers: authHeader(),
+      );
 
-    final http.Response res = await client.get(
-      uri('/api/prompts'),
-      headers: authHeader(),
-    );
-
-    expect(res.statusCode, 200);
-    final Map<String, dynamic> body =
-        jsonDecode(res.body) as Map<String, dynamic>;
-    expect(body['prompts'] as List<dynamic>, hasLength(2));
-    expect(body['selectedPrompt'], isNotNull);
-  });
+      expect(res.statusCode, 200);
+      final Map<String, dynamic> body =
+          jsonDecode(res.body) as Map<String, dynamic>;
+      expect(body['prompts'] as List<dynamic>, hasLength(2));
+      expect(body['selectedPrompt'], isNotNull);
+    },
+  );
 
   test('discovery file contains port and token', () async {
     final File file = File(p.join(discoveryDir.path, 'agent-api.json'));
@@ -269,7 +270,11 @@ void main() {
         'one.png',
         'two.png',
       ]);
-      final TabManagerCubit tabManager = TabManagerCubit();
+      final TabSessionRegistry registry = TabSessionRegistry();
+      locator.registerSingleton<TabSessionRegistry>(registry);
+      final TabManagerCubit tabManager = TabManagerCubit(
+        sessionRegistry: registry,
+      );
       locator.registerSingleton<TabManagerCubit>(tabManager);
       tabManager.addTab(folder.path);
       final String tabId = tabManager.state.tabs.last.id;
@@ -310,7 +315,11 @@ void main() {
     final Directory folder = await makeImageFolder('refresh', <String>[
       'r.png',
     ]);
-    final TabManagerCubit tabManager = TabManagerCubit();
+    final TabSessionRegistry registry = TabSessionRegistry();
+    locator.registerSingleton<TabSessionRegistry>(registry);
+    final TabManagerCubit tabManager = TabManagerCubit(
+      sessionRegistry: registry,
+    );
     locator.registerSingleton<TabManagerCubit>(tabManager);
     tabManager.addTab(folder.path);
     final String tabId = tabManager.state.tabs.last.id;

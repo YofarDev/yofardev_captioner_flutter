@@ -10,6 +10,7 @@ import '../../image_list/data/services/filter_parser_engine.dart';
 import '../../image_list/domain/services/caption_session_service.dart';
 import '../../image_list/logic/image_cache_eviction.dart';
 import '../data/models/app_tab.dart';
+import '../domain/services/tab_session_registry.dart';
 
 part 'tab_manager_state.dart';
 
@@ -18,29 +19,51 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     CacheService? cacheService,
     AppFileUtils? fileUtils,
     CaptionFilterEngine? filterEngine,
+    TabSessionRegistry? sessionRegistry,
   }) : _cacheService = cacheService ?? const CacheService(),
        _fileUtils = fileUtils ?? AppFileUtils(cacheService: cacheService),
        _filterEngine = filterEngine ?? const FilterParserCaptionEngine(),
        super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')])) {
+    _sessions = sessionRegistry ?? TabSessionRegistry();
+    _sessions.sessionFactory = _createSession;
     // The default tab's session exists before any widget builds.
     _ensureSession(state.activeTab.id);
+    _syncRegistry(state);
   }
 
   final CacheService _cacheService;
   final AppFileUtils _fileUtils;
   final CaptionFilterEngine _filterEngine;
 
-  /// One session per tab, created SYNCHRONOUSLY when the tab appears so
-  /// consumers (home_page keyboard/file-open, Agent API, TabContent cubits)
-  /// never wait for a widget to register anything.
-  final Map<String, CaptionSessionService> _sessions =
-      <String, CaptionSessionService>{};
+  /// Owns the per-tab sessions. Created locally by default, or shared from DI
+  /// so non-widget consumers (the Agent API) can reach the same sessions
+  /// without depending on this cubit.
+  late final TabSessionRegistry _sessions;
 
   @override
   void onChange(Change<TabManagerState> change) {
     super.onChange(change);
     _persistTabs(change.nextState);
     _updateWindowTitle(change.nextState);
+    // onChange runs BEFORE this.state is updated — always sync from
+    // change.nextState.
+    _syncRegistry(change.nextState);
+  }
+
+  /// Mirrors the tab list into the session registry so non-widget consumers
+  /// see the same tabs without reading cubit state.
+  void _syncRegistry(TabManagerState registryState) {
+    final List<AppTab> tabs = registryState.tabs;
+    final int activeIndex = registryState.activeTabIndex;
+    _sessions.updateTabs(<TabSessionInfo>[
+      for (int i = 0; i < tabs.length; i++)
+        TabSessionInfo(
+          id: tabs[i].id,
+          folderPath: tabs[i].folderPath,
+          displayName: tabs[i].displayName,
+          isActive: i == activeIndex,
+        ),
+    ]);
   }
 
   void _persistTabs(TabManagerState state) {
@@ -75,13 +98,12 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     );
   }
 
-  CaptionSessionService _ensureSession(String tabId) =>
-      _sessions.putIfAbsent(tabId, _createSession);
+  CaptionSessionService _ensureSession(String tabId) => _sessions.ensure(tabId);
 
   /// The session owning [tabId]. Created on demand so it can never be null
   /// for a live tab.
   CaptionSessionService sessionFor(String tabId) {
-    if (!_sessions.containsKey(tabId)) {
+    if (_sessions.peek(tabId) == null) {
       // Resolved lazily so constructing a TabManagerCubit never requires a
       // configured DI container (widget tests build bare instances).
       locator<Logger>().warning(
@@ -121,7 +143,7 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     } else if (index == newIndex && newIndex >= newTabs.length) {
       newIndex = newTabs.length - 1;
     }
-    _sessions.remove(tabId)?.dispose();
+    _sessions.dispose(tabId);
     emit(state.copyWith(tabs: newTabs, activeTabIndex: newIndex));
   }
 
@@ -166,10 +188,7 @@ class TabManagerCubit extends Cubit<TabManagerState> {
 
   @override
   Future<void> close() {
-    for (final CaptionSessionService session in _sessions.values) {
-      session.dispose();
-    }
-    _sessions.clear();
+    _sessions.disposeAll();
     return super.close();
   }
 }

@@ -9,8 +9,8 @@ import 'core/di/service_locator.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Wires every dependency, creates the root cubits and starts the Agent API
-  // when enabled (all inside setupServiceLocator).
+  // Wires every dependency and starts the Agent API when enabled (all inside
+  // setupServiceLocator).
   await setupServiceLocator();
 
   if (!Platform.isAndroid && !Platform.isIOS) {

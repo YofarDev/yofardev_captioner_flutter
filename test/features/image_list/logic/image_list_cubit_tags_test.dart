@@ -3,9 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
-import 'package:yofardev_captioner/features/captioning/data/models/caption_database.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
-import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 
 void main() {

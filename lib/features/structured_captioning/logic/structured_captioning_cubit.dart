@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../captioning/data/models/caption_entry.dart';
+import '../../../core/models/app_image.dart';
+import '../../../core/models/caption_entry.dart';
+import '../../../core/models/llm_config.dart';
+import '../../../core/models/structured_batch_overrides.dart';
 import '../../captioning/data/models/caption_options.dart';
-import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
-import '../../llm_config/data/models/llm_config.dart';
-import '../../llm_config/data/models/structured_batch_overrides.dart';
 import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 

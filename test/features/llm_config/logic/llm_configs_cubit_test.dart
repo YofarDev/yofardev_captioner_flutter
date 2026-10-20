@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_configs.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/llm_config.dart';
+import 'package:yofardev_captioner/core/models/llm_configs.dart';
+import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
 
 @GenerateMocks(<Type>[])

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../llm_config/data/models/llm_config.dart';
+import '../../../../core/models/llm_config.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../data/models/ideogram_caption.dart';
 import '../../data/services/color_extraction_service.dart';

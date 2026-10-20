@@ -5,9 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/export/presentation/widgets/export_button.dart';
-import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/logic/image_operations_cubit.dart';
 

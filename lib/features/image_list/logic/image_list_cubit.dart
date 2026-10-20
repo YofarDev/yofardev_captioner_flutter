@@ -7,15 +7,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/models/app_image.dart';
+import '../../../core/models/caption_data.dart';
+import '../../../core/models/caption_database.dart';
+import '../../../core/models/caption_entry.dart';
 import '../../../core/utils/extensions.dart';
 import '../../caption_search/data/models/filter_query.dart';
 import '../../caption_search/data/services/filter_parser.dart';
-import '../../captioning/data/models/caption_data.dart';
-import '../../captioning/data/models/caption_database.dart';
-import '../../captioning/data/models/caption_entry.dart';
 import '../../image_operations/data/utils/image_utils.dart';
 import '../../structured_captioning/data/models/ideogram_caption.dart';
-import '../data/models/app_image.dart';
 import '../data/repositories/app_file_utils.dart';
 
 part 'image_list_state.dart';

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/llm_configs.dart';
+import '../../../../core/models/llm_configs.dart';
 
 class LlmConfigService {
   static const String _llmConfigsKey = 'llm_configs';

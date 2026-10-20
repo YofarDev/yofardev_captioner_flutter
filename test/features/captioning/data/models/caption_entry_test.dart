@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 
 void main() {
   group('CaptionEntry JSON', () {

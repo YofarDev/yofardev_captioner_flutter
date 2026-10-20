@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/widgets/radio_group.dart';
-import '../../data/models/llm_config.dart';
-import '../../data/models/llm_provider_type.dart';
 import '../../logic/llm_configs_cubit.dart';
 import 'llm_config_dialog.dart';
 import 'prompt_dialog.dart';

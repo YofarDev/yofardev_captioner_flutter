@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../data/models/llm_config.dart';
+import '../../../../core/models/llm_config.dart';
 import '../../logic/llm_configs_cubit.dart';
 
 class LlmConfigWidget extends StatelessWidget {

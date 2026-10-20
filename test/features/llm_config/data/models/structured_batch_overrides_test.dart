@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/structured_batch_overrides.dart';
+import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart';
 
 void main() {
   group('StructuredBatchOverrides', () {

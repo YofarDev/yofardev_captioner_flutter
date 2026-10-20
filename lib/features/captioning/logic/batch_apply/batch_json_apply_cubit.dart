@@ -3,11 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../image_list/data/models/app_image.dart';
+import '../../../../core/models/app_image.dart';
+import '../../../../core/models/caption_entry.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../data/models/batch_apply_template.dart';
-import '../../data/models/caption_entry.dart';
 import 'batch_json_apply_state.dart';
 
 class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/app_image.dart';
+import '../../../../core/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 
 class TagEditor extends StatelessWidget {

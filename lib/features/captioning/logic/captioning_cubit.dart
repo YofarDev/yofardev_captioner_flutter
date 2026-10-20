@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/models/app_image.dart';
+import '../../../core/models/llm_config.dart';
 import '../../../core/utils/cancel_token.dart';
-import '../../image_list/data/models/app_image.dart';
 import '../../image_list/logic/image_list_cubit.dart';
-import '../../llm_config/data/models/llm_config.dart';
 import '../data/models/caption_options.dart';
 import '../data/repositories/captioning_repository.dart';
 

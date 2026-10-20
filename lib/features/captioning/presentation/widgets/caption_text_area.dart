@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/app_image.dart';
+import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../llm_config/data/models/structured_batch_overrides.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../../structured_captioning/data/models/apply_structured_overrides.dart';
 import '../../../structured_captioning/data/models/ideogram_caption.dart';

@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/llm_config.dart';
+import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
-import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
 
 import 'captioning_repository_test.mocks.dart';
 

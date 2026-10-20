@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_configs.dart';
-import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/llm_config.dart';
+import 'package:yofardev_captioner/core/models/llm_configs.dart';
+import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 
 void main() {

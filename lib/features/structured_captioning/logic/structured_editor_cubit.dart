@@ -6,8 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 
 import '../../../core/di/service_locator.dart';
+import '../../../core/models/llm_config.dart';
 import '../../image_list/logic/image_list_cubit.dart';
-import '../../llm_config/data/models/llm_config.dart';
 import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 import '../data/services/layer_title_store.dart';

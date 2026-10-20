@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/app_image.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../image_operations/presentation/pages/aspect_ratio_dialog.dart';
-import '../../data/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 import '../utils/folder_utils.dart';
 import 'sort_by_widget.dart';

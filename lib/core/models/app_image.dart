@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:equatable/equatable.dart';
-import '../../../captioning/data/models/caption_entry.dart';
+import 'caption_entry.dart';
 
 class AppImage extends Equatable {
   final String id;

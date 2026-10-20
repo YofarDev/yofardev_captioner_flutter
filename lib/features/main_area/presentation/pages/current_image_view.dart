@@ -8,8 +8,8 @@ import 'package:timeago/timeago.dart' as timeago;
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/models/app_image.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../../image_list/data/models/app_image.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/widgets/tag_editor.dart';
 import '../../../image_operations/data/utils/image_utils.dart';

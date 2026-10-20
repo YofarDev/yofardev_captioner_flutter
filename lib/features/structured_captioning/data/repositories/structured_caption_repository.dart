@@ -3,15 +3,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/llm_provider_type.dart';
+import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../captioning/data/services/caption_service.dart';
-import '../../../llm_config/data/models/llm_config.dart';
-import '../../../llm_config/data/models/llm_provider_type.dart';
-import '../../../llm_config/data/models/structured_batch_overrides.dart';
 import '../models/ideogram_caption.dart';
 import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';

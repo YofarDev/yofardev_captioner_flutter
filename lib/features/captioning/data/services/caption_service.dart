@@ -7,9 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/utils/cancel_token.dart';
-import '../../../llm_config/data/models/llm_config.dart';
-import '../../../llm_config/data/models/llm_provider_type.dart';
 import '../models/caption/caption_request.dart';
 import '../models/caption/caption_response.dart';
 import '../models/caption/content.dart';

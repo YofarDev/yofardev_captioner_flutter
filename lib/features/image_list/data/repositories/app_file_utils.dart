@@ -9,12 +9,12 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/models/app_image.dart';
+import '../../../../core/models/caption_data.dart';
+import '../../../../core/models/caption_database.dart';
+import '../../../../core/models/caption_entry.dart';
 import '../../../../core/services/cache_service.dart';
-import '../../../captioning/data/models/caption_data.dart';
-import '../../../captioning/data/models/caption_database.dart';
-import '../../../captioning/data/models/caption_entry.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
-import '../models/app_image.dart';
 
 /// A utility class for file-related operations in the application.
 class AppFileUtils {

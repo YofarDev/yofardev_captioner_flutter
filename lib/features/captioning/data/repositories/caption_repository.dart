@@ -1,6 +1,6 @@
+import '../../../../core/models/app_image.dart';
+import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
-import '../../../image_list/data/models/app_image.dart';
-import '../../../llm_config/data/models/llm_config.dart';
 import '../services/caption_service.dart';
 
 class CaptionRepository {

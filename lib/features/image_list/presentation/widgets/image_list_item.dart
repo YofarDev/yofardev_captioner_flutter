@@ -3,8 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
+import '../../../../core/models/app_image.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../data/models/app_image.dart';
 import '../../logic/image_list_cubit.dart';
 
 class ImageListItem extends StatefulWidget {

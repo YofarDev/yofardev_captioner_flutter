@@ -3,11 +3,11 @@ import 'dart:io';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/models/llm_config.dart';
-import '../../../core/models/llm_configs.dart';
-import '../../../core/models/llm_provider_type.dart';
-import '../../../core/models/structured_batch_overrides.dart';
-import '../data/repositories/llm_config_service.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/llm_configs.dart';
+import '../../../../core/models/llm_provider_type.dart';
+import '../../../../core/models/structured_batch_overrides.dart';
+import '../../domain/repositories/llm_config_repository.dart';
 
 part 'llm_configs_state.dart';
 
@@ -16,11 +16,11 @@ part 'llm_configs_state.dart';
 /// This includes loading, adding, updating, deleting, and selecting LLM configurations.
 class LlmConfigsCubit extends Cubit<LlmConfigsState> {
   /// Creates an [LlmConfigsCubit] with an initial [LlmConfigsState].
-  LlmConfigsCubit({LlmConfigService? llmConfigService})
-    : _llmConfigService = llmConfigService ?? LlmConfigService(),
+  LlmConfigsCubit({required ILlmConfigRepository llmConfigService})
+    : _llmConfigService = llmConfigService,
       super(const LlmConfigsState());
 
-  final LlmConfigService _llmConfigService;
+  final ILlmConfigRepository _llmConfigService;
 
   /// Initializes the cubit by loading saved LLM configurations.
   ///

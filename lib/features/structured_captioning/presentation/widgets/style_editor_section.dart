@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/llm_config.dart';
-import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../data/services/color_extraction_service.dart';
 import '../../logic/structured_editor_cubit.dart';
 import 'color_palette_editor.dart';

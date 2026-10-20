@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/models/llm_config.dart';
-import '../../logic/llm_configs_cubit.dart';
+import '../bloc/llm_configs_cubit.dart';
 
 class LlmConfigWidget extends StatelessWidget {
   const LlmConfigWidget({super.key});

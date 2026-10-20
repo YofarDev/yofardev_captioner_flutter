@@ -10,7 +10,7 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../../structured_captioning/data/models/apply_structured_overrides.dart';
 import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../../structured_captioning/presentation/pages/structured_editor_page.dart';

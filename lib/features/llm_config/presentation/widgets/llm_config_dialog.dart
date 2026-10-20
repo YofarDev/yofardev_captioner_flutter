@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
-import '../../logic/llm_configs_cubit.dart';
+import '../bloc/llm_configs_cubit.dart';
 
 /// Add / edit a vision model configuration.
 ///

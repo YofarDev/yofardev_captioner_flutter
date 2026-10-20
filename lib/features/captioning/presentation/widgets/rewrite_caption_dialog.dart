@@ -5,7 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../logic/captioning_cubit.dart';
 
 /// Dialog that asks the active LLM to rewrite the current caption (text-only,

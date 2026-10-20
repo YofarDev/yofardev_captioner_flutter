@@ -9,8 +9,7 @@ import 'core/services/cache_service.dart';
 import 'core/services/route_observer.dart';
 import 'features/image_list/data/repositories/app_file_utils.dart';
 import 'features/image_list/data/services/filter_parser_engine.dart';
-import 'features/llm_config/data/repositories/llm_config_service.dart';
-import 'features/llm_config/logic/llm_configs_cubit.dart';
+import 'features/llm_config/llm_config.dart';
 import 'features/tab_manager/domain/services/tab_session_registry.dart';
 import 'features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -34,7 +33,7 @@ class AppState extends State<App> {
     // LlmConfigsCubit loads before the first frame, so the settings UI never
     // shows an empty config list.
     _llmConfigsCubit = LlmConfigsCubit(
-      llmConfigService: locator<LlmConfigService>(),
+      llmConfigService: locator<ILlmConfigRepository>(),
     )..onInit();
     _tabManagerCubit = TabManagerCubit(
       cacheService: locator<CacheService>(),

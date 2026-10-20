@@ -27,6 +27,9 @@ import 'package:path/path.dart' as p;
 /// - cross-feature-internal-access: feature-to-feature imports only via the
 ///   target feature's public barrel `features/<name>/<name>.dart`
 /// - barrel-exports-internal: a barrel re-exports nothing internal
+///   (`data/` internals and files outside a known layer); `domain/` models,
+///   interfaces, and public `presentation/` screens/widgets are the
+///   intended-public API a barrel may expose
 /// - feature-dependency-cycle: feature dependency graph is acyclic
 /// - core-imports-feature-internal: core/ imports features only via barrels
 /// - cubit-field: no cubit/bloc stored as a field of another
@@ -170,7 +173,7 @@ List<ArchitectureViolation> _checkFile(
         if (feature != null &&
             _isBarrel(rel, feature) &&
             _featureOf(edge.targetRel) == feature &&
-            _isInternal(edge.targetRel)) {
+            _isBarrelInternal(edge.targetRel)) {
           violations.add(
             ArchitectureViolation(
               path: rel,
@@ -657,11 +660,13 @@ bool _isBarrel(String rel, [String? feature]) {
   return rel == 'lib/features/$f/$f.dart';
 }
 
-/// True when the path is a feature-internal file (anything under a feature
-/// other than the public barrel itself).
-bool _isInternal(String rel) {
-  final String? f = _featureOf(rel);
-  return f != null && !_isBarrel(rel, f);
+/// True when a feature barrel must not re-export the file: `data/`
+/// internals and files outside a known layer (e.g. legacy `logic/`).
+/// `domain/` models/interfaces and `presentation/` screens/widgets are the
+/// intended-public API.
+bool _isBarrelInternal(String rel) {
+  final String? layer = _layerOf(rel);
+  return layer == null || layer == 'data';
 }
 
 String? _featureOf(String rel) {

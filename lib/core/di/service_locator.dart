@@ -7,6 +7,7 @@ import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
+import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
 import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
 
@@ -17,11 +18,15 @@ final GetIt locator = GetIt.instance;
 ///
 /// Also performs the bootstrap side effect of starting the Agent API when
 /// enabled. Root cubits are NOT registered here — they are constructed in
-/// `main()` and passed into `App` (presentation owns presentation).
+/// `AppState.initState` and provided to the tree (presentation owns
+/// presentation).
 Future<void> setupServiceLocator() async {
   // Services
   locator.registerLazySingleton<CacheService>(() => const CacheService());
   locator.registerLazySingleton<LlmConfigService>(() => LlmConfigService());
+  locator.registerLazySingleton<ILlmConfigRepository>(
+    () => locator<LlmConfigService>(),
+  );
   locator.registerLazySingleton<CaptionService>(() => CaptionService());
   locator.registerLazySingleton<CaptionRepository>(() => CaptionRepository());
   locator.registerLazySingleton<CaptioningRepository>(

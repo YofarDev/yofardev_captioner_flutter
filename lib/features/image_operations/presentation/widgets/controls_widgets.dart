@@ -6,7 +6,7 @@ import 'package:nested/nested.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../llm_config/presentation/pages/llm_settings_screen.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../../tab_manager/data/models/app_tab.dart';
 import '../../../tab_manager/logic/tab_manager_cubit.dart';
 import '../../logic/image_operations_cubit.dart';

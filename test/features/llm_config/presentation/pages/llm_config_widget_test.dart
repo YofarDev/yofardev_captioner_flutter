@@ -5,13 +5,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
+import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
+import 'package:yofardev_captioner/features/llm_config/presentation/bloc/llm_configs_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/presentation/pages/llm_config_widget.dart';
 
 /// [LlmConfigsCubit] exposes a test-only emitter so we can drive arbitrary
 /// states into the widget without triggering persistence or DI.
 class _FakeLlmConfigsCubit extends LlmConfigsCubit {
-  _FakeLlmConfigsCubit() : super();
+  _FakeLlmConfigsCubit() : super(llmConfigService: LlmConfigService());
 
   void emitState(LlmConfigsState next) => emit(next);
 }

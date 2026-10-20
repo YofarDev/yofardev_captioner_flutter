@@ -8,7 +8,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../captioning/data/models/caption_options.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../llm_config/logic/llm_configs_cubit.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../logic/structured_captioning_cubit.dart';
 
 class StructuredCaptionControls extends StatefulWidget {

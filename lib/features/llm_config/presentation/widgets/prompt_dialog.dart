@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../logic/llm_configs_cubit.dart';
+import '../bloc/llm_configs_cubit.dart';
 
 /// Add / edit a prompt. Behaviour preserved from the original inline dialog.
 class PromptDialog extends StatefulWidget {

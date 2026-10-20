@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
+import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
+import 'package:yofardev_captioner/features/llm_config/presentation/bloc/llm_configs_cubit.dart';
 
 @GenerateMocks(<Type>[])
 void main() {
@@ -15,7 +16,7 @@ void main() {
 
     setUp(() {
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      cubit = LlmConfigsCubit();
+      cubit = LlmConfigsCubit(llmConfigService: LlmConfigService());
     });
 
     tearDown(() {

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
-import '../../logic/llm_configs_cubit.dart';
+import '../bloc/llm_configs_cubit.dart';
 
 /// Tab body: the structured captioning pipeline.
 ///

@@ -16,7 +16,8 @@ import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
-import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
+import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
+import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
@@ -102,7 +103,7 @@ class _Passthrough implements CaptionFilterEngine {
 /// [LlmConfigsCubit] subclass exposing a test-only emitter so we can drive
 /// arbitrary states into the widget without triggering persistence or DI.
 class _FakeLlmConfigsCubit extends LlmConfigsCubit {
-  _FakeLlmConfigsCubit() : super();
+  _FakeLlmConfigsCubit() : super(llmConfigService: LlmConfigService());
 
   void emitState(LlmConfigsState next) => emit(next);
 }

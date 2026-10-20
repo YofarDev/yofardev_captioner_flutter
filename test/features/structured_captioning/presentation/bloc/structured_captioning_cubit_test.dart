@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -24,12 +26,19 @@ import 'structured_captioning_cubit_test.mocks.dart';
 /// folders, never touches the filesystem beyond in-memory state.
 class _FakeFileStore implements CaptionFileStore {
   @override
-  Future<List<AppImage>> onFolderPicked(String folderPath) =>
-      Future<List<AppImage>>.value(<AppImage>[]);
+  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) =>
+      Future<Either<Failure, List<AppImage>>>.value(
+        const Right<Failure, List<AppImage>>(<AppImage>[]),
+      );
 
   @override
-  Future<CaptionDatabase> readDb(String folderPath) async =>
-      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+  Future<Either<Failure, CaptionDatabase>> readDb(String folderPath) async =>
+      Right<Failure, CaptionDatabase>(
+        CaptionDatabase(
+          categories: <String>['default'],
+          images: <CaptionData>[],
+        ),
+      );
 
   @override
   Future<void> writeDb(String folderPath, CaptionDatabase db) async {}

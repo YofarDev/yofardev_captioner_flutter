@@ -13,9 +13,9 @@ import 'package:http/http.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
 import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
+import 'package:yofardev_captioner/core/utils/process_runner.dart' as _i4;
 import 'package:yofardev_captioner/features/captioning/data/services/image_resizer.dart'
     as _i10;
-import 'package:yofardev_captioner/core/utils/process_runner.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

@@ -4,11 +4,16 @@ import 'dart:typed_data';
 
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logging/logging.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/errors/exception_mapper.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
@@ -29,91 +34,106 @@ class AppFileUtils implements CaptionFileStore {
   final CacheService _cacheService;
 
   @override
-  Future<List<AppImage>> onFolderPicked(String folderPath) async {
-    final Directory dir = await _managePersistentPermission(folderPath);
-    final CaptionDatabase db = await readDb(folderPath);
-    bool dbWasModified = false;
+  Future<Either<Failure, List<AppImage>>> onFolderPicked(
+    String folderPath,
+  ) async {
+    try {
+      final Directory dir = await _managePersistentPermission(folderPath);
+      final Either<Failure, CaptionDatabase> dbResult = await readDb(
+        folderPath,
+      );
+      final CaptionDatabase db = dbResult.getRight().toNullable()!;
+      bool dbWasModified = false;
 
-    final List<FileSystemEntity> files = dir.listSync();
-    final List<AppImage> images = <AppImage>[];
-    final List<String> foundFilenames = <String>[];
+      final List<FileSystemEntity> files = dir.listSync();
+      final List<AppImage> images = <AppImage>[];
+      final List<String> foundFilenames = <String>[];
 
-    // Filename-keyed index of db entries so per-file lookups stay O(1) —
-    // first occurrence wins, matching the previous firstWhere semantics.
-    final Map<String, CaptionData> dbByName = <String, CaptionData>{};
-    for (final CaptionData d in db.images) {
-      dbByName.putIfAbsent(d.filename, () => d);
-    }
+      // Filename-keyed index of db entries so per-file lookups stay O(1) —
+      // first occurrence wins, matching the previous firstWhere semantics.
+      final Map<String, CaptionData> dbByName = <String, CaptionData>{};
+      for (final CaptionData d in db.images) {
+        dbByName.putIfAbsent(d.filename, () => d);
+      }
 
-    for (final FileSystemEntity file in files) {
-      if (file is File) {
-        final String extension = p.extension(file.path).toLowerCase();
-        if (extension == '.jpg' ||
-            extension == '.png' ||
-            extension == '.jpeg' ||
-            extension == '.webp') {
-          final String filename = p.basename(file.path);
-          foundFilenames.add(filename);
+      for (final FileSystemEntity file in files) {
+        if (file is File) {
+          final String extension = p.extension(file.path).toLowerCase();
+          if (extension == '.jpg' ||
+              extension == '.png' ||
+              extension == '.jpeg' ||
+              extension == '.webp') {
+            final String filename = p.basename(file.path);
+            foundFilenames.add(filename);
 
-          final CaptionData? existingData = dbByName[filename];
-          final CaptionData captionData =
-              existingData ??
-              CaptionData(
-                id: const Uuid().v4(),
-                filename: filename,
-                captions: <String, CaptionEntry>{},
-              );
-          if (existingData == null) {
-            dbWasModified = true;
+            final CaptionData? existingData = dbByName[filename];
+            final CaptionData captionData =
+                existingData ??
+                CaptionData(
+                  id: const Uuid().v4(),
+                  filename: filename,
+                  captions: <String, CaptionEntry>{},
+                );
+            if (existingData == null) {
+              dbWasModified = true;
+            }
+
+            final CaptionData hydratedCaptionData =
+                await _hydrateCaptionDataFromLegacyTxt(
+                  captionData: captionData,
+                  folderPath: folderPath,
+                );
+
+            if (!identical(hydratedCaptionData, captionData)) {
+              dbWasModified = true;
+            }
+
+            if (existingData == null) {
+              db.images.add(hydratedCaptionData);
+              dbByName[filename] = hydratedCaptionData;
+            } else if (!identical(hydratedCaptionData, existingData)) {
+              db.images[db.images.indexOf(existingData)] = hydratedCaptionData;
+              dbByName[filename] = hydratedCaptionData;
+            }
+
+            images.add(
+              AppImage(
+                id: hydratedCaptionData.id,
+                image: file,
+                captions: hydratedCaptionData.captions,
+                size: file.lengthSync(),
+                lastModified: hydratedCaptionData.lastModified,
+                tags: hydratedCaptionData.tags,
+              ),
+            );
           }
-
-          final CaptionData hydratedCaptionData =
-              await _hydrateCaptionDataFromLegacyTxt(
-                captionData: captionData,
-                folderPath: folderPath,
-              );
-
-          if (!identical(hydratedCaptionData, captionData)) {
-            dbWasModified = true;
-          }
-
-          if (existingData == null) {
-            db.images.add(hydratedCaptionData);
-            dbByName[filename] = hydratedCaptionData;
-          } else if (!identical(hydratedCaptionData, existingData)) {
-            db.images[db.images.indexOf(existingData)] = hydratedCaptionData;
-            dbByName[filename] = hydratedCaptionData;
-          }
-
-          images.add(
-            AppImage(
-              id: hydratedCaptionData.id,
-              image: file,
-              captions: hydratedCaptionData.captions,
-              size: file.lengthSync(),
-              lastModified: hydratedCaptionData.lastModified,
-              tags: hydratedCaptionData.tags,
-            ),
-          );
         }
       }
+
+      final Set<String> foundFilenameSet = foundFilenames.toSet();
+      final int dbCountBeforeRemove = db.images.length;
+      db.images.removeWhere(
+        (CaptionData d) => !foundFilenameSet.contains(d.filename),
+      );
+      final bool removedItems = db.images.length != dbCountBeforeRemove;
+
+      if (dbWasModified || removedItems) {
+        await writeDb(folderPath, db);
+      }
+
+      images.sort(
+        (AppImage a, AppImage b) => compareNatural(a.image.path, b.image.path),
+      );
+      return Right<Failure, List<AppImage>>(images);
+    } catch (e, st) {
+      return Left<Failure, List<AppImage>>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'AppFileUtils.onFolderPicked',
+        ),
+      );
     }
-
-    final Set<String> foundFilenameSet = foundFilenames.toSet();
-    final int dbCountBeforeRemove = db.images.length;
-    db.images.removeWhere(
-      (CaptionData d) => !foundFilenameSet.contains(d.filename),
-    );
-    final bool removedItems = db.images.length != dbCountBeforeRemove;
-
-    if (dbWasModified || removedItems) {
-      await writeDb(folderPath, db);
-    }
-
-    images.sort(
-      (AppImage a, AppImage b) => compareNatural(a.image.path, b.image.path),
-    );
-    return images;
   }
 
   Future<String?> _readLegacyCaptionText({
@@ -243,7 +263,7 @@ class AppFileUtils implements CaptionFileStore {
   }
 
   @override
-  Future<CaptionDatabase> readDb(String folderPath) async {
+  Future<Either<Failure, CaptionDatabase>> readDb(String folderPath) async {
     final File dbFile = _getDbPath(folderPath);
     if (await dbFile.exists()) {
       try {
@@ -259,35 +279,37 @@ class AppFileUtils implements CaptionFileStore {
             folderPath,
           );
           await writeDb(folderPath, migrated);
-          return migrated;
+          return Right<Failure, CaptionDatabase>(migrated);
         }
 
         final int version = (json['version'] as num?)?.toInt() ?? 1;
         if (version < 3) {
           final CaptionDatabase migrated = _migrateV2ToV3(json);
           await writeDb(folderPath, migrated);
-          return migrated;
+          return Right<Failure, CaptionDatabase>(migrated);
         }
         if (version < 4) {
           final CaptionDatabase migrated = _migrateV3ToV4(json);
           await writeDb(folderPath, migrated);
-          return migrated;
+          return Right<Failure, CaptionDatabase>(migrated);
         }
-        return CaptionDatabase.fromJson(json);
-      } catch (e) {
-        return CaptionDatabase(
-          categories: <String>['default'],
-          activeCategory: 'default',
-          images: <CaptionData>[],
+        return Right<Failure, CaptionDatabase>(CaptionDatabase.fromJson(json));
+      } catch (e, st) {
+        // A db.json we cannot parse or migrate is a real failure: surfacing
+        // it lets the UI warn instead of silently loading an empty library.
+        return Left<Failure, CaptionDatabase>(
+          mapExceptionToFailure(e, stackTrace: st, tag: 'AppFileUtils.readDb'),
         );
       }
     }
 
     // New folder - create with default structure
-    return CaptionDatabase(
-      categories: <String>['default'],
-      activeCategory: 'default',
-      images: <CaptionData>[],
+    return Right<Failure, CaptionDatabase>(
+      CaptionDatabase(
+        categories: <String>['default'],
+        activeCategory: 'default',
+        images: <CaptionData>[],
+      ),
     );
   }
 
@@ -302,7 +324,17 @@ class AppFileUtils implements CaptionFileStore {
     Map<String, String> oldNameToNewName,
     String folderPath,
   ) async {
-    final CaptionDatabase db = await readDb(folderPath);
+    final Either<Failure, CaptionDatabase> dbResult = await readDb(folderPath);
+    final CaptionDatabase? db = dbResult.getRight().toNullable();
+    if (db == null) {
+      // Captions were not loaded for this folder; renaming entries would
+      // silently drop them. Log and skip the db rewrite.
+      GetIt.I<Logger>().severe(
+        'updateDbForRename: db.json unreadable in $folderPath: '
+        '${dbResult.getLeft().toNullable()}',
+      );
+      return;
+    }
 
     // Snapshot current filenames before mutating: writing newName in place
     // while still resolving by filename aliases entries when a target collides

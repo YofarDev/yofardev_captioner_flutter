@@ -30,6 +30,11 @@ class ImageListState extends Equatable {
   /// ignored by both captioning paths even if populated.
   final bool guidanceEnabled;
 
+  /// User-facing message when the folder's db.json could not be read (e.g.
+  /// corrupt file). Non-null renders a warning banner; clearable via
+  /// `copyWith(clearDbLoadError: true)` so it never goes stale.
+  final String? dbLoadError;
+
   const ImageListState({
     this.images = const <AppImage>[],
     this.sortBy = SortBy.name,
@@ -45,6 +50,7 @@ class ImageListState extends Equatable {
     this.activeCategory = 'default',
     this.imageGuidance = const <String, String>{},
     this.guidanceEnabled = false,
+    this.dbLoadError,
   });
 
   ImageListState copyWith({
@@ -62,6 +68,8 @@ class ImageListState extends Equatable {
     String? activeCategory,
     Map<String, String>? imageGuidance,
     bool? guidanceEnabled,
+    bool clearDbLoadError = false,
+    String? dbLoadError,
   }) {
     return ImageListState(
       images: images ?? this.images,
@@ -78,6 +86,7 @@ class ImageListState extends Equatable {
       activeCategory: activeCategory ?? this.activeCategory,
       imageGuidance: imageGuidance ?? this.imageGuidance,
       guidanceEnabled: guidanceEnabled ?? this.guidanceEnabled,
+      dbLoadError: clearDbLoadError ? null : (dbLoadError ?? this.dbLoadError),
     );
   }
 
@@ -97,5 +106,6 @@ class ImageListState extends Equatable {
     activeCategory,
     imageGuidance,
     guidanceEnabled,
+    dbLoadError,
   ];
 }

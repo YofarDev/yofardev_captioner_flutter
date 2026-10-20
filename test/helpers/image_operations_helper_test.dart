@@ -1,10 +1,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -24,6 +26,17 @@ import 'image_operations_helper_test.mocks.dart';
   MockSpec<AppFileUtils>(),
 ])
 void main() {
+  // Mockito cannot synthesize Either dummies for the new repository
+  // signatures; provide them up front.
+  provideDummy<Either<Failure, List<AppImage>>>(
+    const Right<Failure, List<AppImage>>(<AppImage>[]),
+  );
+  provideDummy<Either<Failure, CaptionDatabase>>(
+    Right<Failure, CaptionDatabase>(
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]),
+    ),
+  );
+
   /// Test group for [ImageOperationsHelper] logic.
   /// Primarily focuses on batch file operations like renaming and ensuring
   /// sidecar files (captions) are handled correctly.
@@ -58,7 +71,9 @@ void main() {
 
       // Mock reading the DB: Return a copy of the in-memory DB
       when(mockAppFileUtils.readDb(any)).thenAnswer((_) async {
-        return CaptionDatabase.fromJson(inMemoryDb.toJson());
+        return Right<Failure, CaptionDatabase>(
+          CaptionDatabase.fromJson(inMemoryDb.toJson()),
+        );
       });
 
       // Mock writing the DB: Update the in-memory DB variable

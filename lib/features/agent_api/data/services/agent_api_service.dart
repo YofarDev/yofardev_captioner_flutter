@@ -256,7 +256,19 @@ class AgentApiService {
     }
 
     final CaptionFileStore fileUtils = locator<CaptionFileStore>();
-    final CaptionDatabase db = await fileUtils.readDb(normalized);
+    final Either<Failure, CaptionDatabase> dbResult = await fileUtils.readDb(
+      normalized,
+    );
+    final CaptionDatabase? db = dbResult.getRight().toNullable();
+    if (db == null) {
+      final Failure f = dbResult.getLeft().toNullable()!;
+      _logger.severe('GET folder images: db.json unreadable: $f');
+      return _jsonResponse(500, <String, dynamic>{
+        'error': 'database could not be read',
+        'folder': normalized,
+        'detail': failureMessage(f),
+      });
+    }
     return _jsonResponse(
       200,
       await _imagesPayloadFromDisk(fileUtils, normalized, db),
@@ -435,7 +447,19 @@ class AgentApiService {
     List<String>? extraTags,
   }) async {
     final CaptionFileStore fileUtils = locator<CaptionFileStore>();
-    final CaptionDatabase db = await fileUtils.readDb(folder);
+    final Either<Failure, CaptionDatabase> dbResult = await fileUtils.readDb(
+      folder,
+    );
+    final CaptionDatabase? db = dbResult.getRight().toNullable();
+    if (db == null) {
+      final Failure f = dbResult.getLeft().toNullable()!;
+      _logger.severe('POST /api/captions: db.json unreadable: $f');
+      return _jsonResponse(500, <String, dynamic>{
+        'error': 'database could not be read',
+        'folder': folder,
+        'detail': failureMessage(f),
+      });
+    }
     if (!db.categories.contains(category)) {
       return _jsonResponse(400, <String, dynamic>{
         'error': 'unknown category "$category"',

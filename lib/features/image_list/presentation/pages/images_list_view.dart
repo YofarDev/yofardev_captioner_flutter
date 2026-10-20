@@ -17,11 +17,36 @@ class ImagesListView extends StatelessWidget {
         final ImageListCubit cubit = context.read<ImageListCubit>();
         final List<AppImage> displayedImages = cubit.displayedImages;
 
+        final Widget? dbErrorBanner = state.dbLoadError == null
+            ? null
+            : Material(
+                color: panelRaised,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      const Icon(Icons.warning_amber_rounded, color: amberWarn),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.dbLoadError!,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+
         if (displayedImages.isEmpty) {
-          return const SizedBox.shrink();
+          return Column(children: <Widget>[?dbErrorBanner]);
         }
         return Column(
           children: <Widget>[
+            ?dbErrorBanner,
             const HeaderWidget(),
             Container(height: 1, color: hairline),
             Expanded(

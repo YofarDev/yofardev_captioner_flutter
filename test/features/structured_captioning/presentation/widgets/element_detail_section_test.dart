@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 import 'package:nested/nested.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -49,12 +51,19 @@ class _TestSession {
 
 class _NoopFileStore implements CaptionFileStore {
   @override
-  Future<List<AppImage>> onFolderPicked(String folderPath) =>
-      Future<List<AppImage>>.value(<AppImage>[]);
+  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) =>
+      Future<Either<Failure, List<AppImage>>>.value(
+        const Right<Failure, List<AppImage>>(<AppImage>[]),
+      );
 
   @override
-  Future<CaptionDatabase> readDb(String folderPath) async =>
-      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+  Future<Either<Failure, CaptionDatabase>> readDb(String folderPath) async =>
+      Right<Failure, CaptionDatabase>(
+        CaptionDatabase(
+          categories: <String>['default'],
+          images: <CaptionData>[],
+        ),
+      );
 
   @override
   Future<void> writeDb(String folderPath, CaptionDatabase db) async {}

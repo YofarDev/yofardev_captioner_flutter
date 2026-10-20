@@ -39,7 +39,9 @@ void main() {
     File(p.join(tempDir.path, 'a.jpg')).writeAsStringSync('');
 
     final AppFileUtils utils = AppFileUtils();
-    final List<AppImage> images = await utils.onFolderPicked(tempDir.path);
+    final List<AppImage> images = (await utils.onFolderPicked(
+      tempDir.path,
+    )).getRight().toNullable()!;
 
     expect(images, hasLength(1));
     expect(images.single.tags, <String>[]);
@@ -62,7 +64,9 @@ void main() {
     File(p.join(tempDir.path, 'a.jpg')).writeAsStringSync('');
 
     final AppFileUtils utils = AppFileUtils();
-    final List<AppImage> images = await utils.onFolderPicked(tempDir.path);
+    final List<AppImage> images = (await utils.onFolderPicked(
+      tempDir.path,
+    )).getRight().toNullable()!;
 
     expect(images.single.tags, <String>['sunset', 'wide']);
   });

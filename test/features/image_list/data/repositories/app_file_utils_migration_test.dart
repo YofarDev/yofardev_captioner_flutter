@@ -48,7 +48,9 @@ void main() {
       expect(await txtFile.exists(), isTrue);
 
       // Read and migrate
-      final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
+      final CaptionDatabase db = (await fileUtils.readDb(
+        tempDir.path,
+      )).getRight().toNullable()!;
 
       // Verify migration
       expect(db.version, equals(4));
@@ -60,7 +62,9 @@ void main() {
     });
 
     test('creates new v3 database for empty folder', () async {
-      final CaptionDatabase db = await fileUtils.readDb(tempDir.path);
+      final CaptionDatabase db = (await fileUtils.readDb(
+        tempDir.path,
+      )).getRight().toNullable()!;
 
       expect(db.version, equals(4));
       expect(db.categories, equals(<String>['default']));
@@ -93,10 +97,12 @@ void main() {
           p.join(tempDir.path, '01.txt'),
         ).writeAsString('Legacy caption');
 
-        final List<AppImage> images = await fileUtils.onFolderPicked(
+        final List<AppImage> images = (await fileUtils.onFolderPicked(
           tempDir.path,
-        );
-        final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
+        )).getRight().toNullable()!;
+        final CaptionDatabase updatedDb = (await fileUtils.readDb(
+          tempDir.path,
+        )).getRight().toNullable()!;
 
         expect(images, hasLength(1));
         expect(
@@ -118,10 +124,12 @@ void main() {
           p.join(tempDir.path, '01.txt'),
         ).writeAsString('Imported caption');
 
-        final List<AppImage> images = await fileUtils.onFolderPicked(
+        final List<AppImage> images = (await fileUtils.onFolderPicked(
           tempDir.path,
-        );
-        final CaptionDatabase updatedDb = await fileUtils.readDb(tempDir.path);
+        )).getRight().toNullable()!;
+        final CaptionDatabase updatedDb = (await fileUtils.readDb(
+          tempDir.path,
+        )).getRight().toNullable()!;
 
         expect(images, hasLength(1));
         expect(

@@ -245,7 +245,9 @@ void main() {
     }
 
     Future<Map<String, String>> readFilenameToCaptionMap() async {
-      final CaptionDatabase db = await appFileUtils.readDb(tempDir.path);
+      final CaptionDatabase db = (await appFileUtils.readDb(
+        tempDir.path,
+      )).getRight().toNullable()!;
       return <String, String>{
         for (final CaptionData d in db.images)
           d.filename: d.captions['default']?.text ?? '',
@@ -334,7 +336,9 @@ void main() {
           // Image 02.jpg is removed (file gone). A refresh must drop its stale
           // DB entry so it can't shadow a later rename target.
           await File(p.join(tempDir.path, '02.jpg')).delete();
-          await appFileUtils.onFolderPicked(tempDir.path);
+          (await appFileUtils.onFolderPicked(
+            tempDir.path,
+          )).getRight().toNullable();
 
           // Surviving files [01, 03] renumber to [01, 02]. Simulate the physical
           // two-pass rename + the DB update exactly as the helper does it.
@@ -346,9 +350,9 @@ void main() {
             '03.jpg': '02.jpg',
           }, tempDir.path);
 
-          final List<AppImage> reloaded = await appFileUtils.onFolderPicked(
+          final List<AppImage> reloaded = (await appFileUtils.onFolderPicked(
             tempDir.path,
-          );
+          )).getRight().toNullable()!;
           final Map<String, String> byFile = captionsByFile(reloaded);
 
           // No stale/duplicate filenames; captions follow their images.

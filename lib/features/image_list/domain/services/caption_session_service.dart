@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:fpdart/fpdart.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
@@ -14,8 +17,8 @@ import 'caption_session_snapshot.dart';
 /// the data layer by `AppFileUtils` so the domain service stays free of
 /// data-layer and Flutter dependencies.
 abstract class CaptionFileStore {
-  Future<List<AppImage>> onFolderPicked(String folderPath);
-  Future<CaptionDatabase> readDb(String folderPath);
+  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath);
+  Future<Either<Failure, CaptionDatabase>> readDb(String folderPath);
   Future<void> writeDb(String folderPath, CaptionDatabase db);
   Future<void> removeImage(File imageFile);
   Future<void> writeCaptionFiles(
@@ -233,10 +236,32 @@ class CaptionSessionService {
     );
 
     try {
-      final List<AppImage> images = await _fileStore.onFolderPicked(folderPath);
+      final Either<Failure, List<AppImage>> pickResult = await _fileStore
+          .onFolderPicked(folderPath);
+      final List<AppImage>? picked = pickResult.getRight().toNullable();
+      if (picked == null) {
+        // Folder load failed at the file boundary; clear the list like the
+        // old catch path did and surface the failure to the UI.
+        final Failure f = pickResult.getLeft().toNullable()!;
+        _update(
+          _state.copyWith(images: <AppImage>[], dbLoadError: failureMessage(f)),
+        );
+        return;
+      }
+      final List<AppImage> images = picked;
 
       // Load database to get categories
-      final CaptionDatabase db = await _fileStore.readDb(folderPath);
+      final Either<Failure, CaptionDatabase> dbResult = await _fileStore.readDb(
+        folderPath,
+      );
+      final CaptionDatabase? db = dbResult.getRight().toNullable();
+      if (db == null) {
+        // Corrupt db.json: images still load, but captions were not loaded —
+        // the UI shows a non-blocking warning banner.
+        final Failure f = dbResult.getLeft().toNullable()!;
+        _update(_state.copyWith(dbLoadError: failureMessage(f)));
+        return;
+      }
 
       if (_state.folderPath != folderPath) {
         return;
@@ -261,6 +286,7 @@ class CaptionSessionService {
           activeCategory: db.activeCategory ?? 'default',
           currentImageId: images.isNotEmpty ? images[0].id : null,
           imageGuidance: guidanceByPath,
+          clearDbLoadError: true,
         ),
       );
     } catch (e) {

@@ -3,10 +3,12 @@ import 'dart:io';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -18,6 +20,17 @@ import 'image_list_cubit_test.mocks.dart';
 
 @GenerateMocks(<Type>[AppFileUtils])
 void main() {
+  // Mockito cannot synthesize Either dummies for the new repository
+  // signatures; provide them up front.
+  provideDummy<Either<Failure, List<AppImage>>>(
+    const Right<Failure, List<AppImage>>(<AppImage>[]),
+  );
+  provideDummy<Either<Failure, CaptionDatabase>>(
+    Right<Failure, CaptionDatabase>(
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]),
+    ),
+  );
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   // Initialize SharedPreferences for tests
@@ -91,13 +104,15 @@ void main() {
     blocTest<ImageListCubit, ImageListState>(
       'onFolderPicked loads images when folder changes',
       build: () {
-        when(
-          mockAppFileUtils.onFolderPicked(any),
-        ).thenAnswer((_) async => <AppImage>[testImage]);
+        when(mockAppFileUtils.onFolderPicked(any)).thenAnswer(
+          (_) async => Right<Failure, List<AppImage>>(<AppImage>[testImage]),
+        );
         when(mockAppFileUtils.readDb(any)).thenAnswer(
-          (_) async => CaptionDatabase(
-            categories: <String>['default'],
-            images: <CaptionData>[],
+          (_) async => Right<Failure, CaptionDatabase>(
+            CaptionDatabase(
+              categories: <String>['default'],
+              images: <CaptionData>[],
+            ),
           ),
         );
         return imageListCubit;
@@ -148,13 +163,15 @@ void main() {
     blocTest<ImageListCubit, ImageListState>(
       'onFolderPicked reloads images when folder is same AND force is TRUE',
       build: () {
-        when(
-          mockAppFileUtils.onFolderPicked(any),
-        ).thenAnswer((_) async => <AppImage>[testImage]);
+        when(mockAppFileUtils.onFolderPicked(any)).thenAnswer(
+          (_) async => Right<Failure, List<AppImage>>(<AppImage>[testImage]),
+        );
         when(mockAppFileUtils.readDb(any)).thenAnswer(
-          (_) async => CaptionDatabase(
-            categories: <String>['default'],
-            images: <CaptionData>[],
+          (_) async => Right<Failure, CaptionDatabase>(
+            CaptionDatabase(
+              categories: <String>['default'],
+              images: <CaptionData>[],
+            ),
           ),
         );
         return imageListCubit;

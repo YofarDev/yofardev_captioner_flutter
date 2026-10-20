@@ -2,12 +2,16 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_data.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
@@ -18,6 +22,17 @@ import 'image_operations_integration_test.mocks.dart';
 
 @GenerateMocks(<Type>[CaptionSessionService, AppFileUtils])
 void main() {
+  // Mockito cannot synthesize Either dummies for the new repository
+  // signatures; provide them up front.
+  provideDummy<Either<Failure, List<AppImage>>>(
+    const Right<Failure, List<AppImage>>(<AppImage>[]),
+  );
+  provideDummy<Either<Failure, CaptionDatabase>>(
+    Right<Failure, CaptionDatabase>(
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]),
+    ),
+  );
+
   TestWidgetsFlutterBinding.ensureInitialized();
   group('ImageOperationsHelper Integration Test', () {
     late ImageOperationsHelper imageOperationsHelper;

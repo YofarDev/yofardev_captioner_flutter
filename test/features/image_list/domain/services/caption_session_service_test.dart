@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:path/path.dart' as p;
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -16,24 +18,35 @@ import 'package:yofardev_captioner/features/image_list/domain/services/filter_pa
 /// Hand-rolled fake of the [CaptionFileStore] port — the service tests assert
 /// session behavior, so the store is configurable and records writes.
 class _FakeFileStore implements CaptionFileStore {
-  Future<List<AppImage>> Function(String folderPath)? listImagesOverride;
-  CaptionDatabase Function(String folderPath)? readDbOverride;
+  Future<Either<Failure, List<AppImage>>> Function(String folderPath)?
+  listImagesOverride;
+  Future<Either<Failure, CaptionDatabase>> Function(String folderPath)?
+  readDbOverride;
   final List<CaptionDatabase> writtenDbs = <CaptionDatabase>[];
   int listImagesCalls = 0;
   int removedImageFiles = 0;
   int duplicateCalls = 0;
 
   @override
-  Future<List<AppImage>> onFolderPicked(String folderPath) {
+  Future<Either<Failure, List<AppImage>>> onFolderPicked(String folderPath) {
     listImagesCalls++;
     return listImagesOverride?.call(folderPath) ??
-        Future<List<AppImage>>.value(<AppImage>[]);
+        Future<Either<Failure, List<AppImage>>>.value(
+          const Right<Failure, List<AppImage>>(<AppImage>[]),
+        );
   }
 
   @override
-  Future<CaptionDatabase> readDb(String folderPath) async =>
+  Future<Either<Failure, CaptionDatabase>> readDb(String folderPath) =>
       readDbOverride?.call(folderPath) ??
-      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+      Future<Either<Failure, CaptionDatabase>>.value(
+        Right<Failure, CaptionDatabase>(
+          CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
+        ),
+      );
 
   @override
   Future<void> writeDb(String folderPath, CaptionDatabase db) async {
@@ -129,10 +142,13 @@ void main() {
     final AppImage testImage = makeImage(id: 't', path: '/x/test.jpg');
 
     test('onFolderPicked loads images when folder changes', () async {
-      store.listImagesOverride = (_) async => <AppImage>[testImage];
-      store.readDbOverride = (_) => CaptionDatabase(
-        categories: <String>['default'],
-        images: <CaptionData>[],
+      store.listImagesOverride = (_) async =>
+          Right<Failure, List<AppImage>>(<AppImage>[testImage]);
+      store.readDbOverride = (_) async => Right<Failure, CaptionDatabase>(
+        CaptionDatabase(
+          categories: <String>['default'],
+          images: <CaptionData>[],
+        ),
       );
 
       final List<CaptionSessionSnapshot> snapshots = await collectSnapshots(
@@ -163,10 +179,13 @@ void main() {
     test(
       'onFolderPicked reloads when folder is same AND force is true',
       () async {
-        store.listImagesOverride = (_) async => <AppImage>[testImage];
-        store.readDbOverride = (_) => CaptionDatabase(
-          categories: <String>['default'],
-          images: <CaptionData>[],
+        store.listImagesOverride = (_) async =>
+            Right<Failure, List<AppImage>>(<AppImage>[testImage]);
+        store.readDbOverride = (_) async => Right<Failure, CaptionDatabase>(
+          CaptionDatabase(
+            categories: <String>['default'],
+            images: <CaptionData>[],
+          ),
         );
         seed(
           ImageListState(

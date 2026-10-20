@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
+import 'package:yofardev_captioner/features/tab_manager/domain/models/app_tab.dart';
 
 void main() {
   group('AppTab', () {

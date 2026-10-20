@@ -12,7 +12,7 @@ import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_se
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
-import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
+import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

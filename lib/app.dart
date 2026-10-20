@@ -10,8 +10,8 @@ import 'core/services/route_observer.dart';
 import 'features/image_list/data/repositories/app_file_utils.dart';
 import 'features/image_list/data/services/filter_parser_engine.dart';
 import 'features/llm_config/llm_config.dart';
-import 'features/tab_manager/domain/services/tab_session_registry.dart';
-import 'features/tab_manager/logic/tab_manager_cubit.dart';
+
+import 'features/tab_manager/tab_manager.dart';
 
 /// Root widget. Constructs the two root cubits (once, in [AppState.initState])
 /// from DI services and provides them to the tree. They are deliberately NOT

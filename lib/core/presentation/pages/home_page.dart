@@ -9,10 +9,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../features/image_list/domain/services/caption_session_service.dart';
-import '../../../features/tab_manager/data/models/app_tab.dart';
-import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
-import '../../../features/tab_manager/presentation/widgets/tab_bar_widget.dart';
-import '../../../features/tab_manager/presentation/widgets/tab_content.dart';
+
+import '../../../features/tab_manager/tab_manager.dart';
 import '../../constants/app_colors.dart';
 import '../../services/cache_service.dart';
 import '../../widgets/rive_animations.dart';

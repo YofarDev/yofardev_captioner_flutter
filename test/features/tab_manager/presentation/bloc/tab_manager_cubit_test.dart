@@ -5,8 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
-import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
-import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
+import 'package:yofardev_captioner/features/tab_manager/domain/models/app_tab.dart';
+import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

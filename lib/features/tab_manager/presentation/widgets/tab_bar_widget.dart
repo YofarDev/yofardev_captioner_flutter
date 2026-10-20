@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/app_tab.dart';
-import '../../logic/tab_manager_cubit.dart';
+import '../../domain/models/app_tab.dart';
+import '../bloc/tab_manager_cubit.dart';
 
 class TabBarWidget extends StatelessWidget {
   const TabBarWidget({super.key});

@@ -3,14 +3,14 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../../../core/di/service_locator.dart';
-import '../../../core/services/cache_service.dart';
-import '../../image_list/data/repositories/app_file_utils.dart';
-import '../../image_list/data/services/filter_parser_engine.dart';
-import '../../image_list/domain/services/caption_session_service.dart';
-import '../../image_list/logic/image_cache_eviction.dart';
-import '../data/models/app_tab.dart';
-import '../domain/services/tab_session_registry.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/services/cache_service.dart';
+import '../../../image_list/data/repositories/app_file_utils.dart';
+import '../../../image_list/data/services/filter_parser_engine.dart';
+import '../../../image_list/domain/services/caption_session_service.dart';
+import '../../../image_list/logic/image_cache_eviction.dart';
+import '../../domain/models/app_tab.dart';
+import '../../domain/services/tab_session_registry.dart';
 
 part 'tab_manager_state.dart';
 

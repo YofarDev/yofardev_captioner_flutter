@@ -14,7 +14,7 @@ import '../../../image_list/presentation/pages/images_list_view.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../main_area/main_area.dart';
 import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
-import '../../logic/tab_manager_cubit.dart';
+import '../bloc/tab_manager_cubit.dart';
 
 class TabContent extends StatefulWidget {
   const TabContent({super.key, required this.tabId});

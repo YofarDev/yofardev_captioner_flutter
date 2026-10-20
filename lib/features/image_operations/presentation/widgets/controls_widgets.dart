@@ -7,8 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../tab_manager/data/models/app_tab.dart';
-import '../../../tab_manager/logic/tab_manager_cubit.dart';
+import '../../../tab_manager/tab_manager.dart';
 import '../bloc/image_operations_cubit.dart';
 import '../pages/convert_images_dialog.dart';
 

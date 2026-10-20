@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../data/models/batch_apply_template.dart';
+import '../../domain/models/batch_apply_template.dart';
 
 class BatchJsonApplyDialog extends StatefulWidget {
   const BatchJsonApplyDialog({super.key});

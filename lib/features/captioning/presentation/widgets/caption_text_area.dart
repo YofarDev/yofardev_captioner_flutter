@@ -15,7 +15,7 @@ import '../../../llm_config/llm_config.dart';
 import '../../../structured_captioning/data/models/apply_structured_overrides.dart';
 import '../../../structured_captioning/presentation/pages/structured_editor_page.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
-import '../../logic/captioning_cubit.dart';
+import '../bloc/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
 import 'paste_json_dialog.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
-import 'package:yofardev_captioner/features/captioning/data/utils/ideogram_json.dart';
+import 'package:yofardev_captioner/features/captioning/domain/utils/ideogram_json.dart';
 
 const String _validJson =
     '{"high_level_description":"a cat","compositional_deconstruction":{"background":"sky","elements":[]}}';

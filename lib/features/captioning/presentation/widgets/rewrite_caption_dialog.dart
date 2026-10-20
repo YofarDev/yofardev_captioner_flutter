@@ -6,7 +6,7 @@ import '../../../../core/models/llm_config.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../logic/captioning_cubit.dart';
+import '../bloc/captioning_cubit.dart';
 
 /// Dialog that asks the active LLM to rewrite the current caption (text-only,
 /// no image is sent) according to free-form user instructions. The LLM returns

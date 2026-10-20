@@ -3,22 +3,24 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/models/app_image.dart';
-import '../../../core/models/llm_config.dart';
-import '../../../core/utils/cancel_token.dart';
-import '../../image_list/image_list.dart';
-import '../data/models/caption_options.dart';
-import '../data/repositories/captioning_repository.dart';
+import '../../../../core/models/app_image.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/utils/cancel_token.dart';
+import '../../../image_list/image_list.dart';
+import '../../domain/models/caption_options.dart';
+import '../../domain/repositories/captioning_repository.dart';
 
 part 'captioning_state.dart';
 
 class CaptioningCubit extends Cubit<CaptioningState> {
-  CaptioningCubit(this._session, {CaptioningRepository? captioningRepository})
-    : _captioningRepository = captioningRepository ?? CaptioningRepository(),
-      super(const CaptioningState());
+  CaptioningCubit(
+    this._session, {
+    required ICaptioningRepository captioningRepository,
+  }) : _captioningRepository = captioningRepository,
+       super(const CaptioningState());
 
   final CaptionSessionService _session;
-  final CaptioningRepository _captioningRepository;
+  final ICaptioningRepository _captioningRepository;
 
   /// Aborts the in-flight operation (kills the local subprocess to free
   /// VRAM) AND gates the image loop. null when no run is active.

@@ -10,7 +10,7 @@ import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
+import 'package:yofardev_captioner/features/captioning/domain/models/caption_options.dart';
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';

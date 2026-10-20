@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
 
 import '../../features/agent_api/data/services/agent_api_service.dart';
+import '../../features/captioning/captioning.dart';
 import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
@@ -29,7 +30,7 @@ Future<void> setupServiceLocator() async {
   );
   locator.registerLazySingleton<CaptionService>(() => CaptionService());
   locator.registerLazySingleton<CaptionRepository>(() => CaptionRepository());
-  locator.registerLazySingleton<CaptioningRepository>(
+  locator.registerLazySingleton<ICaptioningRepository>(
     () => CaptioningRepository(),
   );
   locator.registerLazySingleton<AppFileUtils>(

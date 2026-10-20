@@ -9,8 +9,8 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../data/models/caption_options.dart';
-import '../../logic/captioning_cubit.dart';
+import '../../domain/models/caption_options.dart';
+import '../bloc/captioning_cubit.dart';
 
 /// Default conversion prompt used to prefill the editable prompt field.
 const String kDefaultConvertPrompt =

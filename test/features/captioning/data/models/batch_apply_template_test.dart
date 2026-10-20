@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
-import 'package:yofardev_captioner/features/captioning/data/models/batch_apply_template.dart';
+import 'package:yofardev_captioner/features/captioning/domain/models/batch_apply_template.dart';
 
 void main() {
   group('BatchApplyTemplate', () {

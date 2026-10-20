@@ -4,13 +4,15 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
+import '../../domain/repositories/captioning_repository.dart';
 import 'caption_repository.dart';
 
-class CaptioningRepository {
+class CaptioningRepository implements ICaptioningRepository {
   final CaptionRepository _captionRepository;
   CaptioningRepository({CaptionRepository? captionRepository})
     : _captionRepository = captionRepository ?? CaptionRepository();
 
+  @override
   Future<AppImage> captionImage(
     LlmConfig config,
     AppImage image,
@@ -41,11 +43,13 @@ class CaptioningRepository {
   /// Rewrites the existing caption for the given category (text-only). The
   /// resulting caption is marked as edited so it is skipped by future "All
   /// images" vision batches, matching how manual edits are treated.
+  @override
   Future<AppImage> rewriteCaption(
     LlmConfig config,
     AppImage image,
     String instructions, {
     String category = 'default',
+    CancelToken? cancelToken,
   }) async {
     final String currentCaption = image.captions[category]?.text ?? '';
     final String rewritten = await _captionRepository.rewriteCaption(
@@ -89,6 +93,7 @@ class CaptioningRepository {
   /// LLM using [userPrompt], and writes the result into [targetCategory]. No
   /// image is sent. The target caption is marked edited so future vision "All"
   /// batches skip it. Caller must ensure the source caption is non-empty.
+  @override
   Future<AppImage> transformCaption(
     LlmConfig config,
     AppImage image,

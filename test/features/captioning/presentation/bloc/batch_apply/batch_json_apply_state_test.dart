@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/captioning/logic/batch_apply/batch_json_apply_state.dart';
+import 'package:yofardev_captioner/features/captioning/presentation/bloc/batch_apply/batch_json_apply_state.dart';
 
 void main() {
   group('BatchJsonApplyState', () {

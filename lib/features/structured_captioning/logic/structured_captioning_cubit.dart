@@ -8,7 +8,7 @@ import '../../../core/models/caption_entry.dart';
 import '../../../core/models/ideogram_caption.dart';
 import '../../../core/models/llm_config.dart';
 import '../../../core/models/structured_batch_overrides.dart';
-import '../../captioning/data/models/caption_options.dart';
+import '../../captioning/captioning.dart';
 import '../../image_list/image_list.dart';
 import '../data/repositories/structured_caption_repository.dart';
 

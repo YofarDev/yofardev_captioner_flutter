@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../captioning/presentation/widgets/caption_controls.dart';
+import '../../../captioning/captioning.dart';
 import '../../../export/export.dart';
 import '../../../main_area/main_area.dart';
 import 'controls_widgets.dart';

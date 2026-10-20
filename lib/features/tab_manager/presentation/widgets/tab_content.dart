@@ -49,7 +49,7 @@ class TabContentState extends State<TabContent>
     // Phase 2.4's consumer migration).
     _imageListCubit = ImageListCubit(session: _session);
     _captioningCubit = CaptioningCubit(
-      _imageListCubit,
+      _session,
       captioningRepository: locator<CaptioningRepository>(),
     );
     _structuredCaptioningCubit = StructuredCaptioningCubit(_imageListCubit);

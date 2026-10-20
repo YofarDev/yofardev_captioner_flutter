@@ -196,6 +196,9 @@ class CaptionSessionService {
     if (folderPath == null) {
       return;
     }
+    // TODO(refactor): replace this settle delay with a deterministic signal
+    // (e.g. await the first snapshot after onFolderPicked) — do not change
+    // behavior during the cubit-migration ratchet.
     await Future<void>.delayed(const Duration(milliseconds: 150));
     await onFolderPicked(folderPath).catchError((Object error) {
       _update(const ImageListState());
@@ -271,7 +274,9 @@ class CaptionSessionService {
     final String folderPath = p.dirname(filePath);
     await onFolderPicked(folderPath);
 
-    // Wait for the state to be updated with the new images
+    // TODO(refactor): replace this settle delay with a deterministic signal
+    // (await the snapshot where the opened file is present) — do not change
+    // behavior during the cubit-migration ratchet.
     await Future<void>.delayed(const Duration(milliseconds: 100));
 
     if (_state.images.isEmpty) {
@@ -363,6 +368,16 @@ class CaptionSessionService {
       next[imagePath] = text;
     }
     _update(_state.copyWith(imageGuidance: next));
+  }
+
+  /// Returns the guidance string to inject for [imagePath], or '' when
+  /// guidance is disabled or unset for that image. Centralizes the
+  /// enabled-and-nonempty check so captioning consumers stay in sync.
+  String guidanceFor(String imagePath) {
+    if (!_state.guidanceEnabled) {
+      return '';
+    }
+    return _state.imageGuidance[imagePath] ?? '';
   }
 
   // ---------------------------------------------------------------------------

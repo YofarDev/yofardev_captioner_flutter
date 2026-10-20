@@ -6,20 +6,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/models/app_image.dart';
 import '../../../core/models/llm_config.dart';
 import '../../../core/utils/cancel_token.dart';
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
 import '../data/models/caption_options.dart';
 import '../data/repositories/captioning_repository.dart';
 
 part 'captioning_state.dart';
 
 class CaptioningCubit extends Cubit<CaptioningState> {
-  CaptioningCubit(
-    this._imageListCubit, {
-    CaptioningRepository? captioningRepository,
-  }) : _captioningRepository = captioningRepository ?? CaptioningRepository(),
-       super(const CaptioningState());
+  CaptioningCubit(this._session, {CaptioningRepository? captioningRepository})
+    : _captioningRepository = captioningRepository ?? CaptioningRepository(),
+      super(const CaptioningState());
 
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
   final CaptioningRepository _captioningRepository;
 
   /// Aborts the in-flight operation (kills the local subprocess to free
@@ -47,15 +45,15 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     // Capture the base set ONCE: filtered list when scoped, otherwise everything.
     // Re-reading filteredImages mid-run would be unsafe if the search changes.
     final List<AppImage> baseImages = scopeToFiltered
-        ? _imageListCubit.filteredImages
-        : _imageListCubit.state.images;
+        ? _session.current.filteredImages
+        : _session.state.images;
     // Capture the active category ONCE at the start so switching category tabs
     // mid-run doesn't redirect later captions into a different category.
-    final String category = _imageListCubit.state.activeCategory ?? 'default';
+    final String category = _session.state.activeCategory ?? 'default';
 
     switch (option) {
       case CaptionOptions.current:
-        final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+        final AppImage? currentImage = _session.current.currentDisplayedImage;
         if (currentImage == null) {
           emit(
             state.copyWith(
@@ -96,10 +94,10 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     // single guidance entry covers a whole filtered Run-All instead of only
     // the image it was keyed to. For the "current" option the source IS the
     // processed image, so behavior there is unchanged.
-    final AppImage? guidanceSource = _imageListCubit.currentDisplayedImage;
+    final AppImage? guidanceSource = _session.current.currentDisplayedImage;
     final String runGuidance = guidanceSource == null
         ? ''
-        : _imageListCubit.guidanceFor(guidanceSource.image.path);
+        : _session.guidanceFor(guidanceSource.image.path);
 
     for (final AppImage image in imagesToCaption) {
       // Check if cancelled
@@ -164,7 +162,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         );
         // Clear any previous errors on success
         updatedImage = updatedImage.copyWith(clearError: true);
-        _imageListCubit.updateImage(image: updatedImage);
+        _session.updateImage(image: updatedImage);
       } on CancellationException {
         // The in-flight op was aborted via stop — don't flag the image as
         // failed; just end the run cleanly.
@@ -180,7 +178,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         errors.add('Failed to caption ${image.image.path}: $e');
         // Store error in the image object
         final AppImage errorImage = image.copyWith(error: '$e');
-        _imageListCubit.updateImage(image: errorImage);
+        _session.updateImage(image: errorImage);
       }
       processedImagesCount++;
       emit(
@@ -224,18 +222,18 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     required LlmConfig llm,
     required String instructions,
   }) async {
-    final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+    final AppImage? currentImage = _session.current.currentDisplayedImage;
     if (currentImage == null) {
       throw Exception('No image selected');
     }
-    final String category = _imageListCubit.state.activeCategory ?? 'default';
+    final String category = _session.state.activeCategory ?? 'default';
     final AppImage updatedImage = await _captioningRepository.rewriteCaption(
       llm,
       currentImage,
       instructions,
       category: category,
     );
-    _imageListCubit.updateImage(image: updatedImage.copyWith(clearError: true));
+    _session.updateImage(image: updatedImage.copyWith(clearError: true));
   }
 
   /// Batch text-only conversion: reads each image's caption from
@@ -262,17 +260,16 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     );
 
     final List<AppImage> baseImages = scopeToFiltered
-        ? _imageListCubit.filteredImages
-        : _imageListCubit.state.images;
+        ? _session.current.filteredImages
+        : _session.state.images;
     // Target is the active category; capture once so switching tabs mid-run
     // doesn't redirect later writes.
-    final String targetCategory =
-        _imageListCubit.state.activeCategory ?? 'default';
+    final String targetCategory = _session.state.activeCategory ?? 'default';
 
     List<AppImage> targets = <AppImage>[];
     switch (option) {
       case CaptionOptions.current:
-        final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+        final AppImage? currentImage = _session.current.currentDisplayedImage;
         if (currentImage == null) {
           emit(
             state.copyWith(
@@ -355,9 +352,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
               targetCategory,
               prompt,
             );
-        _imageListCubit.updateImage(
-          image: updatedImage.copyWith(clearError: true),
-        );
+        _session.updateImage(image: updatedImage.copyWith(clearError: true));
       } on CancellationException {
         emit(
           state.copyWith(
@@ -370,7 +365,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
       } catch (e) {
         errors.add('Failed to convert ${image.image.path}: $e');
         final AppImage errorImage = image.copyWith(error: '$e');
-        _imageListCubit.updateImage(image: errorImage);
+        _session.updateImage(image: errorImage);
       }
       processedImagesCount++;
       emit(

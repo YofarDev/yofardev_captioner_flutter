@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
 import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
@@ -10,6 +12,10 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   SharedPreferences.setMockInitialValues(<String, Object>{});
+
+  // sessionFor logs unknown tab ids via the locator; register a Logger so
+  // the warning path works without the full app DI graph.
+  locator.registerLazySingleton<Logger>(() => Logger('Test'));
 
   const MethodChannel channel = MethodChannel('window_manager');
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger

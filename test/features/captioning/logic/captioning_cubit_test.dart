@@ -6,41 +6,115 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_data.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/captioning/logic/captioning_cubit.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 
 import 'captioning_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit, CaptioningRepository])
+@GenerateMocks(<Type>[CaptioningRepository])
+/// Hand-rolled fake of the [CaptionFileStore] port (ported from
+/// caption_session_service_test.dart) — records db writes, serves empty
+/// folders, never touches the filesystem beyond in-memory state.
+class _FakeFileStore implements CaptionFileStore {
+  final List<CaptionDatabase> writtenDbs = <CaptionDatabase>[];
+
+  @override
+  Future<List<AppImage>> onFolderPicked(String folderPath) =>
+      Future<List<AppImage>>.value(<AppImage>[]);
+
+  @override
+  Future<CaptionDatabase> readDb(String folderPath) async =>
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+
+  @override
+  Future<void> writeDb(String folderPath, CaptionDatabase db) async {
+    writtenDbs.add(db);
+  }
+
+  @override
+  Future<void> removeImage(File imageFile) async {}
+
+  @override
+  Future<void> writeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+    String format,
+  ) async {}
+
+  @override
+  Future<void> removeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+  ) async {}
+
+  @override
+  Future<AppImage> duplicateImage(AppImage originalImage) async =>
+      originalImage;
+
+  @override
+  int compareNatural(String a, String b) => a.compareTo(b);
+
+  @override
+  Future<List<AppImage>> getImagesSize(List<AppImage> images) async => images;
+
+  @override
+  Future<AppImage> getSingleImageSize(AppImage image) async => image;
+}
+
+/// Filter engine that returns exactly the images it was configured with, so
+/// scopeToFiltered tests can stub the filtered set deterministically.
+class _StubFilterEngine implements CaptionFilterEngine {
+  /// When null (the default), the engine passes images through unchanged —
+  /// matching unfiltered sessions. Tests stub [filtered] to scope a run.
+  List<AppImage>? filtered;
+
+  @override
+  List<AppImage> filter(
+    List<AppImage> images, {
+    required String category,
+    required String query,
+    required bool caseSensitive,
+  }) => filtered ?? images;
+}
+
 void main() {
   group('CaptioningCubit', () {
     late CaptioningCubit captioningCubit;
-    late MockImageListCubit mockImageListCubit;
+    late CaptionSessionService session;
+    late _FakeFileStore store;
+    late _StubFilterEngine filterEngine;
     late MockCaptioningRepository mockCaptioningRepository;
 
+    /// Seeds the session state the way the owning cubit's tests used to seed
+    /// the mock (adopt: no snapshot emitted, state visible immediately).
+    void seed(ImageListState state) => session.adopt(state);
+
     setUp(() {
-      mockImageListCubit = MockImageListCubit();
+      store = _FakeFileStore();
+      filterEngine = _StubFilterEngine();
+      session = CaptionSessionService(
+        fileStore: store,
+        filterEngine: filterEngine,
+      );
       mockCaptioningRepository = MockCaptioningRepository();
-      // guidanceFor defaults to '' (disabled) so the effective prompt is
-      // unchanged by the per-image guidance feature in these tests.
-      when(mockImageListCubit.guidanceFor(any)).thenReturn('');
-      // The captioner now reads the displayed image once to broadcast its
-      // guidance across a batch run. Default to null so broadcast no-ops here;
-      // tests that exercise guidance stub this explicitly.
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
       captioningCubit = CaptioningCubit(
-        mockImageListCubit,
+        session,
         captioningRepository: mockCaptioningRepository,
       );
     });
 
     tearDown(() {
       captioningCubit.close();
+      session.dispose();
     });
 
     test('initial state is initial', () {
@@ -71,9 +145,7 @@ void main() {
           delay: 1000,
         );
 
-        when(
-          mockImageListCubit.state,
-        ).thenReturn(ImageListState(images: images, folderPath: '/tmp'));
+        seed(ImageListState(images: images, folderPath: '/tmp'));
 
         when(
           mockCaptioningRepository.captionImage(
@@ -128,9 +200,7 @@ void main() {
     });
 
     test('runCaptioner succeeds with zero images', () async {
-      when(
-        mockImageListCubit.state,
-      ).thenReturn(const ImageListState(folderPath: '/tmp'));
+      seed(const ImageListState(folderPath: '/tmp'));
 
       final LlmConfig llmConfig = LlmConfig(
         id: '1',
@@ -169,14 +239,13 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(
           images: <AppImage>[image1, image2],
           folderPath: '/tmp',
           currentImageId: '2',
         ),
       );
-      when(mockImageListCubit.currentDisplayedImage).thenReturn(image2);
       when(
         mockCaptioningRepository.captionImage(
           any,
@@ -235,7 +304,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(
           images: <AppImage>[withCaption, withoutCaption],
           folderPath: '/tmp',
@@ -291,9 +360,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
-        ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-      );
+      seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
       when(
         mockCaptioningRepository.captionImage(
           any,
@@ -336,13 +403,14 @@ void main() {
         );
 
         String activeCategory = 'caption1';
-        when(mockImageListCubit.state).thenAnswer(
-          (_) => ImageListState(
+        void updateSessionState() => seed(
+          ImageListState(
             images: <AppImage>[image1, image2],
             folderPath: '/tmp',
             activeCategory: activeCategory,
           ),
         );
+        updateSessionState();
 
         final List<String> categoriesPassed = <String>[];
         final Completer<AppImage> call1 = Completer<AppImage>();
@@ -384,6 +452,7 @@ void main() {
 
         // User switches category tab mid-run.
         activeCategory = 'caption2';
+        updateSessionState();
 
         call1.complete(
           image1.copyWith(
@@ -426,10 +495,7 @@ void main() {
           },
         );
 
-        when(mockImageListCubit.state).thenReturn(
-          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-        );
-        when(mockImageListCubit.currentDisplayedImage).thenReturn(image);
+        seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
         when(mockCaptioningRepository.rewriteCaption(any, any, any)).thenAnswer(
           (Invocation inv) async {
             final AppImage img = inv.positionalArguments[1] as AppImage;
@@ -456,23 +522,13 @@ void main() {
           instructions: 'make the person a young woman',
         );
 
-        final AppImage passed =
-            verify(
-                  mockImageListCubit.updateImage(
-                    image: captureAnyNamed('image'),
-                  ),
-                ).captured.single
-                as AppImage;
+        final AppImage passed = session.state.images.single;
         expect(passed.captions['default']?.text, 'A young woman stands.');
         expect(passed.captions['default']?.isEdited, true);
       });
 
       test('throws when no current image is selected', () async {
-        when(
-          mockImageListCubit.state,
-        ).thenReturn(const ImageListState(folderPath: '/tmp'));
-        when(mockImageListCubit.currentDisplayedImage).thenReturn(null);
-
+        seed(const ImageListState(folderPath: '/tmp'));
         final LlmConfig llmConfig = LlmConfig(
           id: '1',
           name: 'Test',
@@ -498,10 +554,7 @@ void main() {
             },
           );
 
-          when(mockImageListCubit.state).thenReturn(
-            ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-          );
-          when(mockImageListCubit.currentDisplayedImage).thenReturn(image);
+          seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
           when(
             mockCaptioningRepository.rewriteCaption(any, any, any),
           ).thenThrow(Exception('API error'));
@@ -520,7 +573,10 @@ void main() {
             ),
             throwsA(isA<Exception>()),
           );
-          verifyNever(mockImageListCubit.updateImage(image: anyNamed('image')));
+          expect(
+            session.state.images.single.captions['default']?.text,
+            'A person stands.',
+          );
         },
       );
     });
@@ -532,9 +588,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
-        ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-      );
+      seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
       when(
         mockCaptioningRepository.captionImage(
           any,
@@ -575,7 +629,7 @@ void main() {
         captions: const <String, CaptionEntry>{},
       );
 
-      when(mockImageListCubit.state).thenReturn(
+      seed(
         ImageListState(images: <AppImage>[image1, image2], folderPath: '/tmp'),
       );
       when(
@@ -624,7 +678,7 @@ void main() {
           captions: const <String, CaptionEntry>{},
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(
             images: <AppImage>[edited, notEdited],
             folderPath: '/tmp',
@@ -690,13 +744,9 @@ void main() {
           );
           final List<AppImage> allImages = <AppImage>[image1, image2];
 
-          when(
-            mockImageListCubit.state,
-          ).thenReturn(ImageListState(images: allImages, folderPath: '/tmp'));
-          // Stub the filteredImages getter: only image1 is in the filtered set.
-          when(
-            mockImageListCubit.filteredImages,
-          ).thenReturn(<AppImage>[image1]);
+          seed(ImageListState(images: allImages, folderPath: '/tmp'));
+          // Stub the filtered set: only image1 is in it.
+          filterEngine.filtered = <AppImage>[image1];
 
           when(
             mockCaptioningRepository.captionImage(
@@ -756,12 +806,10 @@ void main() {
           isCaptionEdited: true,
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
         );
-        when(
-          mockImageListCubit.filteredImages,
-        ).thenReturn(<AppImage>[editedImage]);
+        filterEngine.filtered = <AppImage>[editedImage];
 
         when(
           mockCaptioningRepository.captionImage(
@@ -813,7 +861,7 @@ void main() {
           isCaptionEdited: true,
         );
 
-        when(mockImageListCubit.state).thenReturn(
+        seed(
           ImageListState(images: <AppImage>[editedImage], folderPath: '/tmp'),
         );
 
@@ -868,9 +916,7 @@ void main() {
           },
         );
 
-        when(mockImageListCubit.state).thenReturn(
-          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-        );
+        seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
         when(
           mockCaptioningRepository.captionImage(
             any,
@@ -923,9 +969,7 @@ void main() {
           },
         );
 
-        when(mockImageListCubit.state).thenReturn(
-          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-        );
+        seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
         when(
           mockCaptioningRepository.captionImage(
             any,
@@ -976,9 +1020,7 @@ void main() {
           },
         );
 
-        when(mockImageListCubit.state).thenReturn(
-          ImageListState(images: <AppImage>[image], folderPath: '/tmp'),
-        );
+        seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
         when(
           mockCaptioningRepository.captionImage(
             any,

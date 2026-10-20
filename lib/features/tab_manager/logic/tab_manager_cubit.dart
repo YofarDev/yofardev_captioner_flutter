@@ -1,7 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../../../core/di/service_locator.dart';
 import '../../../core/services/cache_service.dart';
 import '../../image_list/data/repositories/app_file_utils.dart';
 import '../../image_list/data/services/filter_parser_engine.dart';
@@ -64,6 +66,11 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     return session = CaptionSessionService(
       fileStore: _fileUtils,
       filterEngine: _filterEngine,
+      // Ordering dependency: onBeforeFolderLoad runs SYNCHRONOUSLY at the
+      // start of every folder (re)load, BEFORE the session clears its image
+      // list — so `session.current.state.images` here still sees the PREVIOUS
+      // folder's images, which is exactly what the Flutter image-cache
+      // eviction needs. Do not defer this callback or read it after the load.
       onBeforeFolderLoad: () => evictImageCache(session.current.state.images),
     );
   }
@@ -73,7 +80,16 @@ class TabManagerCubit extends Cubit<TabManagerState> {
 
   /// The session owning [tabId]. Created on demand so it can never be null
   /// for a live tab.
-  CaptionSessionService sessionFor(String tabId) => _ensureSession(tabId);
+  CaptionSessionService sessionFor(String tabId) {
+    if (!_sessions.containsKey(tabId)) {
+      // Resolved lazily so constructing a TabManagerCubit never requires a
+      // configured DI container (widget tests build bare instances).
+      locator<Logger>().warning(
+        'sessionFor: unknown tabId "$tabId" — creating a session on demand',
+      );
+    }
+    return _ensureSession(tabId);
+  }
 
   void addTab(String? folderPath) {
     final String tabId = 'tab_${DateTime.now().millisecondsSinceEpoch}';

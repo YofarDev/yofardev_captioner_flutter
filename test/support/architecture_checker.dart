@@ -473,10 +473,20 @@ List<ArchitectureViolation> _checkFeatureCycles(
     }
   }
 
+  // Deterministic enumeration: sorted start nodes and neighbors, and one
+  // canonical violation per sorted canonical key. Without this, which
+  // representative path a DFS finds first could vary, making the ratchet's
+  // stale-guard flaky.
+  final List<String> startNodes = edges.keys.toList()..sort();
+  final Map<String, Set<String>> sortedEdges = <String, Set<String>>{
+    for (final MapEntry<String, Set<String>> e in edges.entries)
+      e.key: (e.value.toList()..sort()).toSet(),
+  };
+
   final List<ArchitectureViolation> violations = <ArchitectureViolation>[];
   final Set<String> seenCycles = <String>{};
   void dfs(String node, List<String> path, Set<String> inPath) {
-    for (final String next in edges[node] ?? <String>{}) {
+    for (final String next in sortedEdges[node] ?? <String>{}) {
       if (next == path.first && path.length > 1) {
         final List<String> cycle = List<String>.of(path);
         final String key = (List<String>.of(cycle)..sort()).join('>');
@@ -501,10 +511,25 @@ List<ArchitectureViolation> _checkFeatureCycles(
     }
   }
 
-  for (final String node in edges.keys) {
+  for (final String node in startNodes) {
     dfs(node, <String>[node], <String>{node});
   }
+  // Emit in canonical (sorted-key) order so repeated runs produce byte-
+  // identical output regardless of map iteration order.
+  violations.sort(
+    (ArchitectureViolation a, ArchitectureViolation b) => _canonicalCycleKey(
+      a.description,
+    ).compareTo(_canonicalCycleKey(b.description)),
+  );
   return violations;
+}
+
+/// Sort key for a cycle violation description: the canonical cycle node list.
+String _canonicalCycleKey(String description) {
+  final String cycle = description.contains('cycle: ')
+      ? description.split('cycle: ').last
+      : description;
+  return cycle;
 }
 
 // ---------------------------------------------------------------------------

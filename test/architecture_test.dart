@@ -302,6 +302,24 @@ void main() {
       expect(_ruleIds(violations), contains('feature-dependency-cycle'));
     });
 
+    test('checker output is identical across repeated runs', () async {
+      // Guards the ratchet against flaky stale-guard failures: cycle
+      // enumeration must be deterministic (sorted start nodes/neighbors,
+      // one canonical violation per canonical key, sorted emission).
+      final List<ArchitectureViolation> first = await checkFixture(
+        'feature_cycle',
+      );
+      for (int i = 0; i < 5; i++) {
+        final List<ArchitectureViolation> again = await checkFixture(
+          'feature_cycle',
+        );
+        expect(
+          again.map((ArchitectureViolation v) => v.toString()).toList(),
+          first.map((ArchitectureViolation v) => v.toString()).toList(),
+        );
+      }
+    });
+
     test('core-imports-feature-internal', () async {
       final List<ArchitectureViolation> violations = await checkFixture(
         'core_imports_internal',

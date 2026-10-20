@@ -46,7 +46,7 @@ The application uses a third-party API for generating captions automatically. Th
 - **Search and Replace**: Batch search and replace text in captions.
 - **Sort and Filter**: Sort images by name, date, or caption length.
 - **Multi-Category Captions**: Maintain different types of captions for each image (e.g., short, detailed, tags).
-- **Agent API & MCP**: Local REST API (127.0.0.1, bearer-token auth) plus an MCP server (`tool/captioner_mcp.dart`) so AI agents like Claude Code can caption images with their own vision and reuse your saved prompts — see the Agent API section in `CLAUDE.md`.
+- **Agent API & MCP**: Local REST API (127.0.0.1, bearer-token auth) plus an MCP server (`tool/captioner_mcp.dart`) so AI agents like Claude Code can caption images with their own vision and reuse your saved prompts — see the Agent API section in `AGENTS.md`.
 
 ![Screenshot of Settings](assets/screenshot_settings.png)
 

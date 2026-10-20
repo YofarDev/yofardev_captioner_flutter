@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:get_it/get_it.dart';
+import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:path/path.dart' as p;
@@ -40,6 +42,46 @@ void main() {
   /// Test group for [ImageOperationsHelper] logic.
   /// Primarily focuses on batch file operations like renaming and ensuring
   /// sidecar files (captions) are handled correctly.
+  group('ImageOperationsHelper failure mapping', () {
+    late ImageOperationsHelper helper;
+    late MockCaptionSessionService session;
+    late MockAppFileUtils fileUtils;
+
+    setUp(() {
+      final GetIt locator = GetIt.instance;
+      if (!locator.isRegistered<Logger>()) {
+        locator.registerLazySingleton<Logger>(() => Logger('Test'));
+      }
+      session = MockCaptionSessionService();
+      fileUtils = MockAppFileUtils();
+      helper = ImageOperationsHelper(fileUtils: fileUtils, session: session);
+    });
+
+    test('renameAllFiles maps FileSystemException to Failure.io', () async {
+      when(
+        session.state,
+      ).thenReturn(const ImageListState(folderPath: '/missing/folder'));
+      when(
+        fileUtils.updateDbForRename(any, any),
+      ).thenThrow(const FileSystemException('disk error'));
+
+      final Either<Failure, void> result = await helper.renameAllFiles(
+        '/missing/folder',
+      );
+
+      final Failure? failure = result.getLeft().toNullable();
+      expect(failure, isA<FailureIo>());
+    });
+
+    test('renameAllFiles maps generic errors to Failure.unexpected', () async {
+      when(session.state).thenThrow(StateError('session gone'));
+
+      final Either<Failure, void> result = await helper.renameAllFiles('/x');
+
+      expect(result.getLeft().toNullable(), isA<FailureUnexpected>());
+    });
+  });
+
   group('ImageOperationsHelper', () {
     late ImageOperationsHelper imageOperationsHelper;
     late MockCaptionSessionService mockImageListCubit;

@@ -4,8 +4,10 @@ import 'dart:io';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
@@ -23,6 +25,8 @@ class FakeBuildContext implements BuildContext {
 
 @GenerateMocks(<Type>[CaptionSessionService, ImageOperationsHelper])
 void main() {
+  provideDummy<Either<Failure, void>>(const Right<Failure, void>(null));
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   AppImage makeImage({required String id, required String path}) {
@@ -77,7 +81,9 @@ void main() {
           mockSession.state,
         ).thenReturn(const ImageListState(folderPath: '/test/folder'));
         when(mockSession.onFolderPicked(any)).thenAnswer((_) async {});
-        when(mockHelper.renameAllFiles(any)).thenAnswer((_) async {});
+        when(
+          mockHelper.renameAllFiles(any),
+        ).thenAnswer((_) async => const Right<Failure, void>(null));
       },
       build: () => imageOperationsCubit,
       act: (ImageOperationsCubit cubit) => cubit.renameAllFiles(),
@@ -117,7 +123,7 @@ void main() {
         when(mockSession.onFolderPicked(any)).thenAnswer((_) async {});
         when(
           mockHelper.exportAsArchive(any, any, any),
-        ).thenAnswer((_) async {});
+        ).thenAnswer((_) async => const Right<Failure, void>(null));
       },
       build: () => imageOperationsCubit,
       act: (ImageOperationsCubit cubit) =>

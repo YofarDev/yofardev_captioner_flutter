@@ -17,11 +17,12 @@ class ImageOperationsState extends Equatable {
     ImageOperationsStatus? status,
     double? progress,
     String? error,
+    bool clearError = false,
   }) {
     return ImageOperationsState(
       status: status ?? this.status,
       progress: progress ?? this.progress,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
     );
   }
 

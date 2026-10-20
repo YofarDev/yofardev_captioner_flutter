@@ -353,7 +353,7 @@ class AppFileUtils implements CaptionFileStore {
     await writeDb(folderPath, db);
   }
 
-  Future<void> exportAsArchive(
+  Future<Either<Failure, void>> exportAsArchive(
     String folderPath,
     List<AppImage> images,
     String category,
@@ -408,11 +408,17 @@ class AppFileUtils implements CaptionFileStore {
         bytes: zipBytes,
       );
       if (outputFile == null) {
-        return;
+        return const Right<Failure, void>(null);
       }
-    } catch (e) {
-      // Re-throw with more context
-      throw Exception('Failed to export archive: $e');
+      return const Right<Failure, void>(null);
+    } catch (e, st) {
+      return Left<Failure, void>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'AppFileUtils.exportAsArchive',
+        ),
+      );
     }
   }
 

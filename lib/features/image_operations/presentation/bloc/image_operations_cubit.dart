@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../helpers/image_operations_helper.dart';
 import '../../../image_list/image_list.dart';
@@ -20,12 +23,27 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
       super(const ImageOperationsState());
 
   void renameAllFiles() async {
-    if (_session.state.folderPath == null) {
+    final String? folderPath = _session.state.folderPath;
+    if (folderPath == null) {
       return;
     }
-    await _session.onFolderPicked(_session.state.folderPath!, force: true);
-    await _imageOperationsHelper.renameAllFiles(_session.state.folderPath!);
-    _session.onFolderPicked(_session.state.folderPath!, force: true);
+    if (state.error != null) {
+      emit(state.copyWith(clearError: true));
+    }
+    await _session.onFolderPicked(folderPath, force: true);
+    final Either<Failure, void> result = await _imageOperationsHelper
+        .renameAllFiles(folderPath);
+    result.fold(
+      (Failure f) => emit(
+        state.copyWith(
+          status: ImageOperationsStatus.failure,
+          error: failureMessage(f),
+        ),
+      ),
+      (void _) async {
+        await _session.onFolderPicked(folderPath, force: true);
+      },
+    );
   }
 
   Future<void> exportAsArchive(
@@ -36,12 +54,25 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     if (_session.state.folderPath == null) {
       return;
     }
+    if (state.error != null) {
+      emit(state.copyWith(clearError: true));
+    }
     await _session.onFolderPicked(_session.state.folderPath!);
     // Use fresh state from cubit after reload, not stale captured list
-    await _imageOperationsHelper.exportAsArchive(
-      _session.state.folderPath!,
-      _session.state.images,
-      category,
+    final Either<Failure, void> result = await _imageOperationsHelper
+        .exportAsArchive(
+          _session.state.folderPath!,
+          _session.state.images,
+          category,
+        );
+    result.fold(
+      (Failure f) => emit(
+        state.copyWith(
+          status: ImageOperationsStatus.failure,
+          error: failureMessage(f),
+        ),
+      ),
+      (void _) {},
     );
   }
 

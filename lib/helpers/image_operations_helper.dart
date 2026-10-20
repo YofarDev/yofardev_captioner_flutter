@@ -4,10 +4,13 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
+import '../core/errors/exception_mapper.dart';
+import '../core/errors/failure.dart';
 import '../core/models/app_image.dart';
 import '../core/utils/image_utils.dart';
 import '../features/image_list/data/repositories/app_file_utils.dart';
@@ -24,7 +27,21 @@ class ImageOperationsHelper {
   }) : _fileUtils = fileUtils ?? AppFileUtils(),
        _session = session;
 
-  Future<void> renameAllFiles(String folderPath) async {
+  Future<Either<Failure, void>> renameAllFiles(String folderPath) async {
+    try {
+      return await _renameAllFiles(folderPath);
+    } catch (e, st) {
+      return Left<Failure, void>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'ImageOperationsHelper.renameAllFiles',
+        ),
+      );
+    }
+  }
+
+  Future<Either<Failure, void>> _renameAllFiles(String folderPath) async {
     final List<AppImage> images = List<AppImage>.from(_session.state.images);
     final List<File> currentImageFiles = images
         .map((AppImage e) => e.image)
@@ -94,6 +111,7 @@ class ImageOperationsHelper {
 
     // Refresh the image list and update the database
     await _session.onFolderPicked(folderPath);
+    return const Right<Failure, void>(null);
   }
 
   /// Sorts a list of [files] naturally by their base names.
@@ -104,13 +122,11 @@ class ImageOperationsHelper {
     return files;
   }
 
-  Future<void> exportAsArchive(
+  Future<Either<Failure, void>> exportAsArchive(
     String folderPath,
     List<AppImage> images,
     String category,
-  ) async {
-    await _fileUtils.exportAsArchive(folderPath, images, category);
-  }
+  ) => _fileUtils.exportAsArchive(folderPath, images, category);
 
   Stream<ImageListState> convertAllImages({
     required String format,

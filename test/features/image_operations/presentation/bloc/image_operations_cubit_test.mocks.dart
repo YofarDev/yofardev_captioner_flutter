@@ -6,9 +6,11 @@
 
 import 'dart:async' as _i5;
 
-import 'package:flutter/material.dart' as _i9;
+import 'package:flutter/material.dart' as _i11;
+import 'package:fpdart/fpdart.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/errors/failure.dart' as _i10;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i6;
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart'
     as _i3;
@@ -376,26 +378,40 @@ class MockImageOperationsHelper extends _i1.Mock
   }
 
   @override
-  _i5.Future<void> renameAllFiles(String? folderPath) =>
+  _i5.Future<_i9.Either<_i10.Failure, void>> renameAllFiles(
+    String? folderPath,
+  ) =>
       (super.noSuchMethod(
             Invocation.method(#renameAllFiles, [folderPath]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i5.Future<_i9.Either<_i10.Failure, void>>.value(
+              _i7.dummyValue<_i9.Either<_i10.Failure, void>>(
+                this,
+                Invocation.method(#renameAllFiles, [folderPath]),
+              ),
+            ),
           )
-          as _i5.Future<void>);
+          as _i5.Future<_i9.Either<_i10.Failure, void>>);
 
   @override
-  _i5.Future<void> exportAsArchive(
+  _i5.Future<_i9.Either<_i10.Failure, void>> exportAsArchive(
     String? folderPath,
     List<_i6.AppImage>? images,
     String? category,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#exportAsArchive, [folderPath, images, category]),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
+            returnValue: _i5.Future<_i9.Either<_i10.Failure, void>>.value(
+              _i7.dummyValue<_i9.Either<_i10.Failure, void>>(
+                this,
+                Invocation.method(#exportAsArchive, [
+                  folderPath,
+                  images,
+                  category,
+                ]),
+              ),
+            ),
           )
-          as _i5.Future<void>);
+          as _i5.Future<_i9.Either<_i10.Failure, void>>);
 
   @override
   _i5.Stream<_i3.ImageListState> convertAllImages({
@@ -415,7 +431,7 @@ class MockImageOperationsHelper extends _i1.Mock
 
   @override
   _i5.Future<_i3.ImageListState?> cropCurrentImage(
-    _i9.BuildContext? context,
+    _i11.BuildContext? context,
     _i3.ImageListState? state,
   ) =>
       (super.noSuchMethod(

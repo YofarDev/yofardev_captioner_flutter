@@ -102,17 +102,25 @@ class MockAppFileUtils extends _i1.Mock implements _i3.AppFileUtils {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> exportAsArchive(
+  _i4.Future<_i5.Either<_i6.Failure, void>> exportAsArchive(
     String? folderPath,
     List<_i2.AppImage>? images,
     String? category,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#exportAsArchive, [folderPath, images, category]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
+            returnValue: _i4.Future<_i5.Either<_i6.Failure, void>>.value(
+              _i7.dummyValue<_i5.Either<_i6.Failure, void>>(
+                this,
+                Invocation.method(#exportAsArchive, [
+                  folderPath,
+                  images,
+                  category,
+                ]),
+              ),
+            ),
           )
-          as _i4.Future<void>);
+          as _i4.Future<_i5.Either<_i6.Failure, void>>);
 
   @override
   _i4.Future<void> writeCaptionFiles(

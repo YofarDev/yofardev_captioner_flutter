@@ -54,6 +54,9 @@ dev_dependencies:
   shared_preferences_platform_interface: ^2.4.2
 
 
+  # Direct dep required by mockito-generated mocks (test/**/*.mocks.dart import
+  # package:bloc when mocking cubits). Transitive via flutter_bloc is not enough
+  # for the analyzer. Keep as `any` — version is pinned by flutter_bloc.
   bloc: any
 flutter:
   uses-material-design: true

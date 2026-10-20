@@ -33,7 +33,10 @@ class TabSessionRegistry {
   List<TabSessionInfo> _tabs = const <TabSessionInfo>[];
 
   /// The session factory used by [ensure]. Assigned once by the owning cubit
-  /// at construction.
+  /// at construction and never rebound or cleared — [disposeAll] tears down
+  /// sessions but intentionally leaves the factory (and the tab snapshot)
+  /// in place, so the registry keeps working for the life of the app even
+  /// after all tabs close.
   CaptionSessionService Function()? get sessionFactory => _factory;
   set sessionFactory(CaptionSessionService Function() factory) =>
       _factory = factory;

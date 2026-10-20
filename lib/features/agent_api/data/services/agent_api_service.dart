@@ -44,13 +44,15 @@ class AgentApiService {
     String? discoveryDirPath,
     CacheService? cacheService,
     required ILlmConfigRepository llmConfigRepository,
+    AgentCaptionWriteService? writeService,
   }) : _discoveryDirPath = discoveryDirPath,
        _cacheService = cacheService ?? const CacheService(),
-       _llmConfigRepository = llmConfigRepository;
+       _llmConfigRepository = llmConfigRepository,
+       _writeService = writeService ?? AgentCaptionWriteService();
 
   final CacheService _cacheService;
   final ILlmConfigRepository _llmConfigRepository;
-  final AgentCaptionWriteService _writeService = AgentCaptionWriteService();
+  final AgentCaptionWriteService _writeService;
 
   static const String _discoveryFileName = 'agent-api.json';
   static const String _defaultModel = 'agent';

@@ -10,6 +10,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
+
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/service_locator.dart';
@@ -24,6 +25,7 @@ import '../../../../core/services/cache_service.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
 import '../../../tab_manager/tab_manager.dart';
+import 'agent_caption_write_service.dart';
 
 /// Local REST API for external AI agents (Claude Code, ZCode, scripts).
 ///
@@ -48,6 +50,7 @@ class AgentApiService {
 
   final CacheService _cacheService;
   final ILlmConfigRepository _llmConfigRepository;
+  final AgentCaptionWriteService _writeService = AgentCaptionWriteService();
 
   static const String _discoveryFileName = 'agent-api.json';
   static const String _defaultModel = 'agent';
@@ -58,10 +61,6 @@ class AgentApiService {
   HttpServer? _server;
   String? _token;
   String? _appVersion;
-
-  /// Serializes caption writes so concurrent requests can't interleave
-  /// read-modify-write cycles on db.json.
-  Future<void> _writeQueue = Future<void>.value();
 
   bool get isRunning => _server != null;
   int? get port => _server?.port;
@@ -250,7 +249,10 @@ class AgentApiService {
         'activeCategory': state.activeCategory,
         'images': <Map<String, dynamic>>[
           for (final AppImage image in state.images)
-            _imageJson(image, guidance: state.imageGuidance[image.image.path]),
+            _writeService.imageJson(
+              image,
+              guidance: state.imageGuidance[image.image.path],
+            ),
         ],
       });
     }
@@ -276,7 +278,7 @@ class AgentApiService {
   }
 
   Future<Response> _handlePostCaption(Request request) {
-    return _serializeWrites(() async {
+    return _writeService.serializeWrites(() async {
       Map<String, dynamic> body;
       try {
         body = await _readJsonBody(request);
@@ -324,7 +326,7 @@ class AgentApiService {
 
       final CaptionSessionService? session = _openSessionFor(normalizedFolder);
       if (session != null) {
-        return await _writeViaSession(
+        return await _writeService.writeViaSession(
           session,
           filename: filename,
           category: category,
@@ -333,7 +335,7 @@ class AgentApiService {
           extraTags: extraTags,
         );
       }
-      return await _writeViaFile(
+      return await _writeService.writeViaFile(
         normalizedFolder,
         filename: filename,
         category: category,
@@ -377,147 +379,6 @@ class AgentApiService {
     return _jsonResponse(200, <String, dynamic>{'ok': true, 'refreshed': true});
   }
 
-  // ---------------------------------------------------------------------------
-  // Write paths
-  // ---------------------------------------------------------------------------
-
-  Future<Response> _writeViaSession(
-    CaptionSessionService session, {
-    required String filename,
-    required String category,
-    required String text,
-    required String model,
-    List<String>? extraTags,
-  }) async {
-    final ImageListState state = session.current.state;
-    if (!state.categories.contains(category)) {
-      return _jsonResponse(400, <String, dynamic>{
-        'error': 'unknown category "$category"',
-        'categories': state.categories,
-      });
-    }
-
-    AppImage? target;
-    for (final AppImage image in state.images) {
-      if (p.basename(image.image.path) == filename) {
-        target = image;
-        break;
-      }
-    }
-    if (target == null) {
-      return _jsonResponse(404, <String, dynamic>{
-        'error':
-            'image not loaded in the open tab — POST /api/folders/refresh '
-            'first, then retry',
-        'filename': filename,
-      });
-    }
-
-    final AppImage updated = target.copyWith(
-      captions: <String, CaptionEntry>{
-        ...target.captions,
-        category: CaptionEntry(
-          text: text,
-          model: model,
-          timestamp: DateTime.now(),
-        ),
-      },
-      lastModified: DateTime.now(),
-      tags: extraTags == null
-          ? target.tags
-          : _mergedTags(target.tags, extraTags),
-    );
-    await session.updateImage(image: updated);
-    return _jsonResponse(200, <String, dynamic>{
-      'ok': true,
-      'mode': 'live',
-      'image': _imageJson(
-        updated,
-        guidance: session.current.state.imageGuidance[updated.image.path],
-      ),
-    });
-  }
-
-  Future<Response> _writeViaFile(
-    String folder, {
-    required String filename,
-    required String category,
-    required String text,
-    required String model,
-    List<String>? extraTags,
-  }) async {
-    final CaptionFileStore fileUtils = locator<CaptionFileStore>();
-    final Either<Failure, CaptionDatabase> dbResult = await fileUtils.readDb(
-      folder,
-    );
-    final CaptionDatabase? db = dbResult.getRight().toNullable();
-    if (db == null) {
-      final Failure f = dbResult.getLeft().toNullable()!;
-      _logger.severe('POST /api/captions: db.json unreadable: $f');
-      return _jsonResponse(500, <String, dynamic>{
-        'error': 'database could not be read',
-        'folder': folder,
-        'detail': failureMessage(f),
-      });
-    }
-    if (!db.categories.contains(category)) {
-      return _jsonResponse(400, <String, dynamic>{
-        'error': 'unknown category "$category"',
-        'categories': db.categories,
-      });
-    }
-
-    CaptionData? existing;
-    for (final CaptionData data in db.images) {
-      if (data.filename == filename) {
-        existing = data;
-        break;
-      }
-    }
-
-    // Rebuild rather than mutate: deserialized maps/lists may be unmodifiable.
-    final CaptionData updated = CaptionData(
-      id: existing?.id ?? const Uuid().v4(),
-      filename: filename,
-      captions: <String, CaptionEntry>{
-        ...?existing?.captions,
-        category: CaptionEntry(
-          text: text,
-          model: model,
-          timestamp: DateTime.now(),
-        ),
-      },
-      lastModified: DateTime.now(),
-      tags: _mergedTags(existing?.tags ?? const <String>[], extraTags),
-    );
-    if (existing == null) {
-      db.images.add(updated);
-    } else {
-      db.images[db.images.indexOf(existing)] = updated;
-    }
-
-    await fileUtils.writeDb(folder, db);
-    return _jsonResponse(200, <String, dynamic>{
-      'ok': true,
-      'mode': 'file',
-      'created': existing == null,
-      'image': <String, dynamic>{
-        'id': updated.id,
-        'filename': updated.filename,
-        'path': p.join(folder, filename),
-        'captions': updated.captions.map(
-          (String key, CaptionEntry value) =>
-              MapEntry<String, dynamic>(key, value.toJson()),
-        ),
-        'tags': updated.tags,
-      },
-    });
-  }
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
   TabSessionRegistry? _registryIfReady() {
     if (!locator.isRegistered<TabSessionRegistry>()) return null;
     return locator<TabSessionRegistry>();
@@ -534,19 +395,6 @@ class AgentApiService {
     if (session.current.state.folderPath != folder) return null;
     return session;
   }
-
-  Map<String, dynamic> _imageJson(AppImage image, {String? guidance}) =>
-      <String, dynamic>{
-        'id': image.id,
-        'filename': p.basename(image.image.path),
-        'path': image.image.path,
-        'captions': image.captions.map(
-          (String key, CaptionEntry value) =>
-              MapEntry<String, dynamic>(key, value.toJson()),
-        ),
-        'tags': image.tags,
-        'guidance': guidance ?? '',
-      };
 
   Future<Map<String, dynamic>> _imagesPayloadFromDisk(
     CaptionFileStore fileUtils,
@@ -594,22 +442,6 @@ class AgentApiService {
       'activeCategory': db.activeCategory ?? 'default',
       'images': images,
     };
-  }
-
-  List<String> _mergedTags(List<String> current, List<String>? extra) {
-    if (extra == null || extra.isEmpty) return current;
-    return <String>[
-      ...current,
-      for (final String tag in extra)
-        if (!current.contains(tag)) tag,
-    ];
-  }
-
-  /// Runs [action] exclusively with respect to other caption writes.
-  Future<Response> _serializeWrites(Future<Response> Function() action) {
-    final Future<Response> next = _writeQueue.then((_) => action());
-    _writeQueue = next.then((_) {}, onError: (_) {});
-    return next;
   }
 
   Future<Map<String, dynamic>> _readJsonBody(Request request) async {
@@ -660,9 +492,5 @@ class AgentApiService {
   }
 
   static Response _jsonResponse(int status, Map<String, dynamic> body) =>
-      Response(status, body: jsonEncode(body), headers: _jsonHeaders);
-
-  static const Map<String, String> _jsonHeaders = <String, String>{
-    'content-type': 'application/json; charset=utf-8',
-  };
+      AgentCaptionWriteService.jsonResponse(status, body);
 }

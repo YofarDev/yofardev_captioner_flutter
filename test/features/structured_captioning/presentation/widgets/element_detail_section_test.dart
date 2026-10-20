@@ -8,7 +8,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nested/nested.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_configs.dart';

@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
-import '../../../../core/config/service_locator.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/data/models/llm_provider_type.dart';

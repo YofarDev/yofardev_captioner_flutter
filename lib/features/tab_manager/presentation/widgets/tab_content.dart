@@ -3,9 +3,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../caption_search/logic/caption_search_cubit.dart';
+import '../../../captioning/data/repositories/captioning_repository.dart';
 import '../../../captioning/logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../../captioning/logic/captioning_cubit.dart';
+import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/pages/images_list_view.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
@@ -38,8 +41,14 @@ class TabContentState extends State<TabContent>
   @override
   void initState() {
     super.initState();
-    _imageListCubit = ImageListCubit();
-    _captioningCubit = CaptioningCubit(_imageListCubit);
+    // Repos come from the locator so the DI graph is real even where the
+    // cubit instances are tab-scoped (full factory conversion waits for
+    // Phase 2's constructor cleanup).
+    _imageListCubit = ImageListCubit(fileUtils: locator<AppFileUtils>());
+    _captioningCubit = CaptioningCubit(
+      _imageListCubit,
+      captioningRepository: locator<CaptioningRepository>(),
+    );
     _structuredCaptioningCubit = StructuredCaptioningCubit(_imageListCubit);
     _imageOperationsCubit = ImageOperationsCubit(_imageListCubit);
     _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);

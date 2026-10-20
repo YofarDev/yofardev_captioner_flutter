@@ -6,7 +6,7 @@ import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_config.dart';
 import 'package:yofardev_captioner/features/llm_config/data/models/llm_provider_type.dart';

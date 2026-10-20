@@ -60,12 +60,13 @@ class _EmptyView extends StatefulWidget {
 }
 
 class _EmptyViewState extends State<_EmptyView> {
+  final CacheService _cacheService = const CacheService();
   String? _lastFolderPath;
 
   @override
   void initState() {
     super.initState();
-    CacheService.loadFolderPath().then((String? path) {
+    _cacheService.loadFolderPath().then((String? path) {
       if (mounted) {
         setState(() => _lastFolderPath = path);
       }

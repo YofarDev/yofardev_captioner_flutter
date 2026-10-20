@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../../../../core/config/service_locator.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../data/services/agent_api_service.dart';
 
@@ -16,6 +16,7 @@ class AgentApiPanel extends StatefulWidget {
 }
 
 class _AgentApiPanelState extends State<AgentApiPanel> {
+  final CacheService _cacheService = const CacheService();
   final AgentApiService _service = locator<AgentApiService>();
   final TextEditingController _portController = TextEditingController();
 
@@ -37,8 +38,8 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
   }
 
   Future<void> _init() async {
-    _enabled = await CacheService.loadAgentApiEnabled();
-    final int port = await CacheService.loadAgentApiPort();
+    _enabled = await _cacheService.loadAgentApiEnabled();
+    final int port = await _cacheService.loadAgentApiPort();
     _portController.text = port.toString();
     try {
       _discoveryPath = await _service.discoveryFilePath();
@@ -51,7 +52,7 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
 
   Future<void> _onToggle(bool value) async {
     setState(() => _busy = true);
-    await CacheService.saveAgentApiEnabled(value);
+    await _cacheService.saveAgentApiEnabled(value);
     if (value) {
       await _service.start();
     } else {
@@ -68,7 +69,7 @@ class _AgentApiPanelState extends State<AgentApiPanel> {
   Future<void> _onPortSubmitted() async {
     final int? parsed = int.tryParse(_portController.text.trim());
     if (parsed == null || parsed < 0 || parsed > 65535) return;
-    await CacheService.saveAgentApiPort(parsed);
+    await _cacheService.saveAgentApiPort(parsed);
     if (_service.isRunning) {
       await _service.restart();
       if (mounted) setState(() {});

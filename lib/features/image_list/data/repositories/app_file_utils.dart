@@ -18,6 +18,11 @@ import '../models/app_image.dart';
 
 /// A utility class for file-related operations in the application.
 class AppFileUtils {
+  AppFileUtils({CacheService? cacheService})
+    : _cacheService = cacheService ?? const CacheService();
+
+  final CacheService _cacheService;
+
   Future<List<AppImage>> onFolderPicked(String folderPath) async {
     final Directory dir = await _managePersistentPermission(folderPath);
     final CaptionDatabase db = await readDb(folderPath);
@@ -426,13 +431,13 @@ class AppFileUtils {
       return Directory(folderPath);
     }
     if (!Platform.isMacOS) return Directory(folderPath);
-    String? bookmark = await CacheService.loadMacosBookmark(
+    String? bookmark = await _cacheService.loadMacosBookmark(
       folderPath: folderPath,
     );
     final SecureBookmarks secureBookmarks = SecureBookmarks();
     if (bookmark == null) {
       bookmark = await secureBookmarks.bookmark(Directory(folderPath));
-      await CacheService.saveMacosBookmark(
+      await _cacheService.saveMacosBookmark(
         bookmark: bookmark,
         folderPath: folderPath,
       );
@@ -449,8 +454,8 @@ class AppFileUtils {
         return Directory(resolvedEntity.path);
       } catch (e) {
         // If bookmark resolution fails (folder removed/moved), clear the bookmark
-        await CacheService.clearMacosBookmark(folderPath: folderPath);
-        await CacheService.clearFolderPath();
+        await _cacheService.clearMacosBookmark(folderPath: folderPath);
+        await _cacheService.clearFolderPath();
         rethrow;
       }
     }

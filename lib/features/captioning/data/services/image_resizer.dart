@@ -8,10 +8,13 @@ import '../../../image_operations/data/utils/image_utils.dart';
 /// Reads the configurable max dimension from [CacheService] so all VLM-bound
 /// images respect the user setting without each caller having to thread it.
 class ImageResizer {
-  const ImageResizer();
+  const ImageResizer({CacheService? cacheService})
+    : _cacheService = cacheService ?? const CacheService();
+
+  final CacheService _cacheService;
 
   Future<File> resizeImageIfNecessary(File imageFile) async {
-    final int maxDimension = await CacheService.loadMaxImageDimension();
+    final int maxDimension = await _cacheService.loadMaxImageDimension();
     return await ImageUtils.resizeImageIfNecessary(
       imageFile,
       maxDimension: maxDimension,

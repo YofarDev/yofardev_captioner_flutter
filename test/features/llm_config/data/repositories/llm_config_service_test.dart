@@ -8,6 +8,8 @@ import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_con
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  final LlmConfigService llmConfigService = LlmConfigService();
+
   LlmConfigs sampleConfigs() => LlmConfigs(
     configs: <LlmConfig>[
       LlmConfig(
@@ -37,15 +39,15 @@ void main() {
     });
 
     test('loadLlmConfigs returns null when nothing stored', () async {
-      final LlmConfigs? result = await LlmConfigService.loadLlmConfigs();
+      final LlmConfigs? result = await llmConfigService.loadLlmConfigs();
       expect(result, isNull);
     });
 
     test('save then load round-trips the full config', () async {
       final LlmConfigs original = sampleConfigs();
 
-      await LlmConfigService.saveLlmConfigs(original);
-      final LlmConfigs? loaded = await LlmConfigService.loadLlmConfigs();
+      await llmConfigService.saveLlmConfigs(original);
+      final LlmConfigs? loaded = await llmConfigService.loadLlmConfigs();
 
       expect(loaded, isNotNull);
       expect(loaded!.configs.length, 2);
@@ -59,15 +61,15 @@ void main() {
     });
 
     test('overwrite replaces previously stored config', () async {
-      await LlmConfigService.saveLlmConfigs(sampleConfigs());
+      await llmConfigService.saveLlmConfigs(sampleConfigs());
 
       const LlmConfigs replacement = LlmConfigs(
         configs: <LlmConfig>[],
         prompts: <String>['only'],
       );
-      await LlmConfigService.saveLlmConfigs(replacement);
+      await llmConfigService.saveLlmConfigs(replacement);
 
-      final LlmConfigs? loaded = await LlmConfigService.loadLlmConfigs();
+      final LlmConfigs? loaded = await llmConfigService.loadLlmConfigs();
       expect(loaded, isNotNull);
       expect(loaded!.configs, isEmpty);
       expect(loaded.prompts, <String>['only']);

@@ -8,8 +8,11 @@ import '../data/models/app_tab.dart';
 part 'tab_manager_state.dart';
 
 class TabManagerCubit extends Cubit<TabManagerState> {
-  TabManagerCubit()
-    : super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')]));
+  TabManagerCubit({CacheService? cacheService})
+    : _cacheService = cacheService ?? const CacheService(),
+      super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')]));
+
+  final CacheService _cacheService;
 
   final Map<String, ImageListCubit> _tabCubits = <String, ImageListCubit>{};
 
@@ -25,8 +28,8 @@ class TabManagerCubit extends Cubit<TabManagerState> {
         .where((AppTab t) => t.folderPath != null)
         .map((AppTab t) => t.folderPath!)
         .toList();
-    CacheService.saveTabPaths(paths);
-    CacheService.saveActiveTabIndex(state.activeTabIndex);
+    _cacheService.saveTabPaths(paths);
+    _cacheService.saveActiveTabIndex(state.activeTabIndex);
   }
 
   void _updateWindowTitle(TabManagerState state) {

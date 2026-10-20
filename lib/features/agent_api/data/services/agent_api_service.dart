@@ -11,7 +11,7 @@ import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
 import 'package:uuid/uuid.dart';
 
-import '../../../../core/config/service_locator.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../captioning/data/models/caption_data.dart';
 import '../../../captioning/data/models/caption_database.dart';
@@ -38,8 +38,16 @@ import '../../../tab_manager/logic/tab_manager_cubit.dart';
 /// from being clobbered. Folders that aren't open in any tab are updated by
 /// a direct read-modify-write of `db.json`.
 class AgentApiService {
-  AgentApiService({String? discoveryDirPath})
-    : _discoveryDirPath = discoveryDirPath;
+  AgentApiService({
+    String? discoveryDirPath,
+    CacheService? cacheService,
+    LlmConfigService? llmConfigService,
+  }) : _discoveryDirPath = discoveryDirPath,
+       _cacheService = cacheService ?? const CacheService(),
+       _llmConfigService = llmConfigService ?? LlmConfigService();
+
+  final CacheService _cacheService;
+  final LlmConfigService _llmConfigService;
 
   static const String _discoveryFileName = 'agent-api.json';
   static const String _defaultModel = 'agent';
@@ -62,13 +70,13 @@ class AgentApiService {
   Future<void> start() async {
     if (_server != null) return;
 
-    _token = await CacheService.loadAgentApiToken();
+    _token = await _cacheService.loadAgentApiToken();
     if (_token == null || _token!.isEmpty) {
       _token = const Uuid().v4();
-      await CacheService.saveAgentApiToken(_token!);
+      await _cacheService.saveAgentApiToken(_token!);
     }
 
-    final int desiredPort = await CacheService.loadAgentApiPort();
+    final int desiredPort = await _cacheService.loadAgentApiPort();
     try {
       _server = await shelf_io.serve(
         _buildHandler(),
@@ -184,7 +192,7 @@ class AgentApiService {
     if (locator.isRegistered<LlmConfigsCubit>()) {
       configs = locator<LlmConfigsCubit>().state.llmConfigs;
     } else {
-      configs = await LlmConfigService.loadLlmConfigs();
+      configs = await _llmConfigService.loadLlmConfigs();
     }
     return _jsonResponse(200, <String, dynamic>{
       'prompts': configs?.prompts ?? <String>[],

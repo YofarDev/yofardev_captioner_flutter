@@ -16,36 +16,29 @@ part 'llm_configs_state.dart';
 /// This includes loading, adding, updating, deleting, and selecting LLM configurations.
 class LlmConfigsCubit extends Cubit<LlmConfigsState> {
   /// Creates an [LlmConfigsCubit] with an initial [LlmConfigsState].
-  LlmConfigsCubit() : super(const LlmConfigsState());
+  LlmConfigsCubit({LlmConfigService? llmConfigService})
+    : _llmConfigService = llmConfigService ?? LlmConfigService(),
+      super(const LlmConfigsState());
+
+  final LlmConfigService _llmConfigService;
 
   /// Initializes the cubit by loading saved LLM configurations.
   ///
-  /// If configurations are found, it emits a new state with the loaded configurations.
+  /// If configurations are found, it emits a new state with the loaded
+  /// configurations. Otherwise it defaults to an empty, unsaved configuration
+  /// (plus a local MLX suggestion on macOS).
   void onInit() async {
-    final LlmConfigs? configs = await LlmConfigService.loadLlmConfigs();
+    final LlmConfigs? configs = await _llmConfigService.loadLlmConfigs();
     if (configs != null) {
       emit(state.copyWith(llmConfigs: configs));
-    } else {
-      if (Platform.isMacOS) {
-        final LlmConfig localConfig = LlmConfig(
-          id: 'Qwen3-VL-4B-Instruct-5bit',
-          name: 'Qwen3-VL-4B-Instruct-5bit',
-          providerType: LlmProviderType.localMlx,
-          model: 'mlx-community/Qwen3-VL-4B-Instruct-5bit',
-        );
-        addLlmConfig(localConfig);
-      }
-
-      final LlmConfig neuralWattConfig = LlmConfig(
-        id: 'NeuralWatt-Qwen3.6-35b',
-        name: 'NeuralWatt Qwen3.6-35b',
-        providerType: LlmProviderType.remote,
-        model: 'qwen3.6-35b',
-        url: 'https://api.neuralwatt.com/v1',
-        apiKey:
-            'sk-6fba8a55dcc8308cf27a95409d0a23862668792e49a888a18495279c8c8e23e8',
+    } else if (Platform.isMacOS) {
+      final LlmConfig localConfig = LlmConfig(
+        id: 'Qwen3-VL-4B-Instruct-5bit',
+        name: 'Qwen3-VL-4B-Instruct-5bit',
+        providerType: LlmProviderType.localMlx,
+        model: 'mlx-community/Qwen3-VL-4B-Instruct-5bit',
       );
-      addLlmConfig(neuralWattConfig);
+      addLlmConfig(localConfig);
     }
   }
 
@@ -75,7 +68,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Updates an existing [LlmConfig] in the list of configurations.
@@ -90,7 +83,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(configs: newConfigs),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Deletes an [LlmConfig] with the given [id] from the list of configurations.
@@ -117,7 +110,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Duplicates an existing [LlmConfig] with the given [id].
@@ -151,7 +144,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Selects an [LlmConfig] with the given [id] as the active configuration.
@@ -163,7 +156,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(selectedConfigId: id),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   void addPrompt(String prompt) {
@@ -179,7 +172,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   void updatePromptByIndex(String prompt, int index) {
@@ -196,7 +189,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   void deletePrompt(String prompt) {
@@ -219,7 +212,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       );
     }
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   void selectPrompt(String prompt) {
@@ -228,7 +221,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(selectedPrompt: prompt),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Duplicates an existing prompt.
@@ -248,7 +241,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Toggles the Ideogram JSON structured captioning mode.
@@ -258,7 +251,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(ideogramJsonEnabled: enabled),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Toggles debug artifact saving for structured captioning.
@@ -266,7 +259,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     emit(
       state.copyWith(llmConfigs: state.llmConfigs.copyWith(debugMode: enabled)),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Toggles SAM detection off in the structured pipeline.
@@ -276,7 +269,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(disableSam: enabled),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Sets whether the configured VLM emits `[x1,y1,x2,y2]` (xyxy, the common
@@ -288,7 +281,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(vlmEmitsXyxy: enabled),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Sets whether the structured pipeline runs in multi-stage mode (enumerate
@@ -299,7 +292,7 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         llmConfigs: state.llmConfigs.copyWith(multiStage: enabled),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 
   /// Updates the structured batch overrides for the JSON captioning pipeline.
@@ -311,6 +304,6 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
         ),
       ),
     );
-    LlmConfigService.saveLlmConfigs(state.llmConfigs);
+    _llmConfigService.saveLlmConfigs(state.llmConfigs);
   }
 }

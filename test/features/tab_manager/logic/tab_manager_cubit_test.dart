@@ -290,7 +290,7 @@ void main() {
       // Allow fire-and-forget persistence to complete
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final List<String> paths = await CacheService.loadTabPaths();
+      final List<String> paths = await const CacheService().loadTabPaths();
       expect(paths, contains('/photos'));
     });
 
@@ -310,7 +310,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final List<String> paths = await CacheService.loadTabPaths();
+      final List<String> paths = await const CacheService().loadTabPaths();
       expect(paths, isNot(contains('/first')));
       expect(paths, contains('/second'));
     });
@@ -326,7 +326,7 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final int index = await CacheService.loadActiveTabIndex();
+      final int index = await const CacheService().loadActiveTabIndex();
       expect(index, 0);
     });
   });

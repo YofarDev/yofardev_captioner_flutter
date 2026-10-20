@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';

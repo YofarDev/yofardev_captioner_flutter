@@ -75,13 +75,14 @@ class _MaxImageSizeBar extends StatefulWidget {
 }
 
 class _MaxImageSizeBarState extends State<_MaxImageSizeBar> {
+  final CacheService _cacheService = const CacheService();
   final TextEditingController _controller = TextEditingController();
   bool _loaded = false;
 
   @override
   void initState() {
     super.initState();
-    CacheService.loadMaxImageDimension().then((int value) {
+    _cacheService.loadMaxImageDimension().then((int value) {
       if (!mounted) return;
       _controller.text = value.toString();
       setState(() => _loaded = true);
@@ -97,7 +98,7 @@ class _MaxImageSizeBarState extends State<_MaxImageSizeBar> {
   void _persist() {
     final int? parsed = int.tryParse(_controller.text.trim());
     if (parsed != null && parsed > 0) {
-      CacheService.saveMaxImageDimension(parsed);
+      _cacheService.saveMaxImageDimension(parsed);
     }
   }
 

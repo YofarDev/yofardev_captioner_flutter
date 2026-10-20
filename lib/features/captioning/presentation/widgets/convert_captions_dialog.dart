@@ -29,6 +29,7 @@ class ConvertCaptionsDialog extends StatefulWidget {
 }
 
 class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
+  final CacheService _cacheService = const CacheService();
   late final TextEditingController _promptController;
   String? _sourceCategory;
   CaptionOptions _selectedOption = CaptionOptions.missing;
@@ -58,11 +59,11 @@ class _ConvertCaptionsDialogState extends State<ConvertCaptionsDialog> {
   }
 
   void _persistPrompt() {
-    CacheService.saveConvertPrompt(_promptController.text);
+    _cacheService.saveConvertPrompt(_promptController.text);
   }
 
   Future<void> _loadSavedPrompt() async {
-    final String? saved = await CacheService.loadConvertPrompt();
+    final String? saved = await _cacheService.loadConvertPrompt();
     if (saved != null && saved.isNotEmpty && mounted) {
       _promptController.text = saved;
     }

@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
-import '../../../../core/config/service_locator.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../captioning/data/services/caption_service.dart';
 import '../../../llm_config/data/models/llm_config.dart';
 import '../../../llm_config/data/models/llm_provider_type.dart';

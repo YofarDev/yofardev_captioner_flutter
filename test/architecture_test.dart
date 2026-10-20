@@ -32,16 +32,6 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
     pathPrefix: 'lib/core/',
     ruleId: 'core-imports-feature-internal',
   ),
-  // main.dart registers the root cubits and starts the Agent API during
-  // bootstrap; both move to the service locator in Phase 1.
-  KnownViolation(
-    pathPrefix: 'lib/main.dart',
-    ruleId: 'registration-outside-service-locator',
-  ),
-  KnownViolation(
-    pathPrefix: 'lib/main.dart',
-    ruleId: 'getit-resolution-outside-allowlist',
-  ),
 ];
 
 /// Exact canonical keys (feature names sorted, joined with ' -> ') of the

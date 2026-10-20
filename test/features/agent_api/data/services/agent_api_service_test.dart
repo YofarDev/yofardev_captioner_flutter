@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/models/app_image.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';

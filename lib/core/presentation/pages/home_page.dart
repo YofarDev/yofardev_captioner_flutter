@@ -18,13 +18,16 @@ import '../../services/cache_service.dart';
 import '../../widgets/rive_animations.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.cacheService});
+
+  final CacheService cacheService;
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  CacheService get _cacheService => widget.cacheService;
   bool _isDragging = false;
   final FocusNode _focusNode = FocusNode();
   static const MethodChannel _channel = MethodChannel(
@@ -61,7 +64,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _initTabs() async {
     final TabManagerCubit tabManager = context.read<TabManagerCubit>();
-    final List<String> savedPaths = await CacheService.loadTabPaths();
+    final List<String> savedPaths = await _cacheService.loadTabPaths();
 
     // Wait for initial TabContent to register its cubit
     await Future<void>.delayed(const Duration(milliseconds: 100));
@@ -71,7 +74,7 @@ class _HomePageState extends State<HomePage> {
       final String tabId = tabManager.state.activeTab.id;
       final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
       if (cubit != null) {
-        final String? lastPath = await CacheService.loadFolderPath();
+        final String? lastPath = await _cacheService.loadFolderPath();
         if (lastPath != null) {
           tabManager.updateTabFolderPath(tabId, lastPath);
           cubit.onInit(folderPath: lastPath);
@@ -81,7 +84,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Restore saved tabs
-    final int savedIndex = await CacheService.loadActiveTabIndex();
+    final int savedIndex = await _cacheService.loadActiveTabIndex();
 
     // Load first tab into the default empty tab
     final String defaultTabId = tabManager.state.activeTab.id;

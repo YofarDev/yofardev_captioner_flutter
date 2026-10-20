@@ -33,7 +33,7 @@ import 'package:path/path.dart' as p;
 ///   cubit/bloc/*Service class
 /// - getit-resolution-outside-allowlist: `locator<T>()`-style resolution only
 ///   from lib/app.dart and lib/core/di/service_locator.dart
-///   (lib/core/config/service_locator.dart is still accepted until Phase 1
+///   (lib/core/di/service_locator.dart is still accepted until Phase 1
 ///   moves it)
 /// - registration-outside-service-locator: `register*` calls only in
 ///   service_locator.dart
@@ -290,14 +290,10 @@ class _GetItVisitor extends RecursiveAstVisitor<void> {
   static const Set<String> _getItFiles = <String>{
     'lib/app.dart',
     'lib/core/di/service_locator.dart',
-    // Current location until Phase 1 moves it to core/di/.
-    'lib/core/config/service_locator.dart',
   };
 
   static const Set<String> _registrationFiles = <String>{
     'lib/core/di/service_locator.dart',
-    // Current location until Phase 1 moves it to core/di/.
-    'lib/core/config/service_locator.dart',
   };
 
   /// GetIt's own registration methods. App-defined methods that merely start

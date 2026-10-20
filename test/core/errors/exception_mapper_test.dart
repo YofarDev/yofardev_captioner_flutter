@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/core/config/service_locator.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/exception_mapper.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
 

@@ -7,18 +7,14 @@ import 'package:logging/logging.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
-import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
-import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
-import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/image_list.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/domain/repositories/llm_config_repository.dart';
@@ -104,7 +100,7 @@ void main() {
   });
 
   group('registerDependencies (DI smoke test)', () {
-    test('resolves every registration and constructs every factory', () async {
+    test('resolves every registration and constructs every factory', () {
       final GetIt container = GetIt.instance;
       registerDependencies(container);
 

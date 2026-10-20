@@ -101,6 +101,9 @@ class CaptionRepository {
     required String tag,
   }) {
     if (e is ApiException) {
+      if (e.statusCode == 401 || e.statusCode == 403) {
+        return Failure.unauthorized(message: e.message);
+      }
       if (e.message.contains('401') || e.message.contains('403')) {
         return Failure.unauthorized(message: e.message);
       }

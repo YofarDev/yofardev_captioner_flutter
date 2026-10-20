@@ -104,6 +104,23 @@ void main() {
     });
 
     test(
+      'ApiException with statusCode 401 but no code in message maps to unauthorized',
+      () async {
+        when(
+          mockCaptionService.getCaption(any, any, any),
+        ).thenThrow(ApiException('Invalid credentials', statusCode: 401));
+
+        final Either<Failure, String> result = await repository.getCaption(
+          testConfig,
+          testImage,
+          'prompt',
+        );
+
+        expect(result.getLeft().toNullable(), isA<FailureUnauthorized>());
+      },
+    );
+
+    test(
       'ApiException with other status maps to Failure.serverError',
       () async {
         when(

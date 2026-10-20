@@ -10,12 +10,12 @@ import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/utils/cancel_token.dart';
+import '../../../../core/utils/process_runner.dart';
 import '../models/caption/caption_request.dart';
 import '../models/caption/caption_response.dart';
 import '../models/caption/content.dart';
 import '../models/caption/message.dart';
 import 'image_resizer.dart';
-import 'process_runner.dart';
 
 class CaptionService {
   final Logger _logger = locator<Logger>();

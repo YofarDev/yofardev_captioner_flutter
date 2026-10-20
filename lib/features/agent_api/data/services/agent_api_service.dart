@@ -18,7 +18,6 @@ import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/services/cache_service.dart';
-import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
 import '../../../llm_config/llm_config.dart';
@@ -244,7 +243,7 @@ class AgentApiService {
       });
     }
 
-    final AppFileUtils fileUtils = locator<AppFileUtils>();
+    final CaptionFileStore fileUtils = locator<CaptionFileStore>();
     final CaptionDatabase db = await fileUtils.readDb(normalized);
     return _jsonResponse(
       200,
@@ -423,7 +422,7 @@ class AgentApiService {
     required String model,
     List<String>? extraTags,
   }) async {
-    final AppFileUtils fileUtils = locator<AppFileUtils>();
+    final CaptionFileStore fileUtils = locator<CaptionFileStore>();
     final CaptionDatabase db = await fileUtils.readDb(folder);
     if (!db.categories.contains(category)) {
       return _jsonResponse(400, <String, dynamic>{
@@ -514,7 +513,7 @@ class AgentApiService {
       };
 
   Future<Map<String, dynamic>> _imagesPayloadFromDisk(
-    AppFileUtils fileUtils,
+    CaptionFileStore fileUtils,
     String folder,
     CaptionDatabase db,
   ) async {

@@ -7,6 +7,7 @@ import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
+import '../../features/image_list/image_list.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
 import '../../features/tab_manager/domain/services/tab_session_registry.dart';
@@ -35,6 +36,9 @@ Future<void> setupServiceLocator() async {
   );
   locator.registerLazySingleton<AppFileUtils>(
     () => AppFileUtils(cacheService: locator<CacheService>()),
+  );
+  locator.registerLazySingleton<CaptionFileStore>(
+    () => locator<AppFileUtils>(),
   );
   // Shared by TabManagerCubit (writes sessions + tab snapshot) and
   // AgentApiService (reads them) so no data service needs a cubit.

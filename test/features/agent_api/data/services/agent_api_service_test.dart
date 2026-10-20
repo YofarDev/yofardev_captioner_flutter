@@ -68,6 +68,9 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp('agent_api_images');
     discoveryDir = await Directory.systemTemp.createTemp('agent_api_disc');
     locator.registerLazySingleton<AppFileUtils>(AppFileUtils.new);
+    locator.registerLazySingleton<CaptionFileStore>(
+      () => locator<AppFileUtils>(),
+    );
 
     service = AgentApiService(discoveryDirPath: discoveryDir.path);
     await service.start();

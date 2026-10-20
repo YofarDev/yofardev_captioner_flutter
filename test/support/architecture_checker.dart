@@ -201,7 +201,9 @@ List<ArchitectureViolation> _checkFile(
         ),
       );
     }
-    if (isCore && targetFeature.isNotEmpty) {
+    if (isCore &&
+        targetFeature.isNotEmpty &&
+        !_isBarrel(edge.targetRel, targetFeature)) {
       violations.add(
         ArchitectureViolation(
           path: rel,

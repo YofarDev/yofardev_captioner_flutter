@@ -7,7 +7,7 @@ import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/di/service_locator.dart';
-import '../../../captioning/data/services/process_runner.dart';
+import '../../../../core/utils/process_runner.dart';
 
 /// Detection result from SAM3 for a single object.
 class SamDetection {

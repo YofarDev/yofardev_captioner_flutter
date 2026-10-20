@@ -12,7 +12,7 @@ import '../../../../core/widgets/rive_animations.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../structured_captioning/presentation/bloc/structured_captioning_cubit.dart';
+import '../../../structured_captioning/structured_captioning.dart';
 import '../../domain/models/batch_apply_template.dart';
 import '../../domain/models/caption_options.dart';
 import '../bloc/batch_apply/batch_json_apply_cubit.dart';

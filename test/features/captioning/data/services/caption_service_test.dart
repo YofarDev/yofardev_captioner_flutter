@@ -9,9 +9,9 @@ import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/utils/process_runner.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/image_resizer.dart';
-import 'package:yofardev_captioner/features/captioning/data/services/process_runner.dart';
 
 import 'caption_service_test.mocks.dart';
 

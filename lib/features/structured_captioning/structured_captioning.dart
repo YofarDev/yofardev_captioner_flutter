@@ -7,7 +7,10 @@ library;
 export 'domain/models/apply_structured_overrides.dart'
     show applyStructuredOverrides;
 export 'presentation/bloc/structured_captioning_cubit.dart'
-    show StructuredCaptioningCubit, StructuredCaptioningState;
+    show
+        StructuredCaptioningCubit,
+        StructuredCaptioningState,
+        StructuredCaptioningStatus;
 export 'presentation/bloc/structured_editor_cubit.dart'
     show StructuredEditorCubit, StructuredEditorState;
 export 'presentation/pages/structured_editor_page.dart'

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import '../../../../core/utils/cancel_token.dart';
+import 'cancel_token.dart';
 
 /// Abstraction over process spawning for testability.
 class ProcessRunner {

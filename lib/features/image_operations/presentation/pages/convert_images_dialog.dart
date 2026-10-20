@@ -14,7 +14,12 @@ class _ConvertImagesDialogState extends State<ConvertImagesDialog> {
   double _quality = 100;
   @override
   Widget build(BuildContext context) {
+    // Kept as a single BlocConsumer: it is the only listener in this dialog's
+    // tree (nothing to flatten into MultiBlocListener), and buildWhen narrows
+    // rebuilds to the two fields the dialog actually renders.
     return BlocConsumer<ImageOperationsCubit, ImageOperationsState>(
+      buildWhen: (ImageOperationsState prev, ImageOperationsState next) =>
+          prev.status != next.status || prev.progress != next.progress,
       listener: (BuildContext context, ImageOperationsState state) {
         if (state.status == ImageOperationsStatus.success) {
           Navigator.of(context).pop();

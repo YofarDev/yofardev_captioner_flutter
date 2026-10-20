@@ -54,7 +54,7 @@ class TabContentState extends State<TabContent>
     );
     _structuredCaptioningCubit = StructuredCaptioningCubit(_session);
     _imageOperationsCubit = ImageOperationsCubit(_session);
-    _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);
+    _captionSearchCubit = CaptionSearchCubit(session: _session);
     _batchJsonApplyCubit = BatchJsonApplyCubit(_imageListCubit);
   }
 

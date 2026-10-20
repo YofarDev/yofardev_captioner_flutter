@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
 
 part 'caption_search_state.dart';
 
@@ -11,16 +11,15 @@ part 'caption_search_state.dart';
 /// - Expansion state of the search bar
 /// - Replace mode toggle
 /// - Search and replace text input
-/// - Delegation to ImageListCubit for actual search/replace operations
+/// - Delegation to CaptionSessionService for actual search/replace operations
 class CaptionSearchCubit extends Cubit<CaptionSearchState> {
-  /// Creates a [CaptionSearchCubit] that depends on [ImageListCubit].
-  CaptionSearchCubit({required this.imageListCubit})
-    : super(
-        CaptionSearchState(isCaseSensitive: imageListCubit.state.caseSensitive),
-      );
+  /// Creates a [CaptionSearchCubit] that depends on [CaptionSessionService].
+  CaptionSearchCubit({required CaptionSessionService session})
+    : _session = session,
+      super(CaptionSearchState(isCaseSensitive: session.state.caseSensitive));
 
-  /// The ImageListCubit used for search and replace operations.
-  final ImageListCubit imageListCubit;
+  /// The session used for search and replace operations.
+  final CaptionSessionService _session;
 
   /// Toggles the expanded state of the search bar.
   ///
@@ -30,7 +29,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
     if (state.isExpanded) {
       // Collapsing - clear everything
       emit(const CaptionSearchState());
-      imageListCubit.clearSearch();
+      _session.clearSearch();
     } else {
       // Expanding
       emit(state.copyWith(isExpanded: true));
@@ -42,20 +41,20 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// Also updates the ImageListCubit to perform the actual filtering.
   void updateSearchQuery(String query) {
     emit(state.copyWith(searchQuery: query));
-    imageListCubit.updateSearchQuery(query);
+    _session.updateSearchQuery(query);
   }
 
   /// Toggles case sensitivity for the search.
   void toggleCaseSensitive() {
-    imageListCubit.toggleCaseSensitive();
+    _session.toggleCaseSensitive();
     // Emit new state to trigger UI rebuild with updated case sensitivity
-    emit(state.copyWith(isCaseSensitive: imageListCubit.state.caseSensitive));
+    emit(state.copyWith(isCaseSensitive: _session.state.caseSensitive));
   }
 
   /// Clears the search query and resets the search.
   void clearSearch() {
     emit(state.copyWith(searchQuery: ''));
-    imageListCubit.clearSearch();
+    _session.clearSearch();
   }
 
   /// Toggles the replace mode on/off.
@@ -82,26 +81,26 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
     if (state.searchQuery.isEmpty) return;
 
     // Perform the replace operation
-    imageListCubit.searchAndReplace(state.searchQuery, state.replaceText);
+    _session.searchAndReplace(state.searchQuery, state.replaceText);
 
     // Clear search in ImageListCubit to reload full list
-    imageListCubit.clearSearch();
+    _session.clearSearch();
 
     // Collapse the search bar
     emit(const CaptionSearchState());
   }
 
   /// Returns the number of filtered images based on the current search.
-  int get resultCount => imageListCubit.filteredImages.length;
+  int get resultCount => _session.current.filteredImages.length;
 
   /// Returns the total number of images.
-  int get totalCount => imageListCubit.state.images.length;
+  int get totalCount => _session.state.images.length;
 
   /// Returns whether the replace operation can be executed.
   bool get canExecuteReplace => state.replaceText.isNotEmpty;
 
   /// Returns whether there is an active search query.
-  bool get hasActiveSearch => imageListCubit.state.searchQuery.isNotEmpty;
+  bool get hasActiveSearch => _session.state.searchQuery.isNotEmpty;
 
   /// Returns the current case sensitivity setting.
   bool get isCaseSensitive => state.isCaseSensitive;

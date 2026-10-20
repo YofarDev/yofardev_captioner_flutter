@@ -6,20 +6,22 @@ import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/caption_search/logic/caption_search_cubit.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 
 import 'caption_search_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit])
+@GenerateMocks(<Type>[CaptionSessionService])
 void main() {
   group('CaptionSearchCubit', () {
     late CaptionSearchCubit cubit;
-    late MockImageListCubit mockImageListCubit;
+    late MockCaptionSessionService mockSession;
 
     setUp(() {
-      mockImageListCubit = MockImageListCubit();
-      when(mockImageListCubit.state).thenReturn(const ImageListState());
-      cubit = CaptionSearchCubit(imageListCubit: mockImageListCubit);
+      mockSession = MockCaptionSessionService();
+      when(mockSession.state).thenReturn(const ImageListState());
+      cubit = CaptionSearchCubit(session: mockSession);
     });
 
     tearDown(() {
@@ -53,30 +55,30 @@ void main() {
         expect(cubit.state.searchQuery, '');
         expect(cubit.state.showReplaceMode, false);
         expect(cubit.state.replaceText, '');
-        verify(mockImageListCubit.clearSearch()).called(1);
+        verify(mockSession.clearSearch()).called(1);
       });
     });
 
     group('updateSearchQuery', () {
-      test('updates query and delegates to ImageListCubit', () {
+      test('updates query and delegates to CaptionSessionService', () {
         cubit.toggleExpanded();
         cubit.updateSearchQuery('kitten');
 
         expect(cubit.state.searchQuery, 'kitten');
-        verify(mockImageListCubit.updateSearchQuery('kitten')).called(1);
+        verify(mockSession.updateSearchQuery('kitten')).called(1);
       });
     });
 
     group('toggleCaseSensitive', () {
-      test('toggles and syncs from ImageListCubit state', () {
+      test('toggles and syncs from session state', () {
         when(
-          mockImageListCubit.state,
+          mockSession.state,
         ).thenReturn(const ImageListState(caseSensitive: true));
-        when(mockImageListCubit.toggleCaseSensitive()).thenReturn(null);
+        when(mockSession.toggleCaseSensitive()).thenReturn(null);
 
         cubit.toggleCaseSensitive();
 
-        verify(mockImageListCubit.toggleCaseSensitive()).called(1);
+        verify(mockSession.toggleCaseSensitive()).called(1);
         expect(cubit.state.isCaseSensitive, true);
       });
     });
@@ -89,7 +91,7 @@ void main() {
         cubit.clearSearch();
 
         expect(cubit.state.searchQuery, '');
-        verify(mockImageListCubit.clearSearch()).called(1);
+        verify(mockSession.clearSearch()).called(1);
       });
     });
 
@@ -123,7 +125,7 @@ void main() {
       test('does nothing when searchQuery is empty', () async {
         await cubit.executeReplace();
 
-        verifyNever(mockImageListCubit.searchAndReplace(any, any));
+        verifyNever(mockSession.searchAndReplace(any, any));
       });
 
       test('replaces, clears search, and collapses', () async {
@@ -131,13 +133,13 @@ void main() {
         cubit.updateSearchQuery('old');
         cubit.updateReplaceText('new');
         when(
-          mockImageListCubit.state,
+          mockSession.state,
         ).thenReturn(const ImageListState(searchQuery: 'old'));
 
         await cubit.executeReplace();
 
-        verify(mockImageListCubit.searchAndReplace('old', 'new')).called(1);
-        verify(mockImageListCubit.clearSearch()).called(1);
+        verify(mockSession.searchAndReplace('old', 'new')).called(1);
+        verify(mockSession.clearSearch()).called(1);
         expect(cubit.state.isExpanded, false);
         expect(cubit.state.searchQuery, '');
       });
@@ -157,7 +159,14 @@ void main() {
             captions: const <String, CaptionEntry>{},
           ),
         ];
-        when(mockImageListCubit.filteredImages).thenReturn(images);
+        when(mockSession.current).thenReturn(
+          CaptionSessionSnapshot(
+            state: const ImageListState(),
+            filteredImages: images,
+            displayedImages: images,
+            currentDisplayedImage: null,
+          ),
+        );
 
         expect(cubit.resultCount, 2);
       });
@@ -180,9 +189,7 @@ void main() {
             captions: const <String, CaptionEntry>{},
           ),
         ];
-        when(
-          mockImageListCubit.state,
-        ).thenReturn(ImageListState(images: images));
+        when(mockSession.state).thenReturn(ImageListState(images: images));
 
         expect(cubit.totalCount, 3);
       });
@@ -197,9 +204,9 @@ void main() {
         expect(cubit.canExecuteReplace, false);
       });
 
-      test('hasActiveSearch reflects ImageListCubit searchQuery', () {
+      test('hasActiveSearch reflects session searchQuery', () {
         when(
-          mockImageListCubit.state,
+          mockSession.state,
         ).thenReturn(const ImageListState(searchQuery: 'active'));
 
         expect(cubit.hasActiveSearch, true);
@@ -210,14 +217,14 @@ void main() {
       });
     });
 
-    group('initial state syncs caseSensitive from ImageListCubit', () {
-      test('reads caseSensitive from ImageListCubit on construction', () {
+    group('initial state syncs caseSensitive from session', () {
+      test('reads caseSensitive from session on construction', () {
         when(
-          mockImageListCubit.state,
+          mockSession.state,
         ).thenReturn(const ImageListState(caseSensitive: true));
 
         final CaptionSearchCubit syncCubit = CaptionSearchCubit(
-          imageListCubit: mockImageListCubit,
+          session: mockSession,
         );
 
         expect(syncCubit.state.isCaseSensitive, true);

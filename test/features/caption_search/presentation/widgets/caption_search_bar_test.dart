@@ -6,16 +6,23 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/features/caption_search/logic/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/caption_search_bar.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
 
 import 'caption_search_bar_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit])
+@GenerateMocks(<Type>[CaptionSessionService, ImageListCubit])
 void main() {
+  late MockCaptionSessionService mockSession;
+  // The search bar widget still reads tag/medium helpers off ImageListCubit
+  // (read-only helpers that stay on the adapter); the search cubit itself now
+  // talks to the session.
   late MockImageListCubit mockImageListCubit;
   late CaptionSearchCubit captionSearchCubit;
 
   setUp(() {
+    mockSession = MockCaptionSessionService();
+    when(mockSession.state).thenReturn(const ImageListState());
     mockImageListCubit = MockImageListCubit();
     when(mockImageListCubit.state).thenReturn(const ImageListState());
     when(
@@ -27,7 +34,7 @@ void main() {
     when(
       mockImageListCubit.getAllUniqueMediums(),
     ).thenReturn(<String>{'photograph', 'oil painting'});
-    captionSearchCubit = CaptionSearchCubit(imageListCubit: mockImageListCubit);
+    captionSearchCubit = CaptionSearchCubit(session: mockSession);
   });
 
   tearDown(() {
@@ -288,8 +295,8 @@ void main() {
       );
       expect(field.controller!.text, '#sunset');
       // Proves the full filter wire, not just the controller text:
-      // tap -> CaptionSearchCubit -> ImageListCubit.updateSearchQuery.
-      verify(mockImageListCubit.updateSearchQuery('#sunset')).called(1);
+      // tap -> CaptionSearchCubit -> CaptionSessionService.updateSearchQuery.
+      verify(mockSession.updateSearchQuery('#sunset')).called(1);
     });
 
     testWidgets('tapping a chip on its padding (not the text) toggles', (

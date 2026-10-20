@@ -4,16 +4,15 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
-import 'dart:async' as _i6;
+import 'dart:async' as _i5;
 
-import 'package:bloc/bloc.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i8;
-import 'package:yofardev_captioner/core/models/app_image.dart' as _i5;
+import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:yofardev_captioner/core/models/app_image.dart' as _i6;
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
-    as _i2;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
     as _i4;
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart'
+    as _i2;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
     as _i3;
 
@@ -33,9 +32,9 @@ import 'package:yofardev_captioner/features/image_list/logic/image_list_state.da
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeCaptionSessionService_0 extends _i1.SmartFake
-    implements _i2.CaptionSessionService {
-  _FakeCaptionSessionService_0(Object parent, Invocation parentInvocation)
+class _FakeCaptionSessionSnapshot_0 extends _i1.SmartFake
+    implements _i2.CaptionSessionSnapshot {
+  _FakeCaptionSessionSnapshot_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -45,40 +44,33 @@ class _FakeImageListState_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-/// A class which mocks [ImageListCubit].
+/// A class which mocks [CaptionSessionService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
-  MockImageListCubit() {
+class MockCaptionSessionService extends _i1.Mock
+    implements _i4.CaptionSessionService {
+  MockCaptionSessionService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i2.CaptionSessionService get session =>
+  _i5.Stream<_i2.CaptionSessionSnapshot> get snapshots =>
       (super.noSuchMethod(
-            Invocation.getter(#session),
-            returnValue: _FakeCaptionSessionService_0(
+            Invocation.getter(#snapshots),
+            returnValue: _i5.Stream<_i2.CaptionSessionSnapshot>.empty(),
+          )
+          as _i5.Stream<_i2.CaptionSessionSnapshot>);
+
+  @override
+  _i2.CaptionSessionSnapshot get current =>
+      (super.noSuchMethod(
+            Invocation.getter(#current),
+            returnValue: _FakeCaptionSessionSnapshot_0(
               this,
-              Invocation.getter(#session),
+              Invocation.getter(#current),
             ),
           )
-          as _i2.CaptionSessionService);
-
-  @override
-  List<_i5.AppImage> get filteredImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#filteredImages),
-            returnValue: <_i5.AppImage>[],
-          )
-          as List<_i5.AppImage>);
-
-  @override
-  List<_i5.AppImage> get displayedImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#displayedImages),
-            returnValue: <_i5.AppImage>[],
-          )
-          as List<_i5.AppImage>);
+          as _i2.CaptionSessionSnapshot);
 
   @override
   _i3.ImageListState get state =>
@@ -89,63 +81,75 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
           as _i3.ImageListState);
 
   @override
-  _i6.Stream<_i3.ImageListState> get stream =>
-      (super.noSuchMethod(
-            Invocation.getter(#stream),
-            returnValue: _i6.Stream<_i3.ImageListState>.empty(),
-          )
-          as _i6.Stream<_i3.ImageListState>);
+  void addListener(void Function(_i2.CaptionSessionSnapshot)? listener) =>
+      super.noSuchMethod(
+        Invocation.method(#addListener, [listener]),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  bool get isClosed =>
-      (super.noSuchMethod(Invocation.getter(#isClosed), returnValue: false)
-          as bool);
+  void removeListener(void Function(_i2.CaptionSessionSnapshot)? listener) =>
+      super.noSuchMethod(
+        Invocation.method(#removeListener, [listener]),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  void onChange(_i7.Change<_i3.ImageListState>? change) => super.noSuchMethod(
-    Invocation.method(#onChange, [change]),
+  void replaceState(_i3.ImageListState? next) => super.noSuchMethod(
+    Invocation.method(#replaceState, [next]),
     returnValueForMissingStub: null,
   );
 
   @override
-  _i6.Future<void> close() =>
-      (super.noSuchMethod(
-            Invocation.method(#close, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
+  void adopt(_i3.ImageListState? next) => super.noSuchMethod(
+    Invocation.method(#adopt, [next]),
+    returnValueForMissingStub: null,
+  );
 
   @override
-  _i6.Future<void> onInit({String? folderPath}) =>
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  List<_i6.AppImage> filteredFor(_i3.ImageListState? s) =>
+      (super.noSuchMethod(
+            Invocation.method(#filteredFor, [s]),
+            returnValue: <_i6.AppImage>[],
+          )
+          as List<_i6.AppImage>);
+
+  @override
+  _i5.Future<void> onInit({String? folderPath}) =>
       (super.noSuchMethod(
             Invocation.method(#onInit, [], {#folderPath: folderPath}),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
+  _i5.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
       (super.noSuchMethod(
             Invocation.method(#onFolderPicked, [folderPath], {#force: force}),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> onFileOpened(String? filePath) =>
+  _i5.Future<void> onFileOpened(String? filePath) =>
       (super.noSuchMethod(
             Invocation.method(#onFileOpened, [filePath]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  void onImageSelected(String? imageId) => super.noSuchMethod(
-    Invocation.method(#onImageSelected, [imageId]),
+  void selectImage(String? imageId) => super.noSuchMethod(
+    Invocation.method(#selectImage, [imageId]),
     returnValueForMissingStub: null,
   );
 
@@ -177,7 +181,7 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
   String guidanceFor(String? imagePath) =>
       (super.noSuchMethod(
             Invocation.method(#guidanceFor, [imagePath]),
-            returnValue: _i8.dummyValue<String>(
+            returnValue: _i7.dummyValue<String>(
               this,
               Invocation.method(#guidanceFor, [imagePath]),
             ),
@@ -185,13 +189,13 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
           as String);
 
   @override
-  _i6.Future<void> saveChanges() =>
+  _i5.Future<void> saveChanges() =>
       (super.noSuchMethod(
             Invocation.method(#saveChanges, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void onSortChanged(_i3.SortBy? sortBy, bool? sortAscending) =>
@@ -201,22 +205,22 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
       );
 
   @override
-  _i6.Future<void> getSingleImageSize() =>
+  _i5.Future<void> getSingleImageSize() =>
       (super.noSuchMethod(
             Invocation.method(#getSingleImageSize, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> searchAndReplace(String? search, String? replace) =>
+  _i5.Future<void> searchAndReplace(String? search, String? replace) =>
       (super.noSuchMethod(
             Invocation.method(#searchAndReplace, [search, replace]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void countOccurrences(String? search) => super.noSuchMethod(
@@ -225,58 +229,64 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
   );
 
   @override
-  _i6.Future<void> updateCaption({required String? caption}) =>
+  _i5.Future<void> updateCaption({required String? caption}) =>
       (super.noSuchMethod(
             Invocation.method(#updateCaption, [], {#caption: caption}),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> updateImage({required _i5.AppImage? image}) =>
+  _i5.Future<void> updateImage({required _i6.AppImage? image}) =>
       (super.noSuchMethod(
             Invocation.method(#updateImage, [], {#image: image}),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> removeImage(String? imageId) =>
+  _i5.Future<void> removeImage(String? imageId) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageId]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> duplicateImage() =>
+  _i5.Future<void> duplicateImage() =>
       (super.noSuchMethod(
             Invocation.method(#duplicateImage, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> writeCaptionFiles() =>
+  _i5.Future<void> writeCaptionFiles({
+    required String? category,
+    required String? format,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#writeCaptionFiles, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            Invocation.method(#writeCaptionFiles, [], {
+              #category: category,
+              #format: format,
+            }),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> removeCaptionFiles() =>
+  _i5.Future<void> removeCaptionFiles() =>
       (super.noSuchMethod(
             Invocation.method(#removeCaptionFiles, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
   void updateSearchQuery(String? query) => super.noSuchMethod(
@@ -328,95 +338,29 @@ class MockImageListCubit extends _i1.Mock implements _i4.ImageListCubit {
   );
 
   @override
-  _i6.Future<void> addTag(String? rawTag) =>
+  _i5.Future<void> addTag(String? rawTag) =>
       (super.noSuchMethod(
             Invocation.method(#addTag, [rawTag]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> removeTag(String? tag) =>
+  _i5.Future<void> removeTag(String? tag) =>
       (super.noSuchMethod(
             Invocation.method(#removeTag, [tag]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
+          as _i5.Future<void>);
 
   @override
-  _i6.Future<void> setTags(List<String>? rawTags) =>
+  _i5.Future<void> setTags(List<String>? rawTags) =>
       (super.noSuchMethod(
             Invocation.method(#setTags, [rawTags]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
           )
-          as _i6.Future<void>);
-
-  @override
-  Set<String> getAllUniqueTags() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueTags, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Set<String> getAllUniqueMediums() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueMediums, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Map<String, int> getAspectRatioCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAspectRatioCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  Map<String, int> getTagCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTagCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  int getTotalImagesSize() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTotalImagesSize, []),
-            returnValue: 0,
-          )
-          as int);
-
-  @override
-  double getAverageWordsPerCaption() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAverageWordsPerCaption, []),
-            returnValue: 0.0,
-          )
-          as double);
-
-  @override
-  void emit(_i3.ImageListState? state) => super.noSuchMethod(
-    Invocation.method(#emit, [state]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addError(Object? error, [StackTrace? stackTrace]) => super.noSuchMethod(
-    Invocation.method(#addError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void onError(Object? error, StackTrace? stackTrace) => super.noSuchMethod(
-    Invocation.method(#onError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
+          as _i5.Future<void>);
 }

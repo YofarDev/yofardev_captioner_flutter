@@ -1,10 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
@@ -51,13 +54,13 @@ void main() {
           mockCaptionService.getCaption(any, any, any),
         ).thenAnswer((_) async => 'a caption');
 
-        final String result = await repository.getCaption(
+        final Either<Failure, String> result = await repository.getCaption(
           testConfig,
           testImage,
           'describe this image',
         );
 
-        expect(result, 'a caption');
+        expect(result.getRight().toNullable(), 'a caption');
         verify(
           mockCaptionService.getCaption(
             testConfig,
@@ -68,15 +71,81 @@ void main() {
       },
     );
 
-    test('getCaption propagates exceptions from service', () {
+    test(
+      'getCaption maps unknown service exceptions to Failure.unexpected',
+      () async {
+        when(
+          mockCaptionService.getCaption(any, any, any),
+        ).thenThrow(Exception('API error'));
+
+        final Either<Failure, String> result = await repository.getCaption(
+          testConfig,
+          testImage,
+          'prompt',
+        );
+
+        expect(result.getLeft().toNullable(), isA<FailureUnexpected>());
+      },
+    );
+
+    test('ApiException with 401 maps to Failure.unauthorized', () async {
       when(
         mockCaptionService.getCaption(any, any, any),
-      ).thenThrow(Exception('API error'));
+      ).thenThrow(ApiException('Failed to load caption (401): bad key'));
 
-      expect(
-        () => repository.getCaption(testConfig, testImage, 'prompt'),
-        throwsException,
+      final Either<Failure, String> result = await repository.getCaption(
+        testConfig,
+        testImage,
+        'prompt',
       );
+
+      final Failure? failure = result.getLeft().toNullable();
+      expect(failure, isA<FailureUnauthorized>());
+    });
+
+    test(
+      'ApiException with other status maps to Failure.serverError',
+      () async {
+        when(
+          mockCaptionService.getCaption(any, any, any),
+        ).thenThrow(ApiException('Failed to load caption (500): boom'));
+
+        final Either<Failure, String> result = await repository.getCaption(
+          testConfig,
+          testImage,
+          'prompt',
+        );
+
+        expect(result.getLeft().toNullable(), isA<FailureServer>());
+      },
+    );
+
+    test('TimeoutException maps to Failure.network', () async {
+      when(
+        mockCaptionService.getCaption(any, any, any),
+      ).thenThrow(TimeoutException('timed out'));
+
+      final Either<Failure, String> result = await repository.getCaption(
+        testConfig,
+        testImage,
+        'prompt',
+      );
+
+      expect(result.getLeft().toNullable(), isA<FailureNetwork>());
+    });
+
+    test('TypeError maps to Failure.unexpected (malformed DTO)', () async {
+      when(
+        mockCaptionService.getCaption(any, any, any),
+      ).thenThrow(StateError('malformed DTO'));
+
+      final Either<Failure, String> result = await repository.getCaption(
+        testConfig,
+        testImage,
+        'prompt',
+      );
+
+      expect(result.getLeft().toNullable(), isA<FailureUnexpected>());
     });
 
     test('getCaption passes File object not AppImage to service', () async {

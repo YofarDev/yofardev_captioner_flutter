@@ -96,6 +96,16 @@ class _StubFilterEngine implements CaptionFilterEngine {
 }
 
 void main() {
+  // Mockito cannot synthesize Either dummies for the new signatures.
+  provideDummy<Either<Failure, AppImage>>(
+    Right<Failure, AppImage>(
+      AppImage(
+        id: 'dummy',
+        image: File('dummy.png'),
+        captions: const <String, CaptionEntry>{},
+      ),
+    ),
+  );
   group('CaptioningCubit', () {
     late CaptioningCubit captioningCubit;
     late CaptionSessionService session;
@@ -164,8 +174,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         captioningCubit.runCaptioner(
@@ -263,8 +274,9 @@ void main() {
           cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
-        (Invocation invocation) async =>
-            invocation.positionalArguments[1] as AppImage,
+        (Invocation invocation) async => Right<Failure, AppImage>(
+          invocation.positionalArguments[1] as AppImage,
+        ),
       );
 
       final LlmConfig llmConfig = LlmConfig(
@@ -327,8 +339,9 @@ void main() {
           cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
-        (Invocation invocation) async =>
-            invocation.positionalArguments[1] as AppImage,
+        (Invocation invocation) async => Right<Failure, AppImage>(
+          invocation.positionalArguments[1] as AppImage,
+        ),
       );
 
       final LlmConfig llmConfig = LlmConfig(
@@ -377,7 +390,11 @@ void main() {
           any,
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenThrow(Exception('API error'));
+      ).thenAnswer(
+        (_) async => const Left<Failure, AppImage>(
+          Failure.serverError(message: 'API error'),
+        ),
+      );
 
       final LlmConfig llmConfig = LlmConfig(
         id: '1',
@@ -393,7 +410,10 @@ void main() {
       );
 
       expect(captioningCubit.state.status, CaptioningStatus.failure);
-      expect(captioningCubit.state.error, contains('API error'));
+      expect(
+        captioningCubit.state.error,
+        contains('The server encountered an error'),
+      );
       expect(captioningCubit.state.processedImages, 0);
     });
 
@@ -422,8 +442,10 @@ void main() {
         updateSessionState();
 
         final List<String> categoriesPassed = <String>[];
-        final Completer<AppImage> call1 = Completer<AppImage>();
-        final Completer<AppImage> call2 = Completer<AppImage>();
+        final Completer<Either<Failure, AppImage>> call1 =
+            Completer<Either<Failure, AppImage>>();
+        final Completer<Either<Failure, AppImage>> call2 =
+            Completer<Either<Failure, AppImage>>();
         int callIndex = 0;
         when(
           mockCaptioningRepository.captionImage(
@@ -437,7 +459,9 @@ void main() {
           categoriesPassed.add(
             inv.namedArguments[const Symbol('category')] as String,
           );
-          final Completer<AppImage> c = callIndex == 0 ? call1 : call2;
+          final Completer<Either<Failure, AppImage>> c = callIndex == 0
+              ? call1
+              : call2;
           callIndex++;
           return c.future;
         });
@@ -464,10 +488,12 @@ void main() {
         updateSessionState();
 
         call1.complete(
-          image1.copyWith(
-            captions: const <String, CaptionEntry>{
-              'caption1': CaptionEntry(text: 'c1'),
-            },
+          Right<Failure, AppImage>(
+            image1.copyWith(
+              captions: const <String, CaptionEntry>{
+                'caption1': CaptionEntry(text: 'c1'),
+              },
+            ),
           ),
         );
         await Future<void>.delayed(Duration.zero);
@@ -476,10 +502,12 @@ void main() {
         expect(categoriesPassed, <String>['caption1', 'caption1']);
 
         call2.complete(
-          image2.copyWith(
-            captions: const <String, CaptionEntry>{
-              'caption1': CaptionEntry(text: 'c2'),
-            },
+          Right<Failure, AppImage>(
+            image2.copyWith(
+              captions: const <String, CaptionEntry>{
+                'caption1': CaptionEntry(text: 'c2'),
+              },
+            ),
           ),
         );
         await run;
@@ -508,13 +536,15 @@ void main() {
         when(mockCaptioningRepository.rewriteCaption(any, any, any)).thenAnswer(
           (Invocation inv) async {
             final AppImage img = inv.positionalArguments[1] as AppImage;
-            return img.copyWith(
-              captions: const <String, CaptionEntry>{
-                'default': CaptionEntry(
-                  text: 'A young woman stands.',
-                  isEdited: true,
-                ),
-              },
+            return Right<Failure, AppImage>(
+              img.copyWith(
+                captions: const <String, CaptionEntry>{
+                  'default': CaptionEntry(
+                    text: 'A young woman stands.',
+                    isEdited: true,
+                  ),
+                },
+              ),
             );
           },
         );
@@ -545,10 +575,11 @@ void main() {
           providerType: LlmProviderType.remote,
         );
 
-        await expectLater(
-          captioningCubit.rewriteCaption(llm: llmConfig, instructions: 'x'),
-          throwsA(isA<Exception>()),
+        final String? failure = await captioningCubit.rewriteCaption(
+          llm: llmConfig,
+          instructions: 'x',
         );
+        expect(failure, 'No image selected');
         verifyNever(mockCaptioningRepository.rewriteCaption(any, any, any));
       });
 
@@ -566,7 +597,10 @@ void main() {
           seed(ImageListState(images: <AppImage>[image], folderPath: '/tmp'));
           when(
             mockCaptioningRepository.rewriteCaption(any, any, any),
-          ).thenThrow(Exception('API error'));
+          ).thenAnswer(
+            (_) async =>
+                const Left<Failure, AppImage>(FailureServer(message: 'x')),
+          );
 
           final LlmConfig llmConfig = LlmConfig(
             id: '1',
@@ -575,12 +609,13 @@ void main() {
             providerType: LlmProviderType.remote,
           );
 
-          await expectLater(
-            captioningCubit.rewriteCaption(
-              llm: llmConfig,
-              instructions: 'make it better',
-            ),
-            throwsA(isA<Exception>()),
+          final String? failure = await captioningCubit.rewriteCaption(
+            llm: llmConfig,
+            instructions: 'make it better',
+          );
+          expect(
+            failure,
+            'The server encountered an error. Please try again later.',
           );
           expect(
             session.state.images.single.captions['default']?.text,
@@ -605,7 +640,10 @@ void main() {
           any,
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenThrow(Exception('fail'));
+      ).thenAnswer(
+        (_) async =>
+            const Left<Failure, AppImage>(Failure.serverError(message: 'fail')),
+      );
 
       final LlmConfig llmConfig = LlmConfig(
         id: '1',
@@ -649,8 +687,9 @@ void main() {
           cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
-        (Invocation invocation) async =>
-            invocation.positionalArguments[1] as AppImage,
+        (Invocation invocation) async => Right<Failure, AppImage>(
+          invocation.positionalArguments[1] as AppImage,
+        ),
       );
 
       final LlmConfig llmConfig = LlmConfig(
@@ -701,8 +740,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(
@@ -765,8 +805,9 @@ void main() {
               cancelToken: anyNamed('cancelToken'),
             ),
           ).thenAnswer(
-            (Invocation invocation) async =>
-                invocation.positionalArguments[1] as AppImage,
+            (Invocation invocation) async => Right<Failure, AppImage>(
+              invocation.positionalArguments[1] as AppImage,
+            ),
           );
 
           final LlmConfig llmConfig = LlmConfig(
@@ -828,8 +869,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(
@@ -882,8 +924,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(
@@ -935,8 +978,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(
@@ -988,8 +1032,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(
@@ -1039,8 +1084,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (Invocation invocation) async =>
-              invocation.positionalArguments[1] as AppImage,
+          (Invocation invocation) async => Right<Failure, AppImage>(
+            invocation.positionalArguments[1] as AppImage,
+          ),
         );
 
         final LlmConfig llmConfig = LlmConfig(

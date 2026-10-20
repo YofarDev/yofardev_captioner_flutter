@@ -1,43 +1,111 @@
+import 'dart:async';
+
+import 'package:fpdart/fpdart.dart';
+
+import '../../../../core/errors/exception_mapper.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../services/caption_service.dart';
 
+/// LLM-backed caption operations. Never throws across the boundary (except
+/// [CancellationException], which is control flow, not failure).
 class CaptionRepository {
   final CaptionService _captionService;
   CaptionRepository({CaptionService? captionService})
     : _captionService = captionService ?? CaptionService();
 
-  Future<String> getCaption(
+  Future<Either<Failure, String>> getCaption(
     LlmConfig config,
     AppImage image,
     String prompt, {
     CancelToken? cancelToken,
-  }) {
-    return _captionService.getCaption(
-      config,
-      image.image,
-      prompt,
-      cancelToken: cancelToken,
-    );
+  }) async {
+    try {
+      return Right<Failure, String>(
+        await _captionService.getCaption(
+          config,
+          image.image,
+          prompt,
+          cancelToken: cancelToken,
+        ),
+      );
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, String>(
+        _mapLlmError(e, stackTrace: st, tag: 'CaptionRepository.getCaption'),
+      );
+    }
   }
 
   /// Rewrites an existing caption (text-only) using the LLM.
-  Future<String> rewriteCaption(
+  Future<Either<Failure, String>> rewriteCaption(
     LlmConfig config,
     String currentCaption,
     String instructions,
-  ) {
-    return _captionService.rewriteCaption(config, currentCaption, instructions);
+  ) async {
+    try {
+      return Right<Failure, String>(
+        await _captionService.rewriteCaption(
+          config,
+          currentCaption,
+          instructions,
+        ),
+      );
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, String>(
+        _mapLlmError(
+          e,
+          stackTrace: st,
+          tag: 'CaptionRepository.rewriteCaption',
+        ),
+      );
+    }
   }
 
   /// Generic text-only transform driven entirely by [userPrompt]
   /// (e.g. JSON → natural language).
-  Future<String> transformCaption(
+  Future<Either<Failure, String>> transformCaption(
     LlmConfig config,
     String sourceText,
     String userPrompt,
-  ) {
-    return _captionService.transformCaption(config, sourceText, userPrompt);
+  ) async {
+    try {
+      return Right<Failure, String>(
+        await _captionService.transformCaption(config, sourceText, userPrompt),
+      );
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, String>(
+        _mapLlmError(
+          e,
+          stackTrace: st,
+          tag: 'CaptionRepository.transformCaption',
+        ),
+      );
+    }
+  }
+
+  /// Known-exception classification: [ApiException] maps to
+  /// unauthorized (401/403) or serverError; [TimeoutException] and other
+  /// transport errors map to network; everything else falls back to
+  /// [mapExceptionToFailure].
+  Failure _mapLlmError(
+    Object e, {
+    required StackTrace stackTrace,
+    required String tag,
+  }) {
+    if (e is ApiException) {
+      if (e.message.contains('401') || e.message.contains('403')) {
+        return Failure.unauthorized(message: e.message);
+      }
+      return Failure.serverError(message: e.message);
+    }
+    return mapExceptionToFailure(e, stackTrace: stackTrace, tag: tag);
   }
 }

@@ -6,11 +6,13 @@
 
 import 'dart:async' as _i3;
 
+import 'package:fpdart/fpdart.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
-import 'package:yofardev_captioner/core/models/app_image.dart' as _i5;
-import 'package:yofardev_captioner/core/models/llm_config.dart' as _i4;
-import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:yofardev_captioner/core/errors/failure.dart' as _i5;
+import 'package:yofardev_captioner/core/models/app_image.dart' as _i7;
+import 'package:yofardev_captioner/core/models/llm_config.dart' as _i6;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i8;
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart'
     as _i2;
 
@@ -39,11 +41,11 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
   }
 
   @override
-  _i3.Future<String> getCaption(
-    _i4.LlmConfig? config,
-    _i5.AppImage? image,
+  _i3.Future<_i4.Either<_i5.Failure, String>> getCaption(
+    _i6.LlmConfig? config,
+    _i7.AppImage? image,
     String? prompt, {
-    _i6.CancelToken? cancelToken,
+    _i8.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -51,8 +53,8 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               [config, image, prompt],
               {#cancelToken: cancelToken},
             ),
-            returnValue: _i3.Future<String>.value(
-              _i7.dummyValue<String>(
+            returnValue: _i3.Future<_i4.Either<_i5.Failure, String>>.value(
+              _i9.dummyValue<_i4.Either<_i5.Failure, String>>(
                 this,
                 Invocation.method(
                   #getCaption,
@@ -62,11 +64,11 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               ),
             ),
           )
-          as _i3.Future<String>);
+          as _i3.Future<_i4.Either<_i5.Failure, String>>);
 
   @override
-  _i3.Future<String> rewriteCaption(
-    _i4.LlmConfig? config,
+  _i3.Future<_i4.Either<_i5.Failure, String>> rewriteCaption(
+    _i6.LlmConfig? config,
     String? currentCaption,
     String? instructions,
   ) =>
@@ -76,8 +78,8 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               currentCaption,
               instructions,
             ]),
-            returnValue: _i3.Future<String>.value(
-              _i7.dummyValue<String>(
+            returnValue: _i3.Future<_i4.Either<_i5.Failure, String>>.value(
+              _i9.dummyValue<_i4.Either<_i5.Failure, String>>(
                 this,
                 Invocation.method(#rewriteCaption, [
                   config,
@@ -87,11 +89,11 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               ),
             ),
           )
-          as _i3.Future<String>);
+          as _i3.Future<_i4.Either<_i5.Failure, String>>);
 
   @override
-  _i3.Future<String> transformCaption(
-    _i4.LlmConfig? config,
+  _i3.Future<_i4.Either<_i5.Failure, String>> transformCaption(
+    _i6.LlmConfig? config,
     String? sourceText,
     String? userPrompt,
   ) =>
@@ -101,8 +103,8 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               sourceText,
               userPrompt,
             ]),
-            returnValue: _i3.Future<String>.value(
-              _i7.dummyValue<String>(
+            returnValue: _i3.Future<_i4.Either<_i5.Failure, String>>.value(
+              _i9.dummyValue<_i4.Either<_i5.Failure, String>>(
                 this,
                 Invocation.method(#transformCaption, [
                   config,
@@ -112,5 +114,5 @@ class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
               ),
             ),
           )
-          as _i3.Future<String>);
+          as _i3.Future<_i4.Either<_i5.Failure, String>>);
 }

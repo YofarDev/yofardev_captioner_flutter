@@ -4,14 +4,17 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
-import 'dart:async' as _i4;
+import 'dart:async' as _i3;
 
+import 'package:fpdart/fpdart.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:yofardev_captioner/core/models/app_image.dart' as _i2;
-import 'package:yofardev_captioner/core/models/llm_config.dart' as _i5;
-import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:yofardev_captioner/core/errors/failure.dart' as _i5;
+import 'package:yofardev_captioner/core/models/app_image.dart' as _i6;
+import 'package:yofardev_captioner/core/models/llm_config.dart' as _i7;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i8;
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart'
-    as _i3;
+    as _i2;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -29,27 +32,22 @@ import 'package:yofardev_captioner/features/captioning/data/repositories/caption
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeAppImage_0 extends _i1.SmartFake implements _i2.AppImage {
-  _FakeAppImage_0(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
 /// A class which mocks [CaptioningRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockCaptioningRepository extends _i1.Mock
-    implements _i3.CaptioningRepository {
+    implements _i2.CaptioningRepository {
   MockCaptioningRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<_i2.AppImage> captionImage(
-    _i5.LlmConfig? config,
-    _i2.AppImage? image,
+  _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>> captionImage(
+    _i7.LlmConfig? config,
+    _i6.AppImage? image,
     String? prompt, {
     String? category = 'default',
-    _i6.CancelToken? cancelToken,
+    _i8.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -57,26 +55,27 @@ class MockCaptioningRepository extends _i1.Mock
               [config, image, prompt],
               {#category: category, #cancelToken: cancelToken},
             ),
-            returnValue: _i4.Future<_i2.AppImage>.value(
-              _FakeAppImage_0(
-                this,
-                Invocation.method(
-                  #captionImage,
-                  [config, image, prompt],
-                  {#category: category, #cancelToken: cancelToken},
+            returnValue:
+                _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>.value(
+                  _i9.dummyValue<_i4.Either<_i5.Failure, _i6.AppImage>>(
+                    this,
+                    Invocation.method(
+                      #captionImage,
+                      [config, image, prompt],
+                      {#category: category, #cancelToken: cancelToken},
+                    ),
+                  ),
                 ),
-              ),
-            ),
           )
-          as _i4.Future<_i2.AppImage>);
+          as _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>);
 
   @override
-  _i4.Future<_i2.AppImage> rewriteCaption(
-    _i5.LlmConfig? config,
-    _i2.AppImage? image,
+  _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>> rewriteCaption(
+    _i7.LlmConfig? config,
+    _i6.AppImage? image,
     String? instructions, {
     String? category = 'default',
-    _i6.CancelToken? cancelToken,
+    _i8.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -84,23 +83,24 @@ class MockCaptioningRepository extends _i1.Mock
               [config, image, instructions],
               {#category: category, #cancelToken: cancelToken},
             ),
-            returnValue: _i4.Future<_i2.AppImage>.value(
-              _FakeAppImage_0(
-                this,
-                Invocation.method(
-                  #rewriteCaption,
-                  [config, image, instructions],
-                  {#category: category, #cancelToken: cancelToken},
+            returnValue:
+                _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>.value(
+                  _i9.dummyValue<_i4.Either<_i5.Failure, _i6.AppImage>>(
+                    this,
+                    Invocation.method(
+                      #rewriteCaption,
+                      [config, image, instructions],
+                      {#category: category, #cancelToken: cancelToken},
+                    ),
+                  ),
                 ),
-              ),
-            ),
           )
-          as _i4.Future<_i2.AppImage>);
+          as _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>);
 
   @override
-  _i4.Future<_i2.AppImage> transformCaption(
-    _i5.LlmConfig? config,
-    _i2.AppImage? image,
+  _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>> transformCaption(
+    _i7.LlmConfig? config,
+    _i6.AppImage? image,
     String? sourceCategory,
     String? targetCategory,
     String? userPrompt,
@@ -113,18 +113,19 @@ class MockCaptioningRepository extends _i1.Mock
               targetCategory,
               userPrompt,
             ]),
-            returnValue: _i4.Future<_i2.AppImage>.value(
-              _FakeAppImage_0(
-                this,
-                Invocation.method(#transformCaption, [
-                  config,
-                  image,
-                  sourceCategory,
-                  targetCategory,
-                  userPrompt,
-                ]),
-              ),
-            ),
+            returnValue:
+                _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>.value(
+                  _i9.dummyValue<_i4.Either<_i5.Failure, _i6.AppImage>>(
+                    this,
+                    Invocation.method(#transformCaption, [
+                      config,
+                      image,
+                      sourceCategory,
+                      targetCategory,
+                      userPrompt,
+                    ]),
+                  ),
+                ),
           )
-          as _i4.Future<_i2.AppImage>);
+          as _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>);
 }

@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
@@ -14,6 +16,9 @@ import 'captioning_repository_test.mocks.dart';
 
 @GenerateMocks(<Type>[CaptionRepository])
 void main() {
+  // Mockito cannot synthesize Either dummies for the new signatures.
+  provideDummy<Either<Failure, String>>(const Right<Failure, String>(''));
+
   group('CaptioningRepository', () {
     late CaptioningRepository repository;
     late MockCaptionRepository mockInner;
@@ -39,19 +44,20 @@ void main() {
     test('captionImage delegates and stores caption under category', () async {
       when(
         mockInner.getCaption(any, any, any),
-      ).thenAnswer((_) async => 'a caption');
+      ).thenAnswer((_) async => const Right<Failure, String>('a caption'));
 
-      final AppImage result = await repository.captionImage(
+      final Either<Failure, AppImage> result = await repository.captionImage(
         config,
         image,
         'prompt',
       );
 
       verify(mockInner.getCaption(config, image, 'prompt')).called(1);
-      expect(result.captions['default']?.text, 'a caption');
-      expect(result.captions['default']?.model, 'cfg');
-      expect(result.captions['default']?.isEdited, isFalse);
-      expect(result.lastModified, isNotNull);
+      final AppImage updated = result.getRight().toNullable()!;
+      expect(updated.captions['default']?.text, 'a caption');
+      expect(updated.captions['default']?.model, 'cfg');
+      expect(updated.captions['default']?.isEdited, isFalse);
+      expect(updated.lastModified, isNotNull);
     });
 
     test(
@@ -64,40 +70,42 @@ void main() {
         );
         when(
           mockInner.getCaption(any, any, any),
-        ).thenAnswer((_) async => 'new');
+        ).thenAnswer((_) async => const Right<Failure, String>('new'));
 
-        final AppImage result = await repository.captionImage(
+        final Either<Failure, AppImage> result = await repository.captionImage(
           config,
           withSibling,
           'prompt',
           category: 'alt',
         );
 
-        expect(result.captions['default']?.text, 'old'); // preserved
-        expect(result.captions['alt']?.text, 'new'); // added
+        final AppImage updated = result.getRight().toNullable()!;
+        expect(updated.captions['default']?.text, 'old'); // preserved
+        expect(updated.captions['alt']?.text, 'new'); // added
       },
     );
 
     test('rewriteCaption marks result as edited', () async {
       when(
         mockInner.rewriteCaption(any, any, any),
-      ).thenAnswer((_) async => 'rewritten');
+      ).thenAnswer((_) async => const Right<Failure, String>('rewritten'));
 
-      final AppImage result = await repository.rewriteCaption(
+      final Either<Failure, AppImage> result = await repository.rewriteCaption(
         config,
         image,
         'make it shorter',
       );
 
       verify(mockInner.rewriteCaption(config, '', 'make it shorter')).called(1);
-      expect(result.captions['default']?.text, 'rewritten');
-      expect(result.captions['default']?.isEdited, isTrue);
+      final AppImage updated = result.getRight().toNullable()!;
+      expect(updated.captions['default']?.text, 'rewritten');
+      expect(updated.captions['default']?.isEdited, isTrue);
     });
 
     test('rewriteCaption passes through when original is plain text', () async {
       when(
         mockInner.rewriteCaption(any, any, any),
-      ).thenAnswer((_) async => 'still plain');
+      ).thenAnswer((_) async => const Right<Failure, String>('still plain'));
 
       final AppImage plain = image.copyWith(
         captions: <String, CaptionEntry>{
@@ -105,19 +113,22 @@ void main() {
         },
       );
 
-      final AppImage result = await repository.rewriteCaption(
+      final Either<Failure, AppImage> result = await repository.rewriteCaption(
         config,
         plain,
         'instructions',
       );
 
-      expect(result.captions['default']?.text, 'still plain');
+      expect(
+        result.getRight().toNullable()!.captions['default']?.text,
+        'still plain',
+      );
     });
 
     test('rewriteCaption accepts valid JSON when original was JSON', () async {
       when(
         mockInner.rewriteCaption(any, any, any),
-      ).thenAnswer((_) async => '{"k": "v"}');
+      ).thenAnswer((_) async => const Right<Failure, String>('{"k": "v"}'));
 
       final AppImage withJson = image.copyWith(
         captions: <String, CaptionEntry>{
@@ -125,21 +136,24 @@ void main() {
         },
       );
 
-      final AppImage result = await repository.rewriteCaption(
+      final Either<Failure, AppImage> result = await repository.rewriteCaption(
         config,
         withJson,
         'instructions',
       );
 
-      expect(result.captions['default']?.text, '{"k": "v"}');
+      expect(
+        result.getRight().toNullable()!.captions['default']?.text,
+        '{"k": "v"}',
+      );
     });
 
     test(
       'rewriteCaption throws when original was JSON but result is not',
       () async {
-        when(
-          mockInner.rewriteCaption(any, any, any),
-        ).thenAnswer((_) async => 'not json at all');
+        when(mockInner.rewriteCaption(any, any, any)).thenAnswer(
+          (_) async => const Right<Failure, String>('not json at all'),
+        );
 
         final AppImage withJson = image.copyWith(
           captions: <String, CaptionEntry>{
@@ -147,10 +161,10 @@ void main() {
           },
         );
 
-        await expectLater(
-          repository.rewriteCaption(config, withJson, 'instructions'),
-          throwsA(isA<Exception>()),
-        );
+        final Either<Failure, AppImage> result = await repository
+            .rewriteCaption(config, withJson, 'instructions');
+
+        expect(result.getLeft().toNullable(), isA<FailureInvalidData>());
       },
     );
   });

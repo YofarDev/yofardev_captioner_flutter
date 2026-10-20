@@ -27,6 +27,7 @@ class CaptioningState extends Equatable {
     int? processedImages,
     int? totalImages,
     String? error,
+    bool clearError = false,
     String? currentlyCaptioningImage,
     bool? setCurrentlyCaptioningImage,
     bool? isCancelling,
@@ -36,7 +37,7 @@ class CaptioningState extends Equatable {
       progress: progress ?? this.progress,
       processedImages: processedImages ?? this.processedImages,
       totalImages: totalImages ?? this.totalImages,
-      error: error ?? this.error,
+      error: clearError ? null : (error ?? this.error),
       currentlyCaptioningImage: (setCurrentlyCaptioningImage ?? false)
           ? currentlyCaptioningImage
           : this.currentlyCaptioningImage,

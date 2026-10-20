@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
@@ -155,16 +158,26 @@ class CaptioningCubit extends Cubit<CaptioningState> {
             : '$prompt\n\n'
                   'Existing structured analysis of this image (JSON), use as reference:\n'
                   '$jsonContext$guidanceBlock';
-        AppImage updatedImage = await _captioningRepository.captionImage(
-          llm,
-          image,
-          effectivePrompt,
-          category: category,
-          cancelToken: _cancelToken,
-        );
-        // Clear any previous errors on success
-        updatedImage = updatedImage.copyWith(clearError: true);
-        _session.updateImage(image: updatedImage);
+        final Either<Failure, AppImage> result = await _captioningRepository
+            .captionImage(
+              llm,
+              image,
+              effectivePrompt,
+              category: category,
+              cancelToken: _cancelToken,
+            );
+        final AppImage? updatedImage = result.getRight().toNullable();
+        if (updatedImage != null) {
+          // Clear any previous errors on success
+          _session.updateImage(image: updatedImage.copyWith(clearError: true));
+        } else {
+          final Failure f = result.getLeft().toNullable()!;
+          final String message = failureMessage(f);
+          errors.add('Failed to caption ${image.image.path}: $message');
+          // Store error in the image object
+          final AppImage errorImage = image.copyWith(error: message);
+          _session.updateImage(image: errorImage);
+        }
       } on CancellationException {
         // The in-flight op was aborted via stop — don't flag the image as
         // failed; just end the run cleanly.
@@ -176,11 +189,6 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         );
         _cancelToken = null;
         return;
-      } catch (e) {
-        errors.add('Failed to caption ${image.image.path}: $e');
-        // Store error in the image object
-        final AppImage errorImage = image.copyWith(error: '$e');
-        _session.updateImage(image: errorImage);
       }
       processedImagesCount++;
       emit(
@@ -219,23 +227,23 @@ class CaptioningCubit extends Cubit<CaptioningState> {
 
   /// Asks the LLM to rewrite the current image's active caption (text-only,
   /// no image sent) given free-form [instructions]. Operates on the currently
-  /// displayed image only. Errors propagate to the caller for UX handling.
-  Future<void> rewriteCaption({
+  /// displayed image only. Returns a user-facing failure message, or null on
+  /// success.
+  Future<String?> rewriteCaption({
     required LlmConfig llm,
     required String instructions,
   }) async {
     final AppImage? currentImage = _session.current.currentDisplayedImage;
     if (currentImage == null) {
-      throw Exception('No image selected');
+      return 'No image selected';
     }
     final String category = _session.state.activeCategory ?? 'default';
-    final AppImage updatedImage = await _captioningRepository.rewriteCaption(
-      llm,
-      currentImage,
-      instructions,
-      category: category,
-    );
-    _session.updateImage(image: updatedImage.copyWith(clearError: true));
+    final Either<Failure, AppImage> result = await _captioningRepository
+        .rewriteCaption(llm, currentImage, instructions, category: category);
+    return result.fold<String?>(failureMessage, (AppImage updatedImage) {
+      _session.updateImage(image: updatedImage.copyWith(clearError: true));
+      return null;
+    });
   }
 
   /// Batch text-only conversion: reads each image's caption from
@@ -346,7 +354,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         ),
       );
       try {
-        final AppImage updatedImage = await _captioningRepository
+        final Either<Failure, AppImage> result = await _captioningRepository
             .transformCaption(
               llm,
               image,
@@ -354,7 +362,16 @@ class CaptioningCubit extends Cubit<CaptioningState> {
               targetCategory,
               prompt,
             );
-        _session.updateImage(image: updatedImage.copyWith(clearError: true));
+        final AppImage? updatedImage = result.getRight().toNullable();
+        if (updatedImage != null) {
+          _session.updateImage(image: updatedImage.copyWith(clearError: true));
+        } else {
+          final Failure f = result.getLeft().toNullable()!;
+          final String message = failureMessage(f);
+          errors.add('Failed to convert ${image.image.path}: $message');
+          final AppImage errorImage = image.copyWith(error: message);
+          _session.updateImage(image: errorImage);
+        }
       } on CancellationException {
         emit(
           state.copyWith(
@@ -364,10 +381,6 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         );
         _cancelToken = null;
         return;
-      } catch (e) {
-        errors.add('Failed to convert ${image.image.path}: $e');
-        final AppImage errorImage = image.copyWith(error: '$e');
-        _session.updateImage(image: errorImage);
       }
       processedImagesCount++;
       emit(
@@ -409,6 +422,6 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   }
 
   void clearErrors() {
-    emit(state.copyWith(status: CaptioningStatus.initial));
+    emit(state.copyWith(status: CaptioningStatus.initial, clearError: true));
   }
 }

@@ -1,5 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:fpdart/fpdart.dart';
+
+import '../../../../core/errors/failure.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_config.dart';
@@ -13,30 +17,29 @@ class CaptioningRepository implements ICaptioningRepository {
     : _captionRepository = captionRepository ?? CaptionRepository();
 
   @override
-  Future<AppImage> captionImage(
+  Future<Either<Failure, AppImage>> captionImage(
     LlmConfig config,
     AppImage image,
     String prompt, {
     String category = 'default',
     CancelToken? cancelToken,
   }) async {
-    final String caption = await _captionRepository.getCaption(
-      config,
-      image,
-      prompt,
-      cancelToken: cancelToken,
-    );
+    final Either<Failure, String> captionResult = await _captionRepository
+        .getCaption(config, image, prompt, cancelToken: cancelToken);
+    final String caption = captionResult.getRight().toNullable()!;
     final DateTime timestamp = DateTime.now();
-    return image.copyWith(
-      captions: <String, CaptionEntry>{
-        ...image.captions,
-        category: CaptionEntry(
-          text: caption,
-          model: config.name,
-          timestamp: timestamp,
-        ),
-      },
-      lastModified: timestamp,
+    return Right<Failure, AppImage>(
+      image.copyWith(
+        captions: <String, CaptionEntry>{
+          ...image.captions,
+          category: CaptionEntry(
+            text: caption,
+            model: config.name,
+            timestamp: timestamp,
+          ),
+        },
+        lastModified: timestamp,
+      ),
     );
   }
 
@@ -44,7 +47,7 @@ class CaptioningRepository implements ICaptioningRepository {
   /// resulting caption is marked as edited so it is skipped by future "All
   /// images" vision batches, matching how manual edits are treated.
   @override
-  Future<AppImage> rewriteCaption(
+  Future<Either<Failure, AppImage>> rewriteCaption(
     LlmConfig config,
     AppImage image,
     String instructions, {
@@ -52,39 +55,51 @@ class CaptioningRepository implements ICaptioningRepository {
     CancelToken? cancelToken,
   }) async {
     final String currentCaption = image.captions[category]?.text ?? '';
-    final String rewritten = await _captionRepository.rewriteCaption(
-      config,
+    final Either<Failure, String> rewriteResult = await _captionRepository
+        .rewriteCaption(config, currentCaption, instructions);
+    final String rewritten = rewriteResult.getRight().toNullable()!;
+    final Failure? jsonFailure = _validateRewrittenJson(
       currentCaption,
-      instructions,
+      rewritten,
     );
-    _validateRewrittenJson(currentCaption, rewritten);
+    if (jsonFailure != null) {
+      return Left<Failure, AppImage>(jsonFailure);
+    }
     final DateTime timestamp = DateTime.now();
-    return image.copyWith(
-      captions: <String, CaptionEntry>{
-        ...image.captions,
-        category: CaptionEntry(
-          text: rewritten,
-          model: config.name,
-          timestamp: timestamp,
-          isEdited: true,
-        ),
-      },
-      lastModified: timestamp,
+    return Right<Failure, AppImage>(
+      image.copyWith(
+        captions: <String, CaptionEntry>{
+          ...image.captions,
+          category: CaptionEntry(
+            text: rewritten,
+            model: config.name,
+            timestamp: timestamp,
+            isEdited: true,
+          ),
+        },
+        lastModified: timestamp,
+      ),
     );
   }
 
   /// If the original caption was JSON, validates the rewritten result is also
   /// valid JSON so the JSON structure is not corrupted.
-  void _validateRewrittenJson(String original, String rewritten) {
-    if (!original.trim().startsWith('{')) return;
+  /// Returns a Failure when [rewritten] breaks the JSON structure of
+  /// [original]; null otherwise.
+  Failure? _validateRewrittenJson(String original, String rewritten) {
+    if (!original.trim().startsWith('{')) {
+      return null;
+    }
     try {
       jsonDecode(rewritten);
-    } catch (_) {
-      throw Exception(
-        'The rewritten caption is no longer valid JSON. '
-        'The original caption appears to be structured JSON but the '
-        'rewrite returned plain text. Try different rewrite instructions '
-        'or rephrase them to preserve the JSON structure.',
+      return null;
+    } catch (e) {
+      return const Failure.invalidData(
+        message:
+            'The rewritten caption is no longer valid JSON. '
+            'The original caption appears to be structured JSON but the '
+            'rewrite returned plain text. Try different rewrite instructions '
+            'or rephrase them to preserve the JSON structure.',
       );
     }
   }
@@ -94,7 +109,7 @@ class CaptioningRepository implements ICaptioningRepository {
   /// image is sent. The target caption is marked edited so future vision "All"
   /// batches skip it. Caller must ensure the source caption is non-empty.
   @override
-  Future<AppImage> transformCaption(
+  Future<Either<Failure, AppImage>> transformCaption(
     LlmConfig config,
     AppImage image,
     String sourceCategory,
@@ -102,23 +117,23 @@ class CaptioningRepository implements ICaptioningRepository {
     String userPrompt,
   ) async {
     final String sourceText = image.captions[sourceCategory]?.text ?? '';
-    final String transformed = await _captionRepository.transformCaption(
-      config,
-      sourceText,
-      userPrompt,
-    );
+    final Either<Failure, String> transformResult = await _captionRepository
+        .transformCaption(config, sourceText, userPrompt);
+    final String transformed = transformResult.getRight().toNullable()!;
     final DateTime timestamp = DateTime.now();
-    return image.copyWith(
-      captions: <String, CaptionEntry>{
-        ...image.captions,
-        targetCategory: CaptionEntry(
-          text: transformed,
-          model: config.name,
-          timestamp: timestamp,
-          isEdited: true,
-        ),
-      },
-      lastModified: timestamp,
+    return Right<Failure, AppImage>(
+      image.copyWith(
+        captions: <String, CaptionEntry>{
+          ...image.captions,
+          targetCategory: CaptionEntry(
+            text: transformed,
+            model: config.name,
+            timestamp: timestamp,
+            isEdited: true,
+          ),
+        },
+        lastModified: timestamp,
+      ),
     );
   }
 }

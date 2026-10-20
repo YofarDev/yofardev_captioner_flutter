@@ -7,9 +7,14 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_data.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/layer_title_store.dart';
@@ -17,7 +22,74 @@ import 'package:yofardev_captioner/features/structured_captioning/logic/structur
 
 import 'structured_editor_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit, StructuredCaptionRepository])
+@GenerateMocks(<Type>[StructuredCaptionRepository])
+/// Hand-rolled fake of the [CaptionFileStore] port — records caption JSON
+/// written via the session and can be made to throw (disk-full simulation).
+class _FakeFileStore implements CaptionFileStore {
+  final List<String> writtenCaptions = <String>[];
+  Object? writeError;
+
+  @override
+  Future<List<AppImage>> onFolderPicked(String folderPath) =>
+      Future<List<AppImage>>.value(<AppImage>[]);
+
+  @override
+  Future<CaptionDatabase> readDb(String folderPath) async =>
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+
+  @override
+  Future<void> writeDb(String folderPath, CaptionDatabase db) async {
+    final Object? error = writeError;
+    if (error != null) {
+      throw error;
+    }
+    for (final CaptionData d in db.images) {
+      writtenCaptions.add(d.captions['default']?.text ?? '');
+    }
+  }
+
+  @override
+  Future<void> removeImage(File imageFile) async {}
+
+  @override
+  Future<void> writeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+    String format,
+  ) async {}
+
+  @override
+  Future<void> removeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+  ) async {}
+
+  @override
+  Future<AppImage> duplicateImage(AppImage originalImage) async =>
+      originalImage;
+
+  @override
+  int compareNatural(String a, String b) => a.compareTo(b);
+
+  @override
+  Future<List<AppImage>> getImagesSize(List<AppImage> images) async => images;
+
+  @override
+  Future<AppImage> getSingleImageSize(AppImage image) async => image;
+}
+
+/// Filter engine that passes images through unchanged (unfiltered sessions).
+class _PassthroughFilterEngine implements CaptionFilterEngine {
+  @override
+  List<AppImage> filter(
+    List<AppImage> images, {
+    required String category,
+    required String query,
+    required bool caseSensitive,
+  }) => images;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -41,7 +113,8 @@ void main() {
 
   group('StructuredEditorCubit', () {
     late StructuredEditorCubit cubit;
-    late MockImageListCubit mockImageListCubit;
+    late CaptionSessionService session;
+    late _FakeFileStore store;
 
     setUpAll(() {
       locator.registerLazySingleton<Logger>(() => Logger('TestEditor'));
@@ -50,15 +123,30 @@ void main() {
     setUp(() {
       // LayerTitleStore reads/writes SharedPreferences; isolate per test.
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      mockImageListCubit = MockImageListCubit();
-      when(
-        mockImageListCubit.updateCaption(caption: anyNamed('caption')),
-      ).thenAnswer((_) async {});
+      store = _FakeFileStore();
+      session = CaptionSessionService(
+        fileStore: store,
+        filterEngine: _PassthroughFilterEngine(),
+      );
+      // One seeded image so session.updateCaption has a current target.
+      session.adopt(
+        ImageListState(
+          images: <AppImage>[
+            AppImage(
+              id: 'img',
+              image: File('img.png'),
+              captions: const <String, CaptionEntry>{},
+            ),
+          ],
+          folderPath: '/tmp',
+          currentImageId: 'img',
+        ),
+      );
       cubit = StructuredEditorCubit(
         initialCaption: baseCaption(),
         imageFile: File('img.png'),
         activeCategory: 'default',
-        imageListCubit: mockImageListCubit,
+        session: session,
       );
     });
 
@@ -253,9 +341,7 @@ void main() {
           await cubit.flushSave();
 
           // Caption JSON is never rewritten for a title-only change.
-          verifyNever(
-            mockImageListCubit.updateCaption(caption: anyNamed('caption')),
-          );
+          expect(store.writtenCaptions, isEmpty);
           // Titles round-trip through the sidecar store.
           expect(await const LayerTitleStore().load('img.png'), <int, String>{
             1: 'hero',
@@ -272,7 +358,7 @@ void main() {
           initialCaption: baseCaption(),
           imageFile: File('seeded.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
         );
         // Let the constructor's fire-and-forget _loadTitles() land.
         await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -333,9 +419,7 @@ void main() {
       test('moveElement schedules a save', () async {
         cubit.moveElement(0, 2);
         await cubit.flushSave();
-        verify(
-          mockImageListCubit.updateCaption(caption: anyNamed('caption')),
-        ).called(1);
+        expect(store.writtenCaptions, hasLength(1));
       });
     });
 
@@ -345,31 +429,28 @@ void main() {
         await cubit.flushSave();
 
         expect(cubit.state.status, StructuredEditorStatus.saved);
-        final VerificationResult verification = verify(
-          mockImageListCubit.updateCaption(caption: captureAnyNamed('caption')),
-        );
-        verification.called(1);
-        final String captured = verification.captured.single as String;
-        expect(captured, contains('dirty'));
+        expect(store.writtenCaptions, hasLength(1));
+        expect(store.writtenCaptions.single, contains('dirty'));
       });
 
-      test('save emits error status when updateCaption throws', () async {
-        when(
-          mockImageListCubit.updateCaption(caption: anyNamed('caption')),
-        ).thenThrow(Exception('disk full'));
+      test('save emits error status when the caption write throws', () async {
+        store.writeError = Exception('disk full');
 
         cubit.updateHighLevelDescription('dirty again');
         await cubit.flushSave();
 
         expect(cubit.state.status, StructuredEditorStatus.error);
         expect(cubit.state.error, contains('disk full'));
+
+        // Clear the fault and flush so the pending (failed) save doesn't
+        // re-fire during tearDown's close.
+        store.writeError = null;
+        await cubit.flushSave();
       });
 
       test('flushSave is a no-op when nothing changed', () async {
         await cubit.flushSave();
-        verifyNever(
-          mockImageListCubit.updateCaption(caption: anyNamed('caption')),
-        );
+        expect(store.writtenCaptions, isEmpty);
       });
     });
 
@@ -403,7 +484,7 @@ void main() {
           initialCaption: withSelection(withBbox: withBbox),
           imageFile: File('img.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
           repository: mockRepo,
         );
         c.selectElement(0);
@@ -415,7 +496,7 @@ void main() {
           initialCaption: baseCaption(),
           imageFile: File('img.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
           repository: mockRepo,
         );
         await c.recaptionSelectedElement(config: _dummyConfig());
@@ -621,7 +702,7 @@ void main() {
           initialCaption: baseCaption(),
           imageFile: File('img.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
           repository: mockRepo,
         );
         return c;
@@ -799,7 +880,7 @@ void main() {
           initialCaption: captionWithBboxes(),
           imageFile: File('img.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
           repository: mockRepo,
         );
         return c;
@@ -1027,7 +1108,7 @@ void main() {
           ),
           imageFile: File('img.png'),
           activeCategory: 'default',
-          imageListCubit: mockImageListCubit,
+          session: session,
           repository: mockRepo,
         );
 

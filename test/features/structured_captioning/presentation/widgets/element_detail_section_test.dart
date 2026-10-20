@@ -4,21 +4,100 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:nested/nested.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
+import 'package:yofardev_captioner/core/models/caption_data.dart';
+import 'package:yofardev_captioner/core/models/caption_database.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
 
-import 'element_detail_section_test.mocks.dart';
+/// Builds a bare caption session (in-memory store, pass-through filter) with
+/// one seeded image so [StructuredEditorCubit] saves have a current target.
+class _TestSession {
+  static CaptionSessionService make() {
+    final CaptionSessionService session = CaptionSessionService(
+      fileStore: _NoopFileStore(),
+      filterEngine: _Passthrough(),
+    );
+    session.adopt(
+      ImageListState(
+        images: <AppImage>[
+          AppImage(
+            id: 'x',
+            image: File('x.png'),
+            captions: const <String, CaptionEntry>{},
+          ),
+        ],
+        folderPath: '/tmp',
+        currentImageId: 'x',
+      ),
+    );
+    return session;
+  }
+}
+
+class _NoopFileStore implements CaptionFileStore {
+  @override
+  Future<List<AppImage>> onFolderPicked(String folderPath) =>
+      Future<List<AppImage>>.value(<AppImage>[]);
+
+  @override
+  Future<CaptionDatabase> readDb(String folderPath) async =>
+      CaptionDatabase(categories: <String>['default'], images: <CaptionData>[]);
+
+  @override
+  Future<void> writeDb(String folderPath, CaptionDatabase db) async {}
+
+  @override
+  Future<void> removeImage(File imageFile) async {}
+
+  @override
+  Future<void> writeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+    String category,
+    String format,
+  ) async {}
+
+  @override
+  Future<void> removeCaptionFiles(
+    String folderPath,
+    List<AppImage> images,
+  ) async {}
+
+  @override
+  Future<AppImage> duplicateImage(AppImage originalImage) async =>
+      originalImage;
+
+  @override
+  int compareNatural(String a, String b) => a.compareTo(b);
+
+  @override
+  Future<List<AppImage>> getImagesSize(List<AppImage> images) async => images;
+
+  @override
+  Future<AppImage> getSingleImageSize(AppImage image) async => image;
+}
+
+class _Passthrough implements CaptionFilterEngine {
+  @override
+  List<AppImage> filter(
+    List<AppImage> images, {
+    required String category,
+    required String query,
+    required bool caseSensitive,
+  }) => images;
+}
 
 /// [LlmConfigsCubit] subclass exposing a test-only emitter so we can drive
 /// arbitrary states into the widget without triggering persistence or DI.
@@ -28,7 +107,6 @@ class _FakeLlmConfigsCubit extends LlmConfigsCubit {
   void emitState(LlmConfigsState next) => emit(next);
 }
 
-@GenerateMocks(<Type>[ImageListCubit])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -77,16 +155,12 @@ void main() {
     required _FakeLlmConfigsCubit llmCubit,
     IdeogramCaption initialCaption = caption,
   }) async {
-    final MockImageListCubit mockImageList = MockImageListCubit();
-    when(
-      mockImageList.updateCaption(caption: anyNamed('caption')),
-    ).thenAnswer((_) async {});
-
+    final CaptionSessionService session = _TestSession.make();
     final StructuredEditorCubit editorCubit = StructuredEditorCubit(
       initialCaption: initialCaption,
       imageFile: File('x.png'),
       activeCategory: 'default',
-      imageListCubit: mockImageList,
+      session: session,
     );
     editorCubit.selectElement(0);
     addTearDown(editorCubit.close);

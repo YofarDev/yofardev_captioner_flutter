@@ -4,30 +4,22 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
-import 'dart:async' as _i8;
-import 'dart:io' as _i13;
+import 'dart:async' as _i5;
+import 'dart:io' as _i7;
 
-import 'package:bloc/bloc.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i10;
-import 'package:yofardev_captioner/core/models/app_image.dart' as _i7;
-import 'package:yofardev_captioner/core/models/llm_config.dart' as _i12;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:yofardev_captioner/core/models/llm_config.dart' as _i6;
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart'
-    as _i14;
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
-    as _i2;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
-    as _i6;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
-    as _i3;
+    as _i8;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart'
-    as _i4;
+    as _i2;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart'
-    as _i5;
+    as _i3;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
-    as _i11;
+    as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
-    as _i15;
+    as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -45,437 +37,49 @@ import 'package:yofardev_captioner/features/structured_captioning/data/services/
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeCaptionSessionService_0 extends _i1.SmartFake
-    implements _i2.CaptionSessionService {
-  _FakeCaptionSessionService_0(Object parent, Invocation parentInvocation)
+class _FakeIdeogramCaption_0 extends _i1.SmartFake
+    implements _i2.IdeogramCaption {
+  _FakeIdeogramCaption_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeImageListState_1 extends _i1.SmartFake
-    implements _i3.ImageListState {
-  _FakeImageListState_1(Object parent, Invocation parentInvocation)
+class _FakeVlmAnalysis_1 extends _i1.SmartFake implements _i3.VlmAnalysis {
+  _FakeVlmAnalysis_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeIdeogramCaption_2 extends _i1.SmartFake
-    implements _i4.IdeogramCaption {
-  _FakeIdeogramCaption_2(Object parent, Invocation parentInvocation)
+class _FakeIdeogramElement_2 extends _i1.SmartFake
+    implements _i2.IdeogramElement {
+  _FakeIdeogramElement_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeVlmAnalysis_3 extends _i1.SmartFake implements _i5.VlmAnalysis {
-  _FakeVlmAnalysis_3(Object parent, Invocation parentInvocation)
+class _FakeIdeogramStyleDescription_3 extends _i1.SmartFake
+    implements _i2.IdeogramStyleDescription {
+  _FakeIdeogramStyleDescription_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
-}
-
-class _FakeIdeogramElement_4 extends _i1.SmartFake
-    implements _i4.IdeogramElement {
-  _FakeIdeogramElement_4(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeIdeogramStyleDescription_5 extends _i1.SmartFake
-    implements _i4.IdeogramStyleDescription {
-  _FakeIdeogramStyleDescription_5(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-/// A class which mocks [ImageListCubit].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
-  MockImageListCubit() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i2.CaptionSessionService get session =>
-      (super.noSuchMethod(
-            Invocation.getter(#session),
-            returnValue: _FakeCaptionSessionService_0(
-              this,
-              Invocation.getter(#session),
-            ),
-          )
-          as _i2.CaptionSessionService);
-
-  @override
-  List<_i7.AppImage> get filteredImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#filteredImages),
-            returnValue: <_i7.AppImage>[],
-          )
-          as List<_i7.AppImage>);
-
-  @override
-  List<_i7.AppImage> get displayedImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#displayedImages),
-            returnValue: <_i7.AppImage>[],
-          )
-          as List<_i7.AppImage>);
-
-  @override
-  _i3.ImageListState get state =>
-      (super.noSuchMethod(
-            Invocation.getter(#state),
-            returnValue: _FakeImageListState_1(this, Invocation.getter(#state)),
-          )
-          as _i3.ImageListState);
-
-  @override
-  _i8.Stream<_i3.ImageListState> get stream =>
-      (super.noSuchMethod(
-            Invocation.getter(#stream),
-            returnValue: _i8.Stream<_i3.ImageListState>.empty(),
-          )
-          as _i8.Stream<_i3.ImageListState>);
-
-  @override
-  bool get isClosed =>
-      (super.noSuchMethod(Invocation.getter(#isClosed), returnValue: false)
-          as bool);
-
-  @override
-  void onChange(_i9.Change<_i3.ImageListState>? change) => super.noSuchMethod(
-    Invocation.method(#onChange, [change]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  _i8.Future<void> close() =>
-      (super.noSuchMethod(
-            Invocation.method(#close, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> onInit({String? folderPath}) =>
-      (super.noSuchMethod(
-            Invocation.method(#onInit, [], {#folderPath: folderPath}),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> onFolderPicked(String? folderPath, {bool? force = false}) =>
-      (super.noSuchMethod(
-            Invocation.method(#onFolderPicked, [folderPath], {#force: force}),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> onFileOpened(String? filePath) =>
-      (super.noSuchMethod(
-            Invocation.method(#onFileOpened, [filePath]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  void onImageSelected(String? imageId) => super.noSuchMethod(
-    Invocation.method(#onImageSelected, [imageId]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void nextImage() => super.noSuchMethod(
-    Invocation.method(#nextImage, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void previousImage() => super.noSuchMethod(
-    Invocation.method(#previousImage, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setGuidanceEnabled(bool? enabled) => super.noSuchMethod(
-    Invocation.method(#setGuidanceEnabled, [enabled]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setGuidance(String? imagePath, String? text) => super.noSuchMethod(
-    Invocation.method(#setGuidance, [imagePath, text]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  String guidanceFor(String? imagePath) =>
-      (super.noSuchMethod(
-            Invocation.method(#guidanceFor, [imagePath]),
-            returnValue: _i10.dummyValue<String>(
-              this,
-              Invocation.method(#guidanceFor, [imagePath]),
-            ),
-          )
-          as String);
-
-  @override
-  _i8.Future<void> saveChanges() =>
-      (super.noSuchMethod(
-            Invocation.method(#saveChanges, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  void onSortChanged(_i3.SortBy? sortBy, bool? sortAscending) =>
-      super.noSuchMethod(
-        Invocation.method(#onSortChanged, [sortBy, sortAscending]),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  _i8.Future<void> getSingleImageSize() =>
-      (super.noSuchMethod(
-            Invocation.method(#getSingleImageSize, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> searchAndReplace(String? search, String? replace) =>
-      (super.noSuchMethod(
-            Invocation.method(#searchAndReplace, [search, replace]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  void countOccurrences(String? search) => super.noSuchMethod(
-    Invocation.method(#countOccurrences, [search]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  _i8.Future<void> updateCaption({required String? caption}) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateCaption, [], {#caption: caption}),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> updateImage({required _i7.AppImage? image}) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateImage, [], {#image: image}),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> removeImage(String? imageId) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeImage, [imageId]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> duplicateImage() =>
-      (super.noSuchMethod(
-            Invocation.method(#duplicateImage, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> writeCaptionFiles() =>
-      (super.noSuchMethod(
-            Invocation.method(#writeCaptionFiles, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> removeCaptionFiles() =>
-      (super.noSuchMethod(
-            Invocation.method(#removeCaptionFiles, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  void updateSearchQuery(String? query) => super.noSuchMethod(
-    Invocation.method(#updateSearchQuery, [query]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void toggleCaseSensitive() => super.noSuchMethod(
-    Invocation.method(#toggleCaseSensitive, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void clearSearch() => super.noSuchMethod(
-    Invocation.method(#clearSearch, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addCategory(String? name, {String? format = 'txt'}) =>
-      super.noSuchMethod(
-        Invocation.method(#addCategory, [name], {#format: format}),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void removeCategory(String? name) => super.noSuchMethod(
-    Invocation.method(#removeCategory, [name]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void renameCategory(String? oldName, String? newName) => super.noSuchMethod(
-    Invocation.method(#renameCategory, [oldName, newName]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void setActiveCategory(String? name) => super.noSuchMethod(
-    Invocation.method(#setActiveCategory, [name]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void reorderCategories(int? oldIndex, int? newIndex) => super.noSuchMethod(
-    Invocation.method(#reorderCategories, [oldIndex, newIndex]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  _i8.Future<void> addTag(String? rawTag) =>
-      (super.noSuchMethod(
-            Invocation.method(#addTag, [rawTag]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> removeTag(String? tag) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeTag, [tag]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> setTags(List<String>? rawTags) =>
-      (super.noSuchMethod(
-            Invocation.method(#setTags, [rawTags]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  Set<String> getAllUniqueTags() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueTags, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Set<String> getAllUniqueMediums() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueMediums, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Map<String, int> getAspectRatioCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAspectRatioCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  Map<String, int> getTagCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTagCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  int getTotalImagesSize() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTotalImagesSize, []),
-            returnValue: 0,
-          )
-          as int);
-
-  @override
-  double getAverageWordsPerCaption() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAverageWordsPerCaption, []),
-            returnValue: 0.0,
-          )
-          as double);
-
-  @override
-  void emit(_i3.ImageListState? state) => super.noSuchMethod(
-    Invocation.method(#emit, [state]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addError(Object? error, [StackTrace? stackTrace]) => super.noSuchMethod(
-    Invocation.method(#addError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void onError(Object? error, StackTrace? stackTrace) => super.noSuchMethod(
-    Invocation.method(#onError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
 }
 
 /// A class which mocks [StructuredCaptionRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockStructuredCaptionRepository extends _i1.Mock
-    implements _i11.StructuredCaptionRepository {
+    implements _i4.StructuredCaptionRepository {
   MockStructuredCaptionRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i8.Future<_i4.IdeogramCaption> generateStructuredCaption(
-    _i12.LlmConfig? config,
-    _i13.File? imageFile, {
+  _i5.Future<_i2.IdeogramCaption> generateStructuredCaption(
+    _i6.LlmConfig? config,
+    _i7.File? imageFile, {
     required void Function(String)? onProgress,
-    _i14.StructuredBatchOverrides? overrides,
+    _i8.StructuredBatchOverrides? overrides,
     bool? debugMode = false,
     bool? disableSam = false,
     bool? vlmEmitsXyxy = true,
     String? guidance = '',
-    _i11.StructuredMode? mode = _i11.StructuredMode.singleShot,
+    _i4.StructuredMode? mode = _i4.StructuredMode.singleShot,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -491,8 +95,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #mode: mode,
               },
             ),
-            returnValue: _i8.Future<_i4.IdeogramCaption>.value(
-              _FakeIdeogramCaption_2(
+            returnValue: _i5.Future<_i2.IdeogramCaption>.value(
+              _FakeIdeogramCaption_0(
                 this,
                 Invocation.method(
                   #generateStructuredCaption,
@@ -510,7 +114,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i4.IdeogramCaption>);
+          as _i5.Future<_i2.IdeogramCaption>);
 
   @override
   double bboxAreaRatio(List<int>? bbox) =>
@@ -529,37 +133,37 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as double);
 
   @override
-  _i5.VlmAnalysis pruneDuplicateObjects(_i5.VlmAnalysis? analysis) =>
+  _i3.VlmAnalysis pruneDuplicateObjects(_i3.VlmAnalysis? analysis) =>
       (super.noSuchMethod(
             Invocation.method(#pruneDuplicateObjects, [analysis]),
-            returnValue: _FakeVlmAnalysis_3(
+            returnValue: _FakeVlmAnalysis_1(
               this,
               Invocation.method(#pruneDuplicateObjects, [analysis]),
             ),
           )
-          as _i5.VlmAnalysis);
+          as _i3.VlmAnalysis);
 
   @override
-  _i8.Future<Map<int, List<int>>> computeSamBboxes({
-    required _i13.File? imageFile,
-    required _i4.IdeogramCaption? caption,
+  _i5.Future<Map<int, List<int>>> computeSamBboxes({
+    required _i7.File? imageFile,
+    required _i2.IdeogramCaption? caption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#computeSamBboxes, [], {
               #imageFile: imageFile,
               #caption: caption,
             }),
-            returnValue: _i8.Future<Map<int, List<int>>>.value(
+            returnValue: _i5.Future<Map<int, List<int>>>.value(
               <int, List<int>>{},
             ),
           )
-          as _i8.Future<Map<int, List<int>>>);
+          as _i5.Future<Map<int, List<int>>>);
 
   @override
-  _i8.Future<_i4.IdeogramElement> recaptionElement({
-    required _i12.LlmConfig? config,
-    required _i13.File? imageFile,
-    required _i4.IdeogramCaption? currentCaption,
+  _i5.Future<_i2.IdeogramElement> recaptionElement({
+    required _i6.LlmConfig? config,
+    required _i7.File? imageFile,
+    required _i2.IdeogramCaption? currentCaption,
     required int? elementIndex,
     String? instructions,
     bool? cropToBbox = false,
@@ -573,8 +177,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
               #instructions: instructions,
               #cropToBbox: cropToBbox,
             }),
-            returnValue: _i8.Future<_i4.IdeogramElement>.value(
-              _FakeIdeogramElement_4(
+            returnValue: _i5.Future<_i2.IdeogramElement>.value(
+              _FakeIdeogramElement_2(
                 this,
                 Invocation.method(#recaptionElement, [], {
                   #config: config,
@@ -587,13 +191,13 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i4.IdeogramElement>);
+          as _i5.Future<_i2.IdeogramElement>);
 
   @override
-  _i8.Future<_i4.IdeogramStyleDescription> recaptionStyle({
-    required _i12.LlmConfig? config,
-    required _i13.File? imageFile,
-    required _i4.IdeogramCaption? currentCaption,
+  _i5.Future<_i2.IdeogramStyleDescription> recaptionStyle({
+    required _i6.LlmConfig? config,
+    required _i7.File? imageFile,
+    required _i2.IdeogramCaption? currentCaption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#recaptionStyle, [], {
@@ -601,8 +205,8 @@ class MockStructuredCaptionRepository extends _i1.Mock
               #imageFile: imageFile,
               #currentCaption: currentCaption,
             }),
-            returnValue: _i8.Future<_i4.IdeogramStyleDescription>.value(
-              _FakeIdeogramStyleDescription_5(
+            returnValue: _i5.Future<_i2.IdeogramStyleDescription>.value(
+              _FakeIdeogramStyleDescription_3(
                 this,
                 Invocation.method(#recaptionStyle, [], {
                   #config: config,
@@ -612,27 +216,27 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i8.Future<_i4.IdeogramStyleDescription>);
+          as _i5.Future<_i2.IdeogramStyleDescription>);
 
   @override
-  _i4.IdeogramStyleDescription mapStyleResponse(
+  _i2.IdeogramStyleDescription mapStyleResponse(
     String? raw,
     List<String>? colorPalette,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#mapStyleResponse, [raw, colorPalette]),
-            returnValue: _FakeIdeogramStyleDescription_5(
+            returnValue: _FakeIdeogramStyleDescription_3(
               this,
               Invocation.method(#mapStyleResponse, [raw, colorPalette]),
             ),
           )
-          as _i4.IdeogramStyleDescription);
+          as _i2.IdeogramStyleDescription);
 
   @override
   String computeAspectRatio(int? width, int? height) =>
       (super.noSuchMethod(
             Invocation.method(#computeAspectRatio, [width, height]),
-            returnValue: _i10.dummyValue<String>(
+            returnValue: _i9.dummyValue<String>(
               this,
               Invocation.method(#computeAspectRatio, [width, height]),
             ),
@@ -645,7 +249,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as String?);
 
   @override
-  _i5.VlmAnalysis parsePartialVlmResponse(
+  _i3.VlmAnalysis parsePartialVlmResponse(
     String? raw, {
     bool? vlmEmitsXyxy = true,
   }) =>
@@ -655,7 +259,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               [raw],
               {#vlmEmitsXyxy: vlmEmitsXyxy},
             ),
-            returnValue: _FakeVlmAnalysis_3(
+            returnValue: _FakeVlmAnalysis_1(
               this,
               Invocation.method(
                 #parsePartialVlmResponse,
@@ -664,7 +268,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i5.VlmAnalysis);
+          as _i3.VlmAnalysis);
 
   @override
   List<int>? normalizeBbox(dynamic raw, {bool? vlmEmitsXyxy = true}) =>
@@ -678,7 +282,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as List<int>?);
 
   @override
-  _i5.VlmAnalysis parseAnalysisJson(
+  _i3.VlmAnalysis parseAnalysisJson(
     Map<String, dynamic>? json, {
     bool? vlmEmitsXyxy = true,
   }) =>
@@ -688,7 +292,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               [json],
               {#vlmEmitsXyxy: vlmEmitsXyxy},
             ),
-            returnValue: _FakeVlmAnalysis_3(
+            returnValue: _FakeVlmAnalysis_1(
               this,
               Invocation.method(
                 #parseAnalysisJson,
@@ -697,29 +301,29 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i5.VlmAnalysis);
+          as _i3.VlmAnalysis);
 
   @override
-  List<_i15.SamDetection> matchDetectionsToObjects(
-    List<_i15.SamDetection>? detections,
-    List<_i11.VlmObjectBboxPair>? vlmObjects,
+  List<_i10.SamDetection> matchDetectionsToObjects(
+    List<_i10.SamDetection>? detections,
+    List<_i4.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#matchDetectionsToObjects, [
               detections,
               vlmObjects,
             ]),
-            returnValue: <_i15.SamDetection>[],
+            returnValue: <_i10.SamDetection>[],
           )
-          as List<_i15.SamDetection>);
+          as List<_i10.SamDetection>);
 
   @override
-  _i4.IdeogramCaption buildIdeogramCaption(
+  _i2.IdeogramCaption buildIdeogramCaption(
     List<String>? globalPalette,
-    _i5.VlmAnalysis? analysis,
-    List<_i15.SamDetection>? detections,
+    _i3.VlmAnalysis? analysis,
+    List<_i10.SamDetection>? detections,
     Map<int, List<String>>? elementPalettes,
-    _i14.StructuredBatchOverrides? overrides,
+    _i8.StructuredBatchOverrides? overrides,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#buildIdeogramCaption, [
@@ -729,7 +333,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               elementPalettes,
               overrides,
             ]),
-            returnValue: _FakeIdeogramCaption_2(
+            returnValue: _FakeIdeogramCaption_0(
               this,
               Invocation.method(#buildIdeogramCaption, [
                 globalPalette,
@@ -740,7 +344,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ]),
             ),
           )
-          as _i4.IdeogramCaption);
+          as _i2.IdeogramCaption);
 
   @override
   bool isLikelyGroup(String? name, String? desc) =>

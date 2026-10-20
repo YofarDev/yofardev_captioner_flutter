@@ -7,7 +7,7 @@ import 'package:logging/logging.dart';
 
 import '../../../core/di/service_locator.dart';
 import '../../../core/models/llm_config.dart';
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
 import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 import '../data/services/layer_title_store.dart';
@@ -19,11 +19,11 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required IdeogramCaption initialCaption,
     required File imageFile,
     required String activeCategory,
-    required ImageListCubit imageListCubit,
+    required CaptionSessionService session,
     StructuredCaptionRepository? repository,
     LayerTitleStore? layerTitleStore,
     bool showBboxText = false,
-  }) : _imageListCubit = imageListCubit,
+  }) : _session = session,
        _repository = repository ?? StructuredCaptionRepository(),
        _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),
        super(
@@ -42,7 +42,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     _loadTitles();
   }
 
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
   final StructuredCaptionRepository _repository;
   final LayerTitleStore _layerTitleStore;
   final Logger _logger = locator<Logger>();
@@ -756,7 +756,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   Future<void> _save() async {
     try {
       final String json = state.caption.toJsonString();
-      await _imageListCubit.updateCaption(caption: json);
+      await _session.updateCaption(caption: json);
       await _persistTitles();
       _isDirty = false;
       emit(state.copyWith(status: StructuredEditorStatus.saved));

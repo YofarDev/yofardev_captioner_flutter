@@ -153,7 +153,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
           ),
           imageFile: _imageFile,
           activeCategory: widget.activeCategory,
-          imageListCubit: widget.imageListCubit,
+          session: widget.imageListCubit.session,
           showBboxText: _showBboxText,
         );
         _cubit = cubit;

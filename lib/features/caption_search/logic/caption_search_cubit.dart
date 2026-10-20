@@ -38,7 +38,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
 
   /// Updates the search query text.
   ///
-  /// Also updates the ImageListCubit to perform the actual filtering.
+  /// Also updates the session to perform the actual filtering.
   void updateSearchQuery(String query) {
     emit(state.copyWith(searchQuery: query));
     _session.updateSearchQuery(query);
@@ -83,7 +83,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
     // Perform the replace operation
     _session.searchAndReplace(state.searchQuery, state.replaceText);
 
-    // Clear search in ImageListCubit to reload full list
+    // Clear the session's search to reload the full list
     _session.clearSearch();
 
     // Collapse the search bar

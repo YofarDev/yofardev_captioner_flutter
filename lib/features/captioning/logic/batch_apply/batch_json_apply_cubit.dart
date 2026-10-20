@@ -5,25 +5,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/domain/services/caption_session_service.dart';
 import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../data/models/batch_apply_template.dart';
 import 'batch_json_apply_state.dart';
 
 class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
-  BatchJsonApplyCubit(this._imageListCubit)
-    : super(const BatchJsonApplyInitial());
+  BatchJsonApplyCubit(this._session) : super(const BatchJsonApplyInitial());
 
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
   Completer<void>? _cancelCompleter;
 
   Future<void> apply(BatchApplyTemplate template) async {
     _cancelCompleter = Completer<void>();
 
-    final List<AppImage> allImages = _imageListCubit.state.images;
+    final List<AppImage> allImages = _session.state.images;
 
     final List<AppImage> targetImages = allImages.where((AppImage img) {
-      final String category = _imageListCubit.state.activeCategory ?? 'default';
+      final String category = _session.state.activeCategory ?? 'default';
       final String text = img.captions[category]?.text ?? '';
       if (text.isEmpty) return true;
       return IdeogramCaption.isIdeogramJson(text);
@@ -55,8 +54,7 @@ class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
       );
 
       try {
-        final String category =
-            _imageListCubit.state.activeCategory ?? 'default';
+        final String category = _session.state.activeCategory ?? 'default';
         final String existingText = image.captions[category]?.text ?? '';
 
         final IdeogramCaption merged;
@@ -82,7 +80,7 @@ class BatchJsonApplyCubit extends Cubit<BatchJsonApplyState> {
           clearError: true,
         );
 
-        await _imageListCubit.updateImage(image: updatedImage);
+        await _session.updateImage(image: updatedImage);
       } catch (e) {
         errors.add('${image.image.path}: $e');
       }

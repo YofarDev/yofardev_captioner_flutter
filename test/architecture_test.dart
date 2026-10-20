@@ -23,7 +23,6 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
     pathPrefix: 'lib/features/',
     ruleId: 'presentation-imports-data',
   ),
-  KnownViolation(pathPrefix: 'lib/features/', ruleId: 'cubit-field'),
   KnownViolation(
     pathPrefix: 'lib/features/',
     ruleId: 'getit-resolution-outside-allowlist',

@@ -20,9 +20,13 @@ import '../../../captioning/data/services/caption_service.dart';
 import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
+import '../services/sam_bbox_service.dart';
 import '../services/sam_process_service.dart';
 import '../services/structured_prompt_loader.dart';
+import '../services/vlm_response_parser.dart';
 import '../utils/caption_hardening.dart';
+
+export '../services/sam_bbox_service.dart' show VlmObjectBboxPair;
 
 /// Quality report for a multi-stage run, describing which elements were
 /// enriched, skipped, pruned, or had their enrich responses rejected.
@@ -104,6 +108,8 @@ class StructuredCaptionRepository {
   final ColorExtractionService _colorExtractionService;
   final StructuredPromptLoader _promptLoader;
   final BboxHighlightService _bboxHighlightService;
+  final VlmResponseParser _vlmResponseParser;
+  final SamBboxService _samBboxService;
 
   StructuredCaptionRepository({
     CaptionService? captionService,
@@ -111,12 +117,16 @@ class StructuredCaptionRepository {
     ColorExtractionService? colorExtractionService,
     StructuredPromptLoader? promptLoader,
     BboxHighlightService? bboxHighlightService,
+    VlmResponseParser? vlmResponseParser,
+    SamBboxService? samBboxService,
   }) : _captionService = captionService ?? CaptionService(),
        _samProcessService = samProcessService ?? SamProcessService(),
        _colorExtractionService =
            colorExtractionService ?? ColorExtractionService(),
        _promptLoader = promptLoader ?? StructuredPromptLoader(),
-       _bboxHighlightService = bboxHighlightService ?? BboxHighlightService();
+       _bboxHighlightService = bboxHighlightService ?? BboxHighlightService(),
+       _vlmResponseParser = vlmResponseParser ?? VlmResponseParser(),
+       _samBboxService = samBboxService ?? SamBboxService();
 
   /// Runs the full pipeline on a single image.
   ///
@@ -783,7 +793,7 @@ class StructuredCaptionRepository {
   /// or is unparseable (caller then retains the terse desc).
   VlmObject? _parseEnrichResponse(String raw, VlmObject original) {
     try {
-      final String cleaned = _stripMarkdownFences(raw);
+      final String cleaned = _vlmResponseParser.stripMarkdownFences(raw);
       final Map<String, dynamic> json =
           jsonDecode(cleaned) as Map<String, dynamic>;
       final String desc = (json['desc'] as String?)?.trim() ?? '';
@@ -1242,7 +1252,7 @@ class StructuredCaptionRepository {
     final Map<String, dynamic> json;
     final String medium;
     try {
-      final String cleaned = _stripMarkdownFences(raw);
+      final String cleaned = _vlmResponseParser.stripMarkdownFences(raw);
       json = jsonDecode(cleaned) as Map<String, dynamic>;
       medium = (json['medium'] as String?)?.trim() ?? '';
     } catch (e) {
@@ -1347,7 +1357,7 @@ class StructuredCaptionRepository {
     final Map<String, dynamic> json;
     final String desc;
     try {
-      final String cleaned = _stripMarkdownFences(raw);
+      final String cleaned = _vlmResponseParser.stripMarkdownFences(raw);
       json = jsonDecode(cleaned) as Map<String, dynamic>;
       desc = (json['desc'] as String?)?.trim() ?? '';
     } catch (e) {
@@ -1616,30 +1626,10 @@ class StructuredCaptionRepository {
     return '[${bbox[0]}, ${bbox[1]}, ${bbox[2]}, ${bbox[3]}]';
   }
 
-  /// Parses the VLM response string into a [VlmAnalysis].
-  ///
-  /// Strips markdown code fences and handles common JSON formatting issues
-  /// (stray preamble, trailing prose). On total failure throws so the caller
-  /// can retry with a simplified prompt.
-  VlmAnalysis _parseVlmResponse(String raw, {bool vlmEmitsXyxy = true}) {
-    final String? jsonStr = _extractJsonObject(raw);
-    if (jsonStr == null) {
-      _logger.warning('Failed to parse VLM response: no JSON object found');
-      _logger.fine('Raw response was: $raw');
-      throw const FormatException(
-        'Failed to parse VLM JSON response: no JSON object found',
-      );
-    }
-    try {
-      final Map<String, dynamic> json =
-          jsonDecode(jsonStr) as Map<String, dynamic>;
-      return parseAnalysisJson(json, vlmEmitsXyxy: vlmEmitsXyxy);
-    } catch (e) {
-      _logger.warning('Failed to parse VLM response: $e');
-      _logger.fine('Raw response was: $raw');
-      throw FormatException('Failed to parse VLM JSON response: $e');
-    }
-  }
+  /// Parses the VLM response string into a [VlmAnalysis], delegating the
+  /// textual interpretation to [VlmResponseParser].
+  VlmAnalysis _parseVlmResponse(String raw, {bool vlmEmitsXyxy = true}) =>
+      _vlmResponseParser.parseVlmResponse(raw, vlmEmitsXyxy: vlmEmitsXyxy);
 
   /// Parses the VLM response into a [VlmAnalysis], retrying once via a
   /// JSON-repair LLM call when the first parse fails. Repair is text-only and
@@ -1676,443 +1666,40 @@ class StructuredCaptionRepository {
     }
   }
 
-  /// Extracts the JSON object string from a raw VLM response.
-  ///
-  /// Handles: surrounding whitespace, prose preamble/postamble, and
-  /// ```json fenced blocks. Falls back to the outermost `{...}` span when the
-  /// fenced/trimmed content still won't parse. Returns null when no object is
-  /// found.
   @visibleForTesting
-  String? extractJsonObject(String raw) => _extractJsonObject(raw);
+  String? extractJsonObject(String raw) =>
+      _vlmResponseParser.extractJsonObject(raw);
 
-  String? _extractJsonObject(String raw) {
-    final String s = _stripMarkdownFences(raw);
-    // Fast path: already a clean JSON object.
-    final String trimmed = s.trim();
-    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
-      try {
-        jsonDecode(trimmed);
-        return trimmed;
-      } catch (_) {
-        // Fall through to span extraction.
-      }
-    }
-    // Fallback: pull the outermost {...} span to tolerate stray prose and
-    // nested fences the model may add around the object.
-    final int start = s.indexOf('{');
-    final int end = s.lastIndexOf('}');
-    if (start == -1 || end == -1 || end <= start) return null;
-    final String candidate = s.substring(start, end + 1);
-    // Validate the extracted span before returning it. A truncated response
-    // (e.g. from hitting max_tokens) may contain an inner `}` from a
-    // completed sub-object but no balanced top-level `}` — returning that
-    // fragment makes jsonDecode throw the cryptic "unexpected end of input".
-    // Returning null here yields a clearer error upstream.
-    try {
-      jsonDecode(candidate);
-      return candidate;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Recovers a usable [VlmAnalysis] from a truncated enumerate response.
-  ///
-  /// Local MLX cannot run the text-only JSON repair pass, and runaway
-  /// repetition can truncate an otherwise useful enumerate response before the
-  /// top-level object closes. This fallback parses the complete top-level
-  /// header and every complete object literal already emitted inside
-  /// `objects`, then lets the normal parser normalize bboxes and fields.
   @visibleForTesting
-  VlmAnalysis parsePartialVlmResponse(String raw, {bool vlmEmitsXyxy = true}) {
-    final String s = _stripMarkdownFences(raw);
-    final int objectsKey = s.indexOf('"objects"');
-    if (objectsKey < 0) {
-      throw const FormatException(
-        'Failed to recover partial VLM JSON: no objects key found',
+  VlmAnalysis parsePartialVlmResponse(String raw, {bool vlmEmitsXyxy = true}) =>
+      _vlmResponseParser.parsePartialVlmResponse(
+        raw,
+        vlmEmitsXyxy: vlmEmitsXyxy,
       );
-    }
-    final int arrayStart = s.indexOf('[', objectsKey);
-    if (arrayStart < 0) {
-      throw const FormatException(
-        'Failed to recover partial VLM JSON: no objects array found',
-      );
-    }
 
-    final Map<String, dynamic> header = _parsePartialHeader(
-      s.substring(0, objectsKey),
-    );
-    final List<Map<String, dynamic>> objects = _parseCompleteObjectLiterals(
-      s.substring(arrayStart + 1),
-    );
-    if (objects.isEmpty) {
-      throw const FormatException(
-        'Failed to recover partial VLM JSON: no complete objects found',
-      );
-    }
-
-    return parseAnalysisJson(<String, dynamic>{
-      'high_level_description': header['high_level_description'] ?? '',
-      'style': header['style'] ?? <String, dynamic>{},
-      'background': header['background'] ?? '',
-      'objects': objects,
-    }, vlmEmitsXyxy: vlmEmitsXyxy);
-  }
-
-  Map<String, dynamic> _parsePartialHeader(String prefix) {
-    final String headerCandidate =
-        '${prefix.replaceFirst(RegExp(r',\s*$'), '')}}';
-    try {
-      return jsonDecode(headerCandidate) as Map<String, dynamic>;
-    } catch (_) {
-      return <String, dynamic>{
-        'high_level_description': _extractJsonStringField(
-          prefix,
-          'high_level_description',
-        ),
-        'style': _extractStyleObject(prefix),
-        'background': _extractJsonStringField(prefix, 'background'),
-      };
-    }
-  }
-
-  List<Map<String, dynamic>> _parseCompleteObjectLiterals(String arrayTail) {
-    final List<Map<String, dynamic>> objects = <Map<String, dynamic>>[];
-    int depth = 0;
-    int objectStart = -1;
-    bool inString = false;
-    bool escaped = false;
-
-    for (int i = 0; i < arrayTail.length; i++) {
-      final String ch = arrayTail[i];
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (ch == '\\') {
-          escaped = true;
-        } else if (ch == '"') {
-          inString = false;
-        }
-        continue;
-      }
-
-      if (ch == '"') {
-        inString = true;
-        continue;
-      }
-      if (ch == '{') {
-        if (depth == 0) objectStart = i;
-        depth++;
-      } else if (ch == '}') {
-        if (depth == 0) continue;
-        depth--;
-        if (depth == 0 && objectStart >= 0) {
-          final String literal = arrayTail.substring(objectStart, i + 1);
-          try {
-            objects.add(jsonDecode(literal) as Map<String, dynamic>);
-          } catch (_) {
-            // Ignore malformed object fragments and keep scanning for later
-            // complete objects.
-          }
-          objectStart = -1;
-        }
-      } else if (ch == ']' && depth == 0) {
-        break;
-      }
-    }
-    return objects;
-  }
-
-  String _extractJsonStringField(String source, String field) {
-    final RegExp regex = RegExp(
-      '"$field"\\s*:\\s*"((?:\\\\.|[^"\\\\])*)"',
-      dotAll: true,
-    );
-    final RegExpMatch? match = regex.firstMatch(source);
-    if (match == null) return '';
-    try {
-      return jsonDecode('"${match.group(1)!}"') as String;
-    } catch (_) {
-      return match.group(1) ?? '';
-    }
-  }
-
-  Map<String, dynamic> _extractStyleObject(String source) {
-    final int styleKey = source.indexOf('"style"');
-    if (styleKey < 0) return <String, dynamic>{};
-    final int objectStart = source.indexOf('{', styleKey);
-    if (objectStart < 0) return <String, dynamic>{};
-    int depth = 0;
-    bool inString = false;
-    bool escaped = false;
-    for (int i = objectStart; i < source.length; i++) {
-      final String ch = source[i];
-      if (inString) {
-        if (escaped) {
-          escaped = false;
-        } else if (ch == '\\') {
-          escaped = true;
-        } else if (ch == '"') {
-          inString = false;
-        }
-        continue;
-      }
-      if (ch == '"') {
-        inString = true;
-      } else if (ch == '{') {
-        depth++;
-      } else if (ch == '}') {
-        depth--;
-        if (depth == 0) {
-          try {
-            return jsonDecode(source.substring(objectStart, i + 1))
-                as Map<String, dynamic>;
-          } catch (_) {
-            return <String, dynamic>{};
-          }
-        }
-      }
-    }
-    return <String, dynamic>{};
-  }
-
-  String _stripMarkdownFences(String input) {
-    String s = input.trim();
-    // Remove ```json ... ``` wrapper.
-    if (s.startsWith('```')) {
-      final int firstNewline = s.indexOf('\n');
-      if (firstNewline >= 0) {
-        s = s.substring(firstNewline + 1);
-      }
-      if (s.endsWith('```')) {
-        s = s.substring(0, s.length - 3);
-      }
-      s = s.trim();
-    }
-    return s;
-  }
-
-  /// Normalizes a raw VLM bbox into the Ideogram `[y1, x1, y2, x2]` 0-1000
-  /// format, or returns null when the box is missing/malformed/degenerate.
-  ///
-  /// [vlmEmitsXyxy] declares the order the VLM actually emitted: most output
-  /// `[x1, y1, x2, y2]` (the default), some obey the yxyx instruction. Either
-  /// way this rounds, clamps to [0, 1000], orders the corners, reorders to the
-  /// Ideogram `[y1, x1, y2, x2]` format, and drops zero-area boxes so
-  /// downstream SAM box-prompts, palette extraction, and overlays never
-  /// receive garbage. The stored result is always yxyx.
   @visibleForTesting
-  List<int>? normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) {
-    if (raw is! List || raw.length != 4) return null;
-    final List<int> v;
-    try {
-      v = raw.map((dynamic e) => (e as num).round().clamp(0, 1000)).toList();
-    } catch (_) {
-      // Non-numeric entries — not a usable bbox.
-      return null;
-    }
-    // Interpret the four values by the orientation the VLM emitted. The output
-    // is always [y1, x1, y2, x2]; only the input interpretation changes.
-    int x1;
-    int y1;
-    int x2;
-    int y2;
-    if (vlmEmitsXyxy) {
-      x1 = v[0];
-      y1 = v[1];
-      x2 = v[2];
-      y2 = v[3];
-    } else {
-      // VLM obeyed the yxyx instruction: input is [y1, x1, y2, x2].
-      y1 = v[0];
-      x1 = v[1];
-      y2 = v[2];
-      x2 = v[3];
-    }
-    if (x2 < x1) {
-      final int t = x1;
-      x1 = x2;
-      x2 = t;
-    }
-    if (y2 < y1) {
-      final int t = y1;
-      y1 = y2;
-      y2 = t;
-    }
-    // Drop zero-area boxes (clamp may have collapsed them to a line/point).
-    if (x2 <= x1 || y2 <= y1) return null;
-    return <int>[y1, x1, y2, x2];
-  }
-
-  List<int>? _normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) =>
-      normalizeBbox(raw, vlmEmitsXyxy: vlmEmitsXyxy);
+  List<int>? normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) =>
+      _vlmResponseParser.normalizeBbox(raw, vlmEmitsXyxy: vlmEmitsXyxy);
 
   @visibleForTesting
   VlmAnalysis parseAnalysisJson(
     Map<String, dynamic> json, {
     bool vlmEmitsXyxy = true,
-  }) {
-    // Parse style.
-    final Map<String, dynamic> styleJson =
-        json['style'] as Map<String, dynamic>;
-    final VlmStyle style = VlmStyle(
-      medium: styleJson['medium'] as String? ?? 'photograph',
-      aesthetics: styleJson['aesthetics'] as String? ?? '',
-      lighting: styleJson['lighting'] as String? ?? '',
-      photoOrArt: styleJson['photo_or_art'] as String? ?? '',
-    );
+  }) => _vlmResponseParser.parseAnalysisJson(json, vlmEmitsXyxy: vlmEmitsXyxy);
 
-    // Parse objects — normalize bbox format to [y1, x1, y2, x2].
-    final List<dynamic> objectsJson =
-        json['objects'] as List<dynamic>? ?? <dynamic>[];
-    final List<VlmObject> objects = objectsJson.map((dynamic o) {
-      final Map<String, dynamic> obj = o as Map<String, dynamic>;
-      // Prefer the explicit `type` field (official schema). Fall back to the
-      // legacy `has_text` flag so older responses still parse.
-      String type = (obj['type'] as String?)?.toLowerCase() ?? '';
-      if (type != 'text' && type != 'obj') {
-        type = (obj['has_text'] as bool?) == true ? 'text' : 'obj';
-      }
-      return VlmObject(
-        name: obj['name'] as String? ?? '',
-        desc: obj['desc'] as String? ?? '',
-        type: type,
-        text: (obj['text'] as String?) ?? (obj['visible_text'] as String?),
-        // VLMs mostly return [x1, y1, x2, y2]; some obey the yxyx instruction.
-        // [vlmEmitsXyxy] tells the normalizer how to interpret the four values.
-        // Either way the stored Ideogram format is [y1, x1, y2, x2]; degenerate
-        // boxes become null so they don't poison SAM box-prompts, palette
-        // extraction, or overlays.
-        bbox: _normalizeBbox(obj['bbox'], vlmEmitsXyxy: vlmEmitsXyxy),
-      );
-    }).toList();
-
-    return VlmAnalysis(
-      highLevelDescription: json['high_level_description'] as String? ?? '',
-      style: style,
-      background: json['background'] as String? ?? '',
-      objects: objects,
-    );
-  }
-
-  /// Greedy bbox matching between SAM detections and VLM objects.
-  ///
-  /// Ported from reference repo's sam_detection.py matching logic.
-  /// Groups by name, matches by center distance, falls back to VLM bbox.
   @visibleForTesting
   List<SamDetection> matchDetectionsToObjects(
     List<SamDetection> detections,
     List<VlmObjectBboxPair> vlmObjects,
-  ) {
-    final int n = vlmObjects.length;
-    final List<SamDetection?> results = List<SamDetection?>.filled(n, null);
+  ) => _samBboxService.matchDetectionsToObjects(detections, vlmObjects);
 
-    if (detections.isEmpty) {
-      // No SAM detections — fall back to VLM bboxes.
-      return vlmObjects
-          .map(
-            (VlmObjectBboxPair o) => SamDetection(name: o.name, bbox: o.bbox),
-          )
-          .toList();
-    }
+  @visibleForTesting
+  double computeIou(List<int>? a, List<int>? b) =>
+      _samBboxService.computeIou(a, b);
 
-    // Group VLM object indices by name.
-    final Map<String, List<int>> nameToIndices = <String, List<int>>{};
-    for (int i = 0; i < n; i++) {
-      final String name = vlmObjects[i].name;
-      nameToIndices.putIfAbsent(name, () => <int>[]).add(i);
-    }
-
-    // Group SAM detections by name.
-    final Map<String, List<SamDetection>> nameToDetections =
-        <String, List<SamDetection>>{};
-    for (final SamDetection det in detections) {
-      nameToDetections.putIfAbsent(det.name, () => <SamDetection>[]).add(det);
-    }
-
-    // For each unique name, greedily match SAM detections to VLM objects.
-    for (final MapEntry<String, List<int>> entry in nameToIndices.entries) {
-      final String name = entry.key;
-      final List<int> vlmIndices = entry.value;
-      final List<SamDetection> samDets =
-          nameToDetections[name] ?? <SamDetection>[];
-
-      if (samDets.isEmpty) continue;
-
-      if (samDets.length == 1 && vlmIndices.length > 1) {
-        // One SAM box, multiple VLM objects — assign to closest.
-        final Point<double>? samCenter = _center(samDets[0].bbox);
-        int bestIdx = 0;
-        double bestDist = double.infinity;
-        for (int vi = 0; vi < vlmIndices.length; vi++) {
-          final Point<double>? vlmCenter = _center(
-            vlmObjects[vlmIndices[vi]].bbox,
-          );
-          final double d = _distance(vlmCenter, samCenter);
-          if (d < bestDist) {
-            bestDist = d;
-            bestIdx = vi;
-          }
-        }
-        // IoU gate: reject SAM detections that landed away from the chosen
-        // VLM region (e.g. SAM latched onto a different same-text object).
-        // A rejected slot falls through to the VLM-bbox fallback below.
-        if (_samMatchesVlm(
-          samDets[0].bbox,
-          vlmObjects[vlmIndices[bestIdx]].bbox,
-        )) {
-          results[vlmIndices[bestIdx]] = samDets[0];
-        }
-      } else {
-        // Greedy matching by ascending center distance.
-        final List<_MatchPair> pairs = <_MatchPair>[];
-        for (int si = 0; si < samDets.length; si++) {
-          final Point<double>? samCenter = _center(samDets[si].bbox);
-          for (int vi = 0; vi < vlmIndices.length; vi++) {
-            final Point<double>? vlmCenter = _center(
-              vlmObjects[vlmIndices[vi]].bbox,
-            );
-            pairs.add(
-              _MatchPair(
-                dist: _distance(vlmCenter, samCenter),
-                samIdx: si,
-                vlmIdx: vi,
-              ),
-            );
-          }
-        }
-        pairs.sort((_MatchPair a, _MatchPair b) => a.dist.compareTo(b.dist));
-
-        final Set<int> usedSam = <int>{};
-        final Set<int> usedVlm = <int>{};
-        for (final _MatchPair pair in pairs) {
-          if (usedSam.contains(pair.samIdx) || usedVlm.contains(pair.vlmIdx)) {
-            continue;
-          }
-          // IoU gate: skip SAM detections that don't overlap the VLM region.
-          if (!_samMatchesVlm(
-            samDets[pair.samIdx].bbox,
-            vlmObjects[vlmIndices[pair.vlmIdx]].bbox,
-          )) {
-            continue;
-          }
-          results[vlmIndices[pair.vlmIdx]] = samDets[pair.samIdx];
-          usedSam.add(pair.samIdx);
-          usedVlm.add(pair.vlmIdx);
-        }
-      }
-    }
-
-    // Fill unmatched slots with VLM bbox fallback.
-    for (int i = 0; i < n; i++) {
-      results[i] ??= SamDetection(
-        name: vlmObjects[i].name,
-        bbox: vlmObjects[i].bbox,
-      );
-    }
-
-    return results.cast<SamDetection>();
-  }
+  @visibleForTesting
+  bool isLikelyGroup(String name, String desc) =>
+      _samBboxService.isLikelyGroup(name, desc);
 
   /// Builds the final [IdeogramCaption] from pipeline data.
   @visibleForTesting
@@ -2224,115 +1811,4 @@ class StructuredCaptionRepository {
       ),
     );
   }
-
-  /// Returns true if the VLM element likely represents a group of items
-  /// rather than a single individual object.
-  ///
-  /// Heuristics:
-  /// - Name is explicitly plural (ends in 's' but not 'ss' like "glass")
-  /// - Description contains group indicators
-  @visibleForTesting
-  bool isLikelyGroup(String name, String desc) {
-    final String lower = name.toLowerCase();
-
-    // Plural name heuristic: ends in 's' but not 'ss' (glass, dress, cross, moss).
-    final bool isPlural = lower.endsWith('s') && !lower.endsWith('ss');
-
-    // Description group indicators.
-    final String lowerDesc = desc.toLowerCase();
-    const List<String> groupKeywords = <String>[
-      'group of',
-      'cluster of',
-      'row of',
-      'pair of',
-      'collection of',
-      'stack of',
-      'arrangement of',
-      'several ',
-      'multiple ',
-      'a set of',
-      'a bunch of',
-    ];
-    final bool descHasGroup = groupKeywords.any(
-      (String kw) => lowerDesc.contains(kw),
-    );
-
-    return isPlural || descHasGroup;
-  }
-
-  /// Computes center point from [y1, x1, y2, x2] bbox.
-  static Point<double>? _center(List<int>? bbox) {
-    if (bbox == null || bbox.length != 4) return null;
-    return Point<double>((bbox[1] + bbox[3]) / 2, (bbox[0] + bbox[2]) / 2);
-  }
-
-  /// Squared distance between two points. Returns infinity if either is null.
-  static double _distance(Point<double>? a, Point<double>? b) {
-    if (a == null || b == null) return double.infinity;
-    return a.squaredDistanceTo(b);
-  }
-
-  /// IoU threshold below which a SAM detection is considered to have landed
-  /// on the wrong region and is rejected in favour of the VLM bbox. SAM is
-  /// meant to *refine* the VLM bbox, so a real match overlaps substantially;
-  /// a near-zero overlap means SAM segmented a different object.
-  static const double _samIouThreshold = 0.1;
-
-  /// Intersection-over-union of two [y1, x1, y2, x2] bboxes in 0-1000
-  /// normalized coordinates. Returns 0 for null or malformed input.
-  @visibleForTesting
-  double computeIou(List<int>? a, List<int>? b) {
-    if (a == null || b == null || a.length != 4 || b.length != 4) {
-      return 0.0;
-    }
-    final double ay1 = a[0].toDouble();
-    final double ax1 = a[1].toDouble();
-    final double ay2 = a[2].toDouble();
-    final double ax2 = a[3].toDouble();
-    final double by1 = b[0].toDouble();
-    final double bx1 = b[1].toDouble();
-    final double by2 = b[2].toDouble();
-    final double bx2 = b[3].toDouble();
-    final double interY1 = max(ay1, by1);
-    final double interX1 = max(ax1, bx1);
-    final double interY2 = min(ay2, by2);
-    final double interX2 = min(ax2, bx2);
-    final double interH = (interY2 - interY1).clamp(0.0, double.infinity);
-    final double interW = (interX2 - interX1).clamp(0.0, double.infinity);
-    final double inter = interH * interW;
-    final double areaA = (ay2 - ay1) * (ax2 - ax1);
-    final double areaB = (by2 - by1) * (bx2 - bx1);
-    final double union = areaA + areaB - inter;
-    if (union <= 0) return 0.0;
-    return inter / union;
-  }
-
-  /// Returns true if [samBbox] is a plausible refinement of [vlmBbox].
-  /// When [vlmBbox] is null there is no spatial hint to validate against,
-  /// so the SAM detection is accepted as-is.
-  bool _samMatchesVlm(List<int>? samBbox, List<int>? vlmBbox) {
-    if (vlmBbox == null) return true;
-    return computeIou(samBbox, vlmBbox) >= _samIouThreshold;
-  }
-}
-
-/// Helper to carry VLM object bbox pairs through matching.
-class VlmObjectBboxPair {
-  const VlmObjectBboxPair({required this.name, this.bbox});
-
-  final String name;
-  final List<int>? bbox;
-}
-
-/// Internal helper for greedy bbox matching.
-class _MatchPair {
-  const _MatchPair({
-    required this.dist,
-    required this.samIdx,
-    required this.vlmIdx,
-  });
-
-  final double dist;
-  final int samIdx;
-  final int vlmIdx;
 }

@@ -19,6 +19,8 @@ import 'package:yofardev_captioner/features/structured_captioning/data/models/vl
     as _i2;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
     as _i4;
+import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_bbox_service.dart'
+    as _i13;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
     as _i12;
 
@@ -310,7 +312,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
   @override
   List<_i12.SamDetection> matchDetectionsToObjects(
     List<_i12.SamDetection>? detections,
-    List<_i4.VlmObjectBboxPair>? vlmObjects,
+    List<_i13.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#matchDetectionsToObjects, [
@@ -320,6 +322,22 @@ class MockStructuredCaptionRepository extends _i1.Mock
             returnValue: <_i12.SamDetection>[],
           )
           as List<_i12.SamDetection>);
+
+  @override
+  double computeIou(List<int>? a, List<int>? b) =>
+      (super.noSuchMethod(
+            Invocation.method(#computeIou, [a, b]),
+            returnValue: 0.0,
+          )
+          as double);
+
+  @override
+  bool isLikelyGroup(String? name, String? desc) =>
+      (super.noSuchMethod(
+            Invocation.method(#isLikelyGroup, [name, desc]),
+            returnValue: false,
+          )
+          as bool);
 
   @override
   _i3.IdeogramCaption buildIdeogramCaption(
@@ -349,20 +367,4 @@ class MockStructuredCaptionRepository extends _i1.Mock
             ),
           )
           as _i3.IdeogramCaption);
-
-  @override
-  bool isLikelyGroup(String? name, String? desc) =>
-      (super.noSuchMethod(
-            Invocation.method(#isLikelyGroup, [name, desc]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  double computeIou(List<int>? a, List<int>? b) =>
-      (super.noSuchMethod(
-            Invocation.method(#computeIou, [a, b]),
-            returnValue: 0.0,
-          )
-          as double);
 }

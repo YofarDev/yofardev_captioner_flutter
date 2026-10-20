@@ -23,32 +23,7 @@ final GetIt locator = GetIt.instance;
 /// `AppState.initState` and provided to the tree (presentation owns
 /// presentation).
 Future<void> setupServiceLocator() async {
-  // Services
-  locator.registerLazySingleton<CacheService>(() => const CacheService());
-  locator.registerLazySingleton<LlmConfigService>(() => LlmConfigService());
-  locator.registerLazySingleton<ILlmConfigRepository>(
-    () => locator<LlmConfigService>(),
-  );
-  locator.registerLazySingleton<CaptionService>(() => CaptionService());
-  locator.registerLazySingleton<CaptionRepository>(() => CaptionRepository());
-  locator.registerLazySingleton<ICaptioningRepository>(
-    () => CaptioningRepository(),
-  );
-  locator.registerLazySingleton<AppFileUtils>(
-    () => AppFileUtils(cacheService: locator<CacheService>()),
-  );
-  locator.registerLazySingleton<CaptionFileStore>(
-    () => locator<AppFileUtils>(),
-  );
-  // Shared by TabManagerCubit (writes sessions + tab snapshot) and
-  // AgentApiService (reads them) so no data service needs a cubit.
-  locator.registerLazySingleton<TabSessionRegistry>(() => TabSessionRegistry());
-  locator.registerLazySingleton<AgentApiService>(
-    () => AgentApiService(
-      cacheService: locator<CacheService>(),
-      llmConfigRepository: locator<ILlmConfigRepository>(),
-    ),
-  );
+  registerDependencies(locator);
 
   // Logging
   Logger.root.level = Level.ALL;
@@ -56,9 +31,45 @@ Future<void> setupServiceLocator() async {
     // ignore: avoid_print
     print('${rec.level.name}: ${rec.time}: ${rec.message}');
   });
-  locator.registerLazySingleton<Logger>(() => Logger('App'));
 
   if (await locator<CacheService>().loadAgentApiEnabled()) {
     await locator<AgentApiService>().start();
   }
+}
+
+/// Registers every production type on [container]. Side-effect free — the
+/// bootstrap side effects (root logger handler, Agent API autostart) stay in
+/// [setupServiceLocator] so tests can build a fresh container and resolve
+/// every registration without touching SharedPreferences or opening sockets.
+void registerDependencies(GetIt container) {
+  // Services
+  container.registerLazySingleton<CacheService>(() => const CacheService());
+  container.registerLazySingleton<LlmConfigService>(() => LlmConfigService());
+  container.registerLazySingleton<ILlmConfigRepository>(
+    () => container<LlmConfigService>(),
+  );
+  container.registerLazySingleton<CaptionService>(() => CaptionService());
+  container.registerLazySingleton<CaptionRepository>(() => CaptionRepository());
+  container.registerLazySingleton<ICaptioningRepository>(
+    () => CaptioningRepository(),
+  );
+  container.registerLazySingleton<AppFileUtils>(
+    () => AppFileUtils(cacheService: container<CacheService>()),
+  );
+  container.registerLazySingleton<CaptionFileStore>(
+    () => container<AppFileUtils>(),
+  );
+  // Shared by TabManagerCubit (writes sessions + tab snapshot) and
+  // AgentApiService (reads them) so no data service needs a cubit.
+  container.registerLazySingleton<TabSessionRegistry>(
+    () => TabSessionRegistry(),
+  );
+  container.registerLazySingleton<AgentApiService>(
+    () => AgentApiService(
+      cacheService: container<CacheService>(),
+      llmConfigRepository: container<ILlmConfigRepository>(),
+    ),
+  );
+
+  container.registerLazySingleton<Logger>(() => Logger('App'));
 }

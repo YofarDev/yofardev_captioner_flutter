@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/widgets/rive_animations.dart';
-import '../../../caption_search/presentation/widgets/caption_search_bar.dart';
+import '../../../caption_search/caption_search.dart';
 import '../../../captioning/presentation/widgets/caption_text_area.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_operations/image_operations.dart';

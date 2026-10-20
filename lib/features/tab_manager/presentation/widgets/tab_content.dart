@@ -12,7 +12,7 @@ import '../../../image_list/domain/services/caption_session_service.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/pages/images_list_view.dart';
 import '../../../image_operations/image_operations.dart';
-import '../../../main_area/presentation/pages/main_area_view.dart';
+import '../../../main_area/main_area.dart';
 import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
 import '../../logic/tab_manager_cubit.dart';
 

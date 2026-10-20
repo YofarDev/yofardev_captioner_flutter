@@ -4,6 +4,5 @@
 /// barrel exports — never on feature-internal files.
 library;
 
-export 'presentation/widgets/caption_files_button.dart'
-    show CaptionFilesButton;
+export 'presentation/widgets/caption_files_button.dart' show CaptionFilesButton;
 export 'presentation/widgets/export_button.dart' show ExportButton;

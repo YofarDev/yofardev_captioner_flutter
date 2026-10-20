@@ -4,10 +4,12 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
+import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
@@ -29,6 +31,16 @@ import 'structured_caption_repository_test.mocks.dart';
   SamProcessService,
   ColorExtractionService,
 ])
+/// Matches a completed Either that is Left with the given [Failure] type.
+Matcher isLeftFailure(Type type) => completion(
+  predicate<Object?>(
+    (Object? v) =>
+        v is Either<Failure, dynamic> &&
+        v.isLeft() &&
+        v.getLeft().toNullable().runtimeType == type,
+  ),
+);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -1214,12 +1226,12 @@ void main() {
               '{"desc": "fresh desc", "has_text": false, "visible_text": null}',
         );
 
-        final IdeogramElement updated = await repo.recaptionElement(
+        final IdeogramElement updated = (await repo.recaptionElement(
           config: config,
           imageFile: File('img.png'),
           currentCaption: caption,
           elementIndex: 0,
-        );
+        )).getRight().toNullable()!;
 
         final IdeogramElement original =
             caption.compositionalDeconstruction.elements.first;
@@ -1257,12 +1269,12 @@ void main() {
             '{"desc": "a sign", "has_text": true, "visible_text": "HELLO"}',
       );
 
-      final IdeogramElement updated = await repo.recaptionElement(
+      final IdeogramElement updated = (await repo.recaptionElement(
         config: config,
         imageFile: File('img.png'),
         currentCaption: textCaption,
         elementIndex: 0,
-      );
+      )).getRight().toNullable()!;
 
       expect(updated.desc, 'a sign');
       expect(updated.text, 'HELLO');
@@ -1295,12 +1307,12 @@ void main() {
             '{"desc": "illegible scrawl", "has_text": false, "visible_text": null}',
       );
 
-      final IdeogramElement updated = await repo.recaptionElement(
+      final IdeogramElement updated = (await repo.recaptionElement(
         config: config,
         imageFile: File('img.png'),
         currentCaption: textCaption,
         elementIndex: 0,
-      );
+      )).getRight().toNullable()!;
 
       expect(updated.desc, 'illegible scrawl');
       expect(updated.text, '');
@@ -1319,7 +1331,7 @@ void main() {
             currentCaption: caption,
             elementIndex: 0,
           ),
-          throwsA(isA<FormatException>()),
+          isLeftFailure(FailureInvalidData),
         );
         verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
       },
@@ -1336,7 +1348,7 @@ void main() {
           currentCaption: caption,
           elementIndex: 0,
         ),
-        throwsA(isA<FormatException>()),
+        isLeftFailure(FailureInvalidData),
       );
       // Cleanup must still fire on parse failure.
       verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
@@ -1355,7 +1367,7 @@ void main() {
             currentCaption: caption,
             elementIndex: 0,
           ),
-          throwsA(isA<FormatException>()),
+          isLeftFailure(FailureInvalidData),
         );
       },
     );
@@ -1365,12 +1377,12 @@ void main() {
         (_) async =>
             '```json\n{"desc": "ok", "has_text": false, "visible_text": null}\n```',
       );
-      final IdeogramElement updated = await repo.recaptionElement(
+      final IdeogramElement updated = (await repo.recaptionElement(
         config: config,
         imageFile: File('img.png'),
         currentCaption: caption,
         elementIndex: 0,
-      );
+      )).getRight().toNullable()!;
       expect(updated.desc, 'ok');
     });
 
@@ -1386,7 +1398,7 @@ void main() {
           currentCaption: caption,
           elementIndex: 0,
         ),
-        throwsA(isA<Exception>()),
+        isLeftFailure(FailureUnexpected),
       );
 
       verify(mockHighlight.cleanup('/tmp/highlight.jpg')).called(1);
@@ -1440,7 +1452,7 @@ void main() {
           currentCaption: caption,
           elementIndex: 99,
         ),
-        throwsA(isA<RangeError>()),
+        isLeftFailure(FailureUnexpected),
       );
       verifyNever(mockHighlight.renderHighlightedJpeg(any, any));
     });
@@ -1468,7 +1480,7 @@ void main() {
           currentCaption: noBbox,
           elementIndex: 0,
         ),
-        throwsA(isA<StateError>()),
+        isLeftFailure(FailureUnexpected),
       );
       verifyNever(mockHighlight.renderHighlightedJpeg(any, any));
     });
@@ -1522,11 +1534,11 @@ void main() {
               '"lighting": "golden hour", "photo_or_art": "50mm f/1.8"}',
         );
 
-        final IdeogramStyleDescription updated = await repo.recaptionStyle(
+        final IdeogramStyleDescription updated = (await repo.recaptionStyle(
           config: config,
           imageFile: File('img.png'),
           currentCaption: caption,
-        );
+        )).getRight().toNullable()!;
 
         expect(updated.medium, 'photograph');
         expect(updated.aesthetics, 'moody');
@@ -1547,11 +1559,11 @@ void main() {
               '"lighting": "chiaroscuro", "photo_or_art": "oil on canvas"}',
         );
 
-        final IdeogramStyleDescription updated = await repo.recaptionStyle(
+        final IdeogramStyleDescription updated = (await repo.recaptionStyle(
           config: config,
           imageFile: File('img.png'),
           currentCaption: caption,
-        );
+        )).getRight().toNullable()!;
 
         expect(updated.medium, 'painting');
         expect(updated.artStyle, 'oil on canvas');
@@ -1566,11 +1578,11 @@ void main() {
             '"lighting": "l", "photo_or_art": "p"}',
       );
 
-      final IdeogramStyleDescription updated = await repo.recaptionStyle(
+      final IdeogramStyleDescription updated = (await repo.recaptionStyle(
         config: config,
         imageFile: File('img.png'),
         currentCaption: caption,
-      );
+      )).getRight().toNullable()!;
 
       expect(updated.colorPalette, caption.styleDescription.colorPalette);
     });
@@ -1604,11 +1616,11 @@ void main() {
             '"lighting": "l", "photo_or_art": "p"}\n```',
       );
 
-      final IdeogramStyleDescription updated = await repo.recaptionStyle(
+      final IdeogramStyleDescription updated = (await repo.recaptionStyle(
         config: config,
         imageFile: File('img.png'),
         currentCaption: caption,
-      );
+      )).getRight().toNullable()!;
 
       expect(updated.medium, 'photograph');
     });
@@ -1625,7 +1637,7 @@ void main() {
           imageFile: File('img.png'),
           currentCaption: caption,
         ),
-        throwsA(isA<FormatException>()),
+        isLeftFailure(FailureInvalidData),
       );
     });
 
@@ -1639,7 +1651,7 @@ void main() {
           imageFile: File('img.png'),
           currentCaption: caption,
         ),
-        throwsA(isA<FormatException>()),
+        isLeftFailure(FailureInvalidData),
       );
     });
 
@@ -1653,7 +1665,7 @@ void main() {
           imageFile: File('img.png'),
           currentCaption: caption,
         ),
-        throwsA(isA<FormatException>()),
+        isLeftFailure(FailureInvalidData),
       );
     });
 
@@ -1667,7 +1679,7 @@ void main() {
           imageFile: File('img.png'),
           currentCaption: caption,
         ),
-        throwsA(isA<Exception>()),
+        isLeftFailure(FailureUnexpected),
       );
     });
 
@@ -1906,11 +1918,11 @@ void main() {
       ).thenAnswer((_) async => <String>['#ELEM']);
 
       final List<String> steps = <String>[];
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: steps.add,
-      );
+      )).getRight().toNullable()!;
 
       // Every pipeline phase announced.
       expect(steps, contains('Extracting color palette...'));
@@ -1976,12 +1988,12 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
         disableSam: true,
-      );
+      )).getRight().toNullable()!;
 
       verifyNever(
         mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
@@ -1999,11 +2011,11 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
-      );
+      )).getRight().toNullable()!;
 
       // Palette failure is non-fatal — pipeline still produces a caption.
       expect(caption.styleDescription.colorPalette, isEmpty);
@@ -2019,11 +2031,11 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
-      );
+      )).getRight().toNullable()!;
 
       // SAM failed → Cat element uses its VLM bbox [200,100,400,300].
       expect(caption.compositionalDeconstruction.elements[0].bbox, <int>[
@@ -2121,13 +2133,13 @@ void main() {
           ),
         ).thenAnswer((_) async => enrichRich);
 
-        final IdeogramCaption caption = await repo.generateStructuredCaption(
+        final IdeogramCaption caption = (await repo.generateStructuredCaption(
           config,
           File('img.png'),
           onProgress: (_) {},
           disableSam: true,
           mode: StructuredMode.multiStage,
-        );
+        )).getRight().toNullable()!;
 
         final String json = caption.toJsonString();
         expect(json, contains('ceramic mug with glossy teal glaze'));
@@ -2156,13 +2168,13 @@ void main() {
           ),
         ).thenThrow(Exception('enrich boom'));
 
-        final IdeogramCaption caption = await repo.generateStructuredCaption(
+        final IdeogramCaption caption = (await repo.generateStructuredCaption(
           config,
           File('img.png'),
           onProgress: (_) {},
           disableSam: true,
           mode: StructuredMode.multiStage,
-        );
+        )).getRight().toNullable()!;
 
         expect(caption.toJsonString(), contains('terse mug'));
       },
@@ -2180,13 +2192,13 @@ void main() {
           ),
         ).thenAnswer((_) async => enumerateNoBbox);
 
-        final IdeogramCaption caption = await repo.generateStructuredCaption(
+        final IdeogramCaption caption = (await repo.generateStructuredCaption(
           config,
           File('img.png'),
           onProgress: (_) {},
           disableSam: true,
           mode: StructuredMode.multiStage,
-        );
+        )).getRight().toNullable()!;
 
         verifyNever(mockBbox.renderCroppedJpeg(any, any));
         expect(caption.toJsonString(), contains('bbox-less blob'));
@@ -2231,13 +2243,13 @@ void main() {
           ),
         ).thenThrow(Exception('book enrich boom'));
 
-        final IdeogramCaption caption = await repo.generateStructuredCaption(
+        final IdeogramCaption caption = (await repo.generateStructuredCaption(
           config,
           File('img.png'),
           onProgress: (_) {},
           disableSam: true,
           mode: StructuredMode.multiStage,
-        );
+        )).getRight().toNullable()!;
 
         final String json = caption.toJsonString();
         expect(json, contains('rich mug description with ceramic glaze'));
@@ -2610,13 +2622,13 @@ void main() {
             '{"desc":"a wooden table with four visible legs and a dark surface finish"}',
       );
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
         disableSam: true,
         mode: StructuredMode.multiStage,
-      );
+      )).getRight().toNullable()!;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse sofa'));
@@ -2650,13 +2662,13 @@ void main() {
             '{"desc":"a wooden chair with a curved backrest and four tapered legs"}',
       );
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
         disableSam: true,
         mode: StructuredMode.multiStage,
-      );
+      )).getRight().toNullable()!;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse floor'));
@@ -2688,13 +2700,13 @@ void main() {
             '{"desc":"This is the room with a large sofa and table in the scene"}',
       );
 
-      final IdeogramCaption caption = await repo.generateStructuredCaption(
+      final IdeogramCaption caption = (await repo.generateStructuredCaption(
         config,
         File('img.png'),
         onProgress: (_) {},
         disableSam: true,
         mode: StructuredMode.multiStage,
-      );
+      )).getRight().toNullable()!;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse mug'));

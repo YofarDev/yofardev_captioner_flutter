@@ -3,9 +3,12 @@ import 'dart:io';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../image_list/image_list.dart';
@@ -280,14 +283,31 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     );
 
     try {
-      final IdeogramElement updated = await _repository.recaptionElement(
-        config: config,
-        imageFile: state.imageFile,
-        currentCaption: state.caption,
-        elementIndex: selected,
-        instructions: instructions,
-        cropToBbox: cropToBbox,
-      );
+      final Either<Failure, IdeogramElement> recaptionResult = await _repository
+          .recaptionElement(
+            config: config,
+            imageFile: state.imageFile,
+            currentCaption: state.caption,
+            elementIndex: selected,
+            instructions: instructions,
+            cropToBbox: cropToBbox,
+          );
+      final IdeogramElement? updated = recaptionResult.getRight().toNullable();
+      if (updated == null) {
+        final Failure f = recaptionResult.getLeft().toNullable()!;
+        _logger.warning('recaptionSelectedElement failed: $f');
+        if (isClosed) {
+          return;
+        }
+        emit(
+          state.copyWith(
+            status: StructuredEditorStatus.error,
+            error: failureMessage(f),
+            clearRecaptioning: true,
+          ),
+        );
+        return;
+      }
       final List<IdeogramElement> currentElements =
           state.caption.compositionalDeconstruction.elements;
       if (selected >= currentElements.length) {
@@ -354,11 +374,30 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     );
 
     try {
-      final IdeogramStyleDescription updated = await _repository.recaptionStyle(
-        config: config,
-        imageFile: state.imageFile,
-        currentCaption: state.caption,
-      );
+      final Either<Failure, IdeogramStyleDescription> styleResult =
+          await _repository.recaptionStyle(
+            config: config,
+            imageFile: state.imageFile,
+            currentCaption: state.caption,
+          );
+      final IdeogramStyleDescription? updated = styleResult
+          .getRight()
+          .toNullable();
+      if (updated == null) {
+        final Failure f = styleResult.getLeft().toNullable()!;
+        _logger.warning('recaptionStyle failed: $f');
+        if (isClosed) {
+          return;
+        }
+        emit(
+          state.copyWith(
+            status: StructuredEditorStatus.error,
+            error: failureMessage(f),
+            clearRecaptioningStyle: true,
+          ),
+        );
+        return;
+      }
       if (isClosed) return;
       emit(
         state.copyWith(

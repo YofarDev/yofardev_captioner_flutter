@@ -1,16 +1,21 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
+import 'package:fpdart/fpdart.dart';
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/errors/exception_mapper.dart';
+import '../../../../core/errors/failure.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/utils/cancel_token.dart';
 import '../../../captioning/data/services/caption_service.dart';
 import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';
@@ -118,7 +123,7 @@ class StructuredCaptionRepository {
   /// [onProgress] emits step descriptions for UI progress tracking.
   /// [debugMode] saves prompt, raw VLM response, bbox overlay and final
   /// caption alongside the image in a debug/ subfolder.
-  Future<IdeogramCaption> generateStructuredCaption(
+  Future<Either<Failure, IdeogramCaption>> generateStructuredCaption(
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
@@ -129,49 +134,64 @@ class StructuredCaptionRepository {
     String guidance = '',
     StructuredMode mode = StructuredMode.singleShot,
   }) async {
-    // Step 1: Global color palette.
-    onProgress('Extracting color palette...');
-    List<String> globalPalette = <String>[];
     try {
-      globalPalette = await _colorExtractionService.extractPalette(imageFile);
-    } catch (e) {
-      _logger.warning('Global palette extraction failed: $e');
-    }
+      // Step 1: Global color palette.
+      onProgress('Extracting color palette...');
+      List<String> globalPalette = <String>[];
+      try {
+        globalPalette = await _colorExtractionService.extractPalette(imageFile);
+      } catch (e) {
+        _logger.warning('Global palette extraction failed: $e');
+      }
 
-    // Step 2: VLM analysis — branch on mode.
-    final ({String rawPrompt, String rawResponse, VlmAnalysis analysis}) vision;
-    if (mode == StructuredMode.multiStage) {
-      vision = await _runVisionAnalysisMultiStage(
-        config,
-        imageFile,
-        onProgress: onProgress,
-        vlmEmitsXyxy: vlmEmitsXyxy,
-        guidance: guidance,
-        debugMode: debugMode,
+      // Step 2: VLM analysis — branch on mode.
+      final ({String rawPrompt, String rawResponse, VlmAnalysis analysis})
+      vision;
+      if (mode == StructuredMode.multiStage) {
+        vision = await _runVisionAnalysisMultiStage(
+          config,
+          imageFile,
+          onProgress: onProgress,
+          vlmEmitsXyxy: vlmEmitsXyxy,
+          guidance: guidance,
+          debugMode: debugMode,
+        );
+      } else {
+        vision = await _runVisionAnalysisSingleShot(
+          config,
+          imageFile,
+          onProgress: onProgress,
+          vlmEmitsXyxy: vlmEmitsXyxy,
+          guidance: guidance,
+        );
+      }
+      final VlmAnalysis analysis = vision.analysis;
+
+      return Right<Failure, IdeogramCaption>(
+        await _finalizeCaption(
+          config: config,
+          imageFile: imageFile,
+          analysis: analysis,
+          globalPalette: globalPalette,
+          vlmRawPrompt: vision.rawPrompt,
+          vlmRawResponse: vision.rawResponse,
+          onProgress: onProgress,
+          overrides: overrides,
+          debugMode: debugMode,
+          disableSam: disableSam,
+        ),
       );
-    } else {
-      vision = await _runVisionAnalysisSingleShot(
-        config,
-        imageFile,
-        onProgress: onProgress,
-        vlmEmitsXyxy: vlmEmitsXyxy,
-        guidance: guidance,
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, IdeogramCaption>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'StructuredCaptionRepository.generateStructuredCaption',
+        ),
       );
     }
-    final VlmAnalysis analysis = vision.analysis;
-
-    return await _finalizeCaption(
-      config: config,
-      imageFile: imageFile,
-      analysis: analysis,
-      globalPalette: globalPalette,
-      vlmRawPrompt: vision.rawPrompt,
-      vlmRawResponse: vision.rawResponse,
-      onProgress: onProgress,
-      overrides: overrides,
-      debugMode: debugMode,
-      disableSam: disableSam,
-    );
   }
 
   /// Single-shot VLM analysis: one call produces the full VLM JSON. This is
@@ -1053,7 +1073,39 @@ class StructuredCaptionRepository {
   /// unparseable.
   /// Re-throws any error from [CaptionService]; the temp highlight file is
   /// always cleaned up.
-  Future<IdeogramElement> recaptionElement({
+  Future<Either<Failure, IdeogramElement>> recaptionElement({
+    required LlmConfig config,
+    required File imageFile,
+    required IdeogramCaption currentCaption,
+    required int elementIndex,
+    String? instructions,
+    bool cropToBbox = false,
+  }) async {
+    try {
+      return Right<Failure, IdeogramElement>(
+        await _recaptionElement(
+          config: config,
+          imageFile: imageFile,
+          currentCaption: currentCaption,
+          elementIndex: elementIndex,
+          instructions: instructions,
+          cropToBbox: cropToBbox,
+        ),
+      );
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, IdeogramElement>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'StructuredCaptionRepository.recaptionElement',
+        ),
+      );
+    }
+  }
+
+  Future<IdeogramElement> _recaptionElement({
     required LlmConfig config,
     required File imageFile,
     required IdeogramCaption currentCaption,
@@ -1129,7 +1181,33 @@ class StructuredCaptionRepository {
   /// Throws [FormatException] if the response is missing `medium`, is not a
   /// JSON object, or is otherwise unparseable. Re-throws any error from
   /// [CaptionService].
-  Future<IdeogramStyleDescription> recaptionStyle({
+  Future<Either<Failure, IdeogramStyleDescription>> recaptionStyle({
+    required LlmConfig config,
+    required File imageFile,
+    required IdeogramCaption currentCaption,
+  }) async {
+    try {
+      return Right<Failure, IdeogramStyleDescription>(
+        await _recaptionStyle(
+          config: config,
+          imageFile: imageFile,
+          currentCaption: currentCaption,
+        ),
+      );
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, IdeogramStyleDescription>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'StructuredCaptionRepository.recaptionStyle',
+        ),
+      );
+    }
+  }
+
+  Future<IdeogramStyleDescription> _recaptionStyle({
     required LlmConfig config,
     required File imageFile,
     required IdeogramCaption currentCaption,

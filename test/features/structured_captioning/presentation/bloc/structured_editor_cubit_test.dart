@@ -120,6 +120,24 @@ void main() {
     ),
   );
 
+  provideDummy<Either<Failure, IdeogramElement>>(
+    Right<Failure, IdeogramElement>(
+      baseCaption().compositionalDeconstruction.elements.first,
+    ),
+  );
+  provideDummy<Either<Failure, IdeogramStyleDescription>>(
+    Right<Failure, IdeogramStyleDescription>(baseCaption().styleDescription),
+  );
+
+  provideDummy<Either<Failure, IdeogramElement>>(
+    Right<Failure, IdeogramElement>(
+      baseCaption().compositionalDeconstruction.elements.first,
+    ),
+  );
+  provideDummy<Either<Failure, IdeogramStyleDescription>>(
+    Right<Failure, IdeogramStyleDescription>(baseCaption().styleDescription),
+  );
+
   group('StructuredEditorCubit', () {
     late StructuredEditorCubit cubit;
     late CaptionSessionService session;
@@ -465,7 +483,7 @@ void main() {
 
     group('recaptionSelectedElement', () {
       late MockStructuredCaptionRepository mockRepo;
-      late Completer<IdeogramElement> recaptionCompleter;
+      late Completer<Either<Failure, IdeogramElement>> recaptionCompleter;
 
       IdeogramCaption withSelection({required bool withBbox}) =>
           baseCaption().copyWith(
@@ -485,7 +503,7 @@ void main() {
 
       setUp(() {
         mockRepo = MockStructuredCaptionRepository();
-        recaptionCompleter = Completer<IdeogramElement>();
+        recaptionCompleter = Completer<Either<Failure, IdeogramElement>>();
       });
 
       StructuredEditorCubit buildCubit({required bool withBbox}) {
@@ -551,8 +569,8 @@ void main() {
 
       test('recaptioning status then element update on success', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
-        final Completer<IdeogramElement> completer =
-            Completer<IdeogramElement>();
+        final Completer<Either<Failure, IdeogramElement>> completer =
+            Completer<Either<Failure, IdeogramElement>>();
 
         when(
           mockRepo.recaptionElement(
@@ -576,8 +594,10 @@ void main() {
 
         // Complete the suspended VLM call.
         completer.complete(
-          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
-            desc: 'fresh',
+          Right<Failure, IdeogramElement>(
+            c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+              desc: 'fresh',
+            ),
           ),
         );
         await done;
@@ -645,8 +665,10 @@ void main() {
         ).called(1);
 
         recaptionCompleter.complete(
-          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
-            desc: 'done',
+          Right<Failure, IdeogramElement>(
+            c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+              desc: 'done',
+            ),
           ),
         );
         await first;
@@ -656,8 +678,8 @@ void main() {
 
       test('flushSave awaits an in-flight recaption before saving', () async {
         final StructuredEditorCubit c = buildCubit(withBbox: true);
-        final Completer<IdeogramElement> completer =
-            Completer<IdeogramElement>();
+        final Completer<Either<Failure, IdeogramElement>> completer =
+            Completer<Either<Failure, IdeogramElement>>();
 
         when(
           mockRepo.recaptionElement(
@@ -686,8 +708,10 @@ void main() {
         );
 
         completer.complete(
-          c.state.caption.compositionalDeconstruction.elements[0].copyWith(
-            desc: 'done',
+          Right<Failure, IdeogramElement>(
+            c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+              desc: 'done',
+            ),
           ),
         );
         await recaptionFuture;
@@ -721,8 +745,8 @@ void main() {
         'recaptioningStyle true while in flight, style swapped on success',
         () async {
           final StructuredEditorCubit c = buildCubit();
-          final Completer<IdeogramStyleDescription> completer =
-              Completer<IdeogramStyleDescription>();
+          final Completer<Either<Failure, IdeogramStyleDescription>> completer =
+              Completer<Either<Failure, IdeogramStyleDescription>>();
 
           when(
             mockRepo.recaptionStyle(
@@ -738,12 +762,14 @@ void main() {
           expect(c.state.recaptioningStyle, isTrue);
 
           completer.complete(
-            const IdeogramStyleDescription(
-              aesthetics: 'fresh-aesthetics',
-              lighting: 'fresh-lighting',
-              medium: 'painting',
-              artStyle: 'oil',
-              colorPalette: <String>['#000000'],
+            const Right<Failure, IdeogramStyleDescription>(
+              IdeogramStyleDescription(
+                aesthetics: 'fresh-aesthetics',
+                lighting: 'fresh-lighting',
+                medium: 'painting',
+                artStyle: 'oil',
+                colorPalette: <String>['#000000'],
+              ),
             ),
           );
           await done;
@@ -783,8 +809,8 @@ void main() {
 
       test('concurrent call is a no-op while one is in flight', () async {
         final StructuredEditorCubit c = buildCubit();
-        final Completer<IdeogramStyleDescription> completer =
-            Completer<IdeogramStyleDescription>();
+        final Completer<Either<Failure, IdeogramStyleDescription>> completer =
+            Completer<Either<Failure, IdeogramStyleDescription>>();
         when(
           mockRepo.recaptionStyle(
             config: anyNamed('config'),
@@ -807,7 +833,9 @@ void main() {
         ).called(1);
 
         completer.complete(
-          baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+          Right<Failure, IdeogramStyleDescription>(
+            baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+          ),
         );
         await first;
         await c.flushSave();
@@ -816,8 +844,8 @@ void main() {
 
       test('flushSave awaits an in-flight style recaption', () async {
         final StructuredEditorCubit c = buildCubit();
-        final Completer<IdeogramStyleDescription> completer =
-            Completer<IdeogramStyleDescription>();
+        final Completer<Either<Failure, IdeogramStyleDescription>> completer =
+            Completer<Either<Failure, IdeogramStyleDescription>>();
         when(
           mockRepo.recaptionStyle(
             config: anyNamed('config'),
@@ -843,7 +871,9 @@ void main() {
         );
 
         completer.complete(
-          baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+          Right<Failure, IdeogramStyleDescription>(
+            baseCaption().styleDescription.copyWith(aesthetics: 'done'),
+          ),
         );
         await recaptionFuture;
         await flush;

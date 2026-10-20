@@ -103,6 +103,10 @@ void main() {
     ),
   );
 
+  provideDummy<Either<Failure, IdeogramCaption>>(
+    Right<Failure, IdeogramCaption>(fakeCaption()),
+  );
+
   LlmConfig llmConfig() => LlmConfig(
     id: '1',
     name: 'Test',
@@ -189,7 +193,7 @@ void main() {
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
         ),
-      ).thenAnswer((_) async => fakeCaption());
+      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -238,7 +242,7 @@ void main() {
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
         ),
-      ).thenAnswer((_) async => fakeCaption());
+      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -287,7 +291,7 @@ void main() {
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
         ),
-      ).thenAnswer((_) async => fakeCaption());
+      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -381,7 +385,7 @@ void main() {
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
         ),
-      ).thenAnswer((_) async => fakeCaption());
+      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -429,7 +433,9 @@ void main() {
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
           ),
-        ).thenAnswer((_) async => fakeCaption());
+        ).thenAnswer(
+          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+        );
 
         await cubit.runStructuredCaptioner(
           llm: llmConfig(),
@@ -494,7 +500,9 @@ void main() {
       ).thenAnswer((Invocation inv) {
         capturedProgress =
             inv.namedArguments[#onProgress] as void Function(String);
-        return Future<IdeogramCaption>.value(fakeCaption());
+        return Future<Either<Failure, IdeogramCaption>>.value(
+          Right<Failure, IdeogramCaption>(fakeCaption()),
+        );
       });
 
       await cubit.runStructuredCaptioner(
@@ -548,7 +556,9 @@ void main() {
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
           ),
-        ).thenAnswer((_) async => fakeCaption());
+        ).thenAnswer(
+          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+        );
 
         await cubit.runStructuredCaptioner(
           llm: llmConfig(),
@@ -600,7 +610,9 @@ void main() {
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
           ),
-        ).thenAnswer((_) async => fakeCaption());
+        ).thenAnswer(
+          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+        );
 
         await cubit.runStructuredCaptioner(
           llm: llmConfig(),

@@ -5,20 +5,22 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'dart:async' as _i5;
-import 'dart:io' as _i7;
+import 'dart:io' as _i9;
 
+import 'package:fpdart/fpdart.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i9;
-import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i2;
-import 'package:yofardev_captioner/core/models/llm_config.dart' as _i6;
+import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:yofardev_captioner/core/errors/failure.dart' as _i7;
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i3;
+import 'package:yofardev_captioner/core/models/llm_config.dart' as _i8;
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart'
-    as _i8;
+    as _i10;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart'
-    as _i3;
+    as _i2;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
-    as _i10;
+    as _i12;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -36,26 +38,20 @@ import 'package:yofardev_captioner/features/structured_captioning/data/services/
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeIdeogramCaption_0 extends _i1.SmartFake
-    implements _i2.IdeogramCaption {
-  _FakeIdeogramCaption_0(Object parent, Invocation parentInvocation)
+class _FakeVlmAnalysis_0 extends _i1.SmartFake implements _i2.VlmAnalysis {
+  _FakeVlmAnalysis_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeVlmAnalysis_1 extends _i1.SmartFake implements _i3.VlmAnalysis {
-  _FakeVlmAnalysis_1(Object parent, Invocation parentInvocation)
+class _FakeIdeogramStyleDescription_1 extends _i1.SmartFake
+    implements _i3.IdeogramStyleDescription {
+  _FakeIdeogramStyleDescription_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeIdeogramElement_2 extends _i1.SmartFake
-    implements _i2.IdeogramElement {
-  _FakeIdeogramElement_2(Object parent, Invocation parentInvocation)
-    : super(parent, parentInvocation);
-}
-
-class _FakeIdeogramStyleDescription_3 extends _i1.SmartFake
-    implements _i2.IdeogramStyleDescription {
-  _FakeIdeogramStyleDescription_3(Object parent, Invocation parentInvocation)
+class _FakeIdeogramCaption_2 extends _i1.SmartFake
+    implements _i3.IdeogramCaption {
+  _FakeIdeogramCaption_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -69,11 +65,12 @@ class MockStructuredCaptionRepository extends _i1.Mock
   }
 
   @override
-  _i5.Future<_i2.IdeogramCaption> generateStructuredCaption(
-    _i6.LlmConfig? config,
-    _i7.File? imageFile, {
+  _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>
+  generateStructuredCaption(
+    _i8.LlmConfig? config,
+    _i9.File? imageFile, {
     required void Function(String)? onProgress,
-    _i8.StructuredBatchOverrides? overrides,
+    _i10.StructuredBatchOverrides? overrides,
     bool? debugMode = false,
     bool? disableSam = false,
     bool? vlmEmitsXyxy = true,
@@ -94,26 +91,27 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #mode: mode,
               },
             ),
-            returnValue: _i5.Future<_i2.IdeogramCaption>.value(
-              _FakeIdeogramCaption_0(
-                this,
-                Invocation.method(
-                  #generateStructuredCaption,
-                  [config, imageFile],
-                  {
-                    #onProgress: onProgress,
-                    #overrides: overrides,
-                    #debugMode: debugMode,
-                    #disableSam: disableSam,
-                    #vlmEmitsXyxy: vlmEmitsXyxy,
-                    #guidance: guidance,
-                    #mode: mode,
-                  },
+            returnValue:
+                _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>.value(
+                  _i11.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>(
+                    this,
+                    Invocation.method(
+                      #generateStructuredCaption,
+                      [config, imageFile],
+                      {
+                        #onProgress: onProgress,
+                        #overrides: overrides,
+                        #debugMode: debugMode,
+                        #disableSam: disableSam,
+                        #vlmEmitsXyxy: vlmEmitsXyxy,
+                        #guidance: guidance,
+                        #mode: mode,
+                      },
+                    ),
+                  ),
                 ),
-              ),
-            ),
           )
-          as _i5.Future<_i2.IdeogramCaption>);
+          as _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>);
 
   @override
   double bboxAreaRatio(List<int>? bbox) =>
@@ -132,20 +130,20 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as double);
 
   @override
-  _i3.VlmAnalysis pruneDuplicateObjects(_i3.VlmAnalysis? analysis) =>
+  _i2.VlmAnalysis pruneDuplicateObjects(_i2.VlmAnalysis? analysis) =>
       (super.noSuchMethod(
             Invocation.method(#pruneDuplicateObjects, [analysis]),
-            returnValue: _FakeVlmAnalysis_1(
+            returnValue: _FakeVlmAnalysis_0(
               this,
               Invocation.method(#pruneDuplicateObjects, [analysis]),
             ),
           )
-          as _i3.VlmAnalysis);
+          as _i2.VlmAnalysis);
 
   @override
   _i5.Future<Map<int, List<int>>> computeSamBboxes({
-    required _i7.File? imageFile,
-    required _i2.IdeogramCaption? caption,
+    required _i9.File? imageFile,
+    required _i3.IdeogramCaption? caption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#computeSamBboxes, [], {
@@ -159,10 +157,10 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as _i5.Future<Map<int, List<int>>>);
 
   @override
-  _i5.Future<_i2.IdeogramElement> recaptionElement({
-    required _i6.LlmConfig? config,
-    required _i7.File? imageFile,
-    required _i2.IdeogramCaption? currentCaption,
+  _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramElement>> recaptionElement({
+    required _i8.LlmConfig? config,
+    required _i9.File? imageFile,
+    required _i3.IdeogramCaption? currentCaption,
     required int? elementIndex,
     String? instructions,
     bool? cropToBbox = false,
@@ -176,27 +174,29 @@ class MockStructuredCaptionRepository extends _i1.Mock
               #instructions: instructions,
               #cropToBbox: cropToBbox,
             }),
-            returnValue: _i5.Future<_i2.IdeogramElement>.value(
-              _FakeIdeogramElement_2(
-                this,
-                Invocation.method(#recaptionElement, [], {
-                  #config: config,
-                  #imageFile: imageFile,
-                  #currentCaption: currentCaption,
-                  #elementIndex: elementIndex,
-                  #instructions: instructions,
-                  #cropToBbox: cropToBbox,
-                }),
-              ),
-            ),
+            returnValue:
+                _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramElement>>.value(
+                  _i11.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramElement>>(
+                    this,
+                    Invocation.method(#recaptionElement, [], {
+                      #config: config,
+                      #imageFile: imageFile,
+                      #currentCaption: currentCaption,
+                      #elementIndex: elementIndex,
+                      #instructions: instructions,
+                      #cropToBbox: cropToBbox,
+                    }),
+                  ),
+                ),
           )
-          as _i5.Future<_i2.IdeogramElement>);
+          as _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramElement>>);
 
   @override
-  _i5.Future<_i2.IdeogramStyleDescription> recaptionStyle({
-    required _i6.LlmConfig? config,
-    required _i7.File? imageFile,
-    required _i2.IdeogramCaption? currentCaption,
+  _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>>
+  recaptionStyle({
+    required _i8.LlmConfig? config,
+    required _i9.File? imageFile,
+    required _i3.IdeogramCaption? currentCaption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#recaptionStyle, [], {
@@ -204,38 +204,43 @@ class MockStructuredCaptionRepository extends _i1.Mock
               #imageFile: imageFile,
               #currentCaption: currentCaption,
             }),
-            returnValue: _i5.Future<_i2.IdeogramStyleDescription>.value(
-              _FakeIdeogramStyleDescription_3(
-                this,
-                Invocation.method(#recaptionStyle, [], {
-                  #config: config,
-                  #imageFile: imageFile,
-                  #currentCaption: currentCaption,
-                }),
-              ),
-            ),
+            returnValue:
+                _i5.Future<
+                  _i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>
+                >.value(
+                  _i11.dummyValue<
+                    _i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>
+                  >(
+                    this,
+                    Invocation.method(#recaptionStyle, [], {
+                      #config: config,
+                      #imageFile: imageFile,
+                      #currentCaption: currentCaption,
+                    }),
+                  ),
+                ),
           )
-          as _i5.Future<_i2.IdeogramStyleDescription>);
+          as _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>>);
 
   @override
-  _i2.IdeogramStyleDescription mapStyleResponse(
+  _i3.IdeogramStyleDescription mapStyleResponse(
     String? raw,
     List<String>? colorPalette,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#mapStyleResponse, [raw, colorPalette]),
-            returnValue: _FakeIdeogramStyleDescription_3(
+            returnValue: _FakeIdeogramStyleDescription_1(
               this,
               Invocation.method(#mapStyleResponse, [raw, colorPalette]),
             ),
           )
-          as _i2.IdeogramStyleDescription);
+          as _i3.IdeogramStyleDescription);
 
   @override
   String computeAspectRatio(int? width, int? height) =>
       (super.noSuchMethod(
             Invocation.method(#computeAspectRatio, [width, height]),
-            returnValue: _i9.dummyValue<String>(
+            returnValue: _i11.dummyValue<String>(
               this,
               Invocation.method(#computeAspectRatio, [width, height]),
             ),
@@ -248,7 +253,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as String?);
 
   @override
-  _i3.VlmAnalysis parsePartialVlmResponse(
+  _i2.VlmAnalysis parsePartialVlmResponse(
     String? raw, {
     bool? vlmEmitsXyxy = true,
   }) =>
@@ -258,7 +263,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               [raw],
               {#vlmEmitsXyxy: vlmEmitsXyxy},
             ),
-            returnValue: _FakeVlmAnalysis_1(
+            returnValue: _FakeVlmAnalysis_0(
               this,
               Invocation.method(
                 #parsePartialVlmResponse,
@@ -267,7 +272,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i3.VlmAnalysis);
+          as _i2.VlmAnalysis);
 
   @override
   List<int>? normalizeBbox(dynamic raw, {bool? vlmEmitsXyxy = true}) =>
@@ -281,7 +286,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as List<int>?);
 
   @override
-  _i3.VlmAnalysis parseAnalysisJson(
+  _i2.VlmAnalysis parseAnalysisJson(
     Map<String, dynamic>? json, {
     bool? vlmEmitsXyxy = true,
   }) =>
@@ -291,7 +296,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               [json],
               {#vlmEmitsXyxy: vlmEmitsXyxy},
             ),
-            returnValue: _FakeVlmAnalysis_1(
+            returnValue: _FakeVlmAnalysis_0(
               this,
               Invocation.method(
                 #parseAnalysisJson,
@@ -300,11 +305,11 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ),
             ),
           )
-          as _i3.VlmAnalysis);
+          as _i2.VlmAnalysis);
 
   @override
-  List<_i10.SamDetection> matchDetectionsToObjects(
-    List<_i10.SamDetection>? detections,
+  List<_i12.SamDetection> matchDetectionsToObjects(
+    List<_i12.SamDetection>? detections,
     List<_i4.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
@@ -312,17 +317,17 @@ class MockStructuredCaptionRepository extends _i1.Mock
               detections,
               vlmObjects,
             ]),
-            returnValue: <_i10.SamDetection>[],
+            returnValue: <_i12.SamDetection>[],
           )
-          as List<_i10.SamDetection>);
+          as List<_i12.SamDetection>);
 
   @override
-  _i2.IdeogramCaption buildIdeogramCaption(
+  _i3.IdeogramCaption buildIdeogramCaption(
     List<String>? globalPalette,
-    _i3.VlmAnalysis? analysis,
-    List<_i10.SamDetection>? detections,
+    _i2.VlmAnalysis? analysis,
+    List<_i12.SamDetection>? detections,
     Map<int, List<String>>? elementPalettes,
-    _i8.StructuredBatchOverrides? overrides,
+    _i10.StructuredBatchOverrides? overrides,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#buildIdeogramCaption, [
@@ -332,7 +337,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               elementPalettes,
               overrides,
             ]),
-            returnValue: _FakeIdeogramCaption_0(
+            returnValue: _FakeIdeogramCaption_2(
               this,
               Invocation.method(#buildIdeogramCaption, [
                 globalPalette,
@@ -343,7 +348,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
               ]),
             ),
           )
-          as _i2.IdeogramCaption);
+          as _i3.IdeogramCaption);
 
   @override
   bool isLikelyGroup(String? name, String? desc) =>

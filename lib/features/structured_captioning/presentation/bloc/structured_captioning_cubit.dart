@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/errors/failure.dart';
+import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/ideogram_caption.dart';
@@ -133,8 +136,8 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       );
 
       try {
-        final IdeogramCaption result = await _repository
-            .generateStructuredCaption(
+        final Either<Failure, IdeogramCaption> generateResult =
+            await _repository.generateStructuredCaption(
               llm,
               image.image,
               onProgress: _onStepProgress,
@@ -147,6 +150,23 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
                   ? StructuredMode.multiStage
                   : StructuredMode.singleShot,
             );
+        final IdeogramCaption? result = generateResult.getRight().toNullable();
+        if (result == null) {
+          final Failure f = generateResult.getLeft().toNullable()!;
+          final String message = failureMessage(f);
+          errors.add('Failed to caption ${image.image.path}: $message');
+          final AppImage errorImage = image.copyWith(error: message);
+          _session.updateImage(image: errorImage);
+          processed++;
+          emit(
+            state.copyWith(
+              processedImages: processed,
+              totalImages: total,
+              setCurrentlyProcessingImage: true,
+            ),
+          );
+          continue;
+        }
 
         // Store JSON string as caption in active category.
         final String category = _session.state.activeCategory ?? 'default';

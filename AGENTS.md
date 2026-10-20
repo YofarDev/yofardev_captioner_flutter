@@ -26,13 +26,13 @@ flutter build macos --release                                  # also linux / wi
 Feature-first BLoC/Cubit + Repository + get_it:
 
 - `lib/features/<name>/{data,domain,presentation}` — self-contained features: `image_list`, `captioning`, `structured_captioning`, `llm_config`, `image_operations`, `caption_search`, `tab_manager`, `export`, `main_area`, `agent_api`. `data` = repositories/models/services, `domain` = pure models, repository interfaces, and feature services (no Flutter/get_it/bloc imports), `presentation` = `pages/`, `widgets/`, and `bloc/` (cubits + states, part files for state separation).
-- Every feature exposes a public barrel `lib/features/<name>/<name>.dart` (domain types + public cubits/screens/widgets; never `data/` internals). Cross-feature imports may only target that barrel — enforced by `test/architecture_test.dart`, whose ratchet (`kKnownViolations` / `kKnownCycles`) may only shrink.
+- Every feature exposes a public barrel `lib/features/<name>/<name>.dart` (domain types + public cubits/screens/widgets; never `data/` internals). Cross-feature imports may only target that barrel — enforced by `test/architecture_test.dart`, whose ratchet (`kKnownViolations` / `kKnownCycles`) may only shrink. Allowlist entries were narrowed to their exact surviving files in Phase 6 — never broaden a prefix; fix the violation or (only in an approved refactor phase) narrow further.
 - `lib/core/` — shared code only: `di/service_locator.dart` (DI registration), `models/` (cross-cutting models: AppImage, CaptionEntry/Data/Database, LlmConfig(s), IdeogramCaption, StructuredBatchOverrides), `constants/` (colors etc.), `errors/`, `services/`, `utils/`, `widgets/` (reusable by 3+ features), `presentation/pages/home_page.dart`.
 - `lib/helpers/` — helpers shared with tests.
 
 Rules that matter when editing:
 
-- Presentation must not import `data/` directly; go through cubits/repositories (cubits depend on domain repository interfaces such as `ILlmConfigRepository` / `ICaptioningRepository` where practical).
+- Presentation must not import `data/` directly; go through cubits/repositories (cubits depend on domain repository interfaces such as `ILlmConfigRepository` / `ICaptioningRepository` where practical). Repositories return `Either<Failure, T>` (fpdart) instead of throwing; failures are classified once at the boundary (`lib/core/errors/`) and mapped to user text by `failureMessage`.
 - Cross-feature access goes through the target feature's barrel, never its internal files.
 - DI: everything registers in `lib/core/di/service_locator.dart` (there is no router — navigation is `home_page` + `routeObserver`). Access via `locator<Type>()`.
 - Root cubits (`LlmConfigsCubit`, `TabManagerCubit`) are constructed in `main()` and registered as singletons **before** runApp so `AgentApiService` can read their live state — don't move their creation into BlocProviders.

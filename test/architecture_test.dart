@@ -13,22 +13,64 @@ import 'support/architecture_checker.dart';
 /// they are allowlisted separately in [kKnownCycles] by exact canonical key
 /// (feature names sorted, joined with ' -> ').
 const List<KnownViolation> kKnownViolations = <KnownViolation>[
-  // No feature barrels exist yet; every cross-feature import targets an
-  // internal file.
+  // Cross-feature internal access survives in exactly two places: the
+  // structured-caption repository reaching CaptionService, and the
+  // tab-manager cubit constructing AppFileUtils for its sessions.
   KnownViolation(
-    pathPrefix: 'lib/features/',
+    pathPrefix:
+        'lib/features/structured_captioning/data/repositories/structured_caption_repository.dart',
     ruleId: 'cross-feature-internal-access',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/',
+    pathPrefix:
+        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
+    ruleId: 'cross-feature-internal-access',
+  ),
+  // Presentation→data survives in: the agent API panel (drives the embedded
+  // REST service), the image-list cubit adapter (constructs its default
+  // session's file store), structured captioning (feature-internal data),
+  // and the tab-manager cubit (same session wiring).
+  KnownViolation(
+    pathPrefix: 'lib/features/agent_api/',
     ruleId: 'presentation-imports-data',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/',
+    pathPrefix:
+        'lib/features/image_list/presentation/bloc/image_list_cubit.dart',
+    ruleId: 'presentation-imports-data',
+  ),
+  KnownViolation(
+    pathPrefix: 'lib/features/structured_captioning/',
+    ruleId: 'presentation-imports-data',
+  ),
+  KnownViolation(
+    pathPrefix:
+        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
+    ruleId: 'presentation-imports-data',
+  ),
+  // locator<T>() reads live only in the agent API (the DI-embedded REST
+  // service and its panel), the captioning session service, structured
+  // captioning services, and the tab-manager cubit/tab content widgets.
+  KnownViolation(
+    pathPrefix: 'lib/features/agent_api/',
     ruleId: 'getit-resolution-outside-allowlist',
   ),
   KnownViolation(
-    pathPrefix: 'lib/core/',
+    pathPrefix: 'lib/features/captioning/data/services/caption_service.dart',
+    ruleId: 'getit-resolution-outside-allowlist',
+  ),
+  KnownViolation(
+    pathPrefix: 'lib/features/structured_captioning/',
+    ruleId: 'getit-resolution-outside-allowlist',
+  ),
+  KnownViolation(
+    pathPrefix: 'lib/features/tab_manager/',
+    ruleId: 'getit-resolution-outside-allowlist',
+  ),
+  // The DI layer is the one place core may import feature internals — it
+  // exists precisely to wire them together.
+  KnownViolation(
+    pathPrefix: 'lib/core/di/service_locator.dart',
     ruleId: 'core-imports-feature-internal',
   ),
 ];

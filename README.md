@@ -50,6 +50,10 @@ The application uses a third-party API for generating captions automatically. Th
 
 ![Screenshot of Settings](assets/screenshot_settings.png)
 
+## Architecture (for developers)
+
+Feature-first layout: each feature under `lib/features/<name>/` is split into `data/` (repository implementations, services), `domain/` (pure models, repository interfaces, feature services), and `presentation/` (pages, widgets, cubits), with a public barrel `<name>.dart` as the only cross-feature entry point. Shared code lives in `lib/core/` (`models/`, `errors/` — `Failure` + Either mapping, `di/service_locator.dart` — all dependency registrations, plus constants/services/utils/widgets). Repositories return `Either<Failure, T>` instead of throwing; failures are classified once at the boundary and mapped to user-facing text by `failureMessage`. The dependency rules (barrels-only cross-feature access, domain purity, no cubit fields in services, register*-only-in-service_locator, and more) are enforced by `test/architecture_test.dart`, a ratchet whose violation allowlist may only shrink. See `AGENTS.md` for the detailed rules.
+
 ## Multi-Category Captions
 
 The app supports multiple caption categories per image, allowing you to maintain different types of captions for the same dataset.

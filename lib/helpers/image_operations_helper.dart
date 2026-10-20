@@ -9,12 +9,11 @@ import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
 import '../core/models/app_image.dart';
+import '../core/utils/image_utils.dart';
 import '../features/image_list/data/repositories/app_file_utils.dart';
 import '../features/image_list/domain/services/caption_session_service.dart';
 import '../features/image_list/logic/image_list_state.dart';
-import '../features/image_operations/data/models/crop_image.dart';
-import '../features/image_operations/data/utils/image_utils.dart';
-import '../features/image_operations/presentation/pages/crop_image_screen.dart';
+import '../features/image_operations/image_operations.dart';
 
 class ImageOperationsHelper {
   final AppFileUtils _fileUtils;

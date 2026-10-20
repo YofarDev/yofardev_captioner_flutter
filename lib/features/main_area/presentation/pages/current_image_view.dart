@@ -9,11 +9,11 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/app_image.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/widgets/tag_editor.dart';
-import '../../../image_operations/data/utils/image_utils.dart';
-import '../../../image_operations/logic/image_operations_cubit.dart';
+import '../../../image_operations/image_operations.dart';
 import '../../../structured_captioning/presentation/widgets/bbox_overlay.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 

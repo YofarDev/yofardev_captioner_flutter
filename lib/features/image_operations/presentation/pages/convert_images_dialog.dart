@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../logic/image_operations_cubit.dart';
+import '../bloc/image_operations_cubit.dart';
 
 class ConvertImagesDialog extends StatefulWidget {
   const ConvertImagesDialog({super.key});

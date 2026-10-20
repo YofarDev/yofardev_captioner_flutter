@@ -10,7 +10,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as p;
 
-import '../../../../core/models/app_image.dart';
+import '../models/app_image.dart';
 import 'bash_scripts_runner.dart';
 import 'image_header_parser.dart';
 

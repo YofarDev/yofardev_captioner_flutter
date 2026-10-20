@@ -14,7 +14,7 @@ import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/services/cache_service.dart';
-import '../../../image_operations/data/utils/image_utils.dart';
+import '../../../../core/utils/image_utils.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 import '../../domain/services/caption_session_service.dart';
 

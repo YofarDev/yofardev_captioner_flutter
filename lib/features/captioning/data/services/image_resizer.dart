@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import '../../../../core/services/cache_service.dart';
-import '../../../image_operations/data/utils/image_utils.dart';
+import '../../../../core/utils/image_utils.dart';
 
 /// Abstraction over [ImageUtils.resizeImageIfNecessary] for testability.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:yofardev_captioner/features/image_operations/logic/image_operations_cubit.dart';
+import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 
 void main() {
   group('ImageOperationsState', () {

@@ -2,7 +2,7 @@
 // To run: dart test test/features/image_operations/data/image_utils_manual_test.dart
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/image_operations/data/utils/image_utils.dart';
+import 'package:yofardev_captioner/core/utils/image_utils.dart';
 
 void main() {
   group('ImageUtils Manual Tests', () {

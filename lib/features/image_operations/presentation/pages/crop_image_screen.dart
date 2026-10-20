@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../data/models/crop_image.dart';
+import '../../domain/models/crop_image.dart';
 
 class CropImageScreen extends StatefulWidget {
   final Uint8List image;

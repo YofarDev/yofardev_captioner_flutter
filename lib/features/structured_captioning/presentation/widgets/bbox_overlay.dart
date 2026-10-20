@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../../../image_operations/data/utils/image_header_parser.dart';
+import '../../../../core/utils/image_header_parser.dart';
 
 /// Displays an image with bounding box overlays from an Ideogram4 JSON caption.
 ///

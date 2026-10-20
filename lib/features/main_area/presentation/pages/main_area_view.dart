@@ -8,8 +8,7 @@ import '../../../../core/widgets/rive_animations.dart';
 import '../../../caption_search/presentation/widgets/caption_search_bar.dart';
 import '../../../captioning/presentation/widgets/caption_text_area.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
-import '../../../image_operations/presentation/widgets/controls_view.dart';
-import '../../../image_operations/presentation/widgets/controls_widgets.dart';
+import '../../../image_operations/image_operations.dart';
 import '../../../tab_manager/logic/tab_manager_cubit.dart';
 import 'current_image_view.dart';
 

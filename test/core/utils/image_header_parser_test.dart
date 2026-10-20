@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
-import 'package:yofardev_captioner/features/image_operations/data/utils/image_header_parser.dart';
+import 'package:yofardev_captioner/core/utils/image_header_parser.dart';
 
 void main() {
   group('ImageHeaderParser.parse', () {

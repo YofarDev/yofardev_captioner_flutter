@@ -17,7 +17,7 @@ import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.da
     as _i5;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
     as _i3;
-import 'package:yofardev_captioner/features/image_operations/logic/image_operations_cubit.dart'
+import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart'
     as _i4;
 
 // ignore_for_file: type=lint

@@ -8,7 +8,6 @@ import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../../../core/widgets/rive_animations.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../llm_config/llm_config.dart';
@@ -19,6 +18,8 @@ import '../bloc/batch_apply/batch_json_apply_cubit.dart';
 import '../bloc/batch_apply/batch_json_apply_state.dart';
 import '../bloc/captioning_cubit.dart';
 import 'batch_json_apply_dialog.dart';
+import 'batch_progress_panel.dart';
+import 'caption_mode_selector.dart';
 import 'convert_captions_dialog.dart';
 import 'guidance_dialog.dart';
 
@@ -47,119 +48,34 @@ class _CaptionControlsState extends State<CaptionControls> {
             .where((AppImage img) => _isMissing(img, category, ideogramMode))
             .length;
 
-        return RadioGroup<CaptionOptions>(
-          groupValue: _selectedOption,
-          onChanged: (CaptionOptions? value) {
-            setState(() {
-              _selectedOption = value!;
-            });
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  const SettingsButton(),
-                  const LlmConfigWidget(),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                          const Text(
-                            "Caption: ",
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          _buildRadioButton(
-                            label: 'This image',
-                            option: CaptionOptions.current,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildRadioButton(
-                            label: 'Missing captions ($missingCount)',
-                            option: CaptionOptions.missing,
-                          ),
-                          const SizedBox(width: 12),
-                          _buildRadioButton(
-                            label: 'All ($totalImages)',
-                            option: CaptionOptions.all,
-                          ),
-                        ],
-                      ),
-                    ),
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Row(
+              children: <Widget>[
+                const SettingsButton(),
+                const LlmConfigWidget(),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: CaptionModeSelector(
+                    selected: _selectedOption,
+                    onChanged: (CaptionOptions? value) {
+                      if (value != null) {
+                        setState(() => _selectedOption = value);
+                      }
+                    },
+                    missingCount: missingCount,
+                    totalImages: totalImages,
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              _buildRunButton(count: totalImages),
-            ],
-          ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildRunButton(count: totalImages),
+          ],
         );
       },
-    );
-  }
-
-  Widget _buildRadioButton({
-    required String label,
-    required CaptionOptions option,
-  }) {
-    final bool isSelected = _selectedOption == option;
-    return InkWell(
-      onTap: () => setState(() => _selectedOption = option),
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? lightPink.withAlpha(80)
-              : Colors.white.withAlpha(10),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected
-                ? lightPink.withAlpha(150)
-                : Colors.white.withAlpha(30),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Transform.scale(
-              scale: 0.8,
-              child: Radio<CaptionOptions>(
-                value: option,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-                fillColor: WidgetStateProperty.resolveWith<Color>((
-                  Set<WidgetState> states,
-                ) {
-                  if (states.contains(WidgetState.selected)) {
-                    return lightPink;
-                  }
-                  return Colors.grey;
-                }),
-              ),
-            ),
-            const SizedBox(width: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey[300],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -443,10 +359,6 @@ class _CaptionControlsState extends State<CaptionControls> {
     final Color accentColor = isIdeogram
         ? Colors.teal.withAlpha(220)
         : lightPink.withAlpha(220);
-    final Color progressBg = isIdeogram
-        ? Colors.teal.withAlpha(100)
-        : Colors.green.withAlpha(100);
-    final Color progressFg = isIdeogram ? Colors.teal : Colors.green;
     final bool scoped =
         _scopeToFiltered && imageListState.searchQuery.isNotEmpty;
 
@@ -569,53 +481,24 @@ class _CaptionControlsState extends State<CaptionControls> {
         if (isIdeogram)
           _buildBatchApplyButton(context, configState, imageCount),
         if (isInProgress) ...<Widget>[
-          Container(
-            margin: const EdgeInsets.only(left: 12),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: progressBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                const RiveProcessingIndicator(size: 15),
-                const SizedBox(width: 8),
-                if (stepLabel != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Text(
-                      stepLabel,
-                      style: TextStyle(
-                        color: isIdeogram ? Colors.tealAccent : Colors.green,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                Text(
-                  '$processedImages/$totalImages',
-                  style: TextStyle(
-                    color: progressFg,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                if (isCancelling) ...<Widget>[
-                  const SizedBox(width: 8),
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+          BatchProgressPanel(
+            isIdeogram: isIdeogram,
+            stepLabel: stepLabel,
+            processedImages: processedImages,
+            totalImages: totalImages,
+            isCancelling: isCancelling,
+            onStop: () {
+              if (isIdeogram) {
+                context
+                    .read<StructuredCaptioningCubit>()
+                    .cancelStructuredCaptioning();
+              } else {
+                context.read<CaptioningCubit>().cancelCaptioning();
+              }
+            },
           ),
           const SizedBox(width: 10),
-          _StopButton(
+          StopButton(
             isCancelling: isCancelling,
             onTap: () {
               if (isIdeogram) {
@@ -833,7 +716,7 @@ class _CaptionControlsState extends State<CaptionControls> {
                 ),
               ),
               const SizedBox(width: 8),
-              _StopButton(
+              StopButton(
                 isCancelling: false,
                 onTap: () => context.read<BatchJsonApplyCubit>().cancel(),
               ),
@@ -860,150 +743,6 @@ class _CaptionControlsState extends State<CaptionControls> {
           ],
         );
       },
-    );
-  }
-}
-
-/// Danger-style interrupt control. Squared stop glyph + danger glow,
-/// lifts on hover, pulses while waiting for the in-flight job to settle.
-class _StopButton extends StatefulWidget {
-  const _StopButton({required this.onTap, required this.isCancelling});
-
-  final VoidCallback onTap;
-  final bool isCancelling;
-
-  @override
-  State<_StopButton> createState() => _StopButtonState();
-}
-
-class _StopButtonState extends State<_StopButton>
-    with SingleTickerProviderStateMixin {
-  bool _hover = false;
-  late final AnimationController _pulse;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulse = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    );
-  }
-
-  @override
-  void didUpdateWidget(covariant _StopButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.isCancelling && !_pulse.isAnimating) {
-      _pulse.repeat(reverse: true);
-    } else if (!widget.isCancelling && _pulse.isAnimating) {
-      _pulse
-        ..stop()
-        ..value = 0;
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool enabled = !widget.isCancelling;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      child: GestureDetector(
-        onTap: enabled ? widget.onTap : null,
-        child: AnimatedScale(
-          scale: _hover && enabled ? 1.035 : 1.0,
-          duration: const Duration(milliseconds: 140),
-          curve: Curves.easeOut,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            curve: Curves.easeOut,
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[
-                  const Color(
-                    0xFFE5484D,
-                  ).withAlpha(_hover && enabled ? 255 : 232),
-                  const Color(
-                    0xFFB32217,
-                  ).withAlpha(_hover && enabled ? 245 : 214),
-                ],
-              ),
-              border: Border.all(
-                color: Colors.white.withAlpha(_hover && enabled ? 95 : 38),
-              ),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: const Color(
-                    0xFFE5484D,
-                  ).withAlpha(_hover && enabled ? 130 : 72),
-                  blurRadius: _hover ? 22 : 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                if (widget.isCancelling)
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                else
-                  Container(
-                    width: 11,
-                    height: 11,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withAlpha(enabled ? 255 : 170),
-                      borderRadius: BorderRadius.circular(2.5),
-                    ),
-                  ),
-                const SizedBox(width: 9),
-                Text(
-                  widget.isCancelling ? 'Stopping' : 'Stop',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                    fontFamily: 'Orbitron',
-                  ),
-                ),
-                if (widget.isCancelling) ...<Widget>[
-                  const SizedBox(width: 8),
-                  FadeTransition(
-                    opacity: _pulse,
-                    child: Container(
-                      width: 5,
-                      height: 5,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

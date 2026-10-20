@@ -19,8 +19,7 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../image_list/data/repositories/app_file_utils.dart';
-import '../../../image_list/domain/services/caption_session_service.dart';
-import '../../../image_list/logic/image_list_state.dart';
+import '../../../image_list/image_list.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
 import '../../../tab_manager/domain/services/tab_session_registry.dart';
 

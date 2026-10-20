@@ -6,9 +6,7 @@ import 'package:window_manager/window_manager.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../image_list/data/repositories/app_file_utils.dart';
-import '../../../image_list/data/services/filter_parser_engine.dart';
-import '../../../image_list/domain/services/caption_session_service.dart';
-import '../../../image_list/logic/image_cache_eviction.dart';
+import '../../../image_list/image_list.dart';
 import '../../domain/models/app_tab.dart';
 import '../../domain/services/tab_session_registry.dart';
 

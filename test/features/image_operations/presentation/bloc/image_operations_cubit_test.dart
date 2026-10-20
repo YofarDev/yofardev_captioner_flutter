@@ -8,8 +8,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
 

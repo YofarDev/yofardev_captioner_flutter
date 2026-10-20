@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/pages/aspect_ratio_dialog.dart';
 
 import 'aspect_ratio_dialog_test.mocks.dart';

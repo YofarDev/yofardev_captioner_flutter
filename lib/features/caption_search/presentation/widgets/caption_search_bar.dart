@@ -6,10 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/route_observer.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
-import '../../domain/models/filter_query.dart';
+import '../../../image_list/image_list.dart';
+
 import '../../domain/services/autocomplete_engine.dart';
-import '../../domain/services/filter_parser.dart';
 import '../bloc/caption_search_cubit.dart';
 import 'filter_help_dialog.dart';
 import 'search_autocomplete_overlay.dart';

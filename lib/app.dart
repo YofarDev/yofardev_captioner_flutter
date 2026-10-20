@@ -8,7 +8,7 @@ import 'core/presentation/pages/home_page.dart';
 import 'core/services/cache_service.dart';
 import 'core/services/route_observer.dart';
 import 'features/image_list/data/repositories/app_file_utils.dart';
-import 'features/image_list/data/services/filter_parser_engine.dart';
+import 'features/image_list/image_list.dart';
 import 'features/llm_config/llm_config.dart';
 
 import 'features/tab_manager/tab_manager.dart';

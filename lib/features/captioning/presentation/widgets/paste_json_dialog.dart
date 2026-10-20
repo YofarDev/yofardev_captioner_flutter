@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/image_list.dart';
 import '../../data/utils/ideogram_json.dart';
 
 /// Dialog that lets the user paste a raw Ideogram JSON blob and apply it

@@ -8,10 +8,10 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/data/services/filter_parser_engine.dart';
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/filter_parser_engine.dart';
 
 /// Hand-rolled fake of the [CaptionFileStore] port — the service tests assert
 /// session behavior, so the store is configurable and records writes.

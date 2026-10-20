@@ -5,7 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/image_list.dart';
 
 class CaptionFilesButton extends StatelessWidget {
   final bool outlined;

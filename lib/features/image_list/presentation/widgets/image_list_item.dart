@@ -5,7 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../logic/image_list_cubit.dart';
+import '../bloc/image_list_cubit.dart';
 
 class ImageListItem extends StatefulWidget {
   const ImageListItem({

@@ -9,8 +9,8 @@ import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/batch_apply_template.dart';
 import 'package:yofardev_captioner/features/captioning/logic/batch_apply/batch_json_apply_cubit.dart';
 import 'package:yofardev_captioner/features/captioning/logic/batch_apply/batch_json_apply_state.dart';
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 
 import 'batch_json_apply_cubit_test.mocks.dart';
 

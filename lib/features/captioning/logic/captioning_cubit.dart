@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/models/app_image.dart';
 import '../../../core/models/llm_config.dart';
 import '../../../core/utils/cancel_token.dart';
-import '../../image_list/domain/services/caption_session_service.dart';
+import '../../image_list/image_list.dart';
 import '../data/models/caption_options.dart';
 import '../data/repositories/captioning_repository.dart';
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../logic/image_list_cubit.dart';
+import '../bloc/image_list_cubit.dart';
 
 class SortByWidget extends StatelessWidget {
   const SortByWidget({super.key});

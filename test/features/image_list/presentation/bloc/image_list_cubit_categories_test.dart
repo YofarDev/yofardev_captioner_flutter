@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 
 import 'image_list_cubit_categories_test.mocks.dart';
 

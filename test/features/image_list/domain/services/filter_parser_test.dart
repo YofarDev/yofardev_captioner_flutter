@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/caption_search/domain/models/filter_query.dart';
-import 'package:yofardev_captioner/features/caption_search/domain/services/filter_parser.dart';
+import 'package:yofardev_captioner/features/image_list/domain/models/filter_query.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/filter_parser.dart';
 
 void main() {
   group('FilterParser', () {

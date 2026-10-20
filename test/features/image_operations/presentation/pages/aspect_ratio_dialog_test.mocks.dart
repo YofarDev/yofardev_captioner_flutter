@@ -10,12 +10,12 @@ import 'package:bloc/bloc.dart' as _i7;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i8;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i5;
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart'
+    as _i3;
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
     as _i2;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart'
     as _i4;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
-    as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

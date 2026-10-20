@@ -9,7 +9,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
 import '../../data/models/apply_structured_overrides.dart';
 import '../../logic/structured_editor_cubit.dart';

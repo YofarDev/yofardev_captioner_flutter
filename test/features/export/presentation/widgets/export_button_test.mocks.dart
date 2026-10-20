@@ -11,12 +11,11 @@ import 'package:flutter/material.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i6;
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart'
+    as _i3;
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
     as _i2;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
-    as _i5;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
-    as _i3;
+import 'package:yofardev_captioner/features/image_list/image_list.dart' as _i5;
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart'
     as _i4;
 

@@ -7,7 +7,7 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
-import '../../logic/image_list_state.dart';
+import '../models/image_list_state.dart';
 import 'caption_session_snapshot.dart';
 
 /// Port for every file/database operation the session needs. Implemented in

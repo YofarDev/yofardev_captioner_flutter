@@ -6,7 +6,7 @@ import 'package:path/path.dart' as p;
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

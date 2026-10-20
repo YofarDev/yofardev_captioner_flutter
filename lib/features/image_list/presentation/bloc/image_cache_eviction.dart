@@ -1,7 +1,7 @@
 import 'package:flutter/painting.dart';
 
-import '../../../core/constants/app_constants.dart';
-import '../../../core/models/app_image.dart';
+import '../../../../core/constants/app_constants.dart';
+import '../../../../core/models/app_image.dart';
 
 /// Evicts all cached decodings of [images] (full-resolution and the
 /// downscaled variants used by the list thumbs and the blurred backdrop).

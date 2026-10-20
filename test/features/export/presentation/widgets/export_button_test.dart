@@ -8,7 +8,7 @@ import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/export/presentation/widgets/export_button.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 
 import 'export_button_test.mocks.dart';

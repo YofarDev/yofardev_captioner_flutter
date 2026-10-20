@@ -7,7 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/caption_search_bar.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 
 import 'caption_search_bar_test.mocks.dart';
 

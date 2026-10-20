@@ -14,8 +14,8 @@ import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/captioning/data/models/caption_options.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/captioning/logic/captioning_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 
 import 'captioning_cubit_test.mocks.dart';
 

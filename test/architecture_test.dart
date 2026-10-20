@@ -89,7 +89,6 @@ const Set<String> kKnownCycles = <String>{
   'caption_search -> captioning -> image_list -> image_operations -> main_area -> structured_captioning',
   'caption_search -> captioning -> image_list -> image_operations -> main_area -> structured_captioning -> tab_manager',
   'caption_search -> captioning -> image_list -> image_operations -> structured_captioning -> tab_manager',
-  'caption_search -> image_list',
   'caption_search -> image_list -> image_operations -> main_area',
   'caption_search -> image_list -> image_operations -> main_area -> tab_manager',
   'caption_search -> image_list -> image_operations -> tab_manager',

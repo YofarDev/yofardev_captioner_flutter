@@ -12,7 +12,7 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 
 import 'image_list_cubit_test.mocks.dart';
 

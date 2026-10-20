@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../core/models/app_image.dart';
+import '../../../../core/models/app_image.dart';
 
 /// The UI-facing state of one image session. Standalone library (not a part
 /// file) so the domain-layer `CaptionSessionService` can reference it while

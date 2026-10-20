@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/models/app_image.dart';
-import '../../logic/image_list_state.dart';
+import '../models/image_list_state.dart';
 
 /// Immutable point-in-time view of one caption session: the raw
 /// [ImageListState] plus the derived views (filtering, current selection)

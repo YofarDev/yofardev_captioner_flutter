@@ -5,7 +5,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../image_operations/image_operations.dart';
-import '../../logic/image_list_cubit.dart';
+import '../bloc/image_list_cubit.dart';
 import '../utils/folder_utils.dart';
 import 'sort_by_widget.dart';
 

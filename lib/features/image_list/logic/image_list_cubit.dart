@@ -1,465 +1,176 @@
-import 'dart:async';
 import 'dart:convert';
 
-import 'package:equatable/equatable.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:path/path.dart' as p;
 
-import '../../../core/constants/app_constants.dart';
 import '../../../core/models/app_image.dart';
-import '../../../core/models/caption_data.dart';
-import '../../../core/models/caption_database.dart';
-import '../../../core/models/caption_entry.dart';
 import '../../../core/utils/extensions.dart';
-import '../../caption_search/data/models/filter_query.dart';
-import '../../caption_search/data/services/filter_parser.dart';
-import '../../image_operations/data/utils/image_utils.dart';
 import '../../structured_captioning/data/models/ideogram_caption.dart';
 import '../data/repositories/app_file_utils.dart';
+import '../data/services/filter_parser_engine.dart';
+import '../domain/services/caption_session_service.dart';
+import '../domain/services/caption_session_snapshot.dart';
+import 'image_cache_eviction.dart';
+import 'image_list_state.dart';
+export 'image_list_state.dart';
 
-part 'image_list_state.dart';
-
+/// Thin adapter over [CaptionSessionService]: forwards commands to the
+/// session and mirrors its snapshots into this cubit's [ImageListState]
+/// stream. All behavior lives in the session; this class only adapts it to
+/// BLoC plus the few Flutter/structured-caption concerns the domain service
+/// must not own (image-cache eviction via the session's onBeforeFolderLoad
+/// hook, caption-format detection for export).
 class ImageListCubit extends Cubit<ImageListState> {
-  ImageListCubit({AppFileUtils? fileUtils})
-    : _fileUtils = fileUtils ?? AppFileUtils(),
-      super(const ImageListState());
+  ImageListCubit({
+    AppFileUtils? fileUtils,
+    CaptionFilterEngine? filterEngine,
+    CaptionSessionService? session,
+  }) : super(const ImageListState()) {
+    _session = session ?? _createSession(fileUtils, filterEngine);
+    _session.addListener(_onSnapshot);
+  }
 
-  final AppFileUtils _fileUtils;
+  late final CaptionSessionService _session;
+
+  void _onSnapshot(CaptionSessionSnapshot snapshot) => emit(snapshot.state);
+
+  CaptionSessionService _createSession(
+    AppFileUtils? fileUtils,
+    CaptionFilterEngine? filterEngine,
+  ) {
+    return CaptionSessionService(
+      fileStore: fileUtils ?? AppFileUtils(),
+      filterEngine: filterEngine ?? const FilterParserCaptionEngine(),
+      onBeforeFolderLoad: () => evictImageCache(state.images),
+    );
+  }
+
+  /// The session this adapter mirrors. Exposed so tab-scoped wiring can
+  /// share one session across the cubits of a tab.
+  CaptionSessionService get session => _session;
+
+  @override
+  void onChange(Change<ImageListState> change) {
+    super.onChange(change);
+    // State set directly on the cubit (tests seeding via emit) must reach
+    // the session so it stays the single source of truth. Emissions driven
+    // by the session are equal and therefore no-ops here.
+    _session.adopt(change.nextState);
+  }
+
+  @override
+  Future<void> close() {
+    _session.removeListener(_onSnapshot);
+    return super.close();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Derived views (delegate to the session's current snapshot)
+  // ---------------------------------------------------------------------------
 
   /// Returns the filtered list of images based on the current search query.
-  ///
-  /// Supports both plain text search and structured filter expressions
-  /// (e.g. `:has:text:`, `:medium:photograph:`). Filters are parsed via
-  /// [FilterParser] and all components combine with AND logic.
-  List<AppImage> get filteredImages {
-    if (state.searchQuery.isEmpty) {
-      return state.images;
-    }
+  List<AppImage> get filteredImages => _session.current.filteredImages;
 
-    final String category = state.activeCategory ?? 'default';
-    final ParsedFilterQuery parsedQuery = FilterParser.parse(state.searchQuery);
-
-    // No filters and no text — return all
-    if (parsedQuery.filters.isEmpty && parsedQuery.plainTextQuery.isEmpty) {
-      return state.images;
-    }
-
-    return state.images.where((AppImage image) {
-      final String captionText = image.captions[category]?.text ?? '';
-
-      // Plain text component (respects case sensitivity)
-      if (parsedQuery.plainTextQuery.isNotEmpty) {
-        final String query = state.caseSensitive
-            ? parsedQuery.plainTextQuery
-            : parsedQuery.plainTextQuery.toLowerCase();
-        final String searchCaption = state.caseSensitive
-            ? captionText
-            : captionText.toLowerCase();
-        if (!searchCaption.contains(query)) return false;
-      }
-
-      // Structured filter expressions (AND logic)
-      for (final FilterExpression filter in parsedQuery.filters) {
-        if (!filter.evaluate(
-          FilterContext(captionText: captionText, tags: image.tags),
-        )) {
-          return false;
-        }
-      }
-
-      return true;
-    }).toList();
-  }
-
-  /// Returns the list of images that should be displayed based on search state.
-  List<AppImage> get displayedImages => filteredImages;
-
-  /// Resolves the index of [currentImageId] within [displayedImages].
-  /// Returns null if the ID is not found or not set.
-  int? get _currentDisplayIndex {
-    final String? id = state.currentImageId;
-    if (id == null) return null;
-    final List<AppImage> displayed = displayedImages;
-    for (int i = 0; i < displayed.length; i++) {
-      if (displayed[i].id == id) return i;
-    }
-    return null;
-  }
+  /// Returns the list of images that should be displayed based on search
+  /// state.
+  List<AppImage> get displayedImages => _session.current.displayedImages;
 
   /// Returns the currently displayed image based on the search state.
-  AppImage? get currentDisplayedImage {
-    final int? index = _currentDisplayIndex;
-    if (index == null) {
-      final List<AppImage> displayed = displayedImages;
-      if (displayed.isEmpty) return null;
-      // Fallback: first image
-      return displayed.isNotEmpty ? displayed[0] : null;
-    }
-    return displayedImages[index];
-  }
+  AppImage? get currentDisplayedImage => _session.current.currentDisplayedImage;
+
+  // ---------------------------------------------------------------------------
+  // Command forwarding
+  // ---------------------------------------------------------------------------
 
   Future<void> onInit({String? folderPath}) async {
-    if (folderPath == null) return;
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    await onFolderPicked(folderPath).catchError((Object error) {
-      emit(const ImageListState());
-    });
+    await _session.onInit(folderPath: folderPath);
   }
 
-  Future<void> onFolderPicked(String folderPath, {bool force = false}) async {
-    if (folderPath == state.folderPath && !force) {
-      return;
-    }
+  Future<void> onFolderPicked(String folderPath, {bool force = false}) =>
+      _session.onFolderPicked(folderPath, force: force);
 
-    // Evict cached thumbnails so reload shows fresh images.
-    // Without this, Flutter's global ImageCache may serve stale
-    // decoded bytes when new files appear or files are renamed.
-    _evictImageCache();
+  Future<void> onFileOpened(String filePath) => _session.onFileOpened(filePath);
 
-    emit(
-      state.copyWith(
-        images: <AppImage>[],
-        folderPath: folderPath,
-        occurrencesCount: 0,
-        occurrenceFileNames: <String>[],
-        searchQuery: '',
-        caseSensitive: false,
-      ),
-    );
+  void onImageSelected(String imageId) => _session.selectImage(imageId);
 
-    try {
-      final List<AppImage> images = await _fileUtils.onFolderPicked(folderPath);
+  void nextImage() => _session.nextImage();
 
-      // Load database to get categories
-      final CaptionDatabase db = await _fileUtils.readDb(folderPath);
+  void previousImage() => _session.previousImage();
 
-      if (state.folderPath != folderPath) {
-        return;
-      }
+  void setGuidanceEnabled(bool enabled) => _session.setGuidanceEnabled(enabled);
 
-      // Rebuild path-keyed guidance from the id-keyed db map so it matches
-      // the in-memory key used by setGuidance/guidanceFor. Only images that
-      // still exist on disk are re-keyed; stale entries drop naturally.
-      final Map<String, String> guidanceByPath = <String, String>{};
-      for (final AppImage img in images) {
-        final String? g = db.imageGuidance[img.id];
-        if (g != null && g.isNotEmpty) {
-          guidanceByPath[img.image.path] = g;
-        }
-      }
-
-      emit(
-        state.copyWith(
-          images: images,
-          categories: db.categories,
-          categoryFormats: db.categoryFormats,
-          activeCategory: db.activeCategory ?? 'default',
-          currentImageId: images.isNotEmpty ? images[0].id : null,
-          imageGuidance: guidanceByPath,
-        ),
-      );
-    } catch (e) {
-      // Clear state if folder couldn't be loaded (e.g., folder was removed)
-      emit(const ImageListState());
-      return;
-    }
-
-    // Get image sizes separately, don't fail if this fails
-    try {
-      await _getImagesSizeSync();
-    } catch (_) {
-      // Ignore errors from getting image sizes
-    }
-  }
-
-  Future<void> onFileOpened(String filePath) async {
-    final String folderPath = p.dirname(filePath);
-    await onFolderPicked(folderPath);
-
-    // Wait for the state to be updated with the new images
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-
-    if (state.images.isEmpty) return;
-
-    final int matchIndex = state.images.indexWhere(
-      (AppImage img) => img.image.path == filePath,
-    );
-    final AppImage target = matchIndex != -1
-        ? state.images[matchIndex]
-        : state.images[0];
-    onImageSelected(target.id);
-  }
-
-  void nextImage() {
-    final List<AppImage> displayed = displayedImages;
-    if (displayed.isEmpty) return;
-    final int currentIdx = _currentDisplayIndex ?? 0;
-    final int nextIndex = (currentIdx + 1) % displayed.length;
-    emit(state.copyWith(currentImageId: displayed[nextIndex].id));
-  }
-
-  void previousImage() {
-    final List<AppImage> displayed = displayedImages;
-    if (displayed.isEmpty) return;
-    final int currentIdx = _currentDisplayIndex ?? 0;
-    final int previousIndex =
-        (currentIdx - 1 + displayed.length) % displayed.length;
-    emit(state.copyWith(currentImageId: displayed[previousIndex].id));
-  }
-
-  /// Toggles global guidance injection (applies to both captioning paths).
-  void setGuidanceEnabled(bool enabled) {
-    emit(state.copyWith(guidanceEnabled: enabled));
-  }
-
-  /// Sets the per-image guidance string. An empty [text] clears the
-  /// entry for [imagePath] so the map doesn't grow unbounded. Persisted to
-  /// db.json on the next [_saveDb] (e.g. dialog close or any caption change).
-  void setGuidance(String imagePath, String text) {
-    final Map<String, String> next = Map<String, String>.from(
-      state.imageGuidance,
-    );
-    if (text.isEmpty) {
-      next.remove(imagePath);
-    } else {
-      next[imagePath] = text;
-    }
-    emit(state.copyWith(imageGuidance: next));
-  }
+  void setGuidance(String imagePath, String text) =>
+      _session.setGuidance(imagePath, text);
 
   /// Returns the guidance string to inject for [imagePath], or '' when
   /// guidance is disabled or unset for that image. Centralizes the
   /// enabled-and-nonempty check so both captioning cubits stay in sync.
   String guidanceFor(String imagePath) {
-    if (!state.guidanceEnabled) return '';
+    if (!state.guidanceEnabled) {
+      return '';
+    }
     return state.imageGuidance[imagePath] ?? '';
   }
 
-  Future<void> saveChanges() async {
-    await _saveDb();
-  }
+  Future<void> saveChanges() => _session.saveChanges();
 
-  void onSortChanged(SortBy sortBy, bool sortAscending) {
-    final List<AppImage> images = List<AppImage>.from(state.images);
+  void onSortChanged(SortBy sortBy, bool sortAscending) =>
+      _session.onSortChanged(sortBy, sortAscending);
+
+  Future<void> getSingleImageSize() => _session.getSingleImageSize();
+
+  Future<void> searchAndReplace(String search, String replace) =>
+      _session.searchAndReplace(search, replace);
+
+  void countOccurrences(String search) => _session.countOccurrences(search);
+
+  Future<void> updateCaption({required String caption}) =>
+      _session.updateCaption(caption: caption);
+
+  Future<void> updateImage({required AppImage image}) =>
+      _session.updateImage(image: image);
+
+  Future<void> removeImage(String imageId) => _session.removeImage(imageId);
+
+  Future<void> duplicateImage() => _session.duplicateImage();
+
+  Future<void> writeCaptionFiles() async {
     final String category = state.activeCategory ?? 'default';
-
-    switch (sortBy) {
-      case SortBy.name:
-        images.sort(
-          (AppImage a, AppImage b) => a.image.path.compareTo(b.image.path),
-        );
-      case SortBy.size:
-        images.sort((AppImage a, AppImage b) => b.size.compareTo(a.size));
-      case SortBy.caption:
-        images.sort((AppImage a, AppImage b) {
-          final String captionA = a.captions[category]?.text ?? '';
-          final String captionB = b.captions[category]?.text ?? '';
-          return _getWordCount(captionB).compareTo(_getWordCount(captionA));
-        });
-    }
-    if (!sortAscending) {
-      final List<AppImage> reversed = images.reversed.toList();
-      images.clear();
-      images.addAll(reversed);
-    }
-    emit(
-      state.copyWith(
-        images: images,
-        sortBy: sortBy,
-        sortAscending: sortAscending,
-      ),
+    await _session.writeCaptionFiles(
+      category: category,
+      format: _effectiveFormat(state, category),
     );
   }
 
-  void onImageSelected(String imageId) async {
-    emit(state.copyWith(currentImageId: imageId));
-    // Cheap liveness probe: stat only the selected file instead of the whole
-    // folder, so selecting an image in a large folder stays O(1).
-    final int index = state.images.indexWhere((AppImage i) => i.id == imageId);
-    if (index == -1) {
-      return;
-    }
-    if (!await state.images[index].image.exists()) {
-      if (state.folderPath != null) {
-        await onFolderPicked(state.folderPath!, force: true);
-      }
-    }
-  }
+  Future<void> removeCaptionFiles() => _session.removeCaptionFiles();
 
-  Future<void> _getImagesSizeSync() async {
-    final List<AppImage> updatedImages = await ImageUtils.getImagesSize(
-      state.images,
-    );
-    if (updatedImages.isEmpty) {
-      return;
-    }
-    if (state.folderPath != p.dirname(updatedImages[0].image.path)) {
-      return;
-    }
-    emit(state.copyWith(images: updatedImages));
-  }
+  void updateSearchQuery(String query) => _session.updateSearchQuery(query);
 
-  Future<void> getSingleImageSize() async {
-    final AppImage? currentImage = currentDisplayedImage;
-    if (currentImage == null) return;
+  void toggleCaseSensitive() => _session.toggleCaseSensitive();
 
-    final AppImage updatedImage = await ImageUtils.getSingleImageSize(
-      currentImage,
-    );
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    final int index = updatedImages.indexWhere(
-      (AppImage i) => i.id == currentImage.id,
-    );
-    if (index != -1) {
-      updatedImages[index] = updatedImage;
-    }
-    emit(state.copyWith(images: updatedImages));
-  }
+  void clearSearch() => _session.clearSearch();
 
-  void searchAndReplace(String search, String replace) async {
-    if (search.isEmpty) return;
+  void addCategory(String name, {String format = 'txt'}) =>
+      _session.addCategory(name, format: format);
 
-    final String category = state.activeCategory ?? 'default';
+  void removeCategory(String name) => _session.removeCategory(name);
 
-    final List<AppImage> updatedImages = <AppImage>[];
-    bool wasModified = false;
-    for (final AppImage image in state.images) {
-      final String caption = image.captions[category]?.text ?? '';
-      if (caption.contains(search)) {
-        wasModified = true;
-        final String newCaption = caption.replaceAll(search, replace);
-        final Map<String, CaptionEntry> updatedCaptions =
-            Map<String, CaptionEntry>.from(image.captions);
-        updatedCaptions[category] = CaptionEntry(
-          text: newCaption,
-          model: image.captions[category]?.model,
-          timestamp: image.captions[category]?.timestamp,
-          isEdited: true,
-        );
-        updatedImages.add(
-          image.copyWith(
-            captions: updatedCaptions,
-            lastModified: DateTime.now(),
-          ),
-        );
-      } else {
-        updatedImages.add(image);
-      }
-    }
+  void renameCategory(String oldName, String newName) =>
+      _session.renameCategory(oldName, newName);
 
-    if (wasModified) {
-      emit(state.copyWith(images: updatedImages));
-      await _saveDb();
-    }
-  }
+  void setActiveCategory(String name) => _session.setActiveCategory(name);
 
-  void countOccurrences(String search) {
-    if (search.isEmpty) {
-      emit(
-        state.copyWith(occurrencesCount: 0, occurrenceFileNames: <String>[]),
-      );
-      return;
-    }
+  void reorderCategories(int oldIndex, int newIndex) =>
+      _session.reorderCategories(oldIndex, newIndex);
 
-    final String category = state.activeCategory ?? 'default';
+  Future<void> addTag(String rawTag) => _session.addTag(rawTag);
 
-    int count = 0;
-    final List<String> fileNames = <String>[];
-    for (final AppImage image in state.images) {
-      final String caption = image.captions[category]?.text ?? '';
-      final int matches = search.allMatches(caption).length;
-      if (matches > 0) {
-        count += matches;
-        fileNames.add(p.basename(image.image.path));
-      }
-    }
-    emit(
-      state.copyWith(occurrencesCount: count, occurrenceFileNames: fileNames),
-    );
-  }
+  Future<void> removeTag(String tag) => _session.removeTag(tag);
 
-  Future<void> updateCaption({required String caption}) async {
-    final AppImage? originalImage = currentDisplayedImage;
-    if (originalImage == null) return;
+  Future<void> setTags(List<String> rawTags) => _session.setTags(rawTags);
 
-    final String category = state.activeCategory ?? 'default';
-    final Map<String, CaptionEntry> updatedCaptions =
-        Map<String, CaptionEntry>.from(originalImage.captions);
-
-    // Get existing entry or create new one
-    final CaptionEntry? existingEntry = updatedCaptions[category];
-    updatedCaptions[category] = CaptionEntry(
-      text: caption,
-      model: caption.isEmpty ? null : existingEntry?.model,
-      timestamp: caption.isEmpty ? null : existingEntry?.timestamp,
-      isEdited: true,
-    );
-
-    final AppImage updated = originalImage.copyWith(
-      captions: updatedCaptions,
-      lastModified: DateTime.now(),
-    );
-
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    final int index = updatedImages.indexWhere(
-      (AppImage i) => i.id == originalImage.id,
-    );
-    if (index != -1) {
-      updatedImages[index] = updated;
-    }
-
-    emit(state.copyWith(images: updatedImages));
-    await _saveDb();
-  }
-
-  Future<void> updateImage({required AppImage image}) async {
-    final int index = state.images.indexWhere((AppImage i) => i.id == image.id);
-    if (index == -1) {
-      return;
-    }
-
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages[index] = image;
-
-    emit(state.copyWith(images: updatedImages));
-    await _saveDb();
-  }
-
-  Future<void> _saveDb() async {
-    if (state.folderPath == null || state.folderPath!.isEmpty) return;
-
-    final List<CaptionData> captionDataList = state.images
-        .map<CaptionData>(
-          (AppImage img) => CaptionData(
-            id: img.id,
-            filename: p.basename(img.image.path),
-            captions: img.captions,
-            lastModified: img.lastModified,
-            tags: img.tags,
-          ),
-        )
-        .toList();
-
-    // Translate path-keyed guidance to id-keyed so it survives folder moves.
-    final Map<String, String> guidanceById = <String, String>{};
-    for (final AppImage img in state.images) {
-      final String? g = state.imageGuidance[img.image.path];
-      if (g != null && g.isNotEmpty) {
-        guidanceById[img.id] = g;
-      }
-    }
-
-    final CaptionDatabase db = CaptionDatabase(
-      categories: state.categories,
-      categoryFormats: state.categoryFormats,
-      activeCategory: state.activeCategory,
-      images: captionDataList,
-      imageGuidance: guidanceById,
-    );
-
-    await _fileUtils.writeDb(state.folderPath!, db);
-  }
+  // ---------------------------------------------------------------------------
+  // Read-only helpers computed from state (no session round-trip needed)
+  // ---------------------------------------------------------------------------
 
   /// Returns all unique tags across all images in the current folder.
   Set<String> getAllUniqueTags() {
@@ -470,7 +181,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     return allTags;
   }
 
-  /// Returns all unique medium values from structured captions across all images.
+  /// Returns all unique medium values from structured captions across all
+  /// images.
   Set<String> getAllUniqueMediums() {
     final Set<String> allMediums = <String>{};
     final String category = state.activeCategory ?? 'default';
@@ -490,52 +202,6 @@ class ImageListCubit extends Cubit<ImageListState> {
       }
     }
     return allMediums;
-  }
-
-  Future<void> removeImage(String imageId) async {
-    final int index = state.images.indexWhere((AppImage i) => i.id == imageId);
-    if (index == -1) return;
-    final AppImage imageToRemove = state.images[index];
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages.removeAt(index);
-    final String? newCurrentId = updatedImages.isEmpty
-        ? null
-        : (index < updatedImages.length
-              ? updatedImages[index].id
-              : updatedImages.last.id);
-    emit(state.copyWith(images: updatedImages, currentImageId: newCurrentId));
-    await _saveDb();
-    await _fileUtils.removeImage(imageToRemove.image);
-  }
-
-  Future<void> writeCaptionFiles() async {
-    if (state.folderPath == null) return;
-    final String category = state.activeCategory ?? 'default';
-    final String format = _effectiveFormat(state, category);
-    await _fileUtils.writeCaptionFiles(
-      state.folderPath!,
-      state.images,
-      category,
-      format,
-    );
-  }
-
-  /// Returns the format for [category]: explicit if stored, else auto-detected
-  /// from the first non-empty caption (Ideogram JSON → 'json', else 'txt').
-  String _effectiveFormat(ImageListState state, String category) {
-    final String? stored = state.categoryFormats[category];
-    if (stored != null) return stored;
-    for (final AppImage image in state.images) {
-      final String text = image.captions[category]?.text ?? '';
-      if (IdeogramCaption.isIdeogramJson(text)) return 'json';
-      if (text.isNotEmpty) return 'txt';
-    }
-    return 'txt';
-  }
-
-  Future<void> removeCaptionFiles() async {
-    if (state.folderPath == null) return;
-    await _fileUtils.removeCaptionFiles(state.folderPath!, state.images);
   }
 
   Map<String, int> getAspectRatioCounts() {
@@ -565,32 +231,6 @@ class ImageListCubit extends Cubit<ImageListState> {
     return totalSize;
   }
 
-  /// Updates the search query and resets the selection to the first displayed image.
-  void updateSearchQuery(String query) {
-    final List<AppImage> displayed = state.images;
-    emit(
-      state.copyWith(
-        searchQuery: query,
-        currentImageId: displayed.isNotEmpty ? displayed[0].id : null,
-      ),
-    );
-  }
-
-  /// Toggles case sensitivity for search.
-  void toggleCaseSensitive() {
-    emit(state.copyWith(caseSensitive: !state.caseSensitive));
-  }
-
-  /// Clears the search query. Selection preserved automatically via ID tracking.
-  void clearSearch() {
-    emit(state.copyWith(searchQuery: '', caseSensitive: false));
-  }
-
-  int _getWordCount(String text) {
-    if (text.isEmpty) return 0;
-    return text.split(RegExp(r'\s+')).where((String s) => s.isNotEmpty).length;
-  }
-
   double getAverageWordsPerCaption() {
     final String category = state.activeCategory ?? 'default';
 
@@ -616,221 +256,23 @@ class ImageListCubit extends Cubit<ImageListState> {
     return totalWords / imagesWithCaptions.length;
   }
 
-  Future<void> duplicateImage() async {
-    final AppImage? originalImage = currentDisplayedImage;
-    if (originalImage == null) return;
-
-    AppImage duplicatedImage = await _fileUtils.duplicateImage(originalImage);
-
-    // Load the image dimensions for the duplicated image
-    try {
-      duplicatedImage = await ImageUtils.getSingleImageSize(duplicatedImage);
-    } catch (_) {
-      // If loading dimensions fails, continue without them
+  /// Returns the format for [category]: explicit if stored, else
+  /// auto-detected from the first non-empty caption (Ideogram JSON → 'json',
+  /// else 'txt').
+  String _effectiveFormat(ImageListState state, String category) {
+    final String? stored = state.categoryFormats[category];
+    if (stored != null) {
+      return stored;
     }
-
-    // Add the duplicated image to the list
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    updatedImages.add(duplicatedImage);
-
-    // Sort images to maintain natural order
-    updatedImages.sort(
-      (AppImage a, AppImage b) =>
-          _fileUtils.compareNatural(a.image.path, b.image.path),
-    );
-
-    emit(
-      state.copyWith(images: updatedImages, currentImageId: duplicatedImage.id),
-    );
-
-    // Update the database with the new image
-    await _saveDb();
-  }
-
-  void addCategory(String name, {String format = 'txt'}) async {
-    if (state.categories.contains(name)) {
-      return;
-    }
-
-    final List<String> updatedCategories = List<String>.from(state.categories)
-      ..add(name);
-    final Map<String, String> updatedFormats = Map<String, String>.from(
-      state.categoryFormats,
-    )..[name] = format;
-    emit(
-      state.copyWith(
-        categories: updatedCategories,
-        categoryFormats: updatedFormats,
-        activeCategory: name,
-      ),
-    );
-
-    await _saveDb();
-  }
-
-  void removeCategory(String name) async {
-    if (state.categories.length <= 1) {
-      return; // Must have at least one category
-    }
-
-    final List<String> updatedCategories = List<String>.from(state.categories)
-      ..remove(name);
-    final Map<String, String> updatedFormats = Map<String, String>.from(
-      state.categoryFormats,
-    )..remove(name);
-    final String? newActiveCategory = state.activeCategory == name
-        ? updatedCategories.first
-        : state.activeCategory;
-
-    emit(
-      state.copyWith(
-        categories: updatedCategories,
-        categoryFormats: updatedFormats,
-        activeCategory: newActiveCategory,
-      ),
-    );
-
-    await _saveDb();
-  }
-
-  void renameCategory(String oldName, String newName) async {
-    if (state.categories.contains(newName)) {
-      return; // Already exists
-    }
-
-    final List<String> updatedCategories = List<String>.from(state.categories);
-    final int index = updatedCategories.indexOf(oldName);
-    updatedCategories[index] = newName;
-
-    // Update all images to rename the category key
-    final List<AppImage> updatedImages = state.images.map<AppImage>((
-      AppImage img,
-    ) {
-      final Map<String, CaptionEntry> newCaptions =
-          Map<String, CaptionEntry>.from(img.captions);
-      if (newCaptions.containsKey(oldName)) {
-        newCaptions[newName] = newCaptions.remove(oldName)!;
-      }
-      return img.copyWith(captions: newCaptions);
-    }).toList();
-
-    final Map<String, String> updatedFormats = Map<String, String>.from(
-      state.categoryFormats,
-    );
-    if (updatedFormats.containsKey(oldName)) {
-      updatedFormats[newName] = updatedFormats.remove(oldName)!;
-    }
-
-    final String? newActiveCategory = state.activeCategory == oldName
-        ? newName
-        : state.activeCategory;
-
-    emit(
-      state.copyWith(
-        categories: updatedCategories,
-        categoryFormats: updatedFormats,
-        activeCategory: newActiveCategory,
-        images: updatedImages,
-      ),
-    );
-
-    await _saveDb();
-  }
-
-  void setActiveCategory(String name) {
-    if (!state.categories.contains(name)) {
-      return;
-    }
-    emit(state.copyWith(activeCategory: name));
-  }
-
-  void reorderCategories(int oldIndex, int newIndex) async {
-    final List<String> updatedCategories = List<String>.from(state.categories);
-    int adjustedIndex = newIndex;
-    if (oldIndex < newIndex) {
-      adjustedIndex -= 1;
-    }
-    final String item = updatedCategories.removeAt(oldIndex);
-    updatedCategories.insert(adjustedIndex, item);
-
-    emit(state.copyWith(categories: updatedCategories));
-    await _saveDb();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Tags
-  // ---------------------------------------------------------------------------
-
-  static final RegExp _whitespaceRun = RegExp(r'\s+');
-
-  /// Trims and collapses internal whitespace; preserves case.
-  String _normalizeTag(String raw) =>
-      raw.trim().replaceAll(_whitespaceRun, ' ');
-
-  /// Adds [rawTag] to the currently selected image's tags (normalized, deduped).
-  /// No-op if the normalized result is empty or no image is selected.
-  Future<void> addTag(String rawTag) async {
-    final AppImage? current = currentDisplayedImage;
-    if (current == null) return;
-    final String tag = _normalizeTag(rawTag);
-    if (tag.isEmpty) return;
-    if (current.tags.contains(tag)) return;
-    await setTags(<String>[...current.tags, tag]);
-  }
-
-  /// Removes [tag] from the currently selected image's tags.
-  /// No-op if the tag is absent or no image is selected.
-  Future<void> removeTag(String tag) async {
-    final AppImage? current = currentDisplayedImage;
-    if (current == null) return;
-    if (!current.tags.contains(tag)) return;
-    await setTags(current.tags.where((String t) => t != tag).toList());
-  }
-
-  /// Replaces the currently selected image's tags with [rawTags]
-  /// (each normalized; empties dropped; duplicates removed, preserving order).
-  Future<void> setTags(List<String> rawTags) async {
-    final AppImage? current = currentDisplayedImage;
-    if (current == null) return;
-
-    final List<String> normalized = <String>[];
-    final Set<String> seen = <String>{};
-    for (final String raw in rawTags) {
-      final String tag = _normalizeTag(raw);
-      if (tag.isEmpty || seen.contains(tag)) continue;
-      seen.add(tag);
-      normalized.add(tag);
-    }
-
-    final AppImage updated = current.copyWith(tags: normalized);
-    final List<AppImage> updatedImages = List<AppImage>.from(state.images);
-    final int index = updatedImages.indexWhere(
-      (AppImage i) => i.id == current.id,
-    );
-    if (index == -1) return;
-    updatedImages[index] = updated;
-    emit(state.copyWith(images: updatedImages));
-    await _saveDb();
-  }
-
-  /// Evicts all cached decodings of the current images (full-resolution and
-  /// the downscaled variants used by the list thumbs and the blurred
-  /// backdrop). Prevents stale images when files are added, renamed, or
-  /// replaced.
-  void _evictImageCache() {
-    final ImageCache cache = PaintingBinding.instance.imageCache;
     for (final AppImage image in state.images) {
-      final FileImage provider = FileImage(image.image);
-      cache.evict(provider);
-      cache.evict(
-        ResizeImage(provider, width: AppConstants.imageListThumbDecodeWidth),
-      );
-      cache.evict(
-        ResizeImage(
-          provider,
-          width: AppConstants.currentImageBackdropDecodeWidth,
-        ),
-      );
+      final String text = image.captions[category]?.text ?? '';
+      if (IdeogramCaption.isIdeogramJson(text)) {
+        return 'json';
+      }
+      if (text.isNotEmpty) {
+        return 'txt';
+      }
     }
+    return 'txt';
   }
 }

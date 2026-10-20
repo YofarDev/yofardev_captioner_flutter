@@ -175,4 +175,25 @@ class MockAppFileUtils extends _i1.Mock implements _i4.AppFileUtils {
             returnValue: 0,
           )
           as int);
+
+  @override
+  _i5.Future<List<_i3.AppImage>> getImagesSize(List<_i3.AppImage>? images) =>
+      (super.noSuchMethod(
+            Invocation.method(#getImagesSize, [images]),
+            returnValue: _i5.Future<List<_i3.AppImage>>.value(<_i3.AppImage>[]),
+          )
+          as _i5.Future<List<_i3.AppImage>>);
+
+  @override
+  _i5.Future<_i3.AppImage> getSingleImageSize(_i3.AppImage? image) =>
+      (super.noSuchMethod(
+            Invocation.method(#getSingleImageSize, [image]),
+            returnValue: _i5.Future<_i3.AppImage>.value(
+              _FakeAppImage_1(
+                this,
+                Invocation.method(#getSingleImageSize, [image]),
+              ),
+            ),
+          )
+          as _i5.Future<_i3.AppImage>);
 }

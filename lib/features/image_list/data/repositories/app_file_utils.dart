@@ -14,15 +14,21 @@ import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/services/cache_service.dart';
+import '../../../image_operations/data/utils/image_utils.dart';
 import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
+import '../../domain/services/caption_session_service.dart';
 
 /// A utility class for file-related operations in the application.
-class AppFileUtils {
+///
+/// Also serves as the data-layer implementation of the domain session's
+/// [CaptionFileStore] port.
+class AppFileUtils implements CaptionFileStore {
   AppFileUtils({CacheService? cacheService})
     : _cacheService = cacheService ?? const CacheService();
 
   final CacheService _cacheService;
 
+  @override
   Future<List<AppImage>> onFolderPicked(String folderPath) async {
     final Directory dir = await _managePersistentPermission(folderPath);
     final CaptionDatabase db = await readDb(folderPath);
@@ -236,6 +242,7 @@ class AppFileUtils {
     });
   }
 
+  @override
   Future<CaptionDatabase> readDb(String folderPath) async {
     final File dbFile = _getDbPath(folderPath);
     if (await dbFile.exists()) {
@@ -284,6 +291,7 @@ class AppFileUtils {
     );
   }
 
+  @override
   Future<void> writeDb(String folderPath, CaptionDatabase db) async {
     final File dbFile = _getDbPath(folderPath);
     final String content = jsonEncode(db.toJson());
@@ -376,6 +384,7 @@ class AppFileUtils {
     }
   }
 
+  @override
   Future<void> writeCaptionFiles(
     String folderPath,
     List<AppImage> images,
@@ -395,6 +404,7 @@ class AppFileUtils {
     }
   }
 
+  @override
   Future<void> removeCaptionFiles(
     String folderPath,
     List<AppImage> images,
@@ -411,6 +421,7 @@ class AppFileUtils {
     }
   }
 
+  @override
   Future<void> removeImage(File imageFile) async {
     await imageFile.delete();
     final String txtPath = p.setExtension(imageFile.path, '.txt');
@@ -461,6 +472,7 @@ class AppFileUtils {
     }
   }
 
+  @override
   Future<AppImage> duplicateImage(AppImage originalImage) async {
     final String originalPath = originalImage.image.path;
     final String directory = p.dirname(originalPath);
@@ -502,6 +514,7 @@ class AppFileUtils {
   /// Compares two strings naturally, handling numerical parts correctly.
   ///
   /// This allows for sorting strings like 'file10.txt' after 'file2.txt'.
+  @override
   int compareNatural(String a, String b) {
     final RegExp regex = RegExp(r'(\d+|\D+)');
     final List<String> aParts = regex
@@ -524,4 +537,12 @@ class AppFileUtils {
     }
     return aParts.length.compareTo(bParts.length);
   }
+
+  @override
+  Future<List<AppImage>> getImagesSize(List<AppImage> images) =>
+      ImageUtils.getImagesSize(images);
+
+  @override
+  Future<AppImage> getSingleImageSize(AppImage image) =>
+      ImageUtils.getSingleImageSize(image);
 }

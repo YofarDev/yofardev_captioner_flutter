@@ -1,5 +1,10 @@
-part of 'image_list_cubit.dart';
+import 'package:equatable/equatable.dart';
 
+import '../../../core/models/app_image.dart';
+
+/// The UI-facing state of one image session. Standalone library (not a part
+/// file) so the domain-layer `CaptionSessionService` can reference it while
+/// the cubit re-exports it for presentation code.
 enum SortBy { name, size, caption }
 
 class ImageListState extends Equatable {

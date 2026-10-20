@@ -5,7 +5,8 @@
 library;
 
 export 'domain/models/app_tab.dart' show AppTab;
-export 'domain/services/tab_session_registry.dart' show TabSessionRegistry;
+export 'domain/services/tab_session_registry.dart'
+    show TabSessionInfo, TabSessionRegistry;
 export 'presentation/bloc/tab_manager_cubit.dart'
     show TabManagerCubit, TabManagerState;
 export 'presentation/widgets/tab_bar_widget.dart' show TabBarWidget;

@@ -22,7 +22,7 @@ import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../tab_manager/domain/services/tab_session_registry.dart';
+import '../../../tab_manager/tab_manager.dart';
 
 /// Local REST API for external AI agents (Claude Code, ZCode, scripts).
 ///

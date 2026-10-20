@@ -5,19 +5,18 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 
 import 'dart:async' as _i7;
-import 'dart:io' as _i11;
+import 'dart:io' as _i10;
 
-import 'package:bloc/bloc.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:mockito/src/dummies.dart' as _i8;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i5;
 import 'package:yofardev_captioner/core/models/caption_database.dart' as _i4;
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart'
-    as _i10;
+    as _i9;
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
-    as _i2;
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart'
     as _i6;
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart'
+    as _i2;
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart'
     as _i3;
 
@@ -37,9 +36,9 @@ import 'package:yofardev_captioner/features/image_list/logic/image_list_state.da
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-class _FakeCaptionSessionService_0 extends _i1.SmartFake
-    implements _i2.CaptionSessionService {
-  _FakeCaptionSessionService_0(Object parent, Invocation parentInvocation)
+class _FakeCaptionSessionSnapshot_0 extends _i1.SmartFake
+    implements _i2.CaptionSessionSnapshot {
+  _FakeCaptionSessionSnapshot_0(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -60,40 +59,33 @@ class _FakeAppImage_3 extends _i1.SmartFake implements _i5.AppImage {
     : super(parent, parentInvocation);
 }
 
-/// A class which mocks [ImageListCubit].
+/// A class which mocks [CaptionSessionService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
-  MockImageListCubit() {
+class MockCaptionSessionService extends _i1.Mock
+    implements _i6.CaptionSessionService {
+  MockCaptionSessionService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i2.CaptionSessionService get session =>
+  _i7.Stream<_i2.CaptionSessionSnapshot> get snapshots =>
       (super.noSuchMethod(
-            Invocation.getter(#session),
-            returnValue: _FakeCaptionSessionService_0(
+            Invocation.getter(#snapshots),
+            returnValue: _i7.Stream<_i2.CaptionSessionSnapshot>.empty(),
+          )
+          as _i7.Stream<_i2.CaptionSessionSnapshot>);
+
+  @override
+  _i2.CaptionSessionSnapshot get current =>
+      (super.noSuchMethod(
+            Invocation.getter(#current),
+            returnValue: _FakeCaptionSessionSnapshot_0(
               this,
-              Invocation.getter(#session),
+              Invocation.getter(#current),
             ),
           )
-          as _i2.CaptionSessionService);
-
-  @override
-  List<_i5.AppImage> get filteredImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#filteredImages),
-            returnValue: <_i5.AppImage>[],
-          )
-          as List<_i5.AppImage>);
-
-  @override
-  List<_i5.AppImage> get displayedImages =>
-      (super.noSuchMethod(
-            Invocation.getter(#displayedImages),
-            returnValue: <_i5.AppImage>[],
-          )
-          as List<_i5.AppImage>);
+          as _i2.CaptionSessionSnapshot);
 
   @override
   _i3.ImageListState get state =>
@@ -104,32 +96,44 @@ class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
           as _i3.ImageListState);
 
   @override
-  _i7.Stream<_i3.ImageListState> get stream =>
-      (super.noSuchMethod(
-            Invocation.getter(#stream),
-            returnValue: _i7.Stream<_i3.ImageListState>.empty(),
-          )
-          as _i7.Stream<_i3.ImageListState>);
+  void addListener(void Function(_i2.CaptionSessionSnapshot)? listener) =>
+      super.noSuchMethod(
+        Invocation.method(#addListener, [listener]),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  bool get isClosed =>
-      (super.noSuchMethod(Invocation.getter(#isClosed), returnValue: false)
-          as bool);
+  void removeListener(void Function(_i2.CaptionSessionSnapshot)? listener) =>
+      super.noSuchMethod(
+        Invocation.method(#removeListener, [listener]),
+        returnValueForMissingStub: null,
+      );
 
   @override
-  void onChange(_i8.Change<_i3.ImageListState>? change) => super.noSuchMethod(
-    Invocation.method(#onChange, [change]),
+  void replaceState(_i3.ImageListState? next) => super.noSuchMethod(
+    Invocation.method(#replaceState, [next]),
     returnValueForMissingStub: null,
   );
 
   @override
-  _i7.Future<void> close() =>
+  void adopt(_i3.ImageListState? next) => super.noSuchMethod(
+    Invocation.method(#adopt, [next]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  List<_i5.AppImage> filteredFor(_i3.ImageListState? s) =>
       (super.noSuchMethod(
-            Invocation.method(#close, []),
-            returnValue: _i7.Future<void>.value(),
-            returnValueForMissingStub: _i7.Future<void>.value(),
+            Invocation.method(#filteredFor, [s]),
+            returnValue: <_i5.AppImage>[],
           )
-          as _i7.Future<void>);
+          as List<_i5.AppImage>);
 
   @override
   _i7.Future<void> onInit({String? folderPath}) =>
@@ -159,8 +163,8 @@ class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
           as _i7.Future<void>);
 
   @override
-  void onImageSelected(String? imageId) => super.noSuchMethod(
-    Invocation.method(#onImageSelected, [imageId]),
+  void selectImage(String? imageId) => super.noSuchMethod(
+    Invocation.method(#selectImage, [imageId]),
     returnValueForMissingStub: null,
   );
 
@@ -192,7 +196,7 @@ class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
   String guidanceFor(String? imagePath) =>
       (super.noSuchMethod(
             Invocation.method(#guidanceFor, [imagePath]),
-            returnValue: _i9.dummyValue<String>(
+            returnValue: _i8.dummyValue<String>(
               this,
               Invocation.method(#guidanceFor, [imagePath]),
             ),
@@ -276,9 +280,15 @@ class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
           as _i7.Future<void>);
 
   @override
-  _i7.Future<void> writeCaptionFiles() =>
+  _i7.Future<void> writeCaptionFiles({
+    required String? category,
+    required String? format,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#writeCaptionFiles, []),
+            Invocation.method(#writeCaptionFiles, [], {
+              #category: category,
+              #format: format,
+            }),
             returnValue: _i7.Future<void>.value(),
             returnValueForMissingStub: _i7.Future<void>.value(),
           )
@@ -368,78 +378,12 @@ class MockImageListCubit extends _i1.Mock implements _i6.ImageListCubit {
             returnValueForMissingStub: _i7.Future<void>.value(),
           )
           as _i7.Future<void>);
-
-  @override
-  Set<String> getAllUniqueTags() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueTags, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Set<String> getAllUniqueMediums() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAllUniqueMediums, []),
-            returnValue: <String>{},
-          )
-          as Set<String>);
-
-  @override
-  Map<String, int> getAspectRatioCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAspectRatioCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  Map<String, int> getTagCounts() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTagCounts, []),
-            returnValue: <String, int>{},
-          )
-          as Map<String, int>);
-
-  @override
-  int getTotalImagesSize() =>
-      (super.noSuchMethod(
-            Invocation.method(#getTotalImagesSize, []),
-            returnValue: 0,
-          )
-          as int);
-
-  @override
-  double getAverageWordsPerCaption() =>
-      (super.noSuchMethod(
-            Invocation.method(#getAverageWordsPerCaption, []),
-            returnValue: 0.0,
-          )
-          as double);
-
-  @override
-  void emit(_i3.ImageListState? state) => super.noSuchMethod(
-    Invocation.method(#emit, [state]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void addError(Object? error, [StackTrace? stackTrace]) => super.noSuchMethod(
-    Invocation.method(#addError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void onError(Object? error, StackTrace? stackTrace) => super.noSuchMethod(
-    Invocation.method(#onError, [error, stackTrace]),
-    returnValueForMissingStub: null,
-  );
 }
 
 /// A class which mocks [AppFileUtils].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAppFileUtils extends _i1.Mock implements _i10.AppFileUtils {
+class MockAppFileUtils extends _i1.Mock implements _i9.AppFileUtils {
   MockAppFileUtils() {
     _i1.throwOnMissingStub(this);
   }
@@ -534,7 +478,7 @@ class MockAppFileUtils extends _i1.Mock implements _i10.AppFileUtils {
           as _i7.Future<void>);
 
   @override
-  _i7.Future<void> removeImage(_i11.File? imageFile) =>
+  _i7.Future<void> removeImage(_i10.File? imageFile) =>
       (super.noSuchMethod(
             Invocation.method(#removeImage, [imageFile]),
             returnValue: _i7.Future<void>.value(),

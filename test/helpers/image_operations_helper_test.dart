@@ -10,7 +10,8 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
 
 import 'image_operations_helper_test.mocks.dart';
@@ -19,7 +20,7 @@ import 'image_operations_helper_test.mocks.dart';
 /// - [ImageListCubit]: To simulate state changes and interaction with the UI layer.
 /// - [AppFileUtils]: To mock low-level file system and database operations.
 @GenerateNiceMocks(<MockSpec<Object>>[
-  MockSpec<ImageListCubit>(),
+  MockSpec<CaptionSessionService>(),
   MockSpec<AppFileUtils>(),
 ])
 void main() {
@@ -28,7 +29,7 @@ void main() {
   /// sidecar files (captions) are handled correctly.
   group('ImageOperationsHelper', () {
     late ImageOperationsHelper imageOperationsHelper;
-    late MockImageListCubit mockImageListCubit;
+    late MockCaptionSessionService mockImageListCubit;
     late MockAppFileUtils mockAppFileUtils;
 
     /// A temporary directory created for each test to ensure file operations
@@ -39,7 +40,7 @@ void main() {
     late CaptionDatabase inMemoryDb;
 
     setUp(() async {
-      mockImageListCubit = MockImageListCubit();
+      mockImageListCubit = MockCaptionSessionService();
       mockAppFileUtils = MockAppFileUtils();
       inMemoryDb = CaptionDatabase(
         categories: <String>['default'],
@@ -68,7 +69,7 @@ void main() {
       });
 
       imageOperationsHelper = ImageOperationsHelper(
-        imageListCubit: mockImageListCubit,
+        session: mockImageListCubit,
         fileUtils: mockAppFileUtils,
       );
 

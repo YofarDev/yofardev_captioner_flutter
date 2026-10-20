@@ -6,34 +6,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/models/app_image.dart';
 import '../../../helpers/image_operations_helper.dart';
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
+import '../../image_list/logic/image_list_state.dart';
 
 part 'image_operations_state.dart';
 
 class ImageOperationsCubit extends Cubit<ImageOperationsState> {
   final ImageOperationsHelper _imageOperationsHelper;
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
 
-  ImageOperationsCubit(this._imageListCubit, {ImageOperationsHelper? helper})
+  ImageOperationsCubit(this._session, {ImageOperationsHelper? helper})
     : _imageOperationsHelper =
-          helper ?? ImageOperationsHelper(imageListCubit: _imageListCubit),
+          helper ?? ImageOperationsHelper(session: _session),
       super(const ImageOperationsState());
 
   void renameAllFiles() async {
-    if (_imageListCubit.state.folderPath == null) {
+    if (_session.state.folderPath == null) {
       return;
     }
-    await _imageListCubit.onFolderPicked(
-      _imageListCubit.state.folderPath!,
-      force: true,
-    );
-    await _imageOperationsHelper.renameAllFiles(
-      _imageListCubit.state.folderPath!,
-    );
-    _imageListCubit.onFolderPicked(
-      _imageListCubit.state.folderPath!,
-      force: true,
-    );
+    await _session.onFolderPicked(_session.state.folderPath!, force: true);
+    await _imageOperationsHelper.renameAllFiles(_session.state.folderPath!);
+    _session.onFolderPicked(_session.state.folderPath!, force: true);
   }
 
   Future<void> exportAsArchive(
@@ -41,14 +34,14 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     List<AppImage> images,
     String category,
   ) async {
-    if (_imageListCubit.state.folderPath == null) {
+    if (_session.state.folderPath == null) {
       return;
     }
-    await _imageListCubit.onFolderPicked(_imageListCubit.state.folderPath!);
+    await _session.onFolderPicked(_session.state.folderPath!);
     // Use fresh state from cubit after reload, not stale captured list
     await _imageOperationsHelper.exportAsArchive(
-      _imageListCubit.state.folderPath!,
-      _imageListCubit.state.images,
+      _session.state.folderPath!,
+      _session.state.images,
       category,
     );
   }
@@ -57,36 +50,33 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
     emit(
       state.copyWith(status: ImageOperationsStatus.inProgress, progress: 0.0),
     );
-    final int totalImages = _imageListCubit.state.images.length;
+    final int totalImages = _session.state.images.length;
     int processedImages = 0;
 
     await for (final ImageListState newState
         in _imageOperationsHelper.convertAllImages(
           format: format,
           quality: quality,
-          state: _imageListCubit.state,
+          state: _session.state,
         )) {
       processedImages++;
-      _imageListCubit.emit(newState);
+      _session.replaceState(newState);
       emit(state.copyWith(progress: processedImages / totalImages));
     }
 
-    await _imageListCubit.saveChanges();
+    await _session.saveChanges();
 
     emit(state.copyWith(status: ImageOperationsStatus.success));
     await Future<void>.delayed(const Duration(milliseconds: 500));
-    _imageListCubit.onFolderPicked(
-      _imageListCubit.state.folderPath!,
-      force: true,
-    );
+    _session.onFolderPicked(_session.state.folderPath!, force: true);
   }
 
   Future<void> cropCurrentImage(BuildContext context) async {
     final ImageListState? newState = await _imageOperationsHelper
-        .cropCurrentImage(context, _imageListCubit.state);
+        .cropCurrentImage(context, _session.state);
     if (newState != null) {
-      _imageListCubit.emit(newState);
-      _imageListCubit.getSingleImageSize();
+      _session.replaceState(newState);
+      _session.getSingleImageSize();
     }
   }
 }

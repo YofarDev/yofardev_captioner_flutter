@@ -10,25 +10,24 @@ import 'package:uuid/uuid.dart';
 
 import '../core/models/app_image.dart';
 import '../features/image_list/data/repositories/app_file_utils.dart';
-import '../features/image_list/logic/image_list_cubit.dart';
+import '../features/image_list/domain/services/caption_session_service.dart';
+import '../features/image_list/logic/image_list_state.dart';
 import '../features/image_operations/data/models/crop_image.dart';
 import '../features/image_operations/data/utils/image_utils.dart';
 import '../features/image_operations/presentation/pages/crop_image_screen.dart';
 
 class ImageOperationsHelper {
   final AppFileUtils _fileUtils;
-  final ImageListCubit _imageListCubit;
+  final CaptionSessionService _session;
 
   ImageOperationsHelper({
     AppFileUtils? fileUtils,
-    required ImageListCubit imageListCubit,
+    required CaptionSessionService session,
   }) : _fileUtils = fileUtils ?? AppFileUtils(),
-       _imageListCubit = imageListCubit;
+       _session = session;
 
   Future<void> renameAllFiles(String folderPath) async {
-    final List<AppImage> images = List<AppImage>.from(
-      _imageListCubit.state.images,
-    );
+    final List<AppImage> images = List<AppImage>.from(_session.state.images);
     final List<File> currentImageFiles = images
         .map((AppImage e) => e.image)
         .toList();
@@ -96,7 +95,7 @@ class ImageOperationsHelper {
     await _fileUtils.updateDbForRename(oldNameToNewName, folderPath);
 
     // Refresh the image list and update the database
-    await _imageListCubit.onFolderPicked(folderPath);
+    await _session.onFolderPicked(folderPath);
   }
 
   /// Sorts a list of [files] naturally by their base names.
@@ -144,7 +143,7 @@ class ImageOperationsHelper {
     BuildContext context,
     ImageListState state,
   ) async {
-    final AppImage? currentImage = _imageListCubit.currentDisplayedImage;
+    final AppImage? currentImage = _session.current.currentDisplayedImage;
     if (currentImage == null) {
       return null;
     }

@@ -99,6 +99,13 @@ class CaptionSessionService {
   /// into its emitted `ImageListState`.
   ImageListState get state => _state;
 
+  /// Replaces the session state AND emits a snapshot. For external mutators
+  /// (e.g. image operations) that compute a full next state outside the
+  /// session and need the UI (the owning cubit's listeners) to see it.
+  void replaceState(ImageListState next) {
+    _update(next);
+  }
+
   /// Adopts [next] as the session state without emitting a snapshot.
   ///
   /// Called by the owning cubit when its state was set from the outside

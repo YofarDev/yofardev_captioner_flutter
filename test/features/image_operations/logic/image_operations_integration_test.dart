@@ -10,24 +10,25 @@ import 'package:uuid/uuid.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
 
 import 'image_operations_integration_test.mocks.dart';
 
-@GenerateMocks(<Type>[ImageListCubit, AppFileUtils])
+@GenerateMocks(<Type>[CaptionSessionService, AppFileUtils])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   group('ImageOperationsHelper Integration Test', () {
     late ImageOperationsHelper imageOperationsHelper;
-    late MockImageListCubit mockImageListCubit;
+    late MockCaptionSessionService mockImageListCubit;
     late MockAppFileUtils mockAppFileUtils;
     late Directory tempDir;
 
     setUp(() async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
       SharedPreferences.setMockInitialValues(<String, Object>{});
-      mockImageListCubit = MockImageListCubit();
+      mockImageListCubit = MockCaptionSessionService();
       mockAppFileUtils = MockAppFileUtils();
 
       when(mockAppFileUtils.compareNatural(any, any)).thenAnswer((
@@ -39,7 +40,7 @@ void main() {
       });
 
       imageOperationsHelper = ImageOperationsHelper(
-        imageListCubit: mockImageListCubit,
+        session: mockImageListCubit,
         fileUtils: mockAppFileUtils,
       );
 

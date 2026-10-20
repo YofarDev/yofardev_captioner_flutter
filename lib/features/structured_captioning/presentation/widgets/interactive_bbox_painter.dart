@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../data/models/ideogram_caption.dart';
+import '../../../../core/models/ideogram_caption.dart';
 import '../utils/bbox_utils.dart';
 
 /// CustomPainter for interactive bounding box overlays.

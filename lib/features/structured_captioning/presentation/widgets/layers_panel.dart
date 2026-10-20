@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../data/models/ideogram_caption.dart';
+import '../../../../core/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import 'layer_tile.dart';
 

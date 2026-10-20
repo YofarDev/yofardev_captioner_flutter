@@ -7,11 +7,11 @@ import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../captioning/data/services/caption_service.dart';
-import '../models/ideogram_caption.dart';
 import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';

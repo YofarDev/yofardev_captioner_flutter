@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:yofardev_captioner/features/caption_search/logic/caption_search_cubit.dart';
+import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/caption_search_bar.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';

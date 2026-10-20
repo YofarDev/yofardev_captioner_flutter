@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/caption_search/data/models/filter_query.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/features/caption_search/domain/models/filter_query.dart';
 
 void main() {
   FilterContext ctx(String caption) => FilterContext(captionText: caption);

@@ -1,4 +1,4 @@
-import '../../../structured_captioning/data/models/ideogram_caption.dart';
+import '../../../../core/models/ideogram_caption.dart';
 
 class BatchApplyTemplate {
   final String? highLevelDescription;

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import '../../../structured_captioning/data/models/ideogram_caption.dart';
+import '../../../../core/models/ideogram_caption.dart';
 
 /// Result of attempting to parse + normalize a raw Ideogram caption JSON blob.
 ///

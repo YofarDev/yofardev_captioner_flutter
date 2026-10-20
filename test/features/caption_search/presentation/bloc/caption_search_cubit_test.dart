@@ -5,7 +5,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
-import 'package:yofardev_captioner/features/caption_search/logic/caption_search_cubit.dart';
+import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';

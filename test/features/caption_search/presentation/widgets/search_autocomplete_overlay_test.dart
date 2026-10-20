@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/core/constants/app_colors.dart';
-import 'package:yofardev_captioner/features/caption_search/data/services/autocomplete_engine.dart';
+import 'package:yofardev_captioner/features/caption_search/domain/services/autocomplete_engine.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/search_autocomplete_overlay.dart';
 
 /// Test harness that renders a [CompositedTransformTarget] for the overlay

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../data/services/autocomplete_engine.dart';
+import '../../domain/services/autocomplete_engine.dart';
 
 typedef _AutocompleteKeyHandler =
     KeyEventResult Function(FocusNode node, KeyEvent event);

@@ -5,11 +5,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/models/app_image.dart';
 import '../../../core/models/caption_entry.dart';
+import '../../../core/models/ideogram_caption.dart';
 import '../../../core/models/llm_config.dart';
 import '../../../core/models/structured_batch_overrides.dart';
 import '../../captioning/data/models/caption_options.dart';
 import '../../image_list/domain/services/caption_session_service.dart';
-import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 
 part 'structured_captioning_state.dart';

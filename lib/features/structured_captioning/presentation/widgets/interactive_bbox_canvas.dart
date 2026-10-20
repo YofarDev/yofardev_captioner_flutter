@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/utils/image_header_parser.dart';
-import '../../data/models/ideogram_caption.dart';
 import '../../logic/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
 import 'interactive_bbox_painter.dart';

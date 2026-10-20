@@ -11,6 +11,7 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
@@ -18,7 +19,6 @@ import 'package:yofardev_captioner/features/image_list/domain/services/caption_s
 import 'package:yofardev_captioner/features/image_list/logic/image_list_state.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
 

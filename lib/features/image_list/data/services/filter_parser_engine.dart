@@ -1,6 +1,5 @@
 import '../../../../core/models/app_image.dart';
-import '../../../caption_search/data/models/filter_query.dart';
-import '../../../caption_search/data/services/filter_parser.dart';
+import '../../../caption_search/caption_search.dart';
 import '../../domain/services/caption_session_service.dart';
 
 /// Data-layer implementation of the session's [CaptionFilterEngine] port on

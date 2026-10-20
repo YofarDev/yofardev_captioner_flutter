@@ -6,9 +6,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 
 import '../../../core/di/service_locator.dart';
+import '../../../core/models/ideogram_caption.dart';
 import '../../../core/models/llm_config.dart';
 import '../../image_list/domain/services/caption_session_service.dart';
-import '../data/models/ideogram_caption.dart';
 import '../data/repositories/structured_caption_repository.dart';
 import '../data/services/layer_title_store.dart';
 

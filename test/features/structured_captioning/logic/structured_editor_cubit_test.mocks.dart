@@ -9,11 +9,10 @@ import 'dart:io' as _i7;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i2;
 import 'package:yofardev_captioner/core/models/llm_config.dart' as _i6;
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart'
     as _i8;
-import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart'
-    as _i2;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart'
     as _i3;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'

@@ -5,8 +5,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
+import '../../../../core/models/ideogram_caption.dart';
 import '../../../image_list/domain/services/caption_session_service.dart';
-import '../../../structured_captioning/data/models/ideogram_caption.dart';
 import '../../data/models/batch_apply_template.dart';
 import 'batch_json_apply_state.dart';
 

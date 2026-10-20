@@ -4,7 +4,7 @@ import 'package:nested/nested.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/service_locator.dart';
-import '../../../caption_search/logic/caption_search_cubit.dart';
+import '../../../caption_search/caption_search.dart';
 import '../../../captioning/data/repositories/captioning_repository.dart';
 import '../../../captioning/logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../../captioning/logic/captioning_cubit.dart';

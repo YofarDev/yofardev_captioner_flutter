@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
 
 void main() {

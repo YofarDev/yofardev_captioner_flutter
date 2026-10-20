@@ -3,8 +3,7 @@ import 'dart:math' as math;
 
 import 'package:equatable/equatable.dart';
 
-import '../../../structured_captioning/data/models/ideogram_caption.dart';
-import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
+import '../../../../core/models/ideogram_caption.dart';
 
 /// Parsed result of a search query containing both filter expressions
 /// and a plain text component.
@@ -50,7 +49,7 @@ sealed class FilterExpression extends Equatable {
   /// Parses the caption as an [IdeogramCaption] if it is valid JSON,
   /// otherwise returns `null`.
   static IdeogramCaption? tryParseCaption(String text) {
-    if (!IdeogramCaptionSummaryCard.isIdeogramJson(text)) return null;
+    if (!IdeogramCaption.isIdeogramJson(text)) return null;
     try {
       return IdeogramCaption.fromJson(jsonDecode(text) as Map<String, dynamic>);
     } catch (_) {
@@ -365,7 +364,7 @@ class IsStructuredFilter extends FilterExpression {
 
   @override
   bool evaluate(FilterContext ctx) {
-    return IdeogramCaptionSummaryCard.isIdeogramJson(ctx.captionText);
+    return IdeogramCaption.isIdeogramJson(ctx.captionText);
   }
 
   @override
@@ -381,7 +380,7 @@ class IsPlainFilter extends FilterExpression {
   @override
   bool evaluate(FilterContext ctx) {
     if (ctx.captionText.trim().isEmpty) return false;
-    return !IdeogramCaptionSummaryCard.isIdeogramJson(ctx.captionText);
+    return !IdeogramCaption.isIdeogramJson(ctx.captionText);
   }
 
   @override

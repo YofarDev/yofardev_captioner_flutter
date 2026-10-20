@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:yofardev_captioner/features/caption_search/data/services/autocomplete_engine.dart';
+import 'package:yofardev_captioner/features/caption_search/domain/services/autocomplete_engine.dart';
 
 void main() {
   group('AutocompleteEngine', () {

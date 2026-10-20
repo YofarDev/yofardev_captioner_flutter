@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
-import '../../data/models/ideogram_caption.dart';
+import '../../../../core/models/ideogram_caption.dart';
 
 /// Compact summary card for Ideogram JSON captions on the main screen.
 ///

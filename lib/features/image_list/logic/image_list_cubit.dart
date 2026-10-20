@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/models/app_image.dart';
+import '../../../core/models/ideogram_caption.dart';
 import '../../../core/utils/extensions.dart';
-import '../../structured_captioning/data/models/ideogram_caption.dart';
 import '../data/repositories/app_file_utils.dart';
 import '../data/services/filter_parser_engine.dart';
 import '../domain/services/caption_session_service.dart';

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../captioning/presentation/widgets/caption_controls.dart';
-import '../../../export/presentation/widgets/caption_files_button.dart';
-import '../../../export/presentation/widgets/export_button.dart';
+import '../../../export/export.dart';
 import '../../../main_area/presentation/pages/search_and_replace_widget.dart';
 import 'controls_widgets.dart';
 

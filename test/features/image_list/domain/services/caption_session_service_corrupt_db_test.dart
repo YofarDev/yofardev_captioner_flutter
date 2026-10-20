@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
+import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/filter_parser_engine.dart';
@@ -63,6 +64,63 @@ void main() {
 
       expect(session.state.images, hasLength(1));
       expect(session.state.dbLoadError, isNull);
+    });
+  });
+
+  group('save guard while db.json is unreadable', () {
+    test(
+      'updateImage after a corrupt-db load leaves db.json bytes UNCHANGED',
+      () async {
+        await File('${tempDir.path}/a.jpg').writeAsBytes(<int>[1, 2, 3]);
+        const String corruptBytes = '{corrupt not json';
+        final File dbFile = File('${tempDir.path}/db.json');
+        await dbFile.writeAsString(corruptBytes);
+
+        final CaptionSessionService session = buildSession();
+        addTearDown(session.dispose);
+        await session.onFolderPicked(tempDir.path, force: true);
+        expect(session.state.dbLoadError, isNotNull);
+
+        // In-memory edit goes through the normal save path.
+        await session.updateImage(
+          image: session.state.images.single.copyWith(
+            captions: <String, CaptionEntry>{
+              'default': const CaptionEntry(text: 'edited while corrupt'),
+            },
+          ),
+        );
+
+        // The corrupt db.json on disk must not be clobbered by an
+        // empty-caption database written from memory.
+        expect(await dbFile.readAsString(), corruptBytes);
+        // The edit itself stays in memory.
+        expect(
+          session.state.images.single.captions['default']?.text,
+          'edited while corrupt',
+        );
+      },
+    );
+
+    test('saving works again once a healthy folder is loaded', () async {
+      await File('${tempDir.path}/a.jpg').writeAsBytes(<int>[1, 2, 3]);
+
+      final CaptionSessionService session = buildSession();
+      addTearDown(session.dispose);
+      await session.onFolderPicked(tempDir.path, force: true);
+      expect(session.state.dbLoadError, isNull);
+
+      await session.updateImage(
+        image: session.state.images.single.copyWith(
+          captions: <String, CaptionEntry>{
+            'default': const CaptionEntry(text: 'hello'),
+          },
+        ),
+      );
+
+      expect(
+        await File('${tempDir.path}/db.json').readAsString(),
+        contains('hello'),
+      );
     });
   });
 }

@@ -51,6 +51,12 @@ abstract class CaptionFilterEngine {
   });
 }
 
+/// Signature for the session's operational logging sink. The domain layer
+/// must not import get_it/logging (architecture domain-purity rule), so
+/// callers wire this to the app logger (e.g. `locator<Logger>()`).
+typedef CaptionSessionLogger =
+    void Function(String message, {Object? error, StackTrace? stackTrace});
+
 /// Owns the per-tab image session: collection, selection, categories,
 /// filtering. One instance per tab, created by the tab manager BEFORE the
 /// widget tree builds. Emits a [CaptionSessionSnapshot] on every state
@@ -61,12 +67,20 @@ class CaptionSessionService {
     required CaptionFileStore fileStore,
     required CaptionFilterEngine filterEngine,
     void Function()? onBeforeFolderLoad,
+    CaptionSessionLogger? logSevere,
+    CaptionSessionLogger? logWarning,
   }) : _fileStore = fileStore,
        _filterEngine = filterEngine,
-       _onBeforeFolderLoad = onBeforeFolderLoad;
+       _onBeforeFolderLoad = onBeforeFolderLoad,
+       _logSevere = logSevere,
+       _logWarning = logWarning;
 
   final CaptionFileStore _fileStore;
   final CaptionFilterEngine _filterEngine;
+
+  /// Logging sinks, no-op when not wired (e.g. bare test instances).
+  final CaptionSessionLogger? _logSevere;
+  final CaptionSessionLogger? _logWarning;
 
   /// Called at the start of every folder (re)load so the owning cubit can
   /// evict stale Flutter image-cache entries (a Flutter concern the domain
@@ -294,8 +308,13 @@ class CaptionSessionService {
       } else {
         _update(_state.copyWith(clearDbLoadError: true));
       }
-    } catch (e) {
+    } catch (e, s) {
       // Clear state if folder couldn't be loaded (e.g., folder was removed)
+      _logSevere?.call(
+        'onFolderPicked failed for $folderPath; resetting session state',
+        error: e,
+        stackTrace: s,
+      );
       _update(const ImageListState());
       return;
     }
@@ -429,6 +448,19 @@ class CaptionSessionService {
   Future<void> _saveDb() async {
     final String? folderPath = _state.folderPath;
     if (folderPath == null || folderPath.isEmpty) {
+      return;
+    }
+
+    // Corrupt-db guard: while dbLoadError is set, captions were not loaded
+    // from disk, so persisting the in-memory database would clobber the
+    // (recoverable) db.json with empty captions. Edits stay in memory only;
+    // the warning banner tells the user captions weren't loaded. Mirrors the
+    // guard in AppFileUtils.updateDbForRename.
+    if (_state.dbLoadError != null) {
+      _logWarning?.call(
+        'saveDb skipped: db.json is unreadable in $folderPath '
+        '(${_state.dbLoadError}); keeping in-memory edits unsaved',
+      );
       return;
     }
 

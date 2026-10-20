@@ -93,6 +93,12 @@ class TabManagerCubit extends Cubit<TabManagerState> {
       // folder's images, which is exactly what the Flutter image-cache
       // eviction needs. Do not defer this callback or read it after the load.
       onBeforeFolderLoad: () => evictImageCache(session.current.state.images),
+      // Domain-purity: the session can't resolve the logger itself, so the
+      // (GetIt-allowlisted) tab manager wires the logging sinks for it.
+      logSevere: (String message, {Object? error, StackTrace? stackTrace}) =>
+          locator<Logger>().severe(message, error, stackTrace),
+      logWarning: (String message, {Object? error, StackTrace? stackTrace}) =>
+          locator<Logger>().warning(message, error, stackTrace),
     );
   }
 

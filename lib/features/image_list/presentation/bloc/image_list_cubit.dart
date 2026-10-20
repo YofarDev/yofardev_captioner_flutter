@@ -26,11 +26,17 @@ class ImageListCubit extends Cubit<ImageListState> {
     CaptionFilterEngine? filterEngine,
     CaptionSessionService? session,
   }) : super(const ImageListState()) {
+    _ownsSession = session == null;
     _session = session ?? _createSession(fileUtils, filterEngine);
     _session.addListener(_onSnapshot);
   }
 
   late final CaptionSessionService _session;
+
+  /// Whether the cubit created [_session] internally (and therefore must
+  /// dispose it on close). Externally injected sessions are owned by the
+  /// tab manager, which disposes them.
+  bool _ownsSession = false;
 
   void _onSnapshot(CaptionSessionSnapshot snapshot) => emit(snapshot.state);
 
@@ -61,6 +67,9 @@ class ImageListCubit extends Cubit<ImageListState> {
   @override
   Future<void> close() {
     _session.removeListener(_onSnapshot);
+    if (_ownsSession) {
+      _session.dispose();
+    }
     return super.close();
   }
 

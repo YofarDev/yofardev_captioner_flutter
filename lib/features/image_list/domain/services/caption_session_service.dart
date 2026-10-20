@@ -76,6 +76,7 @@ class CaptionSessionService {
   StreamController<CaptionSessionSnapshot>? _controller;
 
   ImageListState _state = const ImageListState();
+  bool _disposed = false;
 
   Stream<CaptionSessionSnapshot> get snapshots {
     _controller ??= StreamController<CaptionSessionSnapshot>.broadcast();
@@ -113,12 +114,13 @@ class CaptionSessionService {
   /// Releases the snapshot stream. The session is owned by the tab manager;
   /// disposing it is the tab manager's job, never the cubit's.
   void dispose() {
+    _disposed = true;
     _controller?.close();
     _listeners.clear();
   }
 
   void _update(ImageListState next) {
-    if (next == _state) {
+    if (_disposed || next == _state) {
       return;
     }
     _state = next;
@@ -126,6 +128,9 @@ class CaptionSessionService {
   }
 
   void _notify() {
+    if (_disposed) {
+      return;
+    }
     final CaptionSessionSnapshot snapshot = _snapshotOf(_state);
     for (final void Function(CaptionSessionSnapshot) listener
         in List<void Function(CaptionSessionSnapshot)>.of(_listeners)) {

@@ -10,7 +10,7 @@ import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/llm_config/logic/llm_configs_cubit.dart';
 import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -273,9 +273,8 @@ void main() {
       locator.registerSingleton<TabManagerCubit>(tabManager);
       tabManager.addTab(folder.path);
       final String tabId = tabManager.state.tabs.last.id;
-      final ImageListCubit imageListCubit = ImageListCubit();
-      tabManager.registerTabCubit(tabId, imageListCubit);
-      await imageListCubit.onFolderPicked(folder.path);
+      final CaptionSessionService session = tabManager.sessionFor(tabId);
+      await session.onFolderPicked(folder.path);
 
       final http.Response res = await postCaption(<String, dynamic>{
         'folder': folder.path,
@@ -288,7 +287,7 @@ void main() {
           jsonDecode(res.body) as Map<String, dynamic>;
       expect(body['mode'], 'live');
 
-      final AppImage updated = imageListCubit.state.images.firstWhere(
+      final AppImage updated = session.current.state.images.firstWhere(
         (AppImage image) => p.basename(image.image.path) == 'one.png',
       );
       expect(updated.captions['default']?.text, 'live caption');
@@ -315,10 +314,9 @@ void main() {
     locator.registerSingleton<TabManagerCubit>(tabManager);
     tabManager.addTab(folder.path);
     final String tabId = tabManager.state.tabs.last.id;
-    final ImageListCubit imageListCubit = ImageListCubit();
-    tabManager.registerTabCubit(tabId, imageListCubit);
-    await imageListCubit.onFolderPicked(folder.path);
-    expect(imageListCubit.state.images, hasLength(1));
+    final CaptionSessionService session = tabManager.sessionFor(tabId);
+    await session.onFolderPicked(folder.path);
+    expect(session.current.state.images, hasLength(1));
 
     await File(p.join(folder.path, 'r2.png')).writeAsBytes(tinyPngBytes);
     final http.Response res = await client.post(
@@ -329,7 +327,7 @@ void main() {
 
     expect(res.statusCode, 200);
     expect((jsonDecode(res.body) as Map<String, dynamic>)['refreshed'], isTrue);
-    expect(imageListCubit.state.images, hasLength(2));
+    expect(session.current.state.images, hasLength(2));
   });
 
   test(

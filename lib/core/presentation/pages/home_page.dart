@@ -8,7 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
-import '../../../features/image_list/logic/image_list_cubit.dart';
+import '../../../features/image_list/domain/services/caption_session_service.dart';
 import '../../../features/tab_manager/data/models/app_tab.dart';
 import '../../../features/tab_manager/logic/tab_manager_cubit.dart';
 import '../../../features/tab_manager/presentation/widgets/tab_bar_widget.dart';
@@ -66,19 +66,14 @@ class _HomePageState extends State<HomePage> {
     final TabManagerCubit tabManager = context.read<TabManagerCubit>();
     final List<String> savedPaths = await _cacheService.loadTabPaths();
 
-    // Wait for initial TabContent to register its cubit
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-
     if (savedPaths.isEmpty) {
       // No saved tabs — try loading last folder into default tab
       final String tabId = tabManager.state.activeTab.id;
-      final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
-      if (cubit != null) {
-        final String? lastPath = await _cacheService.loadFolderPath();
-        if (lastPath != null) {
-          tabManager.updateTabFolderPath(tabId, lastPath);
-          cubit.onInit(folderPath: lastPath);
-        }
+      final String? lastPath = await _cacheService.loadFolderPath();
+      if (lastPath != null) {
+        tabManager.updateTabFolderPath(tabId, lastPath);
+        // Sessions are created synchronously with tabs — no waiting needed.
+        tabManager.sessionFor(tabId).onInit(folderPath: lastPath);
       }
       return;
     }
@@ -88,23 +83,16 @@ class _HomePageState extends State<HomePage> {
 
     // Load first tab into the default empty tab
     final String defaultTabId = tabManager.state.activeTab.id;
-    final ImageListCubit? defaultCubit = tabManager.getCubitForTab(
-      defaultTabId,
-    );
-    if (defaultCubit != null && savedPaths.isNotEmpty) {
-      tabManager.updateTabFolderPath(defaultTabId, savedPaths.first);
-      defaultCubit.onInit(folderPath: savedPaths.first);
-    }
+    tabManager.updateTabFolderPath(defaultTabId, savedPaths.first);
+    tabManager.sessionFor(defaultTabId).onInit(folderPath: savedPaths.first);
 
-    // Create additional tabs for remaining paths
+    // Create additional tabs for remaining paths (sessions exist as soon as
+    // addTab returns).
     for (int i = 1; i < savedPaths.length; i++) {
       tabManager.addTab(savedPaths[i]);
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-      final String newTabId = tabManager.activeTabId;
-      final ImageListCubit? cubit = tabManager.getCubitForTab(newTabId);
-      if (cubit != null) {
-        cubit.onInit(folderPath: savedPaths[i]);
-      }
+      tabManager
+          .sessionFor(tabManager.activeTabId)
+          .onInit(folderPath: savedPaths[i]);
     }
 
     // Restore active tab index
@@ -120,37 +108,18 @@ class _HomePageState extends State<HomePage> {
 
     if (existing != null) {
       tabManager.switchTab(tabManager.state.tabs.indexOf(existing));
-      final ImageListCubit? cubit = await _waitForCubit(existing.id);
-      if (cubit != null) {
-        cubit.onFileOpened(filePath);
-      }
+      tabManager.sessionFor(existing.id).onFileOpened(filePath);
       return;
     }
 
     final AppTab activeTab = tabManager.state.activeTab;
     if (activeTab.folderPath == null) {
       tabManager.updateTabFolderPath(activeTab.id, folderPath);
-      final ImageListCubit? cubit = await _waitForCubit(activeTab.id);
-      if (cubit != null) {
-        cubit.onFileOpened(filePath);
-      }
+      tabManager.sessionFor(activeTab.id).onFileOpened(filePath);
     } else {
       tabManager.addTab(folderPath);
-      final ImageListCubit? cubit = await _waitForCubit(tabManager.activeTabId);
-      if (cubit != null) {
-        cubit.onFileOpened(filePath);
-      }
+      tabManager.sessionFor(tabManager.activeTabId).onFileOpened(filePath);
     }
-  }
-
-  Future<ImageListCubit?> _waitForCubit(String tabId) async {
-    final TabManagerCubit tabManager = context.read<TabManagerCubit>();
-    for (int i = 0; i < 10; i++) {
-      final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
-      if (cubit != null) return cubit;
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-    return null;
   }
 
   Future<void> _handleFolderPicked(String folderPath) async {
@@ -159,16 +128,10 @@ class _HomePageState extends State<HomePage> {
 
     if (activeTab.folderPath == null) {
       tabManager.updateTabFolderPath(activeTab.id, folderPath);
-      final ImageListCubit? cubit = await _waitForCubit(activeTab.id);
-      if (cubit != null) {
-        cubit.onFolderPicked(folderPath);
-      }
+      tabManager.sessionFor(activeTab.id).onFolderPicked(folderPath);
     } else {
       tabManager.addTab(folderPath);
-      final ImageListCubit? cubit = await _waitForCubit(tabManager.activeTabId);
-      if (cubit != null) {
-        cubit.onFolderPicked(folderPath);
-      }
+      tabManager.sessionFor(tabManager.activeTabId).onFolderPicked(folderPath);
     }
   }
 
@@ -182,17 +145,16 @@ class _HomePageState extends State<HomePage> {
           final bool isControlPressed =
               HardwareKeyboard.instance.isControlPressed;
           final TabManagerCubit tabManager = context.read<TabManagerCubit>();
-          final ImageListCubit? cubit = tabManager.getCubitForTab(
+          final CaptionSessionService session = tabManager.sessionFor(
             tabManager.activeTabId,
           );
-          if (cubit == null) return;
 
           if (isControlPressed && event.logicalKey == LogicalKeyboardKey.keyS) {
-            cubit.saveChanges();
+            session.saveChanges();
           } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
-            cubit.nextImage();
+            session.nextImage();
           } else if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
-            cubit.previousImage();
+            session.previousImage();
           }
         }
       },

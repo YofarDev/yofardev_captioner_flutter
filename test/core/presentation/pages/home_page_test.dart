@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/features/image_list/logic/image_list_cubit.dart';
+import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/tab_manager/data/models/app_tab.dart';
 import 'package:yofardev_captioner/features/tab_manager/logic/tab_manager_cubit.dart';
 
@@ -19,32 +19,23 @@ void main() {
 
   group('Tab routing coordination', () {
     late TabManagerCubit tabManager;
-    late ImageListCubit cubit1;
-    late ImageListCubit cubit2;
 
     setUp(() {
       tabManager = TabManagerCubit();
-      cubit1 = ImageListCubit();
-      cubit2 = ImageListCubit();
     });
 
     tearDown(() {
-      cubit2.close();
-      cubit1.close();
       tabManager.close();
     });
 
     group('folder picked routing', () {
       test('loads folder into empty active tab', () {
         final String tabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(tabId, cubit1);
 
         expect(tabManager.state.activeTab.folderPath, isNull);
 
         tabManager.updateTabFolderPath(tabId, '/photos');
-        final ImageListCubit? cubit = tabManager.getCubitForTab(tabId);
-        expect(cubit, isNotNull);
-        expect(cubit, same(cubit1));
+        expect(tabManager.sessionFor(tabId), isA<CaptionSessionService>());
 
         expect(tabManager.state.activeTab.folderPath, '/photos');
         expect(tabManager.state.activeTab.displayName, 'photos');
@@ -53,13 +44,10 @@ void main() {
       test('creates new tab when active tab has folder', () {
         // Setup: first tab has a folder
         final String tabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(tabId, cubit1);
         tabManager.updateTabFolderPath(tabId, '/photos');
 
         // Simulate: user picks another folder -> new tab created
         tabManager.addTab('/videos');
-        final String newTabId = tabManager.activeTabId;
-        tabManager.registerTabCubit(newTabId, cubit2);
 
         expect(tabManager.state.tabs.length, 2);
         expect(tabManager.state.activeTab.folderPath, '/videos');
@@ -71,8 +59,6 @@ void main() {
       test('activates existing tab when folder already open', () {
         // Setup: two tabs, one with /photos
         tabManager.addTab('/photos');
-        tabManager.registerTabCubit(tabManager.state.tabs[0].id, cubit1);
-        tabManager.registerTabCubit(tabManager.state.tabs[1].id, cubit2);
 
         // Switch away from /photos tab
         tabManager.switchTab(0);
@@ -88,7 +74,6 @@ void main() {
 
       test('creates new tab when folder not open', () {
         final String tabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(tabId, cubit1);
         tabManager.updateTabFolderPath(tabId, '/photos');
 
         // Simulate: open file in /videos -> not open yet
@@ -102,8 +87,6 @@ void main() {
 
       test('loads into empty active tab instead of creating new one', () {
         // Active tab is empty (no folder)
-        final String tabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(tabId, cubit1);
         expect(tabManager.state.activeTab.folderPath, isNull);
 
         // Simulate: file opened, its folder doesn't match any tab
@@ -126,27 +109,34 @@ void main() {
     group('tab lifecycle', () {
       test('cubit registry tracks active tab correctly', () {
         final String defaultTabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(defaultTabId, cubit1);
         tabManager.addTab('/photos');
         final String photosTabId = tabManager.activeTabId;
-        tabManager.registerTabCubit(photosTabId, cubit2);
 
-        expect(tabManager.getCubitForTab(defaultTabId), same(cubit1));
-        expect(tabManager.getCubitForTab(photosTabId), same(cubit2));
+        expect(
+          tabManager.sessionFor(defaultTabId),
+          isA<CaptionSessionService>(),
+        );
+        expect(
+          tabManager.sessionFor(photosTabId),
+          isA<CaptionSessionService>(),
+        );
       });
 
       test('unregistering cubit on tab close', () {
         final String defaultTabId = tabManager.state.activeTab.id;
-        tabManager.registerTabCubit(defaultTabId, cubit1);
         tabManager.addTab('/photos');
         final String photosTabId = tabManager.activeTabId;
-        tabManager.registerTabCubit(photosTabId, cubit2);
 
+        final CaptionSessionService photosSession = tabManager.sessionFor(
+          photosTabId,
+        );
         tabManager.closeTab(photosTabId);
-        // cubit2 should be unregistered by the widget
-        tabManager.unregisterTabCubit(photosTabId);
-        expect(tabManager.getCubitForTab(photosTabId), isNull);
-        expect(tabManager.getCubitForTab(defaultTabId), same(cubit1));
+        // The session is disposed with the tab; the default tab's survives.
+        expect(() => photosSession.nextImage(), returnsNormally);
+        expect(
+          tabManager.sessionFor(defaultTabId),
+          isA<CaptionSessionService>(),
+        );
       });
     });
 

@@ -1,20 +1,38 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:window_manager/window_manager.dart';
+
 import '../../../core/services/cache_service.dart';
-import '../../image_list/logic/image_list_cubit.dart';
+import '../../image_list/data/repositories/app_file_utils.dart';
+import '../../image_list/data/services/filter_parser_engine.dart';
+import '../../image_list/domain/services/caption_session_service.dart';
+import '../../image_list/logic/image_cache_eviction.dart';
 import '../data/models/app_tab.dart';
 
 part 'tab_manager_state.dart';
 
 class TabManagerCubit extends Cubit<TabManagerState> {
-  TabManagerCubit({CacheService? cacheService})
-    : _cacheService = cacheService ?? const CacheService(),
-      super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')]));
+  TabManagerCubit({
+    CacheService? cacheService,
+    AppFileUtils? fileUtils,
+    CaptionFilterEngine? filterEngine,
+  }) : _cacheService = cacheService ?? const CacheService(),
+       _fileUtils = fileUtils ?? AppFileUtils(cacheService: cacheService),
+       _filterEngine = filterEngine ?? const FilterParserCaptionEngine(),
+       super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')])) {
+    // The default tab's session exists before any widget builds.
+    _ensureSession(state.activeTab.id);
+  }
 
   final CacheService _cacheService;
+  final AppFileUtils _fileUtils;
+  final CaptionFilterEngine _filterEngine;
 
-  final Map<String, ImageListCubit> _tabCubits = <String, ImageListCubit>{};
+  /// One session per tab, created SYNCHRONOUSLY when the tab appears so
+  /// consumers (home_page keyboard/file-open, Agent API, TabContent cubits)
+  /// never wait for a widget to register anything.
+  final Map<String, CaptionSessionService> _sessions =
+      <String, CaptionSessionService>{};
 
   @override
   void onChange(Change<TabManagerState> change) {
@@ -41,15 +59,21 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     windowManager.setTitle('Yofardev Captioner ➡️ "${active.folderPath}"');
   }
 
-  void registerTabCubit(String tabId, ImageListCubit cubit) {
-    _tabCubits[tabId] = cubit;
+  CaptionSessionService _createSession() {
+    late final CaptionSessionService session;
+    return session = CaptionSessionService(
+      fileStore: _fileUtils,
+      filterEngine: _filterEngine,
+      onBeforeFolderLoad: () => evictImageCache(session.current.state.images),
+    );
   }
 
-  void unregisterTabCubit(String tabId) {
-    _tabCubits.remove(tabId);
-  }
+  CaptionSessionService _ensureSession(String tabId) =>
+      _sessions.putIfAbsent(tabId, _createSession);
 
-  ImageListCubit? getCubitForTab(String tabId) => _tabCubits[tabId];
+  /// The session owning [tabId]. Created on demand so it can never be null
+  /// for a live tab.
+  CaptionSessionService sessionFor(String tabId) => _ensureSession(tabId);
 
   void addTab(String? folderPath) {
     final String tabId = 'tab_${DateTime.now().millisecondsSinceEpoch}';
@@ -61,6 +85,7 @@ class TabManagerCubit extends Cubit<TabManagerState> {
           displayName: folderPath?.split('/').last ?? 'New Tab',
         ),
       );
+    _ensureSession(tabId);
     emit(state.copyWith(tabs: newTabs, activeTabIndex: newTabs.length - 1));
   }
 
@@ -80,6 +105,7 @@ class TabManagerCubit extends Cubit<TabManagerState> {
     } else if (index == newIndex && newIndex >= newTabs.length) {
       newIndex = newTabs.length - 1;
     }
+    _sessions.remove(tabId)?.dispose();
     emit(state.copyWith(tabs: newTabs, activeTabIndex: newIndex));
   }
 
@@ -121,4 +147,13 @@ class TabManagerCubit extends Cubit<TabManagerState> {
   }
 
   String get activeTabId => state.activeTab.id;
+
+  @override
+  Future<void> close() {
+    for (final CaptionSessionService session in _sessions.values) {
+      session.dispose();
+    }
+    _sessions.clear();
+    return super.close();
+  }
 }

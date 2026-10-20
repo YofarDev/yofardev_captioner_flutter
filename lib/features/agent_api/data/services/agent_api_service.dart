@@ -19,7 +19,8 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../image_list/data/repositories/app_file_utils.dart';
-import '../../../image_list/logic/image_list_cubit.dart';
+import '../../../image_list/domain/services/caption_session_service.dart';
+import '../../../image_list/logic/image_list_state.dart';
 import '../../../llm_config/data/repositories/llm_config_service.dart';
 import '../../../llm_config/logic/llm_configs_cubit.dart';
 import '../../../tab_manager/data/models/app_tab.dart';
@@ -32,9 +33,9 @@ import '../../../tab_manager/logic/tab_manager_cubit.dart';
 /// token are mirrored into an `agent-api.json` discovery file inside the
 /// application support directory so agents can find them on their own.
 ///
-/// Caption writes go through the live [ImageListCubit] when the folder is
-/// open in a tab — the app rewrites `db.json` from in-memory state on every
-/// save, so routing external writes through the cubit is what keeps them
+/// Caption writes go through the live [CaptionSessionService] when the folder
+/// is open in a tab — the app rewrites `db.json` from in-memory state on every
+/// save, so routing external writes through the session is what keeps them
 /// from being clobbered. Folders that aren't open in any tab are updated by
 /// a direct read-modify-write of `db.json`.
 class AgentApiService {
@@ -234,9 +235,9 @@ class AgentApiService {
       });
     }
 
-    final ImageListCubit? cubit = _openCubitFor(normalized);
-    if (cubit != null) {
-      final ImageListState state = cubit.state;
+    final CaptionSessionService? session = _openSessionFor(normalized);
+    if (session != null) {
+      final ImageListState state = session.current.state;
       return _jsonResponse(200, <String, dynamic>{
         'folder': normalized,
         'categories': state.categories,
@@ -303,10 +304,10 @@ class AgentApiService {
         });
       }
 
-      final ImageListCubit? cubit = _openCubitFor(normalizedFolder);
-      if (cubit != null) {
-        return await _writeViaCubit(
-          cubit,
+      final CaptionSessionService? session = _openSessionFor(normalizedFolder);
+      if (session != null) {
+        return await _writeViaSession(
+          session,
           filename: filename,
           category: category,
           text: text,
@@ -344,17 +345,17 @@ class AgentApiService {
 
     final TabManagerCubit? tabManager = _tabManagerIfReady();
     final AppTab? tab = tabManager?.findTabByFolderPath(normalized);
-    final ImageListCubit? cubit = tab == null
+    final CaptionSessionService? session = tab == null
         ? null
-        : tabManager!.getCubitForTab(tab.id);
-    if (cubit == null) {
+        : tabManager!.sessionFor(tab.id);
+    if (session == null) {
       return _jsonResponse(200, <String, dynamic>{
         'ok': true,
         'refreshed': false,
         'note': 'folder is not open in any tab',
       });
     }
-    await cubit.onFolderPicked(normalized, force: true);
+    await session.onFolderPicked(normalized, force: true);
     return _jsonResponse(200, <String, dynamic>{'ok': true, 'refreshed': true});
   }
 
@@ -362,23 +363,24 @@ class AgentApiService {
   // Write paths
   // ---------------------------------------------------------------------------
 
-  Future<Response> _writeViaCubit(
-    ImageListCubit cubit, {
+  Future<Response> _writeViaSession(
+    CaptionSessionService session, {
     required String filename,
     required String category,
     required String text,
     required String model,
     List<String>? extraTags,
   }) async {
-    if (!cubit.state.categories.contains(category)) {
+    final ImageListState state = session.current.state;
+    if (!state.categories.contains(category)) {
       return _jsonResponse(400, <String, dynamic>{
         'error': 'unknown category "$category"',
-        'categories': cubit.state.categories,
+        'categories': state.categories,
       });
     }
 
     AppImage? target;
-    for (final AppImage image in cubit.state.images) {
+    for (final AppImage image in state.images) {
       if (p.basename(image.image.path) == filename) {
         target = image;
         break;
@@ -407,13 +409,13 @@ class AgentApiService {
           ? target.tags
           : _mergedTags(target.tags, extraTags),
     );
-    await cubit.updateImage(image: updated);
+    await session.updateImage(image: updated);
     return _jsonResponse(200, <String, dynamic>{
       'ok': true,
       'mode': 'live',
       'image': _imageJson(
         updated,
-        guidance: cubit.state.imageGuidance[updated.image.path],
+        guidance: session.current.state.imageGuidance[updated.image.path],
       ),
     });
   }
@@ -491,16 +493,16 @@ class AgentApiService {
     return locator<TabManagerCubit>();
   }
 
-  ImageListCubit? _openCubitFor(String folder) {
+  CaptionSessionService? _openSessionFor(String folder) {
     final TabManagerCubit? tabManager = _tabManagerIfReady();
     if (tabManager == null) return null;
     final AppTab? tab = tabManager.findTabByFolderPath(folder);
     if (tab == null) return null;
-    final ImageListCubit? cubit = tabManager.getCubitForTab(tab.id);
-    // A cubit that is mid-scan still points at its previous folder — treat
+    final CaptionSessionService session = tabManager.sessionFor(tab.id);
+    // A session that is mid-scan still points at its previous folder — treat
     // that as "not open" so callers fall through to the disk path.
-    if (cubit == null || cubit.state.folderPath != folder) return null;
-    return cubit;
+    if (session.current.state.folderPath != folder) return null;
+    return session;
   }
 
   Map<String, dynamic> _imageJson(AppImage image, {String? guidance}) =>

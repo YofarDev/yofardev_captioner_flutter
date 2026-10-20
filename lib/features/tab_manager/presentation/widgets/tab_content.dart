@@ -8,7 +8,7 @@ import '../../../caption_search/logic/caption_search_cubit.dart';
 import '../../../captioning/data/repositories/captioning_repository.dart';
 import '../../../captioning/logic/batch_apply/batch_json_apply_cubit.dart';
 import '../../../captioning/logic/captioning_cubit.dart';
-import '../../../image_list/data/repositories/app_file_utils.dart';
+import '../../../image_list/domain/services/caption_session_service.dart';
 import '../../../image_list/logic/image_list_cubit.dart';
 import '../../../image_list/presentation/pages/images_list_view.dart';
 import '../../../image_operations/logic/image_operations_cubit.dart';
@@ -30,21 +30,24 @@ class TabContentState extends State<TabContent>
   @override
   bool get wantKeepAlive => true;
 
+  late final CaptionSessionService _session;
   late final ImageListCubit _imageListCubit;
   late final CaptioningCubit _captioningCubit;
   late final StructuredCaptioningCubit _structuredCaptioningCubit;
   late final ImageOperationsCubit _imageOperationsCubit;
   late final CaptionSearchCubit _captionSearchCubit;
   late final BatchJsonApplyCubit _batchJsonApplyCubit;
-  TabManagerCubit? _tabManagerCubit;
 
   @override
   void initState() {
     super.initState();
+    // The session already exists — the tab manager created it synchronously
+    // when the tab was added, so there is nothing to wait for here.
+    _session = context.read<TabManagerCubit>().sessionFor(widget.tabId);
     // Repos come from the locator so the DI graph is real even where the
     // cubit instances are tab-scoped (full factory conversion waits for
-    // Phase 2's constructor cleanup).
-    _imageListCubit = ImageListCubit(fileUtils: locator<AppFileUtils>());
+    // Phase 2.4's consumer migration).
+    _imageListCubit = ImageListCubit(session: _session);
     _captioningCubit = CaptioningCubit(
       _imageListCubit,
       captioningRepository: locator<CaptioningRepository>(),
@@ -53,16 +56,10 @@ class TabContentState extends State<TabContent>
     _imageOperationsCubit = ImageOperationsCubit(_imageListCubit);
     _captionSearchCubit = CaptionSearchCubit(imageListCubit: _imageListCubit);
     _batchJsonApplyCubit = BatchJsonApplyCubit(_imageListCubit);
-    // Register with TabManagerCubit after first frame (context available)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tabManagerCubit = context.read<TabManagerCubit>();
-      _tabManagerCubit!.registerTabCubit(widget.tabId, _imageListCubit);
-    });
   }
 
   @override
   void dispose() {
-    _tabManagerCubit?.unregisterTabCubit(widget.tabId);
     _captionSearchCubit.close();
     _batchJsonApplyCubit.close();
     _imageOperationsCubit.close();

@@ -6,6 +6,7 @@ import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
+import '../../features/image_list/data/services/filter_parser_engine.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/logic/llm_configs_cubit.dart';
 import '../../features/tab_manager/logic/tab_manager_cubit.dart';
@@ -56,7 +57,11 @@ Future<void> setupServiceLocator() async {
   );
   // ratchet: agent-api-cubit-access (temporary bridge, removed in Phase 2)
   locator.registerLazySingleton<TabManagerCubit>(
-    () => TabManagerCubit(cacheService: locator<CacheService>()),
+    () => TabManagerCubit(
+      cacheService: locator<CacheService>(),
+      fileUtils: locator<AppFileUtils>(),
+      filterEngine: const FilterParserCaptionEngine(),
+    ),
   );
 
   if (await locator<CacheService>().loadAgentApiEnabled()) {

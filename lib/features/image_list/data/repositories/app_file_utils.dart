@@ -15,7 +15,7 @@ import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/utils/image_utils.dart';
-import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
+import '../../../structured_captioning/structured_captioning.dart';
 import '../../domain/services/caption_session_service.dart';
 
 /// A utility class for file-related operations in the application.

@@ -19,7 +19,7 @@ import 'package:yofardev_captioner/features/image_list/domain/models/image_list_
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
-import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
+import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
 
 /// Builds a bare caption session (in-memory store, pass-through filter) with

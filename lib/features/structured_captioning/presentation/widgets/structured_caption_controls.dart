@@ -9,7 +9,7 @@ import '../../../../core/widgets/notification_overlay.dart';
 import '../../../captioning/captioning.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../logic/structured_captioning_cubit.dart';
+import '../bloc/structured_captioning_cubit.dart';
 
 class StructuredCaptionControls extends StatefulWidget {
   const StructuredCaptionControls({super.key});

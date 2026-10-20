@@ -13,8 +13,7 @@ import '../../../../core/utils/image_utils.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
-import '../../../structured_captioning/presentation/widgets/bbox_overlay.dart';
-import '../../../structured_captioning/presentation/widgets/ideogram_caption_summary_card.dart';
+import '../../../structured_captioning/structured_captioning.dart';
 
 class CurrentImageView extends StatelessWidget {
   const CurrentImageView({super.key});

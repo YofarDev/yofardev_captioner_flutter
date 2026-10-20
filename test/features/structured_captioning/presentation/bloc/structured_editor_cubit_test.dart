@@ -18,7 +18,7 @@ import 'package:yofardev_captioner/features/image_list/domain/models/image_list_
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/layer_title_store.dart';
-import 'package:yofardev_captioner/features/structured_captioning/logic/structured_editor_cubit.dart';
+import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 
 import 'structured_editor_cubit_test.mocks.dart';
 

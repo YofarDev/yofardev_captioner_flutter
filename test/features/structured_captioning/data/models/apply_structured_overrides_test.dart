@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/models/apply_structured_overrides.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/models/apply_structured_overrides.dart';
 
 IdeogramCaption _photoCaption() => const IdeogramCaption(
   highLevelDescription: 'a cat',

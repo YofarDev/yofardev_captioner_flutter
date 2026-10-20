@@ -5,12 +5,12 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:logging/logging.dart';
 
-import '../../../core/di/service_locator.dart';
-import '../../../core/models/ideogram_caption.dart';
-import '../../../core/models/llm_config.dart';
-import '../../image_list/image_list.dart';
-import '../data/repositories/structured_caption_repository.dart';
-import '../data/services/layer_title_store.dart';
+import '../../../../core/di/service_locator.dart';
+import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../image_list/image_list.dart';
+import '../../data/repositories/structured_caption_repository.dart';
+import '../../data/services/layer_title_store.dart';
 
 part 'structured_editor_state.dart';
 

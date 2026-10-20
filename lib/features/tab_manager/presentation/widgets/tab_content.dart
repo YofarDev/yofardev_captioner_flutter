@@ -9,7 +9,7 @@ import '../../../captioning/captioning.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../main_area/main_area.dart';
-import '../../../structured_captioning/logic/structured_captioning_cubit.dart';
+import '../../../structured_captioning/presentation/bloc/structured_captioning_cubit.dart';
 import '../bloc/tab_manager_cubit.dart';
 
 class TabContent extends StatefulWidget {

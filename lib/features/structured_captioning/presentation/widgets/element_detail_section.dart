@@ -6,7 +6,7 @@ import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../llm_config/llm_config.dart';
 import '../../data/services/color_extraction_service.dart';
-import '../../logic/structured_editor_cubit.dart';
+import '../bloc/structured_editor_cubit.dart';
 import '../utils/bbox_utils.dart';
 import 'color_palette_editor.dart';
 import 'editor_primitives.dart';

@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/ideogram_caption.dart';
-import '../../logic/structured_editor_cubit.dart';
+import '../bloc/structured_editor_cubit.dart';
 import 'layer_tile.dart';
 
 /// Layers panel showing all elements with thumbnails.

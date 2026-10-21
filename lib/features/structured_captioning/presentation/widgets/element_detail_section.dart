@@ -141,6 +141,11 @@ class ElementDetailSection extends StatelessWidget {
                                     state.imageFile,
                                     element.bbox!,
                                   );
+                          // The editor route can be popped while extraction
+                          // runs; emitting into a closed cubit throws.
+                          if (cubit.isClosed || !context.mounted) {
+                            return;
+                          }
                           if (palette.isNotEmpty) {
                             cubit.updateElementColorPalette(palette);
                           }

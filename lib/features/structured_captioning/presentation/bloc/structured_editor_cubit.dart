@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 
+import '../../../../core/errors/exception_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
@@ -349,7 +350,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, st) {
       _logger.warning('recaptionSelectedElement failed: $e');
       if (isClosed) {
         return;
@@ -357,7 +358,13 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       emit(
         state.copyWith(
           status: StructuredEditorStatus.error,
-          error: e.toString(),
+          error: failureMessage(
+            mapExceptionToFailure(
+              e,
+              stackTrace: st,
+              tag: 'StructuredEditorCubit.recaptionSelectedElement',
+            ),
+          ),
           clearRecaptioning: true,
         ),
       );
@@ -425,13 +432,19 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         ),
       );
       _scheduleSave();
-    } catch (e) {
+    } catch (e, st) {
       _logger.warning('recaptionStyle failed: $e');
       if (isClosed) return;
       emit(
         state.copyWith(
           status: StructuredEditorStatus.error,
-          error: e.toString(),
+          error: failureMessage(
+            mapExceptionToFailure(
+              e,
+              stackTrace: st,
+              tag: 'StructuredEditorCubit.recaptionStyle',
+            ),
+          ),
           clearRecaptioningStyle: true,
         ),
       );
@@ -818,12 +831,19 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       _isDirty = false;
       if (isClosed) return;
       emit(state.copyWith(status: StructuredEditorStatus.saved));
-    } catch (e) {
+    } catch (e, st) {
+      _logger.warning('save failed: $e');
       if (isClosed) return;
       emit(
         state.copyWith(
           status: StructuredEditorStatus.error,
-          error: e.toString(),
+          error: failureMessage(
+            mapExceptionToFailure(
+              e,
+              stackTrace: st,
+              tag: 'StructuredEditorCubit.save',
+            ),
+          ),
         ),
       );
     }

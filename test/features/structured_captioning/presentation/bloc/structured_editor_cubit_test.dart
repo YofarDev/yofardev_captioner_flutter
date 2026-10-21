@@ -9,6 +9,7 @@ import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
+import 'package:yofardev_captioner/core/errors/failure_message.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -483,13 +484,20 @@ void main() {
       });
 
       test('save emits error status when the caption write throws', () async {
-        store.writeError = Exception('disk full');
+        store.writeError = const FileSystemException(
+          'disk full',
+          '/private/var/folders/db.json',
+        );
 
         cubit.updateHighLevelDescription('dirty again');
         await cubit.flushSave();
 
         expect(cubit.state.status, StructuredEditorStatus.error);
-        expect(cubit.state.error, contains('disk full'));
+        expect(cubit.state.error, failureMessage(const Failure.io()));
+        expect(
+          cubit.state.error,
+          isNot(contains('/private/var/folders/db.json')),
+        );
 
         // Clear the fault and flush so the pending (failed) save doesn't
         // re-fire during tearDown's close.
@@ -580,7 +588,8 @@ void main() {
         await c.recaptionSelectedElement(config: _dummyConfig());
 
         expect(c.state.status, StructuredEditorStatus.error);
-        expect(c.state.error, contains('bbox'));
+        expect(c.state.error, failureMessage(const Failure.unexpected()));
+        expect(c.state.error, isNot(contains('bbox')));
         expect(
           c.state.caption.compositionalDeconstruction.elements[0].desc,
           'first',

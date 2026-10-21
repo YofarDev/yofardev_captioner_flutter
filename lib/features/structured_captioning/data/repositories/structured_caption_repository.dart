@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -16,6 +17,7 @@ import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/utils/cancel_token.dart';
+import '../../../../core/utils/image_header_parser.dart';
 import '../../../captioning/data/services/caption_service.dart';
 import '../../domain/models/multi_stage_quality_report.dart';
 import '../../domain/models/structured_mode.dart';
@@ -1130,11 +1132,29 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
 
   Future<String> _aspectRatioOfFile(File imageFile) async {
     try {
+      // Header-only parse first — never pay a full pixel decode for W×H.
+      final ImageHeader? header = await ImageHeaderParser.parseFile(imageFile);
+      if (header != null) {
+        return computeAspectRatio(header.width, header.height);
+      }
+      // Rare formats (GIF/BMP/TIFF): decode off the UI isolate.
       final Uint8List bytes = await imageFile.readAsBytes();
-      final img.Image? decoded = img.decodeImage(bytes);
-      if (decoded == null) return '1:1';
-      return computeAspectRatio(decoded.width, decoded.height);
-    } catch (_) {
+      final ({int width, int height})? dims =
+          await Isolate.run<({int width, int height})?>(() {
+            final img.Image? decoded = img.decodeImage(bytes);
+            if (decoded == null) {
+              return null;
+            }
+            return (width: decoded.width, height: decoded.height);
+          });
+      if (dims == null) {
+        return '1:1';
+      }
+      return computeAspectRatio(dims.width, dims.height);
+    } catch (e) {
+      _logger.fine(
+        '_aspectRatioOfFile: falling back to 1:1 for ${imageFile.path}: $e',
+      );
       return '1:1';
     }
   }

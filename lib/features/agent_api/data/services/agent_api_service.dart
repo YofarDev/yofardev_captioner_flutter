@@ -407,7 +407,10 @@ class AgentApiService {
     };
 
     final List<Map<String, dynamic>> images = <Map<String, dynamic>>[];
-    for (final FileSystemEntity entity in Directory(folder).listSync()) {
+    final List<FileSystemEntity> entities = await Directory(
+      folder,
+    ).list().toList();
+    for (final FileSystemEntity entity in entities) {
       if (entity is! File) continue;
       if (!isSupportedImageFile(entity.path)) {
         continue;

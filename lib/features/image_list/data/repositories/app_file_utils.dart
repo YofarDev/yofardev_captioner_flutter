@@ -59,7 +59,7 @@ class AppFileUtils implements CaptionFileStore {
       }, (CaptionDatabase d) => db = d);
       bool dbWasModified = false;
 
-      final List<FileSystemEntity> files = dir.listSync();
+      final List<FileSystemEntity> files = await dir.list().toList();
       final List<AppImage> images = <AppImage>[];
       final List<String> foundFilenames = <String>[];
 
@@ -111,7 +111,7 @@ class AppFileUtils implements CaptionFileStore {
                 id: hydratedCaptionData.id,
                 image: file,
                 captions: hydratedCaptionData.captions,
-                size: file.lengthSync(),
+                size: await file.length(),
                 lastModified: hydratedCaptionData.lastModified,
                 tags: hydratedCaptionData.tags,
               ),

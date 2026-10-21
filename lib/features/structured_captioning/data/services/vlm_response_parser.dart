@@ -1,9 +1,12 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../models/vlm_analysis.dart';
+import '../utils/caption_hardening.dart';
+import 'sam_bbox_service.dart';
 
 /// Pure parsing layer for raw VLM responses: markdown-fence stripping, JSON
 /// object extraction, strict parse, and truncated-response recovery.
@@ -13,6 +16,11 @@ import '../models/vlm_analysis.dart';
 /// interpretation of responses here.
 class VlmResponseParser {
   final Logger _logger = locator<Logger>();
+  final SamBboxService _samBboxService = SamBboxService();
+
+  /// Hard cap on the number of elements the enumerate pass may emit.
+  /// Enforced both in the prompt and by the pre-enrich validation gate.
+  static const int multiStageElementCap = 30;
 
   /// Parses the VLM response string into a [VlmAnalysis].
   ///
@@ -348,5 +356,211 @@ class VlmResponseParser {
       background: json['background'] as String? ?? '',
       objects: objects,
     );
+  }
+
+  /// Parses an enumerate VLM response, falling back to partial recovery on
+  /// malformed JSON.
+  ///
+  /// [parseWithRepair] is the caller-supplied parse-with-repair step: the
+  /// JSON-repair retry is an LLM call owned by the repository, so it is
+  /// injected here rather than duplicated.
+  Future<VlmAnalysis> parseEnumerateResponse(
+    String raw, {
+    required Future<VlmAnalysis> Function(String raw, {bool vlmEmitsXyxy})
+    parseWithRepair,
+    bool vlmEmitsXyxy = true,
+  }) async {
+    try {
+      return await parseWithRepair(
+        stripThinking(raw),
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      );
+    } on FormatException catch (e) {
+      final VlmAnalysis recovered = parsePartialVlmResponse(
+        stripThinking(raw),
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      );
+      _logger.warning(
+        'Multi-stage enumerate JSON was malformed; recovered '
+        '${recovered.objects.length} complete objects from prefix: $e',
+      );
+      return recovered;
+    }
+  }
+
+  // ── bbox quality helpers ────────────────────────────────────────────────
+
+  /// True when [bbox] is the exact full-canvas `[0, 0, 1000, 1000]`.
+  bool isFullCanvasBbox(List<int>? bbox) {
+    if (bbox == null || bbox.length != 4) return false;
+    return bbox[0] == 0 && bbox[1] == 0 && bbox[2] == 1000 && bbox[3] == 1000;
+  }
+
+  /// Fraction of the full canvas (1000 × 1000) that [bbox] covers. Returns 0
+  /// for null or malformed input.
+  double bboxAreaRatio(List<int>? bbox) {
+    if (bbox == null || bbox.length != 4) return 0.0;
+    final double h = (bbox[2] - bbox[0]).toDouble();
+    final double w = (bbox[3] - bbox[1]).toDouble();
+    if (h <= 0.0 || w <= 0.0) return 0.0;
+    return (h * w) / (1000.0 * 1000.0);
+  }
+
+  /// True when [bbox] covers more than 80 % of the full canvas.
+  bool isNearFullCanvasBbox(List<int>? bbox) => bboxAreaRatio(bbox) > 0.80;
+
+  /// Simple name-similarity heuristic for duplicate detection: fraction of
+  /// words in the shorter name that appear in the longer name.
+  double normalizedNameSimilarity(String a, String b) {
+    final Set<String> wordsA = a.toLowerCase().split(RegExp(r'\s+')).toSet();
+    final Set<String> wordsB = b.toLowerCase().split(RegExp(r'\s+')).toSet();
+    if (wordsA.isEmpty || wordsB.isEmpty) return 0.0;
+    final int intersection = wordsA.intersection(wordsB).length;
+    return intersection / min(wordsA.length, wordsB.length);
+  }
+
+  /// Prunes duplicate objects: when two objects share a bbox with IoU > 0.90
+  /// and have similar names, the second (and later) duplicate is dropped. The
+  /// first or most informative one is kept. Returns a new [VlmAnalysis] with
+  /// duplicates removed.
+  VlmAnalysis pruneDuplicateObjects(VlmAnalysis analysis) {
+    if (analysis.objects.length < 2) return analysis;
+
+    final List<int> kept = <int>[];
+    for (int i = 0; i < analysis.objects.length; i++) {
+      bool isDuplicate = false;
+      final VlmObject obj = analysis.objects[i];
+      for (final int k in kept) {
+        final VlmObject existing = analysis.objects[k];
+        final double iou = _samBboxService.computeIou(obj.bbox, existing.bbox);
+        if (iou > 0.90 &&
+            normalizedNameSimilarity(obj.name, existing.name) > 0.50) {
+          isDuplicate = true;
+          break;
+        }
+      }
+      if (!isDuplicate) {
+        kept.add(i);
+      }
+    }
+
+    if (kept.length == analysis.objects.length) return analysis;
+    return VlmAnalysis(
+      highLevelDescription: analysis.highLevelDescription,
+      style: analysis.style,
+      background: analysis.background,
+      objects: <VlmObject>[for (final int i in kept) analysis.objects[i]],
+    );
+  }
+
+  /// Validates enumerate output before enrichment fan-out.
+  ///
+  /// Returns a list of structural defect descriptions. An empty list means
+  /// the output is structurally sound and enrichment can proceed.
+  ///
+  /// Checks:
+  /// - Element cap not exceeded
+  /// - No exact duplicate bboxes
+  /// - No full-canvas bboxes
+  /// - No degenerate (null) bboxes for individual objects
+  List<String> validateEnumerateOutput(VlmAnalysis analysis) {
+    final List<String> defects = <String>[];
+
+    if (analysis.objects.isEmpty) return defects;
+
+    // Cap check.
+    if (analysis.objects.length > multiStageElementCap) {
+      defects.add(
+        'element cap exceeded: ${analysis.objects.length} > '
+        '$multiStageElementCap',
+      );
+    }
+
+    // Exact duplicate bbox check (same coordinates, any name).
+    // Null bboxes are skipped — they are silently excluded from enrichment.
+    final Set<String> bboxSigs = <String>{};
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final List<int>? bbox = analysis.objects[i].bbox;
+      if (bbox == null) continue;
+      final String sig = bbox.join(',');
+      if (!bboxSigs.add(sig)) {
+        defects.add(
+          'duplicate bbox at index $i for "${analysis.objects[i].name}": '
+          '[${bbox.join(", ")}]',
+        );
+      }
+    }
+
+    // Full-canvas bbox check.
+    for (int i = 0; i < analysis.objects.length; i++) {
+      if (isFullCanvasBbox(analysis.objects[i].bbox)) {
+        defects.add(
+          'full-canvas bbox at index $i for "${analysis.objects[i].name}"',
+        );
+      }
+    }
+
+    return defects;
+  }
+
+  /// Post-merge structural defect check for the final analysis.
+  ///
+  /// Runs after enrichment merges and before SAM/palette work. Catches the
+  /// same issues as [validateEnumerateOutput] but includes the cap check.
+  /// Unlike [validateEnumerateOutput], this does not trigger a retry — it
+  /// either warns or (for cap violations) throws.
+  List<String> postMergeDefects(VlmAnalysis analysis) {
+    final List<String> defects = <String>[];
+    if (analysis.objects.isEmpty) return defects;
+
+    if (analysis.objects.length > multiStageElementCap) {
+      defects.add(
+        'element cap exceeded: ${analysis.objects.length} > '
+        '$multiStageElementCap',
+      );
+    }
+
+    final Set<String> bboxSigs = <String>{};
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final List<int>? bbox = analysis.objects[i].bbox;
+      if (bbox == null) continue;
+      final String sig = bbox.join(',');
+      if (!bboxSigs.add(sig)) {
+        defects.add(
+          'duplicate final bbox at index $i for '
+          '"${analysis.objects[i].name}": [${bbox.join(", ")}]',
+        );
+      }
+    }
+    return defects;
+  }
+
+  /// Parses a single-element enrich JSON response into a new [VlmObject]
+  /// carrying the rich desc. Returns null when the response is missing `desc`
+  /// or is unparseable (caller then retains the terse desc).
+  VlmObject? parseEnrichResponse(String raw, VlmObject original) {
+    try {
+      final String cleaned = stripMarkdownFences(raw);
+      final Map<String, dynamic> json =
+          jsonDecode(cleaned) as Map<String, dynamic>;
+      final String desc = (json['desc'] as String?)?.trim() ?? '';
+      if (desc.isEmpty) {
+        return null;
+      }
+      final String? textRaw = json['text'] as String?;
+      final String? text = (textRaw == null || textRaw.trim().isEmpty)
+          ? null
+          : textRaw;
+      return VlmObject(
+        name: original.name,
+        desc: desc,
+        type: original.type,
+        text: text ?? original.text,
+        bbox: original.bbox,
+      );
+    } catch (e) {
+      _logger.warning('Failed to parse enrich response: $e');
+      return null;
+    }
   }
 }

@@ -251,7 +251,9 @@ class StructuredCaptionRepository {
 
   /// Hard cap on the number of elements the enumerate pass may emit.
   /// Enforced both in the prompt and by the pre-enrich validation gate.
-  static const int _multiStageElementCap = 30;
+  /// Lives on [VlmResponseParser] next to the validation gates.
+  static const int _multiStageElementCap =
+      VlmResponseParser.multiStageElementCap;
 
   /// Per-provider enrich fan-out width. Local MLX is forced to 1 (each call is
   /// a heavyweight subprocess that reloads the model); remote providers fan out.
@@ -339,7 +341,7 @@ class StructuredCaptionRepository {
     }
 
     // ── Quality gates: prune duplicates, skip suspicious bboxes ────────
-    analysis = _pruneDuplicateObjects(analysis);
+    analysis = pruneDuplicateObjects(analysis);
     final MultiStageQualityReport qualityReport = _buildQualityReport(analysis);
     final List<int> skippedIndices = <int>[
       ...qualityReport.fullCanvasBboxes,
@@ -409,96 +411,42 @@ class StructuredCaptionRepository {
     String raw,
     LlmConfig config, {
     bool vlmEmitsXyxy = true,
-  }) async {
-    try {
-      return await _parseVlmResponseWithRepair(
-        stripThinking(raw),
-        config,
-        vlmEmitsXyxy: vlmEmitsXyxy,
-      );
-    } on FormatException catch (e) {
-      final VlmAnalysis recovered = parsePartialVlmResponse(
-        stripThinking(raw),
-        vlmEmitsXyxy: vlmEmitsXyxy,
-      );
-      _logger.warning(
-        'Multi-stage enumerate JSON was malformed; recovered '
-        '${recovered.objects.length} complete objects from prefix: $e',
-      );
-      return recovered;
-    }
-  }
+  }) => _vlmResponseParser.parseEnumerateResponse(
+    raw,
+    parseWithRepair: (String raw, {bool vlmEmitsXyxy = true}) =>
+        _parseVlmResponseWithRepair(raw, config, vlmEmitsXyxy: vlmEmitsXyxy),
+    vlmEmitsXyxy: vlmEmitsXyxy,
+  );
 
   // ── bbox quality helpers ────────────────────────────────────────────────
 
   /// True when [bbox] is the exact full-canvas `[0, 0, 1000, 1000]`.
-  bool _isFullCanvasBbox(List<int>? bbox) {
-    if (bbox == null || bbox.length != 4) return false;
-    return bbox[0] == 0 && bbox[1] == 0 && bbox[2] == 1000 && bbox[3] == 1000;
-  }
+  bool _isFullCanvasBbox(List<int>? bbox) =>
+      _vlmResponseParser.isFullCanvasBbox(bbox);
 
   /// Fraction of the full canvas (1000 × 1000) that [bbox] covers. Returns 0
   /// for null or malformed input.
   @visibleForTesting
-  double bboxAreaRatio(List<int>? bbox) {
-    if (bbox == null || bbox.length != 4) return 0.0;
-    final double h = (bbox[2] - bbox[0]).toDouble();
-    final double w = (bbox[3] - bbox[1]).toDouble();
-    if (h <= 0.0 || w <= 0.0) return 0.0;
-    return (h * w) / (1000.0 * 1000.0);
-  }
+  double bboxAreaRatio(List<int>? bbox) =>
+      _vlmResponseParser.bboxAreaRatio(bbox);
 
   /// True when [bbox] covers more than 80 % of the full canvas.
-  bool _isNearFullCanvasBbox(List<int>? bbox) => bboxAreaRatio(bbox) > 0.80;
+  bool _isNearFullCanvasBbox(List<int>? bbox) =>
+      _vlmResponseParser.isNearFullCanvasBbox(bbox);
 
   /// Simple name-similarity heuristic for duplicate detection: fraction of
   /// words in the shorter name that appear in the longer name.
   @visibleForTesting
-  double normalizedNameSimilarity(String a, String b) {
-    final Set<String> wordsA = a.toLowerCase().split(RegExp(r'\s+')).toSet();
-    final Set<String> wordsB = b.toLowerCase().split(RegExp(r'\s+')).toSet();
-    if (wordsA.isEmpty || wordsB.isEmpty) return 0.0;
-    final int intersection = wordsA.intersection(wordsB).length;
-    return intersection / min(wordsA.length, wordsB.length);
-  }
+  double normalizedNameSimilarity(String a, String b) =>
+      _vlmResponseParser.normalizedNameSimilarity(a, b);
 
   /// Prunes duplicate objects: when two objects share a bbox with IoU > 0.90
   /// and have similar names, the second (and later) duplicate is dropped. The
   /// first or most informative one is kept. Returns a new [VlmAnalysis] with
   /// duplicates removed.
   @visibleForTesting
-  VlmAnalysis pruneDuplicateObjects(VlmAnalysis analysis) {
-    if (analysis.objects.length < 2) return analysis;
-
-    final List<int> kept = <int>[];
-    for (int i = 0; i < analysis.objects.length; i++) {
-      bool isDuplicate = false;
-      final VlmObject obj = analysis.objects[i];
-      for (final int k in kept) {
-        final VlmObject existing = analysis.objects[k];
-        final double iou = computeIou(obj.bbox, existing.bbox);
-        if (iou > 0.90 &&
-            normalizedNameSimilarity(obj.name, existing.name) > 0.50) {
-          isDuplicate = true;
-          break;
-        }
-      }
-      if (!isDuplicate) {
-        kept.add(i);
-      }
-    }
-
-    if (kept.length == analysis.objects.length) return analysis;
-    return VlmAnalysis(
-      highLevelDescription: analysis.highLevelDescription,
-      style: analysis.style,
-      background: analysis.background,
-      objects: <VlmObject>[for (final int i in kept) analysis.objects[i]],
-    );
-  }
-
-  VlmAnalysis _pruneDuplicateObjects(VlmAnalysis analysis) =>
-      pruneDuplicateObjects(analysis);
+  VlmAnalysis pruneDuplicateObjects(VlmAnalysis analysis) =>
+      _vlmResponseParser.pruneDuplicateObjects(analysis);
 
   /// Builds a quality report for the multi-stage analysis, identifying
   /// full-canvas, near-full-canvas, and duplicate-prone elements.
@@ -569,81 +517,15 @@ class StructuredCaptionRepository {
   ///
   /// Returns a list of structural defect descriptions. An empty list means
   /// the output is structurally sound and enrichment can proceed.
-  ///
-  /// Checks:
-  /// - Element cap not exceeded
-  /// - No exact duplicate bboxes
-  /// - No full-canvas bboxes
-  /// - No degenerate (null) bboxes for individual objects
-  List<String> _validateEnumerateOutput(VlmAnalysis analysis) {
-    final List<String> defects = <String>[];
-
-    if (analysis.objects.isEmpty) return defects;
-
-    // Cap check.
-    if (analysis.objects.length > _multiStageElementCap) {
-      defects.add(
-        'element cap exceeded: ${analysis.objects.length} > $_multiStageElementCap',
-      );
-    }
-
-    // Exact duplicate bbox check (same coordinates, any name).
-    // Null bboxes are skipped — they are silently excluded from enrichment.
-    final Set<String> bboxSigs = <String>{};
-    for (int i = 0; i < analysis.objects.length; i++) {
-      final List<int>? bbox = analysis.objects[i].bbox;
-      if (bbox == null) continue;
-      final String sig = bbox.join(',');
-      if (!bboxSigs.add(sig)) {
-        defects.add(
-          'duplicate bbox at index $i for "${analysis.objects[i].name}": '
-          '[${bbox.join(", ")}]',
-        );
-      }
-    }
-
-    // Full-canvas bbox check.
-    for (int i = 0; i < analysis.objects.length; i++) {
-      if (_isFullCanvasBbox(analysis.objects[i].bbox)) {
-        defects.add(
-          'full-canvas bbox at index $i for "${analysis.objects[i].name}"',
-        );
-      }
-    }
-
-    return defects;
-  }
+  List<String> _validateEnumerateOutput(VlmAnalysis analysis) =>
+      _vlmResponseParser.validateEnumerateOutput(analysis);
 
   /// Post-merge structural defect check for the final analysis.
   ///
-  /// Runs after enrichment merges and before SAM/palette work. Catches the
-  /// same issues as [_validateEnumerateOutput] but includes the cap check.
-  /// Unlike [_validateEnumerateOutput], this does not trigger a retry — it
-  /// either warns or (for cap violations) throws.
-  List<String> _postMergeDefects(VlmAnalysis analysis) {
-    final List<String> defects = <String>[];
-    if (analysis.objects.isEmpty) return defects;
-
-    if (analysis.objects.length > _multiStageElementCap) {
-      defects.add(
-        'element cap exceeded: ${analysis.objects.length} > $_multiStageElementCap',
-      );
-    }
-
-    final Set<String> bboxSigs = <String>{};
-    for (int i = 0; i < analysis.objects.length; i++) {
-      final List<int>? bbox = analysis.objects[i].bbox;
-      if (bbox == null) continue;
-      final String sig = bbox.join(',');
-      if (!bboxSigs.add(sig)) {
-        defects.add(
-          'duplicate final bbox at index $i for '
-          '"${analysis.objects[i].name}": [${bbox.join(", ")}]',
-        );
-      }
-    }
-    return defects;
-  }
+  /// Runs after enrichment merges and before SAM/palette work. Either warns
+  /// or (for cap violations) throws — it does not trigger a retry.
+  List<String> _postMergeDefects(VlmAnalysis analysis) =>
+      _vlmResponseParser.postMergeDefects(analysis);
 
   /// Runs the per-element enrich fan-out. Width is provider-aware via
   /// [_enrichConcurrencyFor]: serial (1) for local MLX so we never load
@@ -791,31 +673,8 @@ class StructuredCaptionRepository {
   /// Parses a single-element enrich JSON response into a new [VlmObject]
   /// carrying the rich desc. Returns null when the response is missing `desc`
   /// or is unparseable (caller then retains the terse desc).
-  VlmObject? _parseEnrichResponse(String raw, VlmObject original) {
-    try {
-      final String cleaned = _vlmResponseParser.stripMarkdownFences(raw);
-      final Map<String, dynamic> json =
-          jsonDecode(cleaned) as Map<String, dynamic>;
-      final String desc = (json['desc'] as String?)?.trim() ?? '';
-      if (desc.isEmpty) {
-        return null;
-      }
-      final String? textRaw = json['text'] as String?;
-      final String? text = (textRaw == null || textRaw.trim().isEmpty)
-          ? null
-          : textRaw;
-      return VlmObject(
-        name: original.name,
-        desc: desc,
-        type: original.type,
-        text: text ?? original.text,
-        bbox: original.bbox,
-      );
-    } catch (e) {
-      _logger.warning('Failed to parse enrich response: $e');
-      return null;
-    }
-  }
+  VlmObject? _parseEnrichResponse(String raw, VlmObject original) =>
+      _vlmResponseParser.parseEnrichResponse(raw, original);
 
   /// Shared tail for both vision paths: health check → SAM → element
   /// palettes → build Ideogram JSON → optional debug artifacts.

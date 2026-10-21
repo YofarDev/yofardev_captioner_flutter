@@ -314,6 +314,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
         _logger.info(
           'recaptionSelectedElement: element $selected no longer exists; discarding result.',
         );
+        if (isClosed) {
+          return;
+        }
         emit(
           state.copyWith(
             status: StructuredEditorStatus.saved,
@@ -321,6 +324,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
           ),
         );
       } else {
+        if (isClosed) {
+          return;
+        }
         _invalidateSamCache();
         final List<IdeogramElement> elements = List<IdeogramElement>.from(
           currentElements,
@@ -336,6 +342,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       }
     } catch (e) {
       _logger.warning('recaptionSelectedElement failed: $e');
+      if (isClosed) {
+        return;
+      }
       emit(
         state.copyWith(
           status: StructuredEditorStatus.error,
@@ -798,8 +807,10 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
       await _session.updateCaption(caption: json);
       await _persistTitles();
       _isDirty = false;
+      if (isClosed) return;
       emit(state.copyWith(status: StructuredEditorStatus.saved));
     } catch (e) {
+      if (isClosed) return;
       emit(
         state.copyWith(
           status: StructuredEditorStatus.error,

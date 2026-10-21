@@ -742,6 +742,40 @@ void main() {
         await c.flushSave();
         await c.close();
       });
+
+      test('close during in-flight recaption drops post-await emits', () async {
+        final StructuredEditorCubit c = buildCubit(withBbox: true);
+        final Completer<Either<Failure, IdeogramElement>> completer =
+            Completer<Either<Failure, IdeogramElement>>();
+
+        when(
+          mockRepo.recaptionElement(
+            config: anyNamed('config'),
+            imageFile: anyNamed('imageFile'),
+            currentCaption: anyNamed('currentCaption'),
+            elementIndex: anyNamed('elementIndex'),
+            instructions: anyNamed('instructions'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final Future<void> done = c.recaptionSelectedElement(
+          config: _dummyConfig(),
+          instructions: 'brighter',
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        expect(c.state.status, StructuredEditorStatus.recaptioning);
+
+        // Close while the VLM call is still suspended, then let it land.
+        await c.close();
+        completer.complete(
+          Right<Failure, IdeogramElement>(
+            c.state.caption.compositionalDeconstruction.elements[0].copyWith(
+              desc: 'late',
+            ),
+          ),
+        );
+        await done;
+      });
     });
 
     group('recaptionStyle', () {

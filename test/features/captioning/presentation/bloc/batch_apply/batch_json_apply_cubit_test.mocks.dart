@@ -121,6 +121,11 @@ class MockCaptionSessionService extends _i1.Mock
           as List<_i6.AppImage>);
 
   @override
+  _i6.AppImage? displayedImageFor(_i3.ImageListState? s) =>
+      (super.noSuchMethod(Invocation.method(#displayedImageFor, [s]))
+          as _i6.AppImage?);
+
+  @override
   _i5.Future<void> onInit({String? folderPath}) =>
       (super.noSuchMethod(
             Invocation.method(#onInit, [], {#folderPath: folderPath}),

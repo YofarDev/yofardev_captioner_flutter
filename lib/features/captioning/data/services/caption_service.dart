@@ -329,7 +329,11 @@ class CaptionService {
       }
     } finally {
       if (imageToSend != null && imageToSend.path != image.path) {
-        imageToSend.delete();
+        try {
+          await imageToSend.delete();
+        } catch (e) {
+          _logger.warning('Failed to delete temporary file: $e');
+        }
       }
     }
   }

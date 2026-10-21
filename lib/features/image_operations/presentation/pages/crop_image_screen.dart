@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -19,6 +20,7 @@ class CropImageScreen extends StatefulWidget {
 }
 
 class _CropImageScreenState extends State<CropImageScreen> {
+  static final Logger _logger = Logger('CropImageScreen');
   final CropController _cropController = CropController();
   Uint8List? _croppedData;
   bool _isCropping = false;
@@ -98,9 +100,12 @@ class _CropImageScreenState extends State<CropImageScreen> {
                   controller: _cropController,
                   onCropped: (CropResult cropResult) {
                     if (cropResult is CropFailure) {
+                      // `cause` is an opaque Object? from the plugin — never
+                      // render it directly; it can print "null" or internals.
+                      _logger.warning('Crop failed: ${cropResult.cause}');
                       NotificationOverlay.show(
                         context,
-                        message: cropResult.cause.toString(),
+                        message: 'Cropping failed — try a different selection.',
                         backgroundColor: destructive.withAlpha(200),
                       );
                       return;

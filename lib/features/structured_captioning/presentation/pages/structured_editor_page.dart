@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/service_locator.dart';
@@ -478,6 +479,7 @@ class _JsonViewer extends StatefulWidget {
 }
 
 class _JsonViewerState extends State<_JsonViewer> {
+  static final Logger _logger = Logger('StructuredEditorPage');
   bool _expanded = false;
   bool _editing = false;
   String? _parseError;
@@ -521,8 +523,15 @@ class _JsonViewerState extends State<_JsonViewer> {
         _editing = false;
         _parseError = null;
       });
+    } on FormatException catch (e) {
+      // The offset in e.message is actionable for a power user fixing JSON.
+      setState(() => _parseError = 'Invalid JSON: ${e.message}');
     } catch (e) {
-      setState(() => _parseError = e.toString());
+      _logger.warning('Caption JSON did not match the Ideogram schema: $e');
+      setState(
+        () => _parseError =
+            'Invalid caption: the JSON does not match the Ideogram schema.',
+      );
     }
   }
 

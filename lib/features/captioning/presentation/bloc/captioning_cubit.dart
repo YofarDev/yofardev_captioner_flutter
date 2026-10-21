@@ -29,6 +29,15 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   /// VRAM) AND gates the image loop. null when no run is active.
   CancelToken? _cancelToken;
 
+  /// Cancels any in-flight run so a closing tab stops LLM spend immediately.
+  /// The cancel token makes the awaited repository call throw
+  /// [CancellationException]; the loop guards then stop all emissions.
+  @override
+  Future<void> close() {
+    _cancelToken?.cancel();
+    return super.close();
+  }
+
   Future<void> runCaptioner({
     required LlmConfig llm,
     required String prompt,
@@ -105,15 +114,17 @@ class CaptioningCubit extends Cubit<CaptioningState> {
         : _session.guidanceFor(guidanceSource.image.path);
 
     for (final AppImage image in imagesToCaption) {
+      if (isClosed) return;
       // Check if cancelled
       if (_cancelToken?.isCancelled ?? false) {
+        _cancelToken = null;
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: CaptioningStatus.initial,
             error: 'Captioning cancelled',
           ),
         );
-        _cancelToken = null;
         return;
       }
 
@@ -125,13 +136,14 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           if (_cancelToken != null) _cancelToken!.onCancel,
         ]);
         if (_cancelToken?.isCancelled ?? false) {
+          _cancelToken = null;
+          if (isClosed) return;
           emit(
             state.copyWith(
               status: CaptioningStatus.initial,
               error: 'Captioning cancelled',
             ),
           );
-          _cancelToken = null;
           return;
         }
       }
@@ -181,16 +193,18 @@ class CaptioningCubit extends Cubit<CaptioningState> {
       } on CancellationException {
         // The in-flight op was aborted via stop — don't flag the image as
         // failed; just end the run cleanly.
+        _cancelToken = null;
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: CaptioningStatus.initial,
             error: 'Captioning cancelled',
           ),
         );
-        _cancelToken = null;
         return;
       }
       processedImagesCount++;
+      if (isClosed) return;
       emit(
         state.copyWith(
           progress: processedImagesCount / totalImagesCount,
@@ -201,6 +215,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
       );
     }
 
+    if (isClosed) return;
     if (errors.isNotEmpty) {
       emit(
         state.copyWith(
@@ -240,6 +255,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     final String category = _session.state.activeCategory ?? 'default';
     final Either<Failure, AppImage> result = await _captioningRepository
         .rewriteCaption(llm, currentImage, instructions, category: category);
+    if (isClosed) return 'Captioning cancelled';
     return result.fold<String?>(failureMessage, (AppImage updatedImage) {
       _session.updateImage(image: updatedImage.copyWith(clearError: true));
       return null;
@@ -319,14 +335,16 @@ class CaptioningCubit extends Cubit<CaptioningState> {
     final List<String> errors = <String>[];
 
     for (final AppImage image in targets) {
+      if (isClosed) return;
       if (_cancelToken?.isCancelled ?? false) {
+        _cancelToken = null;
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: CaptioningStatus.initial,
             error: 'Captioning cancelled',
           ),
         );
-        _cancelToken = null;
         return;
       }
 
@@ -336,13 +354,14 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           if (_cancelToken != null) _cancelToken!.onCancel,
         ]);
         if (_cancelToken?.isCancelled ?? false) {
+          _cancelToken = null;
+          if (isClosed) return;
           emit(
             state.copyWith(
               status: CaptioningStatus.initial,
               error: 'Captioning cancelled',
             ),
           );
-          _cancelToken = null;
           return;
         }
       }
@@ -373,16 +392,18 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           _session.updateImage(image: errorImage);
         }
       } on CancellationException {
+        _cancelToken = null;
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: CaptioningStatus.initial,
             error: 'Captioning cancelled',
           ),
         );
-        _cancelToken = null;
         return;
       }
       processedImagesCount++;
+      if (isClosed) return;
       emit(
         state.copyWith(
           progress: processedImagesCount / totalImagesCount,
@@ -393,6 +414,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
       );
     }
 
+    if (isClosed) return;
     if (errors.isNotEmpty) {
       emit(
         state.copyWith(
@@ -417,6 +439,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
   }
 
   void cancelCaptioning() {
+    if (isClosed) return;
     _cancelToken?.cancel();
     emit(state.copyWith(isCancelling: true));
   }

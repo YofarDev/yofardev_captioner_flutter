@@ -13,6 +13,7 @@ import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
 import 'package:yofardev_captioner/features/captioning/domain/models/caption_options.dart';
 import 'package:yofardev_captioner/features/captioning/presentation/bloc/captioning_cubit.dart';
@@ -612,6 +613,82 @@ void main() {
         await run;
 
         expect(captioningCubit.state.status, CaptioningStatus.success);
+      },
+    );
+
+    test(
+      'close() during runCaptioner cancels the run without throwing',
+      () async {
+        final AppImage image1 = AppImage(
+          id: '1',
+          image: File('img1.jpg'),
+          captions: const <String, CaptionEntry>{},
+        );
+        final AppImage image2 = AppImage(
+          id: '2',
+          image: File('img2.jpg'),
+          captions: const <String, CaptionEntry>{},
+        );
+        final LlmConfig llmConfig = LlmConfig(
+          id: '1',
+          name: 'Test',
+          model: 'gpt-4',
+          providerType: LlmProviderType.remote,
+        );
+        // First call waits for its cancel token, then throws like the real
+        // CaptionService does when aborted.
+        when(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer((Invocation inv) async {
+          await (inv.namedArguments[const Symbol('cancelToken')] as CancelToken)
+              .onCancel;
+          // Yield a macrotask so close() has fully finished before the abort
+          // surfaces — otherwise the emit can race ahead of super.close().
+          await Future<void>.delayed(Duration.zero);
+          throw const CancellationException();
+        });
+        seed(
+          ImageListState(
+            images: <AppImage>[image1, image2],
+            folderPath: '/folder',
+          ),
+        );
+        final CaptioningCubit cubit = CaptioningCubit(
+          session,
+          captioningRepository: mockCaptioningRepository,
+        );
+
+        final Future<void> run = cubit.runCaptioner(
+          llm: llmConfig,
+          prompt: 'p',
+          option: CaptionOptions.all,
+        );
+        await Future<void>.delayed(
+          Duration.zero,
+        ); // loop enters first captionImage
+        await cubit
+            .close(); // cancels token -> stub throws CancellationException
+
+        // The catch handler must return silently instead of emitting on a
+        // closed cubit; the second image must never start. (Pre-fix, close()
+        // does not cancel the token, so the run hangs on the stub's onCancel.)
+        await run.timeout(const Duration(seconds: 5));
+        await Future<void>.delayed(Duration.zero);
+        verify(
+          mockCaptioningRepository.captionImage(
+            any,
+            any,
+            any,
+            category: anyNamed('category'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).called(1);
       },
     );
 

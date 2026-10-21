@@ -23,11 +23,11 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required File imageFile,
     required String activeCategory,
     required CaptionSessionService session,
-    StructuredCaptionRepository? repository,
+    required StructuredCaptionRepository repository,
     LayerTitleStore? layerTitleStore,
     bool showBboxText = false,
   }) : _session = session,
-       _repository = repository ?? StructuredCaptionRepository(),
+       _repository = repository,
        _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),
        super(
          StructuredEditorState(

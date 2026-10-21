@@ -24,6 +24,7 @@ import 'package:yofardev_captioner/features/image_operations/presentation/bloc/i
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/presentation/bloc/llm_configs_cubit.dart';
 import 'package:yofardev_captioner/features/main_area/presentation/pages/main_area_view.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_captioning_cubit.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
@@ -346,7 +347,10 @@ void main() {
         session,
         captioningRepository: _StubCaptioningRepository(),
       );
-      structuredCubit = StructuredCaptioningCubit(session);
+      structuredCubit = StructuredCaptioningCubit(
+        session,
+        repository: StructuredCaptionRepository(),
+      );
       searchCubit = CaptionSearchCubit(session: session);
       operationsCubit = ImageOperationsCubit(session);
 

@@ -21,8 +21,8 @@ part 'structured_captioning_state.dart';
 class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   StructuredCaptioningCubit(
     this._session, {
-    StructuredCaptionRepository? repository,
-  }) : _repository = repository ?? StructuredCaptionRepository(),
+    required StructuredCaptionRepository repository,
+  }) : _repository = repository,
        super(const StructuredCaptioningState());
 
   final CaptionSessionService _session;

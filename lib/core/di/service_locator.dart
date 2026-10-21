@@ -12,6 +12,7 @@ import '../../features/image_list/image_list.dart';
 import '../../features/image_operations/image_operations.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
+import '../../features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import '../../features/structured_captioning/structured_captioning.dart';
 import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
@@ -55,6 +56,11 @@ void registerDependencies(GetIt container) {
   container.registerLazySingleton<LlmCaptionRepository>(
     () => LlmCaptionRepository(),
   );
+  container.registerLazySingleton<StructuredCaptionRepository>(
+    () => StructuredCaptionRepository(
+      captionService: container<CaptionService>(),
+    ),
+  );
   container.registerLazySingleton<ICaptioningRepository>(
     () => CaptioningRepository(),
   );
@@ -93,7 +99,12 @@ void registerDependencies(GetIt container) {
     StructuredCaptioningCubit,
     CaptionSessionService,
     void
-  >((CaptionSessionService session, _) => StructuredCaptioningCubit(session));
+  >(
+    (CaptionSessionService session, _) => StructuredCaptioningCubit(
+      session,
+      repository: container<StructuredCaptionRepository>(),
+    ),
+  );
   container
       .registerFactoryParam<ImageOperationsCubit, CaptionSessionService, void>(
         (CaptionSessionService session, _) => ImageOperationsCubit(session),

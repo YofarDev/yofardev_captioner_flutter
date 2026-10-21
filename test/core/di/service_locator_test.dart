@@ -20,6 +20,7 @@ import 'package:yofardev_captioner/features/image_list/image_list.dart';
 import 'package:yofardev_captioner/features/image_operations/image_operations.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/domain/repositories/llm_config_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/structured_captioning.dart';
 import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 
@@ -115,6 +116,15 @@ void main() {
       expect(container<CaptionService>(), isA<CaptionService>());
       expect(container<LlmCaptionRepository>(), isA<LlmCaptionRepository>());
       expect(container<ICaptioningRepository>(), isA<ICaptioningRepository>());
+      expect(
+        container<StructuredCaptionRepository>(),
+        isA<StructuredCaptionRepository>(),
+      );
+      // Lazy singleton: same instance on every resolution.
+      expect(
+        container<StructuredCaptionRepository>(),
+        same(container<StructuredCaptionRepository>()),
+      );
       expect(container<AppFileUtils>(), isA<AppFileUtils>());
       expect(container<CaptionFileStore>(), same(container<AppFileUtils>()));
       expect(container<TabSessionRegistry>(), isA<TabSessionRegistry>());

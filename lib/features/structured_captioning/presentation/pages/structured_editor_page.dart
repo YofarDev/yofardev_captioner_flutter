@@ -6,12 +6,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
+import '../../data/repositories/structured_caption_repository.dart';
 import '../bloc/structured_editor_cubit.dart';
 import '../widgets/editor_primitives.dart';
 import '../widgets/element_detail_section.dart';
@@ -153,6 +155,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
           imageFile: _imageFile,
           activeCategory: widget.activeCategory,
           session: widget.imageListCubit.session,
+          repository: locator<StructuredCaptionRepository>(),
           showBboxText: _showBboxText,
         );
         _cubit = cubit;

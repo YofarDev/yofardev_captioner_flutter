@@ -195,6 +195,7 @@ void main() {
         imageFile: File('img.png'),
         activeCategory: 'default',
         session: session,
+        repository: MockStructuredCaptionRepository(),
       );
     });
 
@@ -407,6 +408,7 @@ void main() {
           imageFile: File('seeded.png'),
           activeCategory: 'default',
           session: session,
+          repository: MockStructuredCaptionRepository(),
         );
         // Let the constructor's fire-and-forget _loadTitles() land.
         await Future<void>.delayed(const Duration(milliseconds: 10));

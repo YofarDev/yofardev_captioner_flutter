@@ -233,10 +233,6 @@ class CaptionSessionService {
     if (folderPath == null) {
       return;
     }
-    // TODO(refactor): replace this settle delay with a deterministic signal
-    // (e.g. await the first snapshot after onFolderPicked) — do not change
-    // behavior during the cubit-migration ratchet.
-    await Future<void>.delayed(const Duration(milliseconds: 150));
     await onFolderPicked(folderPath).catchError((Object error) {
       _update(const ImageListState());
     });
@@ -337,11 +333,6 @@ class CaptionSessionService {
   Future<void> onFileOpened(String filePath) async {
     final String folderPath = p.dirname(filePath);
     await onFolderPicked(folderPath);
-
-    // TODO(refactor): replace this settle delay with a deterministic signal
-    // (await the snapshot where the opened file is present) — do not change
-    // behavior during the cubit-migration ratchet.
-    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     if (_state.images.isEmpty) {
       return;

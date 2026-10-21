@@ -13,7 +13,7 @@ import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/caption_search/caption_search.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
-import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
+import 'package:yofardev_captioner/features/captioning/data/repositories/llm_caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/image_list.dart';
@@ -113,7 +113,7 @@ void main() {
       expect(container<LlmConfigService>(), isA<LlmConfigService>());
       expect(container<ILlmConfigRepository>(), isA<ILlmConfigRepository>());
       expect(container<CaptionService>(), isA<CaptionService>());
-      expect(container<CaptionRepository>(), isA<CaptionRepository>());
+      expect(container<LlmCaptionRepository>(), isA<LlmCaptionRepository>());
       expect(container<ICaptioningRepository>(), isA<ICaptioningRepository>());
       expect(container<AppFileUtils>(), isA<AppFileUtils>());
       expect(container<CaptionFileStore>(), same(container<AppFileUtils>()));

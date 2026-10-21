@@ -12,10 +12,10 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
+import 'package:yofardev_captioner/features/captioning/data/repositories/llm_caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 
-import 'caption_repository_test.mocks.dart';
+import 'llm_caption_repository_test.mocks.dart';
 
 @GenerateMocks(<Type>[CaptionService])
 void main() {
@@ -25,13 +25,13 @@ void main() {
     locator.registerLazySingleton(() => Logger('App'));
   });
 
-  group('CaptionRepository', () {
-    late CaptionRepository repository;
+  group('LlmCaptionRepository', () {
+    late LlmCaptionRepository repository;
     late MockCaptionService mockCaptionService;
 
     setUp(() {
       mockCaptionService = MockCaptionService();
-      repository = CaptionRepository(captionService: mockCaptionService);
+      repository = LlmCaptionRepository(captionService: mockCaptionService);
     });
 
     final LlmConfig testConfig = LlmConfig(

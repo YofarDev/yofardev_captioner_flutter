@@ -13,7 +13,7 @@ import 'package:yofardev_captioner/core/errors/failure.dart' as _i5;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i7;
 import 'package:yofardev_captioner/core/models/llm_config.dart' as _i6;
 import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i8;
-import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart'
+import 'package:yofardev_captioner/features/captioning/data/repositories/llm_caption_repository.dart'
     as _i2;
 
 // ignore_for_file: type=lint
@@ -32,11 +32,12 @@ import 'package:yofardev_captioner/features/captioning/data/repositories/caption
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
-/// A class which mocks [CaptionRepository].
+/// A class which mocks [LlmCaptionRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockCaptionRepository extends _i1.Mock implements _i2.CaptionRepository {
-  MockCaptionRepository() {
+class MockLlmCaptionRepository extends _i1.Mock
+    implements _i2.LlmCaptionRepository {
+  MockLlmCaptionRepository() {
     _i1.throwOnMissingStub(this);
   }
 

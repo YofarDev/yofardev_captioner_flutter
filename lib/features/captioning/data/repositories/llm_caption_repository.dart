@@ -9,11 +9,12 @@ import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../services/caption_service.dart';
 
-/// LLM-backed caption operations. Never throws across the boundary (except
+/// LLM-backed caption operations (low-level: one call, one caption string).
+/// Never throws across the boundary (except
 /// [CancellationException], which is control flow, not failure).
-class CaptionRepository {
+class LlmCaptionRepository {
   final CaptionService _captionService;
-  CaptionRepository({CaptionService? captionService})
+  LlmCaptionRepository({CaptionService? captionService})
     : _captionService = captionService ?? CaptionService();
 
   Future<Either<Failure, String>> getCaption(
@@ -35,7 +36,7 @@ class CaptionRepository {
       rethrow;
     } catch (e, st) {
       return Left<Failure, String>(
-        _mapLlmError(e, stackTrace: st, tag: 'CaptionRepository.getCaption'),
+        _mapLlmError(e, stackTrace: st, tag: 'LlmCaptionRepository.getCaption'),
       );
     }
   }
@@ -61,7 +62,7 @@ class CaptionRepository {
         _mapLlmError(
           e,
           stackTrace: st,
-          tag: 'CaptionRepository.rewriteCaption',
+          tag: 'LlmCaptionRepository.rewriteCaption',
         ),
       );
     }
@@ -85,7 +86,7 @@ class CaptionRepository {
         _mapLlmError(
           e,
           stackTrace: st,
-          tag: 'CaptionRepository.transformCaption',
+          tag: 'LlmCaptionRepository.transformCaption',
         ),
       );
     }

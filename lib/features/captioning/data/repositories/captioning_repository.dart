@@ -9,12 +9,12 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../domain/repositories/captioning_repository.dart';
-import 'caption_repository.dart';
+import 'llm_caption_repository.dart';
 
 class CaptioningRepository implements ICaptioningRepository {
-  final CaptionRepository _captionRepository;
-  CaptioningRepository({CaptionRepository? captionRepository})
-    : _captionRepository = captionRepository ?? CaptionRepository();
+  final LlmCaptionRepository _llmCaptionRepository;
+  CaptioningRepository({LlmCaptionRepository? llmCaptionRepository})
+    : _llmCaptionRepository = llmCaptionRepository ?? LlmCaptionRepository();
 
   @override
   Future<Either<Failure, AppImage>> captionImage(
@@ -24,7 +24,7 @@ class CaptioningRepository implements ICaptioningRepository {
     String category = 'default',
     CancelToken? cancelToken,
   }) async {
-    final Either<Failure, String> captionResult = await _captionRepository
+    final Either<Failure, String> captionResult = await _llmCaptionRepository
         .getCaption(config, image, prompt, cancelToken: cancelToken);
     // Never bang-unwrap a Left: an LLM/auth/network failure must propagate
     // as Left(Failure) so per-image error handling in the cubit can kick in.
@@ -69,7 +69,7 @@ class CaptioningRepository implements ICaptioningRepository {
     CancelToken? cancelToken,
   }) async {
     final String currentCaption = image.captions[category]?.text ?? '';
-    final Either<Failure, String> rewriteResult = await _captionRepository
+    final Either<Failure, String> rewriteResult = await _llmCaptionRepository
         .rewriteCaption(config, currentCaption, instructions);
     // Never bang-unwrap a Left (see captionImage).
     final String? rewrittenOrFailure = rewriteResult.getRight().toNullable();
@@ -136,7 +136,7 @@ class CaptioningRepository implements ICaptioningRepository {
     String userPrompt,
   ) async {
     final String sourceText = image.captions[sourceCategory]?.text ?? '';
-    final Either<Failure, String> transformResult = await _captionRepository
+    final Either<Failure, String> transformResult = await _llmCaptionRepository
         .transformCaption(config, sourceText, userPrompt);
     // Never bang-unwrap a Left (see captionImage).
     final String? transformedOrNull = transformResult.getRight().toNullable();

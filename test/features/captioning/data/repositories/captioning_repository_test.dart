@@ -9,19 +9,19 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/captioning_repository.dart';
+import 'package:yofardev_captioner/features/captioning/data/repositories/llm_caption_repository.dart';
 
 import 'captioning_repository_test.mocks.dart';
 
-@GenerateMocks(<Type>[CaptionRepository])
+@GenerateMocks(<Type>[LlmCaptionRepository])
 void main() {
   // Mockito cannot synthesize Either dummies for the new signatures.
   provideDummy<Either<Failure, String>>(const Right<Failure, String>(''));
 
   group('CaptioningRepository', () {
     late CaptioningRepository repository;
-    late MockCaptionRepository mockInner;
+    late MockLlmCaptionRepository mockInner;
 
     final LlmConfig config = LlmConfig(
       id: '1',
@@ -37,8 +37,8 @@ void main() {
     );
 
     setUp(() {
-      mockInner = MockCaptionRepository();
-      repository = CaptioningRepository(captionRepository: mockInner);
+      mockInner = MockLlmCaptionRepository();
+      repository = CaptioningRepository(llmCaptionRepository: mockInner);
     });
 
     test('captionImage delegates and stores caption under category', () async {

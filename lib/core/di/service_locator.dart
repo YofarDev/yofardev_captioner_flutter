@@ -4,8 +4,8 @@ import 'package:logging/logging.dart';
 import '../../features/agent_api/data/services/agent_api_service.dart';
 import '../../features/caption_search/caption_search.dart';
 import '../../features/captioning/captioning.dart';
-import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
+import '../../features/captioning/data/repositories/llm_caption_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
 import '../../features/image_list/image_list.dart';
@@ -52,7 +52,9 @@ void registerDependencies(GetIt container) {
     () => container<LlmConfigService>(),
   );
   container.registerLazySingleton<CaptionService>(() => CaptionService());
-  container.registerLazySingleton<CaptionRepository>(() => CaptionRepository());
+  container.registerLazySingleton<LlmCaptionRepository>(
+    () => LlmCaptionRepository(),
+  );
   container.registerLazySingleton<ICaptioningRepository>(
     () => CaptioningRepository(),
   );

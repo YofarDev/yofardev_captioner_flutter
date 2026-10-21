@@ -87,14 +87,6 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
 /// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
 /// suite; later phases only shrink this set.
 ///
-/// After the controls_widgets callback inversion (image_operations no longer
-/// imports tab_manager/llm_config) every cycle runs through the inherent
-/// llm_config -> agent_api -> tab_manager -> main_area -> llm_config ring;
-/// the first key below is the direct main_area -> llm_config shortcut.
-/// Exact canonical keys (feature names sorted, joined with ' -> ') of the
-/// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
-/// suite; later phases only shrink this set.
-///
 /// Every remaining llm_config cycle runs through the inherent
 /// llm_config -> agent_api -> tab_manager -> llm_config ring; the first key
 /// below is the direct llm_config -> agent_api shortcut. The only other live

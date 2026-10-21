@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -73,43 +74,54 @@ class _CaptionControlsState extends State<CaptionControls> {
 
   @override
   Widget build(BuildContext context) {
-    final ImageListState imageState = context.read<ImageListCubit>().state;
-    final int totalImages = imageState.images.length;
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      buildWhen: (ImageListState previous, ImageListState current) =>
+          previous.activeCategory != current.activeCategory ||
+          previous.searchQuery != current.searchQuery ||
+          !listEquals(previous.categories, current.categories) ||
+          !listEquals(previous.images, current.images),
+      builder: (BuildContext context, ImageListState imageState) {
+        final int totalImages = imageState.images.length;
 
-    return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
-      builder: (BuildContext context, LlmConfigsState configState) {
-        final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
-        final String category = imageState.activeCategory ?? 'default';
-        final int missingCount = imageState.images
-            .where((AppImage img) => _isMissing(img, category, ideogramMode))
-            .length;
+        return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+          builder: (BuildContext context, LlmConfigsState configState) {
+            final bool ideogramMode =
+                configState.llmConfigs.ideogramJsonEnabled;
+            final String category = imageState.activeCategory ?? 'default';
+            final int missingCount = imageState.images
+                .where(
+                  (AppImage img) => _isMissing(img, category, ideogramMode),
+                )
+                .length;
 
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Row(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
-                widget.settingsButton,
-                const LlmConfigWidget(),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: CaptionModeSelector(
-                    selected: _selectedOption,
-                    onChanged: (CaptionOptions? value) {
-                      if (value != null) {
-                        setState(() => _selectedOption = value);
-                      }
-                    },
-                    missingCount: missingCount,
-                    totalImages: totalImages,
-                  ),
+                Row(
+                  children: <Widget>[
+                    widget.settingsButton,
+                    const LlmConfigWidget(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: CaptionModeSelector(
+                        selected: _selectedOption,
+                        onChanged: (CaptionOptions? value) {
+                          if (value != null) {
+                            setState(() => _selectedOption = value);
+                          }
+                        },
+                        missingCount: missingCount,
+                        totalImages: totalImages,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                _buildRunButton(count: totalImages),
               ],
-            ),
-            const SizedBox(height: 8),
-            _buildRunButton(count: totalImages),
-          ],
+            );
+          },
         );
       },
     );

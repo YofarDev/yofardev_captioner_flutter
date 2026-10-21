@@ -2,14 +2,17 @@ import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
 
 import '../../features/agent_api/data/services/agent_api_service.dart';
+import '../../features/caption_search/caption_search.dart';
 import '../../features/captioning/captioning.dart';
 import '../../features/captioning/data/repositories/caption_repository.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
 import '../../features/image_list/image_list.dart';
+import '../../features/image_operations/image_operations.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
+import '../../features/structured_captioning/structured_captioning.dart';
 import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
 
@@ -72,4 +75,34 @@ void registerDependencies(GetIt container) {
   );
 
   container.registerLazySingleton<Logger>(() => Logger('App'));
+
+  // Tab-scoped cubits: one fresh instance per caption session, resolved by
+  // tab_content.dart via locator<Type>(param1: session).
+  container.registerFactoryParam<ImageListCubit, CaptionSessionService, void>(
+    (CaptionSessionService session, _) => ImageListCubit(session: session),
+  );
+  container.registerFactoryParam<CaptioningCubit, CaptionSessionService, void>(
+    (CaptionSessionService session, _) => CaptioningCubit(
+      session,
+      captioningRepository: container<ICaptioningRepository>(),
+    ),
+  );
+  container.registerFactoryParam<
+    StructuredCaptioningCubit,
+    CaptionSessionService,
+    void
+  >((CaptionSessionService session, _) => StructuredCaptioningCubit(session));
+  container
+      .registerFactoryParam<ImageOperationsCubit, CaptionSessionService, void>(
+        (CaptionSessionService session, _) => ImageOperationsCubit(session),
+      );
+  container
+      .registerFactoryParam<CaptionSearchCubit, CaptionSessionService, void>(
+        (CaptionSessionService session, _) =>
+            CaptionSearchCubit(session: session),
+      );
+  container
+      .registerFactoryParam<BatchJsonApplyCubit, CaptionSessionService, void>(
+        (CaptionSessionService session, _) => BatchJsonApplyCubit(session),
+      );
 }

@@ -11,13 +11,16 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
+import 'package:yofardev_captioner/features/caption_search/caption_search.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/image_list.dart';
+import 'package:yofardev_captioner/features/image_operations/image_operations.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/domain/repositories/llm_config_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/structured_captioning.dart';
 import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 
 /// Minimal no-op file store so the registry smoke test can construct real
@@ -117,6 +120,52 @@ void main() {
       expect(container<TabSessionRegistry>(), isA<TabSessionRegistry>());
       expect(container<AgentApiService>(), isA<AgentApiService>());
       expect(container<Logger>(), isA<Logger>());
+    });
+
+    test('param factories build fresh tab cubits per session', () {
+      final GetIt container = GetIt.instance;
+      registerDependencies(container);
+
+      final CaptionSessionService sessionA = CaptionSessionService(
+        fileStore: _FakeCaptionFileStore(),
+        filterEngine: _FakeCaptionFilterEngine(),
+      );
+      final CaptionSessionService sessionB = CaptionSessionService(
+        fileStore: _FakeCaptionFileStore(),
+        filterEngine: _FakeCaptionFilterEngine(),
+      );
+
+      final ImageListCubit a = container<ImageListCubit>(param1: sessionA);
+      final ImageListCubit b = container<ImageListCubit>(param1: sessionB);
+      addTearDown(a.close);
+      addTearDown(b.close);
+
+      expect(a, isNot(same(b)));
+
+      final CaptioningCubit captioning = container<CaptioningCubit>(
+        param1: sessionA,
+      );
+      final StructuredCaptioningCubit structured =
+          container<StructuredCaptioningCubit>(param1: sessionA);
+      final ImageOperationsCubit imageOperations =
+          container<ImageOperationsCubit>(param1: sessionA);
+      final CaptionSearchCubit captionSearch = container<CaptionSearchCubit>(
+        param1: sessionA,
+      );
+      final BatchJsonApplyCubit batchJsonApply = container<BatchJsonApplyCubit>(
+        param1: sessionA,
+      );
+      addTearDown(captioning.close);
+      addTearDown(structured.close);
+      addTearDown(imageOperations.close);
+      addTearDown(captionSearch.close);
+      addTearDown(batchJsonApply.close);
+
+      expect(captioning, isA<CaptioningCubit>());
+      expect(structured, isA<StructuredCaptioningCubit>());
+      expect(imageOperations, isA<ImageOperationsCubit>());
+      expect(captionSearch, isA<CaptionSearchCubit>());
+      expect(batchJsonApply, isA<BatchJsonApplyCubit>());
     });
 
     test(

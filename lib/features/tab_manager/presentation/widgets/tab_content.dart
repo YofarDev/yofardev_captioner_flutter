@@ -40,18 +40,14 @@ class TabContentState extends State<TabContent>
     // The session already exists — the tab manager created it synchronously
     // when the tab was added, so there is nothing to wait for here.
     _session = context.read<TabManagerCubit>().sessionFor(widget.tabId);
-    // Repos come from the locator so the DI graph is real even where the
-    // cubit instances are tab-scoped (full factory conversion waits for
-    // Phase 2.4's consumer migration).
-    _imageListCubit = ImageListCubit(session: _session);
-    _captioningCubit = CaptioningCubit(
-      _session,
-      captioningRepository: locator<ICaptioningRepository>(),
+    _imageListCubit = locator<ImageListCubit>(param1: _session);
+    _captioningCubit = locator<CaptioningCubit>(param1: _session);
+    _structuredCaptioningCubit = locator<StructuredCaptioningCubit>(
+      param1: _session,
     );
-    _structuredCaptioningCubit = StructuredCaptioningCubit(_session);
-    _imageOperationsCubit = ImageOperationsCubit(_session);
-    _captionSearchCubit = CaptionSearchCubit(session: _session);
-    _batchJsonApplyCubit = BatchJsonApplyCubit(_session);
+    _imageOperationsCubit = locator<ImageOperationsCubit>(param1: _session);
+    _captionSearchCubit = locator<CaptionSearchCubit>(param1: _session);
+    _batchJsonApplyCubit = locator<BatchJsonApplyCubit>(param1: _session);
   }
 
   @override

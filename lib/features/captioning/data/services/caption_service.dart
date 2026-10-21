@@ -6,7 +6,6 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:logging/logging.dart';
 
-import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/utils/cancel_token.dart';
@@ -18,7 +17,7 @@ import '../models/caption/message.dart';
 import 'image_resizer.dart';
 
 class CaptionService {
-  final Logger _logger = locator<Logger>();
+  final Logger _logger = Logger('CaptionService');
   final ProcessRunner _processRunner;
   final http.Client _httpClient;
   final ImageResizer _imageResizer;

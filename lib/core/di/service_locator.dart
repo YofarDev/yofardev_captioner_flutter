@@ -3,6 +3,7 @@ import 'package:logging/logging.dart';
 
 import '../../features/agent_api/data/services/agent_api_service.dart';
 import '../../features/caption_search/caption_search.dart';
+import '../../features/caption_session/caption_session.dart';
 import '../../features/captioning/captioning.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/repositories/llm_caption_repository.dart';
@@ -12,8 +13,8 @@ import '../../features/image_list/image_list.dart';
 import '../../features/image_operations/image_operations.dart';
 import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
+import '../../features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import '../../features/structured_captioning/structured_captioning.dart';
-import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
 
 final GetIt locator = GetIt.instance;
@@ -55,6 +56,11 @@ void registerDependencies(GetIt container) {
   container.registerLazySingleton<LlmCaptionRepository>(
     () => LlmCaptionRepository(),
   );
+  container.registerLazySingleton<IStructuredCaptionRepository>(
+    () => StructuredCaptionRepository(
+      captionService: container<CaptionService>(),
+    ),
+  );
   container.registerLazySingleton<ICaptioningRepository>(
     () => CaptioningRepository(),
   );
@@ -93,7 +99,26 @@ void registerDependencies(GetIt container) {
     StructuredCaptioningCubit,
     CaptionSessionService,
     void
-  >((CaptionSessionService session, _) => StructuredCaptioningCubit(session));
+  >(
+    (CaptionSessionService session, _) => StructuredCaptioningCubit(
+      session,
+      repository: container<IStructuredCaptionRepository>(),
+    ),
+  );
+  container.registerFactoryParam<
+    StructuredEditorCubit,
+    StructuredEditorParams,
+    void
+  >(
+    (StructuredEditorParams p, _) => StructuredEditorCubit(
+      initialCaption: p.initialCaption,
+      imageFile: p.imageFile,
+      activeCategory: p.activeCategory,
+      session: p.session,
+      showBboxText: p.showBboxText,
+      repository: container<IStructuredCaptionRepository>(),
+    ),
+  );
   container
       .registerFactoryParam<ImageOperationsCubit, CaptionSessionService, void>(
         (CaptionSessionService session, _) => ImageOperationsCubit(session),

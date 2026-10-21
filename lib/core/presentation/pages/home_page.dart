@@ -8,8 +8,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../features/caption_session/caption_session.dart';
 import '../../../features/image_list/image_list.dart';
-
+import '../../../features/image_operations/image_operations.dart';
+import '../../../features/main_area/main_area.dart';
 import '../../../features/tab_manager/tab_manager.dart';
 import '../../constants/app_colors.dart';
 import '../../services/cache_service.dart';
@@ -202,7 +204,43 @@ class _HomePageState extends State<HomePage> {
                             return Offstage(
                               key: ValueKey<String>(tab.id),
                               offstage: index != state.activeTabIndex,
-                              child: TabContent(tabId: tab.id),
+                              child: TabContent(
+                                tabId: tab.id,
+                                child: Row(
+                                  children: <Widget>[
+                                    Container(
+                                      // Recessed library column — sits below
+                                      // the shell so the caption editor stays
+                                      // the brightest (focal) surface.
+                                      color: panelDark,
+                                      height: double.infinity,
+                                      width: 240,
+                                      child: ImagesListView(
+                                        onAspectRatio: (BuildContext listContext) {
+                                          showDialog<void>(
+                                            context: listContext,
+                                            builder: (_) =>
+                                                BlocProvider<
+                                                  ImageListCubit
+                                                >.value(
+                                                  value: listContext
+                                                      .read<ImageListCubit>(),
+                                                  child:
+                                                      const AspectRatioDialog(),
+                                                ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const Expanded(
+                                      child: ColoredBox(
+                                        color: shellBackground,
+                                        child: MainAreaView(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           }),
                         );

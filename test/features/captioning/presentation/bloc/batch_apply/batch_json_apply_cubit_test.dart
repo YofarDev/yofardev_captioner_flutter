@@ -6,11 +6,10 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/captioning/domain/models/batch_apply_template.dart';
 import 'package:yofardev_captioner/features/captioning/presentation/bloc/batch_apply/batch_json_apply_cubit.dart';
 import 'package:yofardev_captioner/features/captioning/presentation/bloc/batch_apply/batch_json_apply_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 
 import 'batch_json_apply_cubit_test.mocks.dart';
 

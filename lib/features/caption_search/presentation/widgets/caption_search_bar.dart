@@ -6,8 +6,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/services/route_observer.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
-
 import '../../domain/services/autocomplete_engine.dart';
 import '../bloc/caption_search_cubit.dart';
 import 'filter_help_dialog.dart';

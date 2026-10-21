@@ -10,7 +10,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
-
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/image_extensions.dart';
@@ -23,9 +22,8 @@ import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/llm_configs.dart';
 import '../../../../core/services/cache_service.dart';
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../tab_manager/tab_manager.dart';
 import 'agent_caption_write_service.dart';
 
 /// Local REST API for external AI agents (Claude Code, ZCode, scripts).

@@ -9,11 +9,11 @@ import 'dart:async' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
 import 'package:yofardev_captioner/core/models/app_image.dart' as _i6;
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart'
+import 'package:yofardev_captioner/features/caption_session/domain/models/image_list_state.dart'
     as _i3;
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart'
+import 'package:yofardev_captioner/features/caption_session/domain/services/caption_session_service.dart'
     as _i4;
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart'
+import 'package:yofardev_captioner/features/caption_session/domain/services/caption_session_snapshot.dart'
     as _i2;
 
 // ignore_for_file: type=lint

@@ -9,10 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
-import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
 void main() {
@@ -281,6 +280,7 @@ void main() {
       locator.registerSingleton<TabSessionRegistry>(registry);
       final TabManagerCubit tabManager = TabManagerCubit(
         sessionRegistry: registry,
+        fileUtils: AppFileUtils(),
       );
       locator.registerSingleton<TabManagerCubit>(tabManager);
       tabManager.addTab(folder.path);
@@ -326,6 +326,7 @@ void main() {
     locator.registerSingleton<TabSessionRegistry>(registry);
     final TabManagerCubit tabManager = TabManagerCubit(
       sessionRegistry: registry,
+      fileUtils: AppFileUtils(),
     );
     locator.registerSingleton<TabManagerCubit>(tabManager);
     tabManager.addTab(folder.path);

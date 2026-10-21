@@ -9,6 +9,7 @@ import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
 import '../../domain/models/batch_apply_template.dart';

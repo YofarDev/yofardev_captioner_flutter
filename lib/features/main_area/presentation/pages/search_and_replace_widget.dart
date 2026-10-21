@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/widgets/app_button.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 
 class SearchAndReplaceWidget extends StatefulWidget {

@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logging/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_snapshot.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/tab_manager/domain/models/app_tab.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
@@ -27,7 +27,7 @@ void main() {
     late TabManagerCubit cubit;
 
     setUp(() {
-      cubit = TabManagerCubit();
+      cubit = TabManagerCubit(fileUtils: AppFileUtils());
     });
 
     tearDown(() {
@@ -224,7 +224,7 @@ void main() {
     late TabManagerCubit cubit;
 
     setUp(() {
-      cubit = TabManagerCubit();
+      cubit = TabManagerCubit(fileUtils: AppFileUtils());
     });
 
     tearDown(() {

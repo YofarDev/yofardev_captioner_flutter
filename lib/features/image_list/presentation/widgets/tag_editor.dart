@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
+import '../../../caption_session/caption_session.dart';
 import '../bloc/image_list_cubit.dart';
 
 class TagEditor extends StatelessWidget {

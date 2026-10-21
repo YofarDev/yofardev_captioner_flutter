@@ -21,15 +21,9 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
         'lib/features/structured_captioning/data/repositories/structured_caption_repository.dart',
     ruleId: 'cross-feature-internal-access',
   ),
-  KnownViolation(
-    pathPrefix:
-        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
-    ruleId: 'cross-feature-internal-access',
-  ),
   // Presentation→data survives in: the agent API panel (drives the embedded
   // REST service), the image-list cubit adapter (constructs its default
-  // session's file store), structured captioning (feature-internal data),
-  // and the tab-manager cubit (same session wiring).
+  // session's file store), structured captioning (feature-internal data).
   KnownViolation(
     pathPrefix: 'lib/features/agent_api/',
     ruleId: 'presentation-imports-data',
@@ -40,27 +34,30 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
     ruleId: 'presentation-imports-data',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/structured_captioning/',
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/widgets/element_detail_section.dart',
     ruleId: 'presentation-imports-data',
   ),
   KnownViolation(
     pathPrefix:
-        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
+        'lib/features/structured_captioning/presentation/widgets/image_eyedropper_dialog.dart',
+    ruleId: 'presentation-imports-data',
+  ),
+  KnownViolation(
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/widgets/style_editor_section.dart',
     ruleId: 'presentation-imports-data',
   ),
   // locator<T>() reads live only in the agent API (the DI-embedded REST
-  // service and its panel), the captioning session service, structured
-  // captioning services, and the tab-manager cubit/tab content widgets.
+  // service and its panel), the captioning session service, the structured
+  // editor page, and the tab-manager cubit/tab content widgets.
   KnownViolation(
     pathPrefix: 'lib/features/agent_api/',
     ruleId: 'getit-resolution-outside-allowlist',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/captioning/data/services/caption_service.dart',
-    ruleId: 'getit-resolution-outside-allowlist',
-  ),
-  KnownViolation(
-    pathPrefix: 'lib/features/structured_captioning/',
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/pages/structured_editor_page.dart',
     ruleId: 'getit-resolution-outside-allowlist',
   ),
   KnownViolation(
@@ -78,46 +75,12 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
 /// Exact canonical keys (feature names sorted, joined with ' -> ') of the
 /// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
 /// suite; later phases only shrink this set.
-const Set<String> kKnownCycles = <String>{
-  'agent_api -> caption_search -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> caption_search -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> tab_manager',
-  'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> tab_manager',
-  'agent_api -> export -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> export -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config',
-  'agent_api -> image_list -> image_operations -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> llm_config',
-  'agent_api -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> llm_config -> structured_captioning -> tab_manager',
-  'caption_search -> image_list -> image_operations -> main_area -> tab_manager',
-  'caption_search -> image_list -> image_operations -> tab_manager',
-  'captioning -> image_list -> image_operations -> main_area -> structured_captioning -> tab_manager',
-  'captioning -> image_list -> image_operations -> main_area -> tab_manager',
-  'captioning -> image_list -> image_operations -> structured_captioning -> tab_manager',
-  'captioning -> image_list -> image_operations -> tab_manager',
-  'export -> image_list -> image_operations -> main_area -> tab_manager',
-  'export -> image_operations -> main_area -> tab_manager',
-  'image_list -> image_operations',
-  'image_list -> image_operations -> main_area -> structured_captioning -> tab_manager',
-  'image_list -> image_operations -> main_area -> tab_manager',
-  'image_list -> image_operations -> structured_captioning -> tab_manager',
-  'image_list -> image_operations -> tab_manager',
-  'image_operations -> main_area -> tab_manager',
-  'image_operations -> tab_manager',
-  'main_area -> tab_manager',
-};
+///
+/// The only live cycle: the direct llm_config -> agent_api shortcut on the
+/// inherent llm_config -> agent_api -> tab_manager -> llm_config ring. All
+/// longer ring permutations are broken now that the caption-session
+/// contracts live in the caption_session feature.
+const Set<String> kKnownCycles = <String>{'agent_api -> llm_config'};
 
 void main() {
   test('every allowlist entry still matches a live violation', () async {

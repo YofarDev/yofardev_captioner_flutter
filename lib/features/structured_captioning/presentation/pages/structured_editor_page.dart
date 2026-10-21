@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
 import '../bloc/structured_editor_cubit.dart';
@@ -94,6 +96,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
     if (cubit != null) {
       await cubit.flushSave();
     }
+    if (!mounted) return; // flush can complete after disposal
 
     final ImageListCubit list = widget.imageListCubit;
     final List<AppImage> displayed = list.displayedImages;
@@ -146,14 +149,16 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
         // Capture the instance so [_navigate] can flush it without needing a
         // descendant [BuildContext] (the provider sits in this widget's child,
         // so the scope's own context cannot read it).
-        final StructuredEditorCubit cubit = StructuredEditorCubit(
-          initialCaption: IdeogramCaption.fromJson(
-            jsonDecode(_captionJson) as Map<String, dynamic>,
+        final StructuredEditorCubit cubit = locator<StructuredEditorCubit>(
+          param1: (
+            initialCaption: IdeogramCaption.fromJson(
+              jsonDecode(_captionJson) as Map<String, dynamic>,
+            ),
+            imageFile: _imageFile,
+            activeCategory: widget.activeCategory,
+            session: widget.imageListCubit.session,
+            showBboxText: _showBboxText,
           ),
-          imageFile: _imageFile,
-          activeCategory: widget.activeCategory,
-          session: widget.imageListCubit.session,
-          showBboxText: _showBboxText,
         );
         _cubit = cubit;
         return cubit;

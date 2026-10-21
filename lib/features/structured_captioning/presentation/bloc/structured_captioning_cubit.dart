@@ -12,21 +12,22 @@ import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/utils/cancel_token.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../captioning/captioning.dart';
-import '../../../image_list/image_list.dart';
-import '../../data/repositories/structured_caption_repository.dart';
+import '../../domain/models/structured_mode.dart';
+import '../../domain/repositories/structured_caption_repository.dart';
 
 part 'structured_captioning_state.dart';
 
 class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   StructuredCaptioningCubit(
     this._session, {
-    StructuredCaptionRepository? repository,
-  }) : _repository = repository ?? StructuredCaptionRepository(),
+    required IStructuredCaptionRepository repository,
+  }) : _repository = repository,
        super(const StructuredCaptioningState());
 
   final CaptionSessionService _session;
-  final StructuredCaptionRepository _repository;
+  final IStructuredCaptionRepository _repository;
 
   CancelToken? _cancelToken;
 

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
+import 'package:mockito/annotations.dart';
 import 'package:nested/nested.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
@@ -15,17 +16,20 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/layer_tile.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/layers_panel.dart';
+
+import 'structured_editor_layers_panel_test.mocks.dart';
 
 /// Structured-editor open → edit → save flow, exercised through the editor's
 /// layers panel. The full [StructuredEditorPage] pumps real `Image.file`
 /// canvases whose decoder deadlocks the widget-test fake-async zone, so the
 /// page shell itself is not pumped here; the cubit/panel pair is exactly the
 /// state+view the page orchestrates.
+@GenerateMocks(<Type>[IStructuredCaptionRepository])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -85,6 +89,7 @@ void main() {
       imageFile: File('/tmp/shot.png'),
       activeCategory: 'default',
       session: session,
+      repository: MockIStructuredCaptionRepository(),
     );
     // Mirror what the page does after seeding the session state.
     session.adopt(seed);

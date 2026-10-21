@@ -13,9 +13,8 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/helpers/image_operations_helper.dart';
 
 import 'image_operations_integration_test.mocks.dart';

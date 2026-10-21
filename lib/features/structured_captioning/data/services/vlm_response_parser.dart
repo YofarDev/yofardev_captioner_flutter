@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:logging/logging.dart';
 
-import '../../../../core/di/service_locator.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../models/vlm_analysis.dart';
 import '../utils/caption_hardening.dart';
@@ -16,7 +15,7 @@ import 'sam_bbox_service.dart';
 /// (including the model-side JSON repair retry) and delegates the textual
 /// interpretation of responses here.
 class VlmResponseParser {
-  final Logger _logger = locator<Logger>();
+  final Logger _logger = Logger('VlmResponseParser');
 
   /// Hard cap on the number of elements the enumerate pass may emit.
   /// Enforced both in the prompt and by the pre-enrich validation gate.

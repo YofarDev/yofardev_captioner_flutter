@@ -6,16 +6,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 
-import '../../../../core/di/service_locator.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
-import '../../../image_list/image_list.dart';
-import '../../data/repositories/structured_caption_repository.dart';
-import '../../data/services/layer_title_store.dart';
+import '../../../caption_session/caption_session.dart';
+import '../../domain/repositories/structured_caption_repository.dart';
+import '../../domain/services/layer_title_store.dart';
 
 part 'structured_editor_state.dart';
+
+/// Everything the structured editor cubit needs that only the opening page
+/// knows. Passed to the DI factory as a single record (`param1`).
+typedef StructuredEditorParams = ({
+  IdeogramCaption initialCaption,
+  File imageFile,
+  String activeCategory,
+  CaptionSessionService session,
+  bool showBboxText,
+});
 
 class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   StructuredEditorCubit({
@@ -23,11 +32,11 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required File imageFile,
     required String activeCategory,
     required CaptionSessionService session,
-    StructuredCaptionRepository? repository,
+    required IStructuredCaptionRepository repository,
     LayerTitleStore? layerTitleStore,
     bool showBboxText = false,
   }) : _session = session,
-       _repository = repository ?? StructuredCaptionRepository(),
+       _repository = repository,
        _layerTitleStore = layerTitleStore ?? const LayerTitleStore(),
        super(
          StructuredEditorState(
@@ -46,9 +55,9 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   final CaptionSessionService _session;
-  final StructuredCaptionRepository _repository;
+  final IStructuredCaptionRepository _repository;
   final LayerTitleStore _layerTitleStore;
-  final Logger _logger = locator<Logger>();
+  final Logger _logger = Logger('StructuredEditorCubit');
   Timer? _debounceTimer;
   bool _isDirty = false;
   bool _titlesMutated = false;

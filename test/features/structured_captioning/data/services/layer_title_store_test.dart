@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/services/layer_title_store.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/services/layer_title_store.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -10,20 +10,21 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
-
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/presentation/bloc/llm_configs_cubit.dart';
 import 'package:yofardev_captioner/features/main_area/presentation/pages/main_area_view.dart';
+import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_captioning_cubit.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 
@@ -257,7 +258,9 @@ void main() {
         'folderPath': '/tmp/captioner_photos',
       });
       imageListCubit = ImageListCubit();
-      final TabManagerCubit tabManager = TabManagerCubit();
+      final TabManagerCubit tabManager = TabManagerCubit(
+        fileUtils: AppFileUtils(),
+      );
       addTearDown(tabManager.close);
 
       await tester.pumpWidget(
@@ -340,13 +343,16 @@ void main() {
       // The cubit adopts its initial const state into the session on
       // construction — seed AFTER so the session keeps the image.
       imageListCubit.emit(seedState);
-      tabManager = TabManagerCubit();
+      tabManager = TabManagerCubit(fileUtils: AppFileUtils());
       llmConfigsCubit = LlmConfigsCubit(llmConfigService: LlmConfigService());
       captioningCubit = CaptioningCubit(
         session,
         captioningRepository: _StubCaptioningRepository(),
       );
-      structuredCubit = StructuredCaptioningCubit(session);
+      structuredCubit = StructuredCaptioningCubit(
+        session,
+        repository: StructuredCaptionRepository(),
+      );
       searchCubit = CaptionSearchCubit(session: session);
       operationsCubit = ImageOperationsCubit(session);
 

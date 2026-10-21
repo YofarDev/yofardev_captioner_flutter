@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
+import 'package:mockito/annotations.dart';
 import 'package:nested/nested.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
@@ -17,12 +18,14 @@ import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
-import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
+
+import 'element_detail_section_test.mocks.dart';
 
 /// Builds a bare caption session (in-memory store, pass-through filter) with
 /// one seeded image so [StructuredEditorCubit] saves have a current target.
@@ -138,6 +141,7 @@ class _FakeLlmConfigsCubit extends LlmConfigsCubit {
   void emitState(LlmConfigsState next) => emit(next);
 }
 
+@GenerateMocks(<Type>[IStructuredCaptionRepository])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -192,6 +196,7 @@ void main() {
       imageFile: File('x.png'),
       activeCategory: 'default',
       session: session,
+      repository: MockIStructuredCaptionRepository(),
     );
     editorCubit.selectElement(0);
     addTearDown(editorCubit.close);

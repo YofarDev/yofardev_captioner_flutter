@@ -34,7 +34,11 @@ void main() {
     await tester.pumpWidget(
       BlocProvider<ImageListCubit>.value(
         value: cubit,
-        child: const MaterialApp(home: Scaffold(body: HeaderWidget())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: HeaderWidget(onAspectRatio: (BuildContext context) {}),
+          ),
+        ),
       ),
     );
     // Let asset images settle (they will error-fail but won't crash the pump).

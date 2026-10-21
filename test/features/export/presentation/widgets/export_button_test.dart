@@ -9,8 +9,8 @@ import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/export/presentation/widgets/export_button.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 

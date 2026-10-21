@@ -60,18 +60,15 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
     ruleId: 'presentation-imports-data',
   ),
   // locator<T>() reads live only in the agent API (the DI-embedded REST
-  // service and its panel), the captioning session service, structured
-  // captioning services, and the tab-manager cubit/tab content widgets.
+  // service and its panel), the captioning session service, the structured
+  // editor page, and the tab-manager cubit/tab content widgets.
   KnownViolation(
     pathPrefix: 'lib/features/agent_api/',
     ruleId: 'getit-resolution-outside-allowlist',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/captioning/data/services/caption_service.dart',
-    ruleId: 'getit-resolution-outside-allowlist',
-  ),
-  KnownViolation(
-    pathPrefix: 'lib/features/structured_captioning/',
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/pages/structured_editor_page.dart',
     ruleId: 'getit-resolution-outside-allowlist',
   ),
   KnownViolation(

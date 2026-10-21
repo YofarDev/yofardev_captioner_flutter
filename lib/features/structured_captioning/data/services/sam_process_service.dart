@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../../../core/utils/process_runner.dart';
@@ -29,7 +28,7 @@ class SamDetection {
 /// The wrapper script is bundled as an asset and extracted to the application
 /// support directory on first use. Requires Python 3 with mlx-vlm and Pillow.
 class SamProcessService {
-  final Logger _logger = locator<Logger>();
+  final Logger _logger = Logger('SamProcessService');
   final ProcessRunner _processRunner;
 
   static const String _scriptAsset = 'assets/scripts/sam3_wrapper.py';
@@ -202,7 +201,7 @@ Future<Map<int, List<int>>> computeSamBboxes({
   required SamDetectObjects detect,
 }) async {
   final SamBboxService samBboxService = SamBboxService();
-  final Logger logger = locator<Logger>();
+  final Logger logger = Logger('SamProcessService');
   final List<IdeogramElement> elements =
       caption.compositionalDeconstruction.elements;
 

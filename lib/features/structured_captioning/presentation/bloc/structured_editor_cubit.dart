@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
 
-import '../../../../core/di/service_locator.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
@@ -58,7 +57,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   final CaptionSessionService _session;
   final IStructuredCaptionRepository _repository;
   final LayerTitleStore _layerTitleStore;
-  final Logger _logger = locator<Logger>();
+  final Logger _logger = Logger('StructuredEditorCubit');
   Timer? _debounceTimer;
   bool _isDirty = false;
   bool _titlesMutated = false;

@@ -7,10 +7,12 @@ import '../../../../core/services/cache_service.dart';
 import '../../../../core/widgets/rive_animations.dart';
 import '../../../caption_search/caption_search.dart';
 import '../../../captioning/captioning.dart';
+import '../../../export/export.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../tab_manager/tab_manager.dart';
 import 'current_image_view.dart';
+import 'search_and_replace_widget.dart';
 
 class MainAreaView extends StatelessWidget {
   const MainAreaView({super.key});
@@ -32,7 +34,12 @@ class MainAreaView extends StatelessWidget {
               children: <Widget>[
                 CurrentImageView(),
                 Expanded(child: CaptionTextArea()),
-                ControlsView(),
+                ControlsView(
+                  searchAndReplace: SearchAndReplaceWidget(outlined: true),
+                  captionFiles: CaptionFilesButton(outlined: true),
+                  export: ExportButton(outlined: true),
+                  captionControls: CaptionControls(),
+                ),
                 SizedBox(height: 16),
               ],
             ),

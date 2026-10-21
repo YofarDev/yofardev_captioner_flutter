@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../captioning/captioning.dart';
-import '../../../export/export.dart';
-import '../../../main_area/main_area.dart';
 import 'controls_widgets.dart';
 
+/// Toolbar + run-controls column for the tab workspace. Sibling-feature
+/// widgets are injected as slots by the composition root (main_area) so this
+/// feature does not import captioning/export/main_area.
 class ControlsView extends StatelessWidget {
-  const ControlsView({super.key});
+  const ControlsView({
+    super.key,
+    required this.searchAndReplace,
+    required this.captionFiles,
+    required this.export,
+    required this.captionControls,
+  });
+
+  final Widget searchAndReplace;
+  final Widget captionFiles;
+  final Widget export;
+  final Widget captionControls;
 
   @override
   Widget build(BuildContext context) {
@@ -29,15 +40,15 @@ class ControlsView extends StatelessWidget {
 
   Widget _buildProjectActionsRow() => Container(
     padding: const EdgeInsets.only(bottom: 14),
-    child: const Wrap(
+    child: Wrap(
       spacing: 12.0,
       runSpacing: 8.0,
       children: <Widget>[
-        PickFolderButton(outlined: true),
-        RenameAllFilesButton(outlined: true),
-        SearchAndReplaceWidget(outlined: true),
-        CaptionFilesButton(outlined: true),
-        ExportButton(outlined: true),
+        const PickFolderButton(outlined: true),
+        const RenameAllFilesButton(outlined: true),
+        searchAndReplace,
+        captionFiles,
+        export,
       ],
     ),
   );
@@ -50,11 +61,11 @@ class ControlsView extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: hairline),
     ),
-    child: const Column(
+    child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Row(
+        const Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Icon(Icons.auto_awesome, size: 13, color: pinkDim),
@@ -70,8 +81,8 @@ class ControlsView extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: 12),
-        CaptionControls(),
+        const SizedBox(height: 12),
+        captionControls,
       ],
     ),
   );

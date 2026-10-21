@@ -858,6 +858,11 @@ class CaptionSessionService {
 
     final List<String> updatedCategories = List<String>.from(_state.categories);
     final int index = updatedCategories.indexOf(oldName);
+    if (index == -1) {
+      // Unknown source category (removed or renamed concurrently). A
+      // RangeError here would escape this `void ... async` method unhandled.
+      return;
+    }
     updatedCategories[index] = newName;
 
     // Update all images to rename the category key

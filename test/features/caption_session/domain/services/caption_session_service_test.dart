@@ -847,6 +847,22 @@ void main() {
       );
     });
 
+    test('renameCategory ignores an unknown source category', () {
+      seed(
+        const ImageListState(
+          categories: <String>['default', 'tags'],
+          activeCategory: 'tags',
+          folderPath: '/f',
+        ),
+      );
+
+      session.renameCategory('missing', 'new');
+
+      expect(session.current.state.categories, <String>['default', 'tags']);
+      expect(session.current.state.activeCategory, 'tags');
+      expect(store.writtenDbs, isEmpty);
+    });
+
     test('setActiveCategory sets active category when valid', () {
       seed(const ImageListState(categories: <String>['default', 'custom']));
 

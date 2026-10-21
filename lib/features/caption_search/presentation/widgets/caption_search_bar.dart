@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -376,7 +377,7 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
         builder: (BuildContext context, CaptionSearchState state) {
           final CaptionSearchCubit cubit = context.read<CaptionSearchCubit>();
           final bool showActions =
-              cubit.hasActiveSearch && !state.showReplaceMode;
+              state.searchQuery.isNotEmpty && !state.showReplaceMode;
 
           return _buildContainer(cubit, state, showActions);
         },
@@ -545,18 +546,27 @@ class _CaptionSearchBarState extends State<CaptionSearchBar>
   // }
 
   Widget _buildResultCount(CaptionSearchCubit cubit) {
-    final int resultCount = cubit.resultCount;
-    final int totalCount = cubit.totalCount;
-    return Padding(
-      padding: const EdgeInsets.only(right: 12, left: 4),
-      child: Text(
-        '$resultCount/$totalCount',
-        style: TextStyle(
-          color: Colors.grey[500],
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+    return BlocBuilder<ImageListCubit, ImageListState>(
+      buildWhen: (ImageListState previous, ImageListState current) =>
+          previous.searchQuery != current.searchQuery ||
+          previous.caseSensitive != current.caseSensitive ||
+          previous.activeCategory != current.activeCategory ||
+          !listEquals(previous.images, current.images),
+      builder: (BuildContext context, ImageListState _) {
+        final int resultCount = cubit.resultCount;
+        final int totalCount = cubit.totalCount;
+        return Padding(
+          padding: const EdgeInsets.only(right: 12, left: 4),
+          child: Text(
+            '$resultCount/$totalCount',
+            style: TextStyle(
+              color: Colors.grey[500],
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        );
+      },
     );
   }
 

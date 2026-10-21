@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/widgets/caption_search_bar.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
@@ -23,6 +24,14 @@ void main() {
   setUp(() {
     mockSession = MockCaptionSessionService();
     when(mockSession.state).thenReturn(const ImageListState());
+    when(mockSession.current).thenReturn(
+      const CaptionSessionSnapshot(
+        state: ImageListState(),
+        filteredImages: <AppImage>[],
+        displayedImages: <AppImage>[],
+        currentDisplayedImage: null,
+      ),
+    );
     mockImageListCubit = MockImageListCubit();
     when(mockImageListCubit.state).thenReturn(const ImageListState());
     when(

@@ -109,6 +109,7 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
 
     if (isClosed) return;
     await _session.saveChanges();
+    if (isClosed) return;
 
     emit(state.copyWith(status: ImageOperationsStatus.success));
     await Future<void>.delayed(const Duration(milliseconds: 500));

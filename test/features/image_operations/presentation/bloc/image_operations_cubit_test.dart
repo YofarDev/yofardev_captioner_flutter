@@ -234,6 +234,56 @@ void main() {
       },
     );
 
+    test(
+      'convertAllImages does not throw when close lands during saveChanges',
+      () async {
+        when(mockSession.state).thenReturn(
+          ImageListState(
+            images: <AppImage>[makeImage(id: '1', path: '/f/a.jpg')],
+            folderPath: '/folder',
+          ),
+        );
+        when(
+          mockHelper.convertAllImages(
+            format: 'png',
+            quality: 90,
+            state: anyNamed('state'),
+          ),
+        ).thenAnswer(
+          (_) => Stream<ImageListState>.fromIterable(<ImageListState>[
+            const ImageListState(),
+          ]),
+        );
+        // The cubit is closed inside the save window, i.e. between
+        // `await _session.saveChanges()` starting and the success emit.
+        final ImageOperationsCubit cubit = ImageOperationsCubit(
+          mockSession,
+          helper: mockHelper,
+        );
+        final Completer<void> saveCompleter = Completer<void>();
+        when(mockSession.saveChanges()).thenAnswer((_) async {
+          await cubit.close();
+          saveCompleter.complete();
+        });
+        when(
+          mockSession.onFolderPicked(any, force: anyNamed('force')),
+        ).thenAnswer((_) async {});
+
+        // convertAllImages returns void (fire-and-forget); its async errors
+        // surface in the test zone. Wait for the save window to pass.
+        cubit.convertAllImages(format: 'png', quality: 90);
+        await saveCompleter.future.timeout(const Duration(seconds: 5));
+        // Let the post-save microtasks (success emit + delayed restart) run;
+        // an emit on the closed cubit would throw an unhandled StateError.
+        for (int i = 0; i < 3; i++) {
+          await Future<void>.delayed(Duration.zero);
+        }
+
+        verify(mockSession.saveChanges()).called(1);
+        expect(cubit.state.status, isNot(ImageOperationsStatus.success));
+      },
+    );
+
     blocTest<ImageOperationsCubit, ImageOperationsState>(
       'cropCurrentImage emits nothing when helper returns null',
       setUp: () {

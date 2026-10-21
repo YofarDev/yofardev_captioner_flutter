@@ -13,12 +13,14 @@ class ControlsView extends StatelessWidget {
     required this.captionFiles,
     required this.export,
     required this.captionControls,
+    required this.onFolderPicked,
   });
 
   final Widget searchAndReplace;
   final Widget captionFiles;
   final Widget export;
   final Widget captionControls;
+  final void Function(String folderPath) onFolderPicked;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +46,7 @@ class ControlsView extends StatelessWidget {
       spacing: 12.0,
       runSpacing: 8.0,
       children: <Widget>[
-        const PickFolderButton(outlined: true),
+        PickFolderButton(outlined: true, onFolderPicked: onFolderPicked),
         const RenameAllFilesButton(outlined: true),
         searchAndReplace,
         captionFiles,

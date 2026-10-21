@@ -7,13 +7,14 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: Scaffold(
           body: ControlsView(
-            searchAndReplace: Text('slot-search'),
-            captionFiles: Text('slot-caption-files'),
-            export: Text('slot-export'),
-            captionControls: Text('slot-run-controls'),
+            onFolderPicked: (_) {},
+            searchAndReplace: const Text('slot-search'),
+            captionFiles: const Text('slot-caption-files'),
+            export: const Text('slot-export'),
+            captionControls: const Text('slot-run-controls'),
           ),
         ),
       ),

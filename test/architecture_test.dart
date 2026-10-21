@@ -86,44 +86,21 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
 /// Exact canonical keys (feature names sorted, joined with ' -> ') of the
 /// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
 /// suite; later phases only shrink this set.
+///
+/// After the controls_widgets callback inversion (image_operations no longer
+/// imports tab_manager/llm_config) every cycle runs through the inherent
+/// llm_config -> agent_api -> tab_manager -> main_area -> llm_config ring;
+/// the first key below is the direct main_area -> llm_config shortcut.
 const Set<String> kKnownCycles = <String>{
-  'agent_api -> caption_search -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> caption_search -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> tab_manager',
-  'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> tab_manager',
-  'agent_api -> export -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> export -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config',
-  'agent_api -> image_list -> image_operations -> llm_config -> main_area -> structured_captioning -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> image_list -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> image_operations -> llm_config -> main_area -> tab_manager',
-  'agent_api -> image_operations -> llm_config -> tab_manager',
-  'agent_api -> llm_config',
+  'agent_api -> llm_config -> main_area -> tab_manager',
   'agent_api -> llm_config -> main_area -> structured_captioning -> tab_manager',
+  'agent_api -> llm_config',
   'agent_api -> llm_config -> structured_captioning -> tab_manager',
-  'caption_search -> image_list -> image_operations -> main_area -> tab_manager',
-  'caption_search -> image_list -> image_operations -> tab_manager',
-  'captioning -> image_list -> image_operations -> main_area -> structured_captioning -> tab_manager',
-  'captioning -> image_list -> image_operations -> main_area -> tab_manager',
-  'captioning -> image_list -> image_operations -> structured_captioning -> tab_manager',
-  'captioning -> image_list -> image_operations -> tab_manager',
-  'export -> image_list -> image_operations -> main_area -> tab_manager',
-  'export -> image_operations -> main_area -> tab_manager',
+  'agent_api -> captioning -> llm_config -> main_area -> tab_manager',
+  'agent_api -> captioning -> llm_config -> main_area -> structured_captioning -> tab_manager',
+  'agent_api -> captioning -> llm_config -> tab_manager',
+  'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
   'image_list -> image_operations',
-  'image_list -> image_operations -> main_area -> structured_captioning -> tab_manager',
-  'image_list -> image_operations -> main_area -> tab_manager',
-  'image_list -> image_operations -> structured_captioning -> tab_manager',
-  'image_list -> image_operations -> tab_manager',
-  'image_operations -> main_area -> tab_manager',
-  'image_operations -> tab_manager',
   'main_area -> tab_manager',
 };
 

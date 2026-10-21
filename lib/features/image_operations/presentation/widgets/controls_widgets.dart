@@ -6,14 +6,21 @@ import 'package:nested/nested.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../image_list/image_list.dart';
-import '../../../llm_config/llm_config.dart';
-import '../../../tab_manager/tab_manager.dart';
 import '../bloc/image_operations_cubit.dart';
 import '../pages/convert_images_dialog.dart';
 
 class PickFolderButton extends StatelessWidget {
+  const PickFolderButton({
+    super.key,
+    this.outlined = false,
+    required this.onFolderPicked,
+  });
+
   final bool outlined;
-  const PickFolderButton({super.key, this.outlined = false});
+
+  /// Invoked with the picked directory. The composition root decides what a
+  /// "folder picked" means (update the active tab, reload the image list).
+  final void Function(String folderPath) onFolderPicked;
 
   @override
   Widget build(BuildContext context) {
@@ -24,14 +31,15 @@ class PickFolderButton extends StatelessWidget {
         iconAssetPath: 'assets/icons/folder.png',
         isOutline: outlined,
         onTap: () async {
+          final String? currentFolder = context
+              .read<ImageListCubit>()
+              .state
+              .folderPath;
           final String? selectedDirectory = await FilePicker.getDirectoryPath(
-            initialDirectory: context.read<ImageListCubit>().state.folderPath,
+            initialDirectory: currentFolder,
           );
           if (selectedDirectory != null) {
-            final TabManagerCubit tabManager = context.read<TabManagerCubit>();
-            final AppTab activeTab = tabManager.state.activeTab;
-            tabManager.updateTabFolderPath(activeTab.id, selectedDirectory);
-            context.read<ImageListCubit>().onFolderPicked(selectedDirectory);
+            onFolderPicked(selectedDirectory);
           }
         },
       ),
@@ -40,18 +48,18 @@ class PickFolderButton extends StatelessWidget {
 }
 
 class SettingsButton extends StatelessWidget {
-  const SettingsButton();
+  const SettingsButton({super.key, required this.onPressed});
+
+  /// Navigation is owned by the composition root — this feature does not
+  /// import the settings screen.
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
     return Tooltip(
       message: 'Open Vision model settings',
       child: TextButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(builder: (_) => const LlmSettingsScreen()),
-          );
-        },
+        onPressed: onPressed,
         child: const Icon(Icons.tune, color: pinkDim, size: 20),
       ),
     );

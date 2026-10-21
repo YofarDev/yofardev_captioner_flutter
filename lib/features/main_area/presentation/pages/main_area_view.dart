@@ -14,10 +14,19 @@ import '../../../captioning/captioning.dart';
 import '../../../export/export.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
+import '../../../llm_config/llm_config.dart';
 import '../../../structured_captioning/structured_captioning.dart';
 import '../../../tab_manager/tab_manager.dart';
 import 'current_image_view.dart';
 import 'search_and_replace_widget.dart';
+
+/// Composition-root behavior for a folder pick: the widgets in
+/// image_operations stay agnostic of tab/list semantics.
+void _onFolderPicked(BuildContext context, String folderPath) {
+  final TabManagerCubit tabManager = context.read<TabManagerCubit>();
+  tabManager.updateTabFolderPath(tabManager.state.activeTab.id, folderPath);
+  context.read<ImageListCubit>().onFolderPicked(folderPath);
+}
 
 class MainAreaView extends StatelessWidget {
   const MainAreaView({super.key});
@@ -72,11 +81,15 @@ class MainAreaView extends StatelessWidget {
                         },
                   ),
                 ),
-                const ControlsView(
-                  searchAndReplace: SearchAndReplaceWidget(outlined: true),
-                  captionFiles: CaptionFilesButton(outlined: true),
-                  export: ExportButton(outlined: true),
-                  captionControls: _StructuredAwareCaptionControls(),
+                ControlsView(
+                  onFolderPicked: (String folderPath) =>
+                      _onFolderPicked(context, folderPath),
+                  searchAndReplace: const SearchAndReplaceWidget(
+                    outlined: true,
+                  ),
+                  captionFiles: const CaptionFilesButton(outlined: true),
+                  export: const ExportButton(outlined: true),
+                  captionControls: const _StructuredAwareCaptionControls(),
                 ),
                 const SizedBox(height: 16),
               ],
@@ -155,7 +168,10 @@ class _EmptyViewState extends State<_EmptyView> {
             style: TextStyle(fontSize: 14, color: textSecondary),
           ),
           const SizedBox(height: 28),
-          const PickFolderButton(),
+          PickFolderButton(
+            onFolderPicked: (String folderPath) =>
+                _onFolderPicked(context, folderPath),
+          ),
           if (folderName != null && folderName.isNotEmpty) ...<Widget>[
             const SizedBox(height: 14),
             TextButton(
@@ -231,7 +247,15 @@ class _StructuredAwareCaptionControls extends StatelessWidget {
             onCancelStructured: () => context
                 .read<StructuredCaptioningCubit>()
                 .cancelStructuredCaptioning(),
-            settingsButton: const SettingsButton(),
+            settingsButton: SettingsButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const LlmSettingsScreen(),
+                  ),
+                );
+              },
+            ),
           ),
     );
   }

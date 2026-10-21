@@ -13,6 +13,7 @@ import 'package:shelf_router/shelf_router.dart';
 
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/image_extensions.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
@@ -410,11 +411,7 @@ class AgentApiService {
     final List<Map<String, dynamic>> images = <Map<String, dynamic>>[];
     for (final FileSystemEntity entity in Directory(folder).listSync()) {
       if (entity is! File) continue;
-      final String extension = p.extension(entity.path).toLowerCase();
-      if (extension != '.jpg' &&
-          extension != '.png' &&
-          extension != '.jpeg' &&
-          extension != '.webp') {
+      if (!isSupportedImageFile(entity.path)) {
         continue;
       }
       final String filename = p.basename(entity.path);

@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/image_extensions.dart';
 import '../../../../core/errors/exception_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/models/app_image.dart';
@@ -75,11 +76,7 @@ class AppFileUtils implements CaptionFileStore {
 
       for (final FileSystemEntity file in files) {
         if (file is File) {
-          final String extension = p.extension(file.path).toLowerCase();
-          if (extension == '.jpg' ||
-              extension == '.png' ||
-              extension == '.jpeg' ||
-              extension == '.webp') {
+          if (isSupportedImageFile(file.path)) {
             final String filename = p.basename(file.path);
             foundFilenames.add(filename);
 

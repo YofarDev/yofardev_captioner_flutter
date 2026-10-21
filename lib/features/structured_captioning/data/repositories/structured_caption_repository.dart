@@ -183,7 +183,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       // easily exceed 4096 tokens. The _parseChatResponse now detects
       // finish_reason="length" and throws a clear error if even this is
       // exceeded.
-      maxTokens: 8192,
+      maxTokens: _vlmMaxTokens,
       cancelToken: cancelToken,
     );
     // Strip any <think>...</think> the model emitted before its final answer.
@@ -202,6 +202,9 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   // reloads the full model into RAM, so N parallel calls load N model copies
   // and freeze the machine. See _enrichConcurrencyFor.
   static const int _enrichConcurrency = 4;
+
+  /// Max completion tokens for VLM caption/enrich requests.
+  static const int _vlmMaxTokens = 8192;
 
   /// Hard cap on the number of elements the enumerate pass may emit.
   /// Enforced both in the prompt and by the pre-enrich validation gate.
@@ -244,7 +247,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       config,
       imageFile,
       prompt,
-      maxTokens: 8192,
+      maxTokens: _vlmMaxTokens,
       cancelToken: cancelToken,
     );
     VlmAnalysis analysis = await _parseEnumerateResponse(
@@ -277,7 +280,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
         config,
         imageFile,
         retryPrompt,
-        maxTokens: 8192,
+        maxTokens: _vlmMaxTokens,
         cancelToken: cancelToken,
       );
       final VlmAnalysis retryAnalysis = await _parseEnumerateResponse(
@@ -1197,7 +1200,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
         final String repaired = await _captionService.repairJson(
           config,
           raw,
-          maxTokens: 8192,
+          maxTokens: _vlmMaxTokens,
           cancelToken: cancelToken,
         );
         return _parseVlmResponse(

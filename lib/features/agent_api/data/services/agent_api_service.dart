@@ -148,7 +148,10 @@ class AgentApiService {
           return inner(request);
         }
         final String? authorization = request.headers['authorization'];
-        if (authorization == null || authorization != 'Bearer $_token') {
+        final bool authorized =
+            authorization != null &&
+            _constantTimeEquals(authorization, 'Bearer $_token');
+        if (!authorized) {
           return _jsonResponse(401, <String, dynamic>{
             'error': 'unauthorized',
             'hint':
@@ -158,6 +161,27 @@ class AgentApiService {
         }
         return inner(request);
       };
+
+  /// Length-safe constant-time comparison for the bearer token. The API is
+  /// loopback-only, so this is hygiene, not a real attack surface.
+  bool _constantTimeEquals(String a, String b) {
+    final List<int> ab = utf8.encode(a);
+    final List<int> bb = utf8.encode(b);
+    if (ab.length != bb.length) {
+      // Uniform work on length mismatch, then fail.
+      int acc = 0;
+      for (int i = 0; i < ab.length; i++) {
+        acc |= ab[i] ^ ab[i];
+      }
+      if (acc != 0) return false;
+      return false;
+    }
+    int acc = 0;
+    for (int i = 0; i < ab.length; i++) {
+      acc |= ab[i] ^ bb[i];
+    }
+    return acc == 0;
+  }
 
   Middleware get _catchErrors =>
       (Handler inner) => (Request request) async {
@@ -417,19 +441,15 @@ class AgentApiService {
       }
       final String filename = p.basename(entity.path);
       final CaptionData? data = byName[filename];
-      images.add(<String, dynamic>{
-        'id': data?.id,
-        'filename': filename,
-        'path': entity.path,
-        'captions':
-            data?.captions.map(
-              (String key, CaptionEntry value) =>
-                  MapEntry<String, dynamic>(key, value.toJson()),
-            ) ??
-            <String, dynamic>{},
-        'tags': data?.tags ?? <String>[],
-        'guidance': data == null ? '' : (db.imageGuidance[data.id] ?? ''),
-      });
+      images.add(
+        _writeService.imageJsonFrom(
+          id: data?.id,
+          path: entity.path,
+          captions: data?.captions ?? <String, CaptionEntry>{},
+          tags: data?.tags ?? <String>[],
+          guidance: data == null ? '' : (db.imageGuidance[data.id] ?? ''),
+        ),
+      );
     }
     images.sort(
       (Map<String, dynamic> a, Map<String, dynamic> b) =>

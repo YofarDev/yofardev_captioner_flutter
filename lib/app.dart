@@ -42,6 +42,13 @@ class AppState extends State<App> {
   }
 
   @override
+  void dispose() {
+    _llmConfigsCubit.close();
+    _tabManagerCubit.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final CacheService cacheService = locator<CacheService>();
     return MultiBlocProvider(

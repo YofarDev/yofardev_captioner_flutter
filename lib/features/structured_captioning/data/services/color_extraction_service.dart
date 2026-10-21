@@ -3,12 +3,15 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
+import 'package:logging/logging.dart';
 
 /// Extracts color palettes from images using k-means clustering in CIELAB space.
 ///
 /// Lab distance approximates human color perception much better than raw RGB
 /// distance, producing more visually distinct and accurate palettes.
 class ColorExtractionService {
+  static final Logger _logger = Logger('ColorExtractionService');
+
   /// Extracts a palette of [colorCount] hex colors from [imageFile].
   ///
   /// Returns colors as "#RRGGBB" strings, sorted by dominance (largest cluster first).
@@ -20,7 +23,8 @@ class ColorExtractionService {
     img.Image? image;
     try {
       image = img.decodeImage(bytes);
-    } catch (_) {
+    } catch (e) {
+      _logger.fine('ColorExtractionService: decode failed: $e');
       return <String>[];
     }
     if (image == null) return <String>[];
@@ -72,7 +76,8 @@ class ColorExtractionService {
     img.Image? fullImage;
     try {
       fullImage = img.decodeImage(bytes);
-    } catch (_) {
+    } catch (e) {
+      _logger.fine('ColorExtractionService: decode failed: $e');
       return <String>[];
     }
     if (fullImage == null) return <String>[];

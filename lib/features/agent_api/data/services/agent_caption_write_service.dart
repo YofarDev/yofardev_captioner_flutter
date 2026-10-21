@@ -179,18 +179,35 @@ class AgentCaptionWriteService {
     ];
   }
 
+  /// Canonical image JSON for the agent API. The disk listing path has no
+  /// [AppImage] (only a db [CaptionData] plus the file on disk), so both
+  /// paths funnel through [imageJsonFrom] — one shape, one place.
+  Map<String, dynamic> imageJsonFrom({
+    required String? id,
+    required String path,
+    required Map<String, CaptionEntry> captions,
+    required List<String> tags,
+    String? guidance,
+  }) => <String, dynamic>{
+    'id': id,
+    'filename': p.basename(path),
+    'path': path,
+    'captions': captions.map(
+      (String key, CaptionEntry value) =>
+          MapEntry<String, dynamic>(key, value.toJson()),
+    ),
+    'tags': tags,
+    'guidance': guidance ?? '',
+  };
+
   Map<String, dynamic> imageJson(AppImage image, {String? guidance}) =>
-      <String, dynamic>{
-        'id': image.id,
-        'filename': p.basename(image.image.path),
-        'path': image.image.path,
-        'captions': image.captions.map(
-          (String key, CaptionEntry value) =>
-              MapEntry<String, dynamic>(key, value.toJson()),
-        ),
-        'tags': image.tags,
-        'guidance': guidance ?? '',
-      };
+      imageJsonFrom(
+        id: image.id,
+        path: image.image.path,
+        captions: image.captions,
+        tags: image.tags,
+        guidance: guidance,
+      );
 
   static Response jsonResponse(int status, Map<String, dynamic> body) =>
       Response(status, body: jsonEncode(body), headers: _jsonHeaders);

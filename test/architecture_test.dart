@@ -87,16 +87,11 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
 /// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
 /// suite; later phases only shrink this set.
 ///
-/// Every remaining llm_config cycle runs through the inherent
-/// llm_config -> agent_api -> tab_manager -> llm_config ring; the first key
-/// below is the direct llm_config -> agent_api shortcut. The only other live
-/// cycle is the image_list <-> image_operations 2-cycle.
-const Set<String> kKnownCycles = <String>{
-  'agent_api -> llm_config',
-  'agent_api -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> tab_manager',
-  'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
-};
+/// The only live cycle: the direct llm_config -> agent_api shortcut on the
+/// inherent llm_config -> agent_api -> tab_manager -> llm_config ring. All
+/// longer ring permutations are broken now that the caption-session
+/// contracts live in the caption_session feature.
+const Set<String> kKnownCycles = <String>{'agent_api -> llm_config'};
 
 void main() {
   test('every allowlist entry still matches a live violation', () async {

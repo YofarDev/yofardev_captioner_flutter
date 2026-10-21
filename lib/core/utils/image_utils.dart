@@ -80,7 +80,7 @@ class ImageUtils {
         image.copyWith(
           width: size.width.toInt(),
           height: size.height.toInt(),
-          size: image.image.lengthSync(),
+          size: await image.image.length(),
         ),
       );
     }
@@ -92,7 +92,7 @@ class ImageUtils {
     return image.copyWith(
       width: size.width.toInt(),
       height: size.height.toInt(),
-      size: image.image.lengthSync(),
+      size: await image.image.length(),
     );
   }
 

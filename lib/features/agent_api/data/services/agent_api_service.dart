@@ -168,13 +168,13 @@ class AgentApiService {
     final List<int> ab = utf8.encode(a);
     final List<int> bb = utf8.encode(b);
     if (ab.length != bb.length) {
-      // Uniform work on length mismatch, then fail.
-      int acc = 0;
+      // Burn comparable work before failing so a length mismatch is not
+      // observably faster than a content mismatch.
+      int burn = 0;
       for (int i = 0; i < ab.length; i++) {
-        acc |= ab[i] ^ ab[i];
+        burn |= ab[i] ^ 0xFF;
       }
-      if (acc != 0) return false;
-      return false;
+      return burn < 0; // always false; keeps `burn` live
     }
     int acc = 0;
     for (int i = 0; i < ab.length; i++) {

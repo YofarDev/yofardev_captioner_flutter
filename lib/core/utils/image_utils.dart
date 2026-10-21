@@ -4,15 +4,17 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image/image.dart' as img;
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 
 import '../models/app_image.dart';
 import 'bash_scripts_runner.dart';
 import 'image_header_parser.dart';
+
+final Logger _logger = Logger('ImageUtils');
 
 /// A utility class for image-related operations.
 ///
@@ -61,7 +63,7 @@ class ImageUtils {
         await Process.run('xdg-open', <String>[imagePath]);
       }
     } catch (e) {
-      debugPrint('Error opening image: $e');
+      _logger.warning('Error opening image: $e');
     }
   }
 

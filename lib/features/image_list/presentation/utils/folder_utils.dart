@@ -1,8 +1,10 @@
 import 'dart:io';
 
-import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 
 class FolderUtils {
+  static final Logger _logger = Logger('FolderUtils');
+
   /// Opens the folder at the given [folderPath] using the operating system's default application.
   ///
   /// Supports macOS, Windows, and Linux.
@@ -16,7 +18,7 @@ class FolderUtils {
         await Process.run('xdg-open', <String>[folderPath]);
       }
     } catch (e) {
-      debugPrint('Error opening image: $e');
+      _logger.warning('Error opening image: $e');
     }
   }
 }

@@ -35,7 +35,7 @@ Rules that matter when editing:
 - Presentation must not import `data/` directly; go through cubits/repositories (cubits depend on domain repository interfaces such as `ILlmConfigRepository` / `ICaptioningRepository` where practical). Repositories return `Either<Failure, T>` (fpdart) instead of throwing; failures are classified once at the boundary (`lib/core/errors/`) and mapped to user text by `failureMessage`.
 - Cross-feature access goes through the target feature's barrel, never its internal files.
 - DI: everything registers in `lib/core/di/service_locator.dart` (there is no router — navigation is `home_page` + `routeObserver`). Access via `locator<Type>()`.
-- Root cubits (`LlmConfigsCubit`, `TabManagerCubit`) are constructed in `main()` and registered as singletons **before** runApp so `AgentApiService` can read their live state — don't move their creation into BlocProviders.
+- Root cubits (`LlmConfigsCubit`, `TabManagerCubit`) are constructed once in `AppState.initState` (`lib/app.dart`) and provided via `BlocProvider.value` — deliberately NOT registered in the service locator. Live tab/session state for the Agent API flows through `TabSessionRegistry` (registered in the locator, shared with `TabManagerCubit`), never through cubit references.
 - States use `Equatable`; models use `json_annotation` (hence the build_runner requirement).
 
 ## Conventions
@@ -47,7 +47,7 @@ Rules that matter when editing:
 
 ## Agent API (sensitive area)
 
-`lib/features/agent_api/` embeds a local REST API (shelf; binds `127.0.0.1`, default port 8765, bearer-token auth; port+token discovery file under the app's Application Support dir) plus a stdio MCP server at `tool/captioner_mcp.dart`. Before touching this area, read the Agent API section in `git show HEAD:CLAUDE.md` (the old CLAUDE.md, removed in favor of this file) and `test/features/agent_api/`.
+`lib/features/agent_api/` embeds a local REST API (shelf; binds `127.0.0.1`, default port 8765, bearer-token auth; port+token discovery file `agent-api.json` under the app's Application Support dir) plus a stdio MCP server at `tool/captioner_mcp.dart`. Historical design notes: `git show 9ea7bbc~1:CLAUDE.md` (the last version before the file was folded into this one). Tests: `test/features/agent_api/`.
 
 **Never write a folder's `db.json` from outside the app while it runs** — the app rewrites the whole file from memory on every save, so external edits get clobbered. External writers must go through `POST /api/captions`.
 

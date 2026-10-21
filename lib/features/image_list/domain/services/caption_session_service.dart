@@ -57,6 +57,13 @@ abstract class CaptionFilterEngine {
 typedef CaptionSessionLogger =
     void Function(String message, {Object? error, StackTrace? stackTrace});
 
+/// DESIGN INTENT — the session service, not the cubit, owns [ImageListState].
+/// The per-tab cubits are thin adapters over [current]/[state], which is what
+/// lets the tab manager and the embedded Agent API observe and mutate live
+/// session state without holding a cubit. UI-shaped fields (searchQuery,
+/// sortBy, ...) living here is deliberate. Do not "fix" this in either
+/// direction without replacing both observation paths first.
+///
 /// Owns the per-tab image session: collection, selection, categories,
 /// filtering. One instance per tab, created by the tab manager BEFORE the
 /// widget tree builds. Emits a [CaptionSessionSnapshot] on every state

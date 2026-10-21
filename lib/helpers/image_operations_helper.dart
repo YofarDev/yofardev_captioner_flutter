@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:image/image.dart' as img;
+import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -18,6 +19,8 @@ import '../features/image_list/image_list.dart';
 import '../features/image_operations/image_operations.dart';
 
 class ImageOperationsHelper {
+  static final Logger _logger = Logger('ImageOperationsHelper');
+
   final AppFileUtils _fileUtils;
   final CaptionSessionService _session;
 
@@ -186,7 +189,7 @@ class ImageOperationsHelper {
         format: ui.ImageByteFormat.png,
       );
       if (byteData == null) {
-        debugPrint('Failed to convert image to PNG bytes');
+        _logger.warning('Failed to convert image to PNG bytes');
         codec.dispose();
         image.dispose();
         return null;
@@ -195,12 +198,12 @@ class ImageOperationsHelper {
 
       codec.dispose();
       image.dispose();
-      debugPrint(
+      _logger.warning(
         'Converted to PNG using Flutter codec: ${pngBytes.length} bytes',
       );
     }
 
-    debugPrint('Passing to crop screen: ${pngBytes.length} bytes');
+    _logger.warning('Passing to crop screen: ${pngBytes.length} bytes');
 
     final CropImage? result = await Navigator.push(
       context,
@@ -247,7 +250,7 @@ class ImageOperationsHelper {
               await originalFile.delete();
             }
           } catch (deleteErr) {
-            debugPrint('Failed to delete original file: $deleteErr');
+            _logger.warning('Failed to delete original file: $deleteErr');
           }
         }
         return newState;

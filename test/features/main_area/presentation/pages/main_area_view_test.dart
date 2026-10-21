@@ -18,6 +18,7 @@ import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/caption_search/presentation/bloc/caption_search_cubit.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
+import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
 import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
@@ -257,7 +258,9 @@ void main() {
         'folderPath': '/tmp/captioner_photos',
       });
       imageListCubit = ImageListCubit();
-      final TabManagerCubit tabManager = TabManagerCubit();
+      final TabManagerCubit tabManager = TabManagerCubit(
+        fileUtils: AppFileUtils(),
+      );
       addTearDown(tabManager.close);
 
       await tester.pumpWidget(
@@ -340,7 +343,7 @@ void main() {
       // The cubit adopts its initial const state into the session on
       // construction — seed AFTER so the session keeps the image.
       imageListCubit.emit(seedState);
-      tabManager = TabManagerCubit();
+      tabManager = TabManagerCubit(fileUtils: AppFileUtils());
       llmConfigsCubit = LlmConfigsCubit(llmConfigService: LlmConfigService());
       captioningCubit = CaptioningCubit(
         session,

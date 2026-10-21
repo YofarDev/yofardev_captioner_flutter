@@ -280,6 +280,7 @@ void main() {
       locator.registerSingleton<TabSessionRegistry>(registry);
       final TabManagerCubit tabManager = TabManagerCubit(
         sessionRegistry: registry,
+        fileUtils: AppFileUtils(),
       );
       locator.registerSingleton<TabManagerCubit>(tabManager);
       tabManager.addTab(folder.path);
@@ -325,6 +326,7 @@ void main() {
     locator.registerSingleton<TabSessionRegistry>(registry);
     final TabManagerCubit tabManager = TabManagerCubit(
       sessionRegistry: registry,
+      fileUtils: AppFileUtils(),
     );
     locator.registerSingleton<TabManagerCubit>(tabManager);
     tabManager.addTab(folder.path);

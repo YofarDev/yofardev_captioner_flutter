@@ -21,15 +21,9 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
         'lib/features/structured_captioning/data/repositories/structured_caption_repository.dart',
     ruleId: 'cross-feature-internal-access',
   ),
-  KnownViolation(
-    pathPrefix:
-        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
-    ruleId: 'cross-feature-internal-access',
-  ),
   // Presentation→data survives in: the agent API panel (drives the embedded
   // REST service), the image-list cubit adapter (constructs its default
-  // session's file store), structured captioning (feature-internal data),
-  // and the tab-manager cubit (same session wiring).
+  // session's file store), structured captioning (feature-internal data).
   KnownViolation(
     pathPrefix: 'lib/features/agent_api/',
     ruleId: 'presentation-imports-data',
@@ -52,11 +46,6 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
   KnownViolation(
     pathPrefix:
         'lib/features/structured_captioning/presentation/widgets/style_editor_section.dart',
-    ruleId: 'presentation-imports-data',
-  ),
-  KnownViolation(
-    pathPrefix:
-        'lib/features/tab_manager/presentation/bloc/tab_manager_cubit.dart',
     ruleId: 'presentation-imports-data',
   ),
   // locator<T>() reads live only in the agent API (the DI-embedded REST

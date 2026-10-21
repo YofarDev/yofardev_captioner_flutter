@@ -6,7 +6,6 @@ import 'package:window_manager/window_manager.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../caption_session/caption_session.dart';
-import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/image_list.dart';
 import '../../domain/models/app_tab.dart';
 
@@ -15,11 +14,11 @@ part 'tab_manager_state.dart';
 class TabManagerCubit extends Cubit<TabManagerState> {
   TabManagerCubit({
     CacheService? cacheService,
-    AppFileUtils? fileUtils,
+    CaptionFileStore? fileUtils,
     CaptionFilterEngine? filterEngine,
     TabSessionRegistry? sessionRegistry,
   }) : _cacheService = cacheService ?? const CacheService(),
-       _fileUtils = fileUtils ?? AppFileUtils(cacheService: cacheService),
+       _fileUtils = fileUtils ?? locator<CaptionFileStore>(),
        _filterEngine = filterEngine ?? const FilterParserCaptionEngine(),
        super(const TabManagerState(tabs: <AppTab>[AppTab(id: 'default')])) {
     _sessions = sessionRegistry ?? TabSessionRegistry();
@@ -30,7 +29,7 @@ class TabManagerCubit extends Cubit<TabManagerState> {
   }
 
   final CacheService _cacheService;
-  final AppFileUtils _fileUtils;
+  final CaptionFileStore _fileUtils;
   final CaptionFilterEngine _filterEngine;
 
   /// Owns the per-tab sessions. Created locally by default, or shared from DI

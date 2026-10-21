@@ -96,6 +96,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
     if (cubit != null) {
       await cubit.flushSave();
     }
+    if (!mounted) return; // flush can complete after disposal
 
     final ImageListCubit list = widget.imageListCubit;
     final List<AppImage> displayed = list.displayedImages;

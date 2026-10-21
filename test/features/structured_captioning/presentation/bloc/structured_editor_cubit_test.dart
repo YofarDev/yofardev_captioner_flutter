@@ -18,13 +18,13 @@ import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/services/layer_title_store.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/services/layer_title_store.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 
 import 'structured_editor_cubit_test.mocks.dart';
 
-@GenerateMocks(<Type>[StructuredCaptionRepository])
+@GenerateMocks(<Type>[IStructuredCaptionRepository])
 /// Hand-rolled fake of the [CaptionFileStore] port — records caption JSON
 /// written via the session and can be made to throw (disk-full simulation).
 class _FakeFileStore implements CaptionFileStore {
@@ -195,7 +195,7 @@ void main() {
         imageFile: File('img.png'),
         activeCategory: 'default',
         session: session,
-        repository: MockStructuredCaptionRepository(),
+        repository: MockIStructuredCaptionRepository(),
       );
     });
 
@@ -408,7 +408,7 @@ void main() {
           imageFile: File('seeded.png'),
           activeCategory: 'default',
           session: session,
-          repository: MockStructuredCaptionRepository(),
+          repository: MockIStructuredCaptionRepository(),
         );
         // Let the constructor's fire-and-forget _loadTitles() land.
         await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -505,7 +505,7 @@ void main() {
     });
 
     group('recaptionSelectedElement', () {
-      late MockStructuredCaptionRepository mockRepo;
+      late MockIStructuredCaptionRepository mockRepo;
       late Completer<Either<Failure, IdeogramElement>> recaptionCompleter;
 
       IdeogramCaption withSelection({required bool withBbox}) =>
@@ -525,7 +525,7 @@ void main() {
           );
 
       setUp(() {
-        mockRepo = MockStructuredCaptionRepository();
+        mockRepo = MockIStructuredCaptionRepository();
         recaptionCompleter = Completer<Either<Failure, IdeogramElement>>();
       });
 
@@ -781,10 +781,10 @@ void main() {
     });
 
     group('recaptionStyle', () {
-      late MockStructuredCaptionRepository mockRepo;
+      late MockIStructuredCaptionRepository mockRepo;
 
       setUp(() {
-        mockRepo = MockStructuredCaptionRepository();
+        mockRepo = MockIStructuredCaptionRepository();
       });
 
       StructuredEditorCubit buildCubit() {
@@ -940,7 +940,7 @@ void main() {
     });
 
     group('toggleSamBboxes', () {
-      late MockStructuredCaptionRepository mockRepo;
+      late MockIStructuredCaptionRepository mockRepo;
 
       IdeogramCaption captionWithBboxes() => const IdeogramCaption(
         highLevelDescription: 'hld',
@@ -968,7 +968,7 @@ void main() {
       );
 
       setUp(() {
-        mockRepo = MockStructuredCaptionRepository();
+        mockRepo = MockIStructuredCaptionRepository();
       });
 
       StructuredEditorCubit buildCubit() {
@@ -1164,10 +1164,10 @@ void main() {
     });
 
     group('SAM cache invalidation', () {
-      late MockStructuredCaptionRepository mockRepo;
+      late MockIStructuredCaptionRepository mockRepo;
 
       setUp(() {
-        mockRepo = MockStructuredCaptionRepository();
+        mockRepo = MockIStructuredCaptionRepository();
       });
 
       test('editing the selected element clears the SAM cache', () async {

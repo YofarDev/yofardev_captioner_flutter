@@ -4,6 +4,11 @@
 /// barrel exports — never on feature-internal files.
 library;
 
+export 'domain/models/structured_mode.dart' show StructuredMode;
+export 'domain/repositories/structured_caption_repository.dart'
+    show IStructuredCaptionRepository;
+export 'domain/services/layer_title_store.dart' show LayerTitleStore;
+
 export 'presentation/bloc/structured_captioning_cubit.dart'
     show
         StructuredCaptioningCubit,

@@ -40,7 +40,18 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
     ruleId: 'presentation-imports-data',
   ),
   KnownViolation(
-    pathPrefix: 'lib/features/structured_captioning/',
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/widgets/element_detail_section.dart',
+    ruleId: 'presentation-imports-data',
+  ),
+  KnownViolation(
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/widgets/image_eyedropper_dialog.dart',
+    ruleId: 'presentation-imports-data',
+  ),
+  KnownViolation(
+    pathPrefix:
+        'lib/features/structured_captioning/presentation/widgets/style_editor_section.dart',
     ruleId: 'presentation-imports-data',
   ),
   KnownViolation(

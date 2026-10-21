@@ -17,6 +17,8 @@ import '../../../../core/models/llm_provider_type.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../../captioning/data/services/caption_service.dart';
+import '../../domain/models/structured_mode.dart';
+import '../../domain/repositories/structured_caption_repository.dart';
 import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
@@ -92,22 +94,10 @@ class MultiStageQualityReport {
   }
 }
 
-/// Selects how the structured pipeline produces its [VlmAnalysis].
-enum StructuredMode {
-  /// One VLM call emits the full JSON. The original path. Best for simple
-  /// images where the whole caption fits the token budget comfortably.
-  singleShot,
-
-  /// 1 enumerate call (terse per-object desc, focused on completeness) +
-  /// N parallel per-element enrich calls (cropped per bbox). Best for
-  /// object-heavy images that truncate or miss objects single-shot.
-  multiStage,
-}
-
 /// Orchestrates the structured captioning pipeline:
 /// global palette → VLM analysis → SAM detection → bbox matching → element
 /// palettes → build Ideogram4 JSON.
-class StructuredCaptionRepository {
+class StructuredCaptionRepository implements IStructuredCaptionRepository {
   final Logger _logger = locator<Logger>();
   final CaptionService _captionService;
   final SamProcessService _samProcessService;
@@ -139,6 +129,7 @@ class StructuredCaptionRepository {
   /// [onProgress] emits step descriptions for UI progress tracking.
   /// [debugMode] saves prompt, raw VLM response, bbox overlay and final
   /// caption alongside the image in a debug/ subfolder.
+  @override
   Future<Either<Failure, IdeogramCaption>> generateStructuredCaption(
     LlmConfig config,
     File imageFile, {
@@ -888,6 +879,7 @@ class StructuredCaptionRepository {
   /// `sam_process_service.dart`, passing this repository's injected
   /// [SamProcessService.detectObjects] as the SAM entry point. Errors from
   /// the SAM subprocess are logged there and an empty map is returned.
+  @override
   Future<Map<int, List<int>>> computeSamBboxes({
     required File imageFile,
     required IdeogramCaption caption,
@@ -911,6 +903,7 @@ class StructuredCaptionRepository {
   /// unparseable.
   /// Re-throws any error from [CaptionService]; the temp highlight file is
   /// always cleaned up.
+  @override
   Future<Either<Failure, IdeogramElement>> recaptionElement({
     required LlmConfig config,
     required File imageFile,
@@ -1019,6 +1012,7 @@ class StructuredCaptionRepository {
   /// Throws [FormatException] if the response is missing `medium`, is not a
   /// JSON object, or is otherwise unparseable. Re-throws any error from
   /// [CaptionService].
+  @override
   Future<Either<Failure, IdeogramStyleDescription>> recaptionStyle({
     required LlmConfig config,
     required File imageFile,

@@ -12,8 +12,8 @@ import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../image_list/image_list.dart';
-import '../../data/repositories/structured_caption_repository.dart';
-import '../../data/services/layer_title_store.dart';
+import '../../domain/repositories/structured_caption_repository.dart';
+import '../../domain/services/layer_title_store.dart';
 
 part 'structured_editor_state.dart';
 
@@ -33,7 +33,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     required File imageFile,
     required String activeCategory,
     required CaptionSessionService session,
-    required StructuredCaptionRepository repository,
+    required IStructuredCaptionRepository repository,
     LayerTitleStore? layerTitleStore,
     bool showBboxText = false,
   }) : _session = session,
@@ -56,7 +56,7 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   }
 
   final CaptionSessionService _session;
-  final StructuredCaptionRepository _repository;
+  final IStructuredCaptionRepository _repository;
   final LayerTitleStore _layerTitleStore;
   final Logger _logger = locator<Logger>();
   Timer? _debounceTimer;

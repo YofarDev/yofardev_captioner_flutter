@@ -22,7 +22,7 @@ import 'package:yofardev_captioner/features/image_list/domain/models/image_list_
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
-import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/widgets/element_detail_section.dart';
 
@@ -142,7 +142,7 @@ class _FakeLlmConfigsCubit extends LlmConfigsCubit {
   void emitState(LlmConfigsState next) => emit(next);
 }
 
-@GenerateMocks(<Type>[StructuredCaptionRepository])
+@GenerateMocks(<Type>[IStructuredCaptionRepository])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -197,7 +197,7 @@ void main() {
       imageFile: File('x.png'),
       activeCategory: 'default',
       session: session,
-      repository: MockStructuredCaptionRepository(),
+      repository: MockIStructuredCaptionRepository(),
     );
     editorCubit.selectElement(0);
     addTearDown(editorCubit.close);

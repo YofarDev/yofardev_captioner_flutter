@@ -22,6 +22,7 @@ import 'package:yofardev_captioner/features/structured_captioning/data/services/
 import 'package:yofardev_captioner/features/structured_captioning/data/services/color_extraction_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart';
+import 'package:yofardev_captioner/features/structured_captioning/domain/models/structured_mode.dart';
 
 import 'structured_caption_repository_test.mocks.dart';
 

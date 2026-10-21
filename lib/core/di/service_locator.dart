@@ -56,7 +56,7 @@ void registerDependencies(GetIt container) {
   container.registerLazySingleton<LlmCaptionRepository>(
     () => LlmCaptionRepository(),
   );
-  container.registerLazySingleton<StructuredCaptionRepository>(
+  container.registerLazySingleton<IStructuredCaptionRepository>(
     () => StructuredCaptionRepository(
       captionService: container<CaptionService>(),
     ),
@@ -102,7 +102,7 @@ void registerDependencies(GetIt container) {
   >(
     (CaptionSessionService session, _) => StructuredCaptioningCubit(
       session,
-      repository: container<StructuredCaptionRepository>(),
+      repository: container<IStructuredCaptionRepository>(),
     ),
   );
   container.registerFactoryParam<
@@ -116,7 +116,7 @@ void registerDependencies(GetIt container) {
       activeCategory: p.activeCategory,
       session: p.session,
       showBboxText: p.showBboxText,
-      repository: container<StructuredCaptionRepository>(),
+      repository: container<IStructuredCaptionRepository>(),
     ),
   );
   container

@@ -203,8 +203,8 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         );
         _session.updateImage(image: updatedImage);
       } on CancellationException {
-        _cancelToken = null;
         if (isClosed) return;
+        _cancelToken = null;
         emit(
           state.copyWith(
             status: StructuredCaptioningStatus.initial,

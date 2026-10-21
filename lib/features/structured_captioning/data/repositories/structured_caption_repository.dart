@@ -620,6 +620,8 @@ class StructuredCaptionRepository {
         return null;
       }
       return parsed;
+    } on CancellationException {
+      rethrow;
     } catch (e) {
       // Deliberate soft-fail: one unparseable element must not abort the whole
       // run — the element keeps its un-enriched description and the run

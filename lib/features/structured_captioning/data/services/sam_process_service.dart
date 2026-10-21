@@ -162,6 +162,8 @@ class SamProcessService {
           bbox: rawBbox?.cast<int>(),
         );
       }).toList();
+    } on CancellationException {
+      rethrow;
     } catch (e) {
       _logger.warning('SAM detection failed: $e');
       return <SamDetection>[];

@@ -300,7 +300,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     }
 
     // ── Quality gates: prune duplicates, skip suspicious bboxes ────────
-    analysis = pruneDuplicateObjects(analysis);
+    analysis = _vlmResponseParser.pruneDuplicateObjects(analysis);
     final MultiStageQualityReport qualityReport = _buildQualityReport(analysis);
     final List<int> skippedIndices = <int>[
       ...qualityReport.fullCanvasBboxes,
@@ -390,29 +390,9 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   bool _isFullCanvasBbox(List<int>? bbox) =>
       _vlmResponseParser.isFullCanvasBbox(bbox);
 
-  /// Fraction of the full canvas (1000 × 1000) that [bbox] covers. Returns 0
-  /// for null or malformed input.
-  @visibleForTesting
-  double bboxAreaRatio(List<int>? bbox) =>
-      _vlmResponseParser.bboxAreaRatio(bbox);
-
   /// True when [bbox] covers more than 80 % of the full canvas.
   bool _isNearFullCanvasBbox(List<int>? bbox) =>
       _vlmResponseParser.isNearFullCanvasBbox(bbox);
-
-  /// Simple name-similarity heuristic for duplicate detection: fraction of
-  /// words in the shorter name that appear in the longer name.
-  @visibleForTesting
-  double normalizedNameSimilarity(String a, String b) =>
-      _vlmResponseParser.normalizedNameSimilarity(a, b);
-
-  /// Prunes duplicate objects: when two objects share a bbox with IoU > 0.90
-  /// and have similar names, the second (and later) duplicate is dropped. The
-  /// first or most informative one is kept. Returns a new [VlmAnalysis] with
-  /// duplicates removed.
-  @visibleForTesting
-  VlmAnalysis pruneDuplicateObjects(VlmAnalysis analysis) =>
-      _vlmResponseParser.pruneDuplicateObjects(analysis);
 
   /// Builds a quality report for the multi-stage analysis, identifying
   /// full-canvas, near-full-canvas, and duplicate-prone elements.
@@ -432,12 +412,12 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       // Duplicate candidate detection (already pruned, but report what was
       // found before pruning — we can only report what remains).
       for (final int s in seen) {
-        final double iou = computeIou(
+        final double iou = bbox_math.computeIou(
           analysis.objects[s].bbox,
           analysis.objects[i].bbox,
         );
         if (iou > VlmResponseParser.duplicateIouThreshold &&
-            normalizedNameSimilarity(
+            _vlmResponseParser.normalizedNameSimilarity(
                   analysis.objects[s].name,
                   analysis.objects[i].name,
                 ) >
@@ -707,7 +687,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       if (disableSam) {
         continue;
       }
-      if (isLikelyGroup(obj.name, obj.desc)) {
+      if (_samBboxService.isLikelyGroup(obj.name, obj.desc)) {
         _logger.fine('Skipping SAM for group element: "${obj.name}"');
       } else {
         samIndices.add(i);
@@ -752,10 +732,8 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     final List<VlmObjectBboxPair> samVlmBboxes = samIndices
         .map((int i) => vlmBboxes[i])
         .toList();
-    final List<SamDetection> samMatched = matchDetectionsToObjects(
-      detections,
-      samVlmBboxes,
-    );
+    final List<SamDetection> samMatched = _samBboxService
+        .matchDetectionsToObjects(detections, samVlmBboxes);
 
     // Merge back: SAM results at their original positions, VLM bbox for groups.
     final List<SamDetection> matched = List<SamDetection>.filled(
@@ -1237,40 +1215,6 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       }
     }
   }
-
-  @visibleForTesting
-  String? extractJsonObject(String raw) =>
-      _vlmResponseParser.extractJsonObject(raw);
-
-  @visibleForTesting
-  VlmAnalysis parsePartialVlmResponse(String raw, {bool vlmEmitsXyxy = true}) =>
-      _vlmResponseParser.parsePartialVlmResponse(
-        raw,
-        vlmEmitsXyxy: vlmEmitsXyxy,
-      );
-
-  @visibleForTesting
-  List<int>? normalizeBbox(dynamic raw, {bool vlmEmitsXyxy = true}) =>
-      _vlmResponseParser.normalizeBbox(raw, vlmEmitsXyxy: vlmEmitsXyxy);
-
-  @visibleForTesting
-  VlmAnalysis parseAnalysisJson(
-    Map<String, dynamic> json, {
-    bool vlmEmitsXyxy = true,
-  }) => _vlmResponseParser.parseAnalysisJson(json, vlmEmitsXyxy: vlmEmitsXyxy);
-
-  @visibleForTesting
-  List<SamDetection> matchDetectionsToObjects(
-    List<SamDetection> detections,
-    List<VlmObjectBboxPair> vlmObjects,
-  ) => _samBboxService.matchDetectionsToObjects(detections, vlmObjects);
-
-  @visibleForTesting
-  double computeIou(List<int>? a, List<int>? b) => bbox_math.computeIou(a, b);
-
-  @visibleForTesting
-  bool isLikelyGroup(String name, String desc) =>
-      _samBboxService.isLikelyGroup(name, desc);
 
   /// Builds the final [IdeogramCaption] from pipeline data.
   @visibleForTesting

@@ -13,7 +13,6 @@ import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../data/repositories/structured_caption_repository.dart';
 import '../bloc/structured_editor_cubit.dart';
 import '../widgets/editor_primitives.dart';
 import '../widgets/element_detail_section.dart';
@@ -148,15 +147,16 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
         // Capture the instance so [_navigate] can flush it without needing a
         // descendant [BuildContext] (the provider sits in this widget's child,
         // so the scope's own context cannot read it).
-        final StructuredEditorCubit cubit = StructuredEditorCubit(
-          initialCaption: IdeogramCaption.fromJson(
-            jsonDecode(_captionJson) as Map<String, dynamic>,
+        final StructuredEditorCubit cubit = locator<StructuredEditorCubit>(
+          param1: (
+            initialCaption: IdeogramCaption.fromJson(
+              jsonDecode(_captionJson) as Map<String, dynamic>,
+            ),
+            imageFile: _imageFile,
+            activeCategory: widget.activeCategory,
+            session: widget.imageListCubit.session,
+            showBboxText: _showBboxText,
           ),
-          imageFile: _imageFile,
-          activeCategory: widget.activeCategory,
-          session: widget.imageListCubit.session,
-          repository: locator<StructuredCaptionRepository>(),
-          showBboxText: _showBboxText,
         );
         _cubit = cubit;
         return cubit;

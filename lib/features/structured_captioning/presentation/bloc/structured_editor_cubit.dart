@@ -17,6 +17,16 @@ import '../../data/services/layer_title_store.dart';
 
 part 'structured_editor_state.dart';
 
+/// Everything the structured editor cubit needs that only the opening page
+/// knows. Passed to the DI factory as a single record (`param1`).
+typedef StructuredEditorParams = ({
+  IdeogramCaption initialCaption,
+  File imageFile,
+  String activeCategory,
+  CaptionSessionService session,
+  bool showBboxText,
+});
+
 class StructuredEditorCubit extends Cubit<StructuredEditorState> {
   StructuredEditorCubit({
     required IdeogramCaption initialCaption,

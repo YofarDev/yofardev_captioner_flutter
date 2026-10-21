@@ -10,7 +10,7 @@ export 'presentation/bloc/structured_captioning_cubit.dart'
         StructuredCaptioningState,
         StructuredCaptioningStatus;
 export 'presentation/bloc/structured_editor_cubit.dart'
-    show StructuredEditorCubit, StructuredEditorState;
+    show StructuredEditorCubit, StructuredEditorParams, StructuredEditorState;
 export 'presentation/pages/structured_editor_page.dart'
     show StructuredEditorPage;
 export 'presentation/widgets/bbox_overlay.dart'

@@ -105,6 +105,20 @@ void registerDependencies(GetIt container) {
       repository: container<StructuredCaptionRepository>(),
     ),
   );
+  container.registerFactoryParam<
+    StructuredEditorCubit,
+    StructuredEditorParams,
+    void
+  >(
+    (StructuredEditorParams p, _) => StructuredEditorCubit(
+      initialCaption: p.initialCaption,
+      imageFile: p.imageFile,
+      activeCategory: p.activeCategory,
+      session: p.session,
+      showBboxText: p.showBboxText,
+      repository: container<StructuredCaptionRepository>(),
+    ),
+  );
   container
       .registerFactoryParam<ImageOperationsCubit, CaptionSessionService, void>(
         (CaptionSessionService session, _) => ImageOperationsCubit(session),

@@ -1,14 +1,17 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/caption_search/caption_search.dart';
@@ -176,6 +179,36 @@ void main() {
       expect(imageOperations, isA<ImageOperationsCubit>());
       expect(captionSearch, isA<CaptionSearchCubit>());
       expect(batchJsonApply, isA<BatchJsonApplyCubit>());
+    });
+
+    test('structured editor factory builds a cubit from its params record', () {
+      final GetIt container = GetIt.instance;
+      registerDependencies(container);
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      // Full valid shape — copied from the batch-apply fixture.
+      const String json =
+          '{"high_level_description":"old","style_description":{"aesthetics":"old","lighting":"old","photo":"","medium":"photograph","color_palette":[]},"compositional_deconstruction":{"background":"","elements":[]}}';
+      final CaptionSessionService session = CaptionSessionService(
+        fileStore: _FakeCaptionFileStore(),
+        filterEngine: _FakeCaptionFilterEngine(),
+      );
+
+      final StructuredEditorCubit cubit = container<StructuredEditorCubit>(
+        param1: (
+          initialCaption: IdeogramCaption.fromJson(
+            jsonDecode(json) as Map<String, dynamic>,
+          ),
+          imageFile: File('/tmp/x.png'),
+          activeCategory: 'default',
+          session: session,
+          showBboxText: false,
+        ),
+      );
+      addTearDown(cubit.close);
+
+      expect(cubit, isA<StructuredEditorCubit>());
+      expect(cubit.state.caption.highLevelDescription, 'old');
     });
 
     test(

@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nested/nested.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/di/service_locator.dart';
 import '../../../caption_search/caption_search.dart';
 import '../../../captioning/captioning.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
-import '../../../main_area/main_area.dart';
 import '../../../structured_captioning/structured_captioning.dart';
 import '../bloc/tab_manager_cubit.dart';
 
 class TabContent extends StatefulWidget {
-  const TabContent({super.key, required this.tabId});
+  const TabContent({super.key, required this.tabId, required this.child});
 
   final String tabId;
+
+  /// The tab workspace body. Provided by the composition root (home_page)
+  /// so tab_manager does not import sibling feature views; it is built
+  /// *below* this widget's MultiBlocProvider, so the session cubits are
+  /// visible to it.
+  final Widget child;
 
   @override
   State<TabContent> createState() => TabContentState();
@@ -78,21 +82,7 @@ class TabContentState extends State<TabContent>
         BlocProvider<CaptionSearchCubit>.value(value: _captionSearchCubit),
         BlocProvider<BatchJsonApplyCubit>.value(value: _batchJsonApplyCubit),
       ],
-      child: Row(
-        children: <Widget>[
-          Container(
-            // Recessed library column — sits below the shell so the caption
-            // editor stays the brightest (focal) surface.
-            color: panelDark,
-            height: double.infinity,
-            width: 240,
-            child: const ImagesListView(),
-          ),
-          const Expanded(
-            child: ColoredBox(color: shellBackground, child: MainAreaView()),
-          ),
-        ],
-      ),
+      child: widget.child,
     );
   }
 }

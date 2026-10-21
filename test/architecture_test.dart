@@ -91,17 +91,20 @@ const List<KnownViolation> kKnownViolations = <KnownViolation>[
 /// imports tab_manager/llm_config) every cycle runs through the inherent
 /// llm_config -> agent_api -> tab_manager -> main_area -> llm_config ring;
 /// the first key below is the direct main_area -> llm_config shortcut.
+/// Exact canonical keys (feature names sorted, joined with ' -> ') of the
+/// feature-dependency cycles accepted at Phase 0. Any NEW cycle fails the
+/// suite; later phases only shrink this set.
+///
+/// Every remaining llm_config cycle runs through the inherent
+/// llm_config -> agent_api -> tab_manager -> llm_config ring; the first key
+/// below is the direct llm_config -> agent_api shortcut. The only other live
+/// cycle is the image_list <-> image_operations 2-cycle.
 const Set<String> kKnownCycles = <String>{
-  'agent_api -> llm_config -> main_area -> tab_manager',
-  'agent_api -> llm_config -> main_area -> structured_captioning -> tab_manager',
   'agent_api -> llm_config',
   'agent_api -> llm_config -> structured_captioning -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> tab_manager',
-  'agent_api -> captioning -> llm_config -> main_area -> structured_captioning -> tab_manager',
   'agent_api -> captioning -> llm_config -> tab_manager',
   'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
   'image_list -> image_operations',
-  'main_area -> tab_manager',
 };
 
 void main() {

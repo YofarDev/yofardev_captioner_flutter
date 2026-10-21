@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../features/image_list/image_list.dart';
+import '../../../features/main_area/main_area.dart';
 
 import '../../../features/tab_manager/tab_manager.dart';
 import '../../constants/app_colors.dart';
@@ -202,7 +203,28 @@ class _HomePageState extends State<HomePage> {
                             return Offstage(
                               key: ValueKey<String>(tab.id),
                               offstage: index != state.activeTabIndex,
-                              child: TabContent(tabId: tab.id),
+                              child: TabContent(
+                                tabId: tab.id,
+                                child: Row(
+                                  children: <Widget>[
+                                    Container(
+                                      // Recessed library column — sits below
+                                      // the shell so the caption editor stays
+                                      // the brightest (focal) surface.
+                                      color: panelDark,
+                                      height: double.infinity,
+                                      width: 240,
+                                      child: const ImagesListView(),
+                                    ),
+                                    const Expanded(
+                                      child: ColoredBox(
+                                        color: shellBackground,
+                                        child: MainAreaView(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             );
                           }),
                         );

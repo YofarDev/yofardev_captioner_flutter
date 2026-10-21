@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
@@ -33,17 +35,50 @@ class MainAreaView extends StatelessWidget {
         }
         return Stack(
           children: <Widget>[
-            const Column(
+            Column(
               children: <Widget>[
-                CurrentImageView(),
-                Expanded(child: CaptionTextArea()),
-                ControlsView(
+                const CurrentImageView(),
+                Expanded(
+                  child: CaptionTextArea(
+                    ideogramSummaryCard:
+                        ({
+                          required String jsonString,
+                          required File imageFile,
+                          required String activeCategory,
+                        }) => IdeogramCaptionSummaryCard(
+                          jsonString: jsonString,
+                          imageFile: imageFile,
+                          activeCategory: activeCategory,
+                        ),
+                    openStructuredEditor:
+                        (
+                          BuildContext context, {
+                          required File imageFile,
+                          required String captionJson,
+                          required String activeCategory,
+                          required ImageListCubit imageListCubit,
+                        }) {
+                          Navigator.of(context).push<bool>(
+                            MaterialPageRoute<bool>(
+                              builder: (BuildContext routeContext) =>
+                                  StructuredEditorPage(
+                                    imageFile: imageFile,
+                                    captionJson: captionJson,
+                                    activeCategory: activeCategory,
+                                    imageListCubit: imageListCubit,
+                                  ),
+                            ),
+                          );
+                        },
+                  ),
+                ),
+                const ControlsView(
                   searchAndReplace: SearchAndReplaceWidget(outlined: true),
                   captionFiles: CaptionFilesButton(outlined: true),
                   export: ExportButton(outlined: true),
                   captionControls: _StructuredAwareCaptionControls(),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
               ],
             ),
             Positioned(

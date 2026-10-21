@@ -4,8 +4,6 @@
 /// barrel exports — never on feature-internal files.
 library;
 
-export 'domain/models/apply_structured_overrides.dart'
-    show applyStructuredOverrides;
 export 'presentation/bloc/structured_captioning_cubit.dart'
     show
         StructuredCaptioningCubit,

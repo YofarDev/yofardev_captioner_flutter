@@ -107,7 +107,6 @@ const Set<String> kKnownCycles = <String>{
   'captioning -> image_list -> image_operations -> main_area -> tab_manager',
   'captioning -> image_list -> image_operations -> structured_captioning -> tab_manager',
   'captioning -> image_list -> image_operations -> tab_manager',
-  'captioning -> structured_captioning',
   'export -> image_list -> image_operations -> main_area -> tab_manager',
   'export -> image_operations -> main_area -> tab_manager',
   'image_list -> image_operations',

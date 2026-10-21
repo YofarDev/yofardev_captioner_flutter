@@ -1,5 +1,5 @@
-import '../../../../core/models/ideogram_caption.dart';
-import '../../../../core/models/structured_batch_overrides.dart';
+import 'ideogram_caption.dart';
+import 'structured_batch_overrides.dart';
 
 /// Returns [caption] with any enabled [overrides] applied.
 ///

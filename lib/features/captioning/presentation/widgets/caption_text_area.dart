@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,20 +8,48 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
+import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../structured_captioning/structured_captioning.dart';
 import '../bloc/captioning_cubit.dart';
 import 'category_tab_bar.dart';
 import 'highlight_text_controller.dart';
 import 'paste_json_dialog.dart';
 import 'rewrite_caption_dialog.dart';
 
+/// Builds the Ideogram summary card shown in place of the caption text field
+/// when the caption is Ideogram JSON. Injected so captioning stays decoupled
+/// from structured_captioning.
+typedef IdeogramSummaryCardBuilder =
+    Widget Function({
+      required String jsonString,
+      required File imageFile,
+      required String activeCategory,
+    });
+
+/// Opens the structured editor for the given image/caption. Injected so
+/// captioning stays decoupled from structured_captioning.
+typedef StructuredEditorOpener =
+    void Function(
+      BuildContext context, {
+      required File imageFile,
+      required String captionJson,
+      required String activeCategory,
+      required ImageListCubit imageListCubit,
+    });
+
 class CaptionTextArea extends StatefulWidget {
-  const CaptionTextArea({super.key});
+  const CaptionTextArea({
+    super.key,
+    required this.ideogramSummaryCard,
+    required this.openStructuredEditor,
+  });
+
+  final IdeogramSummaryCardBuilder ideogramSummaryCard;
+  final StructuredEditorOpener openStructuredEditor;
 
   @override
   State<CaptionTextArea> createState() => _CaptionTextAreaState();
@@ -136,7 +165,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                             ),
                             child: isIdeogram
                                 ? SizedBox.expand(
-                                    child: IdeogramCaptionSummaryCard(
+                                    child: widget.ideogramSummaryCard(
                                       jsonString: captionText,
                                       imageFile: currentImage.image,
                                       activeCategory: category,
@@ -432,20 +461,12 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
                                             final ImageListCubit
                                             imageListCubit = context
                                                 .read<ImageListCubit>();
-                                            Navigator.of(context).push<bool>(
-                                              MaterialPageRoute<bool>(
-                                                builder:
-                                                    (
-                                                      BuildContext routeContext,
-                                                    ) => StructuredEditorPage(
-                                                      imageFile:
-                                                          currentImage.image,
-                                                      captionJson: captionText,
-                                                      activeCategory: category,
-                                                      imageListCubit:
-                                                          imageListCubit,
-                                                    ),
-                                              ),
+                                            widget.openStructuredEditor(
+                                              context,
+                                              imageFile: currentImage.image,
+                                              captionJson: captionText,
+                                              activeCategory: category,
+                                              imageListCubit: imageListCubit,
                                             );
                                           },
                                           borderRadius: BorderRadius.circular(

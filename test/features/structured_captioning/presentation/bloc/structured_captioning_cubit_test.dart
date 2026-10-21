@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -482,6 +483,67 @@ void main() {
         ).called(1);
       },
     );
+
+    test('close() mid-run stops the loop without throwing', () async {
+      final AppImage image1 = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final AppImage image2 = AppImage(
+        id: '2',
+        image: File('img2.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final Completer<void> gate = Completer<void>();
+      int calls = 0;
+      when(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+          disableSam: anyNamed('disableSam'),
+          vlmEmitsXyxy: anyNamed('vlmEmitsXyxy'),
+          guidance: anyNamed('guidance'),
+          mode: anyNamed('mode'),
+        ),
+      ).thenAnswer((Invocation inv) async {
+        calls++;
+        if (calls == 2) {
+          await gate.future;
+          // Fire the progress callback after close to prove _onStepProgress is
+          // guarded too.
+          (inv.namedArguments[const Symbol('onProgress')]
+              as void Function(String))('extracting palette');
+        }
+        return Right<Failure, IdeogramCaption>(fakeCaption());
+      });
+      seed(
+        ImageListState(
+          images: <AppImage>[image1, image2],
+          folderPath: '/folder',
+        ),
+      );
+      final StructuredCaptioningCubit closingCubit = StructuredCaptioningCubit(
+        session,
+        repository: mockRepository,
+      );
+
+      final Future<void> run = closingCubit.runStructuredCaptioner(
+        llm: llmConfig(),
+        option: CaptionOptions.all,
+      );
+      await Future<void>.delayed(Duration.zero); // first image completes
+      await closingCubit.close(); // second image is parked on gate.future
+      gate.complete();
+
+      await run.timeout(const Duration(seconds: 5));
+      await Future<void>.delayed(Duration.zero);
+      // Loop stopped at the guarded emit after the second result; no StateError.
+      expect(calls, 2);
+    });
 
     test('cancelStructuredCaptioning sets isCancelling', () {
       cubit.cancelStructuredCaptioning();

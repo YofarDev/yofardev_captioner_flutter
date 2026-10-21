@@ -29,6 +29,17 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
 
   Completer<void>? _cancelCompleter;
 
+  /// Completes the cancel completer so a closing tab stops the run loop at
+  /// the next iteration boundary (in-flight VLM calls are not abortable yet —
+  /// see the follow-up note in docs/plans/2026-10-21-audit-remediation.md §0).
+  @override
+  Future<void> close() {
+    if (!(_cancelCompleter?.isCompleted ?? true)) {
+      _cancelCompleter?.complete();
+    }
+    return super.close();
+  }
+
   /// Runs the structured captioning pipeline on selected images.
   Future<void> runStructuredCaptioner({
     required LlmConfig llm,
@@ -111,15 +122,17 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         : _session.guidanceFor(guidanceSource.image.path);
 
     for (final AppImage image in imagesToProcess) {
+      if (isClosed) return;
       // Check cancellation.
       if (_cancelCompleter?.isCompleted ?? false) {
+        _cancelCompleter = null;
+        if (isClosed) return;
         emit(
           state.copyWith(
             status: StructuredCaptioningStatus.initial,
             error: 'Structured captioning cancelled',
           ),
         );
-        _cancelCompleter = null;
         return;
       }
 
@@ -127,6 +140,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       if (processed > 0 && llm.delay > 0) {
         await Future<void>.delayed(Duration(milliseconds: llm.delay));
       }
+      if (isClosed) return;
 
       emit(
         state.copyWith(
@@ -158,6 +172,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
           final AppImage errorImage = image.copyWith(error: message);
           _session.updateImage(image: errorImage);
           processed++;
+          if (isClosed) return;
           emit(
             state.copyWith(
               processedImages: processed,
@@ -184,12 +199,14 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         );
         _session.updateImage(image: updatedImage);
       } catch (e) {
+        if (isClosed) return;
         errors.add('Failed to caption ${image.image.path}: $e');
         final AppImage errorImage = image.copyWith(error: '$e');
         _session.updateImage(image: errorImage);
       }
 
       processed++;
+      if (isClosed) return;
       emit(
         state.copyWith(
           progress: processed / total,
@@ -200,6 +217,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       );
     }
 
+    if (isClosed) return;
     if (errors.isNotEmpty) {
       emit(
         state.copyWith(
@@ -224,6 +242,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   }
 
   void _onStepProgress(String step) {
+    if (isClosed) return;
     final StructuredCaptionStep stepEnum = _mapStepToEnum(step);
     emit(state.copyWith(currentStep: stepEnum, stepLabel: step));
   }
@@ -248,6 +267,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   }
 
   void cancelStructuredCaptioning() {
+    if (isClosed) return;
     _cancelCompleter?.complete();
     emit(state.copyWith(isCancelling: true));
   }

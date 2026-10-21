@@ -23,7 +23,11 @@ void main() {
     await tester.pumpWidget(
       BlocProvider<ImageListCubit>.value(
         value: cubit,
-        child: const MaterialApp(home: Scaffold(body: ImagesListView())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: ImagesListView(onAspectRatio: (BuildContext context) {}),
+          ),
+        ),
       ),
     );
     await tester.pump();

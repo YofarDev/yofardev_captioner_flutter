@@ -8,7 +8,9 @@ import '../widgets/header_widget.dart';
 import '../widgets/image_list_item.dart';
 
 class ImagesListView extends StatelessWidget {
-  const ImagesListView({super.key});
+  const ImagesListView({super.key, required this.onAspectRatio});
+
+  final AspectRatioOpener onAspectRatio;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +49,7 @@ class ImagesListView extends StatelessWidget {
         return Column(
           children: <Widget>[
             ?dbErrorBanner,
-            const HeaderWidget(),
+            HeaderWidget(onAspectRatio: onAspectRatio),
             Container(height: 1, color: hairline),
             Expanded(
               child: ListView.separated(

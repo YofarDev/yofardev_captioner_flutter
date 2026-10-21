@@ -4,13 +4,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/utils/extensions.dart';
-import '../../../image_operations/image_operations.dart';
 import '../bloc/image_list_cubit.dart';
 import '../utils/folder_utils.dart';
 import 'sort_by_widget.dart';
 
+/// Opens the aspect-ratio dialog for the current image list. Implemented by
+/// the composition root, which owns navigation; image_list does not import
+/// image_operations.
+typedef AspectRatioOpener = void Function(BuildContext context);
+
 class HeaderWidget extends StatelessWidget {
-  const HeaderWidget({super.key});
+  const HeaderWidget({super.key, required this.onAspectRatio});
+
+  final AspectRatioOpener onAspectRatio;
 
   static const double _iconSize = 13;
   static const double _spacing = 8.0;
@@ -22,7 +28,7 @@ class HeaderWidget extends StatelessWidget {
     return BlocBuilder<ImageListCubit, ImageListState>(
       builder: (BuildContext context, ImageListState state) {
         return InkWell(
-          onTap: () => _showAspectRatioDialog(context),
+          onTap: () => onAspectRatio(context),
           child: Padding(
             padding: _padding,
             child: Column(
@@ -40,17 +46,6 @@ class HeaderWidget extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  void _showAspectRatioDialog(BuildContext context) {
-    final ImageListCubit imageListCubit = context.read<ImageListCubit>();
-    showDialog(
-      context: context,
-      builder: (BuildContext context) => BlocProvider<ImageListCubit>.value(
-        value: imageListCubit,
-        child: const AspectRatioDialog(),
-      ),
     );
   }
 

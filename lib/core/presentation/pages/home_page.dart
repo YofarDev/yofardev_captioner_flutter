@@ -9,6 +9,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../features/image_list/image_list.dart';
+import '../../../features/image_operations/image_operations.dart';
 import '../../../features/main_area/main_area.dart';
 
 import '../../../features/tab_manager/tab_manager.dart';
@@ -214,7 +215,22 @@ class _HomePageState extends State<HomePage> {
                                       color: panelDark,
                                       height: double.infinity,
                                       width: 240,
-                                      child: const ImagesListView(),
+                                      child: ImagesListView(
+                                        onAspectRatio: (BuildContext listContext) {
+                                          showDialog<void>(
+                                            context: listContext,
+                                            builder: (_) =>
+                                                BlocProvider<
+                                                  ImageListCubit
+                                                >.value(
+                                                  value: listContext
+                                                      .read<ImageListCubit>(),
+                                                  child:
+                                                      const AspectRatioDialog(),
+                                                ),
+                                          );
+                                        },
+                                      ),
                                     ),
                                     const Expanded(
                                       child: ColoredBox(

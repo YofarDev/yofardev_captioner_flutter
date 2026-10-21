@@ -96,7 +96,6 @@ const Set<String> kKnownCycles = <String>{
   'agent_api -> llm_config -> structured_captioning -> tab_manager',
   'agent_api -> captioning -> llm_config -> tab_manager',
   'agent_api -> captioning -> llm_config -> structured_captioning -> tab_manager',
-  'image_list -> image_operations',
 };
 
 void main() {

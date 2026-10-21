@@ -31,6 +31,7 @@ typedef StructuredRunProgress = ({
   bool isCancelling,
   String? stepLabel,
   String? currentlyProcessingImage,
+  String? error,
 });
 
 typedef RunStructuredCallback =
@@ -282,7 +283,7 @@ class _CaptionControlsState extends State<CaptionControls> {
               totalImages: progress.totalImages,
               isCancelling: progress.isCancelling,
               stepLabel: progress.stepLabel,
-              error: null,
+              error: progress.error,
               isIdeogram: true,
               imageCount: count,
             );

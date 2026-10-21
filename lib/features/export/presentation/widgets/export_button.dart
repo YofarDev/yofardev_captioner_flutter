@@ -5,6 +5,7 @@ import 'package:nested/nested.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 

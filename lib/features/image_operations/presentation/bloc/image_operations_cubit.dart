@@ -9,7 +9,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../helpers/image_operations_helper.dart';
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 
 part 'image_operations_state.dart';
 

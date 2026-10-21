@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
+import 'package:yofardev_captioner/features/caption_session/domain/services/caption_session_service.dart';
+import 'package:yofardev_captioner/features/caption_session/domain/services/filter_parser_engine.dart';
 import 'package:yofardev_captioner/features/image_list/data/repositories/app_file_utils.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
-import 'package:yofardev_captioner/features/image_list/domain/services/filter_parser_engine.dart';
 
 /// Real-store end-to-end proof of the corrupt-db UX (plan 4.4): a corrupt
 /// db.json must NOT yield an empty library — images still load (captions

@@ -1,4 +1,4 @@
-import '../../../image_list/image_list.dart';
+import 'caption_session_service.dart';
 
 /// Read-only snapshot of one tab, pushed into [TabSessionRegistry] by the
 /// `TabManagerCubit` whenever its UI state changes. Lets non-widget consumers

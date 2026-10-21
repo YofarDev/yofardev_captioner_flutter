@@ -5,14 +5,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/utils/extensions.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../data/repositories/app_file_utils.dart';
-import '../../domain/models/image_list_state.dart';
-import '../../domain/services/caption_session_service.dart';
-import '../../domain/services/caption_session_snapshot.dart';
-import '../../domain/services/filter_parser_engine.dart';
 import 'image_cache_eviction.dart';
-
-export '../../domain/models/image_list_state.dart';
 
 /// Thin adapter over [CaptionSessionService]: forwards commands to the
 /// session and mirrors its snapshots into this cubit's [ImageListState]

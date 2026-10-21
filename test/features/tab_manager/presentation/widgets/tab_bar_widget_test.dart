@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
+import 'package:yofardev_captioner/features/caption_session/domain/services/tab_session_registry.dart';
 import 'package:yofardev_captioner/features/tab_manager/domain/models/app_tab.dart';
-import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/bloc/tab_manager_cubit.dart';
 import 'package:yofardev_captioner/features/tab_manager/presentation/widgets/tab_bar_widget.dart';
 

@@ -12,6 +12,7 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/utils/image_utils.dart';
 import '../../../../core/widgets/notification_overlay.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../structured_captioning/structured_captioning.dart';

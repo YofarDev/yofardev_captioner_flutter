@@ -10,6 +10,7 @@ import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/widgets/rive_animations.dart';
 import '../../../caption_search/caption_search.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../captioning/captioning.dart';
 import '../../../export/export.dart';
 import '../../../image_list/image_list.dart';

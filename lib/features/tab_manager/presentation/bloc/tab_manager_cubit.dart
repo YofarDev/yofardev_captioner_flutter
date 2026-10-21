@@ -5,10 +5,10 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/services/cache_service.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/data/repositories/app_file_utils.dart';
 import '../../../image_list/image_list.dart';
 import '../../domain/models/app_tab.dart';
-import '../../domain/services/tab_session_registry.dart';
 
 part 'tab_manager_state.dart';
 

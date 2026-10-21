@@ -10,7 +10,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../domain/repositories/structured_caption_repository.dart';
 import '../../domain/services/layer_title_store.dart';
 

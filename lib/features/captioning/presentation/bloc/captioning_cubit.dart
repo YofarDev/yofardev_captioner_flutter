@@ -9,7 +9,7 @@ import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/utils/cancel_token.dart';
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../domain/models/caption_options.dart';
 import '../../domain/repositories/captioning_repository.dart';
 

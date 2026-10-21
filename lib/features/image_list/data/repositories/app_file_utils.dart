@@ -22,7 +22,7 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/utils/image_utils.dart';
-import '../../domain/services/caption_session_service.dart';
+import '../../../caption_session/caption_session.dart';
 
 /// A utility class for file-related operations in the application.
 ///

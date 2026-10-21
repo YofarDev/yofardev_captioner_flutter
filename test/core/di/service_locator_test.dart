@@ -15,6 +15,7 @@ import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/caption_search/caption_search.dart';
+import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/captioning/captioning.dart';
 import 'package:yofardev_captioner/features/captioning/data/repositories/llm_caption_repository.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
@@ -24,7 +25,6 @@ import 'package:yofardev_captioner/features/image_operations/image_operations.da
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/domain/repositories/llm_config_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/structured_captioning.dart';
-import 'package:yofardev_captioner/features/tab_manager/domain/services/tab_session_registry.dart';
 
 /// Minimal no-op file store so the registry smoke test can construct real
 /// [CaptionSessionService]s without touching the filesystem.

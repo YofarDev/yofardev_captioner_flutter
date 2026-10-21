@@ -12,6 +12,7 @@ import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/notification_overlay.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
 import '../bloc/captioning_cubit.dart';

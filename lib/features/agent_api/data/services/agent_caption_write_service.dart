@@ -14,7 +14,7 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 
 /// Caption write paths for the Agent API: through a live tab session when the
 /// folder is open, otherwise via a direct read-modify-write of `db.json`.

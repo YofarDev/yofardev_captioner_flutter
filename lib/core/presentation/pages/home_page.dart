@@ -8,10 +8,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../features/caption_session/caption_session.dart';
 import '../../../features/image_list/image_list.dart';
 import '../../../features/image_operations/image_operations.dart';
 import '../../../features/main_area/main_area.dart';
-
 import '../../../features/tab_manager/tab_manager.dart';
 import '../../constants/app_colors.dart';
 import '../../services/cache_service.dart';

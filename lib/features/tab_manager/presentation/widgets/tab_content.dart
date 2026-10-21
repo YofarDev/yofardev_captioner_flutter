@@ -4,6 +4,7 @@ import 'package:nested/nested.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../caption_search/caption_search.dart';
+import '../../../caption_session/caption_session.dart';
 import '../../../captioning/captioning.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';

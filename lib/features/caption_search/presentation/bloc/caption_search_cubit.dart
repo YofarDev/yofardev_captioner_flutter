@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../image_list/image_list.dart';
+import '../../../caption_session/caption_session.dart';
 
 part 'caption_search_state.dart';
 

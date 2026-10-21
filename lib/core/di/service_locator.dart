@@ -3,6 +3,7 @@ import 'package:logging/logging.dart';
 
 import '../../features/agent_api/data/services/agent_api_service.dart';
 import '../../features/caption_search/caption_search.dart';
+import '../../features/caption_session/caption_session.dart';
 import '../../features/captioning/captioning.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/repositories/llm_caption_repository.dart';
@@ -14,7 +15,6 @@ import '../../features/llm_config/data/repositories/llm_config_service.dart';
 import '../../features/llm_config/domain/repositories/llm_config_repository.dart';
 import '../../features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import '../../features/structured_captioning/structured_captioning.dart';
-import '../../features/tab_manager/domain/services/tab_session_registry.dart';
 import '../services/cache_service.dart';
 
 final GetIt locator = GetIt.instance;

@@ -135,6 +135,14 @@ class MockCaptionSessionService extends _i1.Mock
           as List<_i3.AppImage>);
 
   @override
+  _i3.AppImage? displayedImageFor(_i2.ImageListState? s) =>
+      (super.noSuchMethod(
+            Invocation.method(#displayedImageFor, [s]),
+            returnValueForMissingStub: null,
+          )
+          as _i3.AppImage?);
+
+  @override
   _i4.Future<void> onInit({String? folderPath}) =>
       (super.noSuchMethod(
             Invocation.method(#onInit, [], {#folderPath: folderPath}),
@@ -503,38 +511,6 @@ class MockAppFileUtils extends _i1.Mock implements _i6.AppFileUtils {
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
-
-  @override
-  _i4.Future<_i7.Either<_i8.Failure, void>> exportAsArchive(
-    String? folderPath,
-    List<_i3.AppImage>? images,
-    String? category,
-  ) =>
-      (super.noSuchMethod(
-            Invocation.method(#exportAsArchive, [folderPath, images, category]),
-            returnValue: _i4.Future<_i7.Either<_i8.Failure, void>>.value(
-              _i5.dummyValue<_i7.Either<_i8.Failure, void>>(
-                this,
-                Invocation.method(#exportAsArchive, [
-                  folderPath,
-                  images,
-                  category,
-                ]),
-              ),
-            ),
-            returnValueForMissingStub:
-                _i4.Future<_i7.Either<_i8.Failure, void>>.value(
-                  _i5.dummyValue<_i7.Either<_i8.Failure, void>>(
-                    this,
-                    Invocation.method(#exportAsArchive, [
-                      folderPath,
-                      images,
-                      category,
-                    ]),
-                  ),
-                ),
-          )
-          as _i4.Future<_i7.Either<_i8.Failure, void>>);
 
   @override
   _i4.Future<void> writeCaptionFiles(

@@ -139,10 +139,6 @@ class CaptionService {
     if (config.url == null || config.apiKey == null) {
       throw ApiException('URL and API Key are required for remote providers.');
     }
-    // ponytail: this POST+parse block duplicates _getRemoteRewrite /
-    // _getRemoteRepair. A shared _postChat(config, system, user, {maxTokens})
-    // would remove ~20 lines x3, but each has subtle differences (system
-    // prompt semantics, maxTokens handling). Extract if a 4th text path lands.
     const String systemPrompt =
         "You transform caption text according to the user's instructions. "
         'Output ONLY the transformed text — no explanations, no preface, '
@@ -163,28 +159,12 @@ class CaptionService {
       ],
     );
 
-    final String url = buildUrl(config.url!);
-
-    final http.Response response = await _postOrCancel(
-      Uri.parse(url),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${config.apiKey}',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(request.toJson()),
+    return await _postChatCompletion(
+      config,
+      request,
+      action: 'transform caption',
       cancelToken: cancelToken,
     );
-
-    if (response.statusCode == 200) {
-      return _parseChatResponse(response);
-    } else {
-      _logger.severe('Error response: ${response.body}');
-      throw ApiException(
-        'Failed to transform caption (${response.statusCode}): ${response.body}',
-        statusCode: response.statusCode,
-      );
-    }
   }
 
   Future<String> _getLocalCaption(
@@ -288,8 +268,6 @@ class CaptionService {
       final Uint8List bytes = await imageToSend.readAsBytes();
       final String base64Image = base64Encode(bytes);
 
-      final String url = buildUrl(config.url!);
-
       final CaptionRequest request = CaptionRequest(
         model: config.model,
         maxTokens: maxTokens,
@@ -307,26 +285,12 @@ class CaptionService {
         ],
       );
 
-      final http.Response response = await _postOrCancel(
-        Uri.parse(url),
-        headers: <String, String>{
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${config.apiKey}',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(request.toJson()),
+      return await _postChatCompletion(
+        config,
+        request,
+        action: 'load caption',
         cancelToken: cancelToken,
       );
-
-      if (response.statusCode == 200) {
-        return _parseChatResponse(response);
-      } else {
-        _logger.severe('Error response: ${response.body}');
-        throw ApiException(
-          'Failed to load caption (${response.statusCode}): ${response.body}',
-          statusCode: response.statusCode,
-        );
-      }
     } finally {
       if (imageToSend != null && imageToSend.path != image.path) {
         try {
@@ -387,28 +351,12 @@ class CaptionService {
       ],
     );
 
-    final String url = buildUrl(config.url!);
-
-    final http.Response response = await _postOrCancel(
-      Uri.parse(url),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${config.apiKey}',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(request.toJson()),
+    return await _postChatCompletion(
+      config,
+      request,
+      action: 'rewrite caption',
       cancelToken: cancelToken,
     );
-
-    if (response.statusCode == 200) {
-      return _parseChatResponse(response);
-    } else {
-      _logger.severe('Error response: ${response.body}');
-      throw ApiException(
-        'Failed to rewrite caption (${response.statusCode}): ${response.body}',
-        statusCode: response.statusCode,
-      );
-    }
   }
 
   Future<String> _getRemoteRepair(
@@ -454,28 +402,12 @@ class CaptionService {
       ],
     );
 
-    final String url = buildUrl(config.url!);
-
-    final http.Response response = await _postOrCancel(
-      Uri.parse(url),
-      headers: <String, String>{
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ${config.apiKey}',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode(request.toJson()),
+    return await _postChatCompletion(
+      config,
+      request,
+      action: 'repair JSON',
       cancelToken: cancelToken,
     );
-
-    if (response.statusCode == 200) {
-      return _parseChatResponse(response);
-    } else {
-      _logger.severe('Error response: ${response.body}');
-      throw ApiException(
-        'Failed to repair JSON (${response.statusCode}): ${response.body}',
-        statusCode: response.statusCode,
-      );
-    }
   }
 
   /// Trims a broken model output to at most [limit] chars, keeping head + tail
@@ -548,6 +480,38 @@ class CaptionService {
   /// can move on immediately. The underlying HTTP request is not aborted —
   /// the remote provider keeps running — but for local VRAM the real kill
   /// happens in [ProcessRunner]; this only makes remote stops non-blocking.
+  /// Posts [request] to the chat-completions endpoint of [config] and
+  /// returns the parsed assistant text. [action] names the call in the
+  /// error message (e.g. 'load caption').
+  Future<String> _postChatCompletion(
+    LlmConfig config,
+    CaptionRequest request, {
+    required String action,
+    CancelToken? cancelToken,
+  }) async {
+    final String url = buildUrl(config.url!);
+
+    final http.Response response = await _postOrCancel(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ${config.apiKey}',
+        'Accept': 'application/json',
+      },
+      body: jsonEncode(request.toJson()),
+      cancelToken: cancelToken,
+    );
+
+    if (response.statusCode == 200) {
+      return _parseChatResponse(response);
+    }
+    _logger.severe('Error response: ${response.body}');
+    throw ApiException(
+      'Failed to $action (${response.statusCode}): ${response.body}',
+      statusCode: response.statusCode,
+    );
+  }
+
   Future<http.Response> _postOrCancel(
     Uri url, {
     required Map<String, String> headers,

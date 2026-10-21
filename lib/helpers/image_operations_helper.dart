@@ -16,18 +16,22 @@ import '../core/models/app_image.dart';
 import '../core/utils/image_utils.dart';
 import '../features/caption_session/caption_session.dart';
 import '../features/image_list/data/repositories/app_file_utils.dart';
+import '../features/image_list/data/repositories/archive_exporter.dart';
 import '../features/image_operations/image_operations.dart';
 
 class ImageOperationsHelper {
   static final Logger _logger = Logger('ImageOperationsHelper');
 
   final AppFileUtils _fileUtils;
+  final ArchiveExporter _archiveExporter;
   final CaptionSessionService _session;
 
   ImageOperationsHelper({
     AppFileUtils? fileUtils,
+    ArchiveExporter? archiveExporter,
     required CaptionSessionService session,
   }) : _fileUtils = fileUtils ?? AppFileUtils(),
+       _archiveExporter = archiveExporter ?? const ArchiveExporter(),
        _session = session;
 
   Future<Either<Failure, void>> renameAllFiles(String folderPath) async {
@@ -129,7 +133,7 @@ class ImageOperationsHelper {
     String folderPath,
     List<AppImage> images,
     String category,
-  ) => _fileUtils.exportAsArchive(folderPath, images, category);
+  ) => _archiveExporter.exportAsArchive(folderPath, images, category);
 
   Stream<ImageListState> convertAllImages({
     required String format,

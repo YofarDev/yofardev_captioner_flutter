@@ -3,9 +3,12 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
+import 'package:logging/logging.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/errors/failure.dart';
+import 'package:yofardev_captioner/core/errors/failure_message.dart';
 import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
@@ -111,6 +114,12 @@ class _StubFilterEngine implements CaptionFilterEngine {
 }
 
 void main() {
+  setUpAll(() {
+    if (!locator.isRegistered<Logger>()) {
+      locator.registerLazySingleton<Logger>(() => Logger('TestStructured'));
+    }
+  });
+
   IdeogramCaption fakeCaption() => const IdeogramCaption(
     highLevelDescription: 'desc',
     styleDescription: IdeogramStyleDescription(
@@ -392,7 +401,11 @@ void main() {
       );
 
       expect(cubit.state.status, StructuredCaptioningStatus.failure);
-      expect(cubit.state.error, contains('API down'));
+      expect(
+        cubit.state.error,
+        contains(failureMessage(const Failure.unexpected())),
+      );
+      expect(cubit.state.error, isNot(contains('API down')));
     });
 
     test('emits progress and reaches success', () async {

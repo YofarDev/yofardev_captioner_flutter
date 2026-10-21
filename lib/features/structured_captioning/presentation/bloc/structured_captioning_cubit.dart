@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fpdart/fpdart.dart';
 
+import '../../../../core/errors/exception_mapper.dart';
 import '../../../../core/errors/failure.dart';
 import '../../../../core/errors/failure_message.dart';
 import '../../../../core/models/app_image.dart';
@@ -213,10 +214,17 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
           ),
         );
         return;
-      } catch (e) {
+      } catch (e, st) {
         if (isClosed) return;
-        errors.add('Failed to caption ${image.image.path}: $e');
-        final AppImage errorImage = image.copyWith(error: '$e');
+        final String message = failureMessage(
+          mapExceptionToFailure(
+            e,
+            stackTrace: st,
+            tag: 'StructuredCaptioningCubit.generateStructuredCaptions',
+          ),
+        );
+        errors.add('Failed to caption ${image.image.path}: $message');
+        final AppImage errorImage = image.copyWith(error: message);
         _session.updateImage(image: errorImage);
       }
 

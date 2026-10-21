@@ -1729,9 +1729,11 @@ void main() {
           const IdeogramElement(type: 'obj', desc: 'no box'),
         ],
       );
-      final Map<int, List<int>> result = await repo.computeSamBboxes(
-        imageFile: File('img.png'),
-        caption: c,
+      final Either<Failure, Map<int, List<int>>> either = await repo
+          .computeSamBboxes(imageFile: File('img.png'), caption: c);
+      expect(either.isRight(), isTrue);
+      final Map<int, List<int>> result = either.getOrElse(
+        (Failure f) => fail('unexpected failure: $f'),
       );
       expect(result, isEmpty);
       verifyNever(
@@ -1774,9 +1776,11 @@ void main() {
         ],
       );
 
-      final Map<int, List<int>> result = await repo.computeSamBboxes(
-        imageFile: File('img.png'),
-        caption: c,
+      final Either<Failure, Map<int, List<int>>> either = await repo
+          .computeSamBboxes(imageFile: File('img.png'), caption: c);
+      expect(either.isRight(), isTrue);
+      final Map<int, List<int>> result = either.getOrElse(
+        (Failure f) => fail('unexpected failure: $f'),
       );
 
       expect(result, <int, List<int>>{
@@ -1800,9 +1804,11 @@ void main() {
         mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
       ).thenAnswer((_) async => <SamDetection>[]);
 
-      final Map<int, List<int>> result = await repo.computeSamBboxes(
-        imageFile: File('img.png'),
-        caption: c,
+      final Either<Failure, Map<int, List<int>>> either = await repo
+          .computeSamBboxes(imageFile: File('img.png'), caption: c);
+      expect(either.isRight(), isTrue);
+      final Map<int, List<int>> result = either.getOrElse(
+        (Failure f) => fail('unexpected failure: $f'),
       );
 
       // matchDetectionsToObjects fills unmatched slots with the original VLM
@@ -1831,9 +1837,11 @@ void main() {
           mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
         ).thenThrow(Exception('python gone'));
 
-        final Map<int, List<int>> result = await repo.computeSamBboxes(
-          imageFile: File('img.png'),
-          caption: c,
+        final Either<Failure, Map<int, List<int>>> either = await repo
+            .computeSamBboxes(imageFile: File('img.png'), caption: c);
+        expect(either.isRight(), isTrue);
+        final Map<int, List<int>> result = either.getOrElse(
+          (Failure f) => fail('unexpected failure: $f'),
         );
 
         expect(result, isEmpty);

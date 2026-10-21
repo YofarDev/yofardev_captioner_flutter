@@ -820,17 +820,33 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   ///
   /// Delegates to the top-level `computeSamBboxes` in
   /// `sam_process_service.dart`, passing this repository's injected
-  /// [SamProcessService.detectObjects] as the SAM entry point. Errors from
-  /// the SAM subprocess are logged there and an empty map is returned.
+  /// [SamProcessService.detectObjects] as the SAM entry point. The SAM
+  /// subprocess's own soft-fails are logged there and come back as
+  /// `Right({})`; other errors surface as `Left(Failure)`.
   @override
-  Future<Map<int, List<int>>> computeSamBboxes({
+  Future<Either<Failure, Map<int, List<int>>>> computeSamBboxes({
     required File imageFile,
     required IdeogramCaption caption,
-  }) => sam_process.computeSamBboxes(
-    imageFile: imageFile,
-    caption: caption,
-    detect: _samProcessService.detectObjects,
-  );
+  }) async {
+    try {
+      final Map<int, List<int>> result = await sam_process.computeSamBboxes(
+        imageFile: imageFile,
+        caption: caption,
+        detect: _samProcessService.detectObjects,
+      );
+      return Right<Failure, Map<int, List<int>>>(result);
+    } on CancellationException {
+      rethrow;
+    } catch (e, st) {
+      return Left<Failure, Map<int, List<int>>>(
+        mapExceptionToFailure(
+          e,
+          stackTrace: st,
+          tag: 'StructuredCaptionRepository.computeSamBboxes',
+        ),
+      );
+    }
+  }
 
   /// Recaptions a single element via one VLM call.
   ///

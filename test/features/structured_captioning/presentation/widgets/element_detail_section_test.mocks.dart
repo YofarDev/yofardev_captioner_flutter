@@ -165,7 +165,7 @@ class MockIStructuredCaptionRepository extends _i1.Mock
           as _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramStyleDescription>>);
 
   @override
-  _i3.Future<Map<int, List<int>>> computeSamBboxes({
+  _i3.Future<_i4.Either<_i5.Failure, Map<int, List<int>>>> computeSamBboxes({
     required _i8.File? imageFile,
     required _i6.IdeogramCaption? caption,
   }) =>
@@ -174,9 +174,16 @@ class MockIStructuredCaptionRepository extends _i1.Mock
               #imageFile: imageFile,
               #caption: caption,
             }),
-            returnValue: _i3.Future<Map<int, List<int>>>.value(
-              <int, List<int>>{},
-            ),
+            returnValue:
+                _i3.Future<_i4.Either<_i5.Failure, Map<int, List<int>>>>.value(
+                  _i12.dummyValue<_i4.Either<_i5.Failure, Map<int, List<int>>>>(
+                    this,
+                    Invocation.method(#computeSamBboxes, [], {
+                      #imageFile: imageFile,
+                      #caption: caption,
+                    }),
+                  ),
+                ),
           )
-          as _i3.Future<Map<int, List<int>>>);
+          as _i3.Future<_i4.Either<_i5.Failure, Map<int, List<int>>>>);
 }

@@ -488,26 +488,26 @@ class StructuredEditorCubit extends Cubit<StructuredEditorState> {
     emit(state.copyWith(samComputeStatus: SamComputeStatus.computing));
 
     try {
-      final Map<int, List<int>> result = await _repository.computeSamBboxes(
-        imageFile: state.imageFile,
-        caption: state.caption,
-      );
+      final Either<Failure, Map<int, List<int>>> result = await _repository
+          .computeSamBboxes(imageFile: state.imageFile, caption: state.caption);
       if (isClosed) return;
       if (state.samComputeStatus != SamComputeStatus.computing) return;
-      emit(
-        state.copyWith(
-          samBboxByIndex: result,
-          samComputeStatus: SamComputeStatus.ready,
-          clearError: true,
-        ),
-      );
-    } catch (e) {
-      if (isClosed) return;
-      _logger.warning('_computeSamBboxes: compute failed: $e');
-      emit(
-        state.copyWith(
-          samComputeStatus: SamComputeStatus.error,
-          error: e.toString(),
+      result.fold(
+        (Failure f) {
+          _logger.warning('_computeSamBboxes: compute failed: $f');
+          emit(
+            state.copyWith(
+              samComputeStatus: SamComputeStatus.error,
+              error: failureMessage(f),
+            ),
+          );
+        },
+        (Map<int, List<int>> bboxes) => emit(
+          state.copyWith(
+            samBboxByIndex: bboxes,
+            samComputeStatus: SamComputeStatus.ready,
+            clearError: true,
+          ),
         ),
       );
     } finally {

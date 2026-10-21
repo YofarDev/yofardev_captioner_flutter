@@ -40,7 +40,11 @@ abstract class IStructuredCaptionRepository {
     required IdeogramCaption currentCaption,
   });
 
-  Future<Map<int, List<int>>> computeSamBboxes({
+  /// Computes SAM bounding boxes for the caption's elements.
+  ///
+  /// Errors surface as `Left(Failure)`. The SAM subprocess's own soft-fails
+  /// (logged in `sam_process_service`) still come back as `Right({})`.
+  Future<Either<Failure, Map<int, List<int>>>> computeSamBboxes({
     required File imageFile,
     required IdeogramCaption caption,
   });

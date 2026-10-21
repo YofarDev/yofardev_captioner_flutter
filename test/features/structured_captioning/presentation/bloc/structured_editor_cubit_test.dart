@@ -150,6 +150,10 @@ void main() {
     Right<Failure, IdeogramStyleDescription>(baseCaption().styleDescription),
   );
 
+  provideDummy<Either<Failure, Map<int, List<int>>>>(
+    const Right<Failure, Map<int, List<int>>>(<int, List<int>>{}),
+  );
+
   provideDummy<Either<Failure, IdeogramElement>>(
     Right<Failure, IdeogramElement>(
       baseCaption().compositionalDeconstruction.elements.first,
@@ -157,6 +161,10 @@ void main() {
   );
   provideDummy<Either<Failure, IdeogramStyleDescription>>(
     Right<Failure, IdeogramStyleDescription>(baseCaption().styleDescription),
+  );
+
+  provideDummy<Either<Failure, Map<int, List<int>>>>(
+    const Right<Failure, Map<int, List<int>>>(<int, List<int>>{}),
   );
 
   group('StructuredEditorCubit', () {
@@ -997,9 +1005,10 @@ void main() {
             caption: anyNamed('caption'),
           ),
         ).thenAnswer(
-          (_) async => <int, List<int>>{
-            0: <int>[110, 110, 210, 210],
-          },
+          (_) async =>
+              const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+                0: <int>[110, 110, 210, 210],
+              }),
         );
 
         final StructuredEditorCubit c = buildCubit();
@@ -1022,9 +1031,10 @@ void main() {
             caption: anyNamed('caption'),
           ),
         ).thenAnswer(
-          (_) async => <int, List<int>>{
-            0: <int>[110, 110, 210, 210],
-          },
+          (_) async =>
+              const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+                0: <int>[110, 110, 210, 210],
+              }),
         );
 
         final StructuredEditorCubit c = buildCubit();
@@ -1047,8 +1057,8 @@ void main() {
       });
 
       test('emits computing status while awaiting', () async {
-        final Completer<Map<int, List<int>>> completer =
-            Completer<Map<int, List<int>>>();
+        final Completer<Either<Failure, Map<int, List<int>>>> completer =
+            Completer<Either<Failure, Map<int, List<int>>>>();
         when(
           mockRepo.computeSamBboxes(
             imageFile: anyNamed('imageFile'),
@@ -1062,9 +1072,11 @@ void main() {
 
         expect(c.state.samComputeStatus, SamComputeStatus.computing);
 
-        completer.complete(<int, List<int>>{
-          0: <int>[110, 110, 210, 210],
-        });
+        completer.complete(
+          const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          }),
+        );
         await done;
 
         expect(c.state.samComputeStatus, SamComputeStatus.ready);
@@ -1079,7 +1091,11 @@ void main() {
             imageFile: anyNamed('imageFile'),
             caption: anyNamed('caption'),
           ),
-        ).thenThrow(Exception('sam boom'));
+        ).thenAnswer(
+          (_) async => const Left<Failure, Map<int, List<int>>>(
+            Failure.unexpected(message: 'sam boom'),
+          ),
+        );
 
         final StructuredEditorCubit c = buildCubit();
         await c.toggleSamBboxes();
@@ -1087,15 +1103,16 @@ void main() {
         expect(c.state.samComputeStatus, SamComputeStatus.error);
         expect(c.state.samBboxByIndex, isNull);
         expect(c.state.showSamBboxes, isFalse);
-        expect(c.state.error, contains('sam boom'));
+        expect(c.state.error, failureMessage(const Failure.unexpected()));
+        expect(c.state.error, isNot(contains('sam boom')));
 
         await c.flushSave();
         await c.close();
       });
 
       test('concurrent toggles share a single in-flight call', () async {
-        final Completer<Map<int, List<int>>> completer =
-            Completer<Map<int, List<int>>>();
+        final Completer<Either<Failure, Map<int, List<int>>>> completer =
+            Completer<Either<Failure, Map<int, List<int>>>>();
         when(
           mockRepo.computeSamBboxes(
             imageFile: anyNamed('imageFile'),
@@ -1108,9 +1125,11 @@ void main() {
         final Future<void> b = c.toggleSamBboxes(); // should no-op silently
         await Future<void>.delayed(const Duration(milliseconds: 5));
 
-        completer.complete(<int, List<int>>{
-          0: <int>[110, 110, 210, 210],
-        });
+        completer.complete(
+          const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+            0: <int>[110, 110, 210, 210],
+          }),
+        );
         await Future.wait<void>(<Future<void>>[a, b]);
 
         verify(
@@ -1127,8 +1146,8 @@ void main() {
       test(
         'flushSave waits for in-flight SAM compute before returning',
         () async {
-          final Completer<Map<int, List<int>>> computeCompleter =
-              Completer<Map<int, List<int>>>();
+          final Completer<Either<Failure, Map<int, List<int>>>>
+          computeCompleter = Completer<Either<Failure, Map<int, List<int>>>>();
           when(
             mockRepo.computeSamBboxes(
               imageFile: anyNamed('imageFile'),
@@ -1155,9 +1174,11 @@ void main() {
           );
 
           // Release the compute.
-          computeCompleter.complete(<int, List<int>>{
-            0: <int>[110, 110, 210, 210],
-          });
+          computeCompleter.complete(
+            const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+              0: <int>[110, 110, 210, 210],
+            }),
+          );
           await Future.wait<void>(<Future<void>>[
             toggleFuture,
             flushCompleter.future,
@@ -1185,9 +1206,10 @@ void main() {
             caption: anyNamed('caption'),
           ),
         ).thenAnswer(
-          (_) async => <int, List<int>>{
-            0: <int>[110, 110, 210, 210],
-          },
+          (_) async =>
+              const Right<Failure, Map<int, List<int>>>(<int, List<int>>{
+                0: <int>[110, 110, 210, 210],
+              }),
         );
 
         final StructuredEditorCubit c = StructuredEditorCubit(

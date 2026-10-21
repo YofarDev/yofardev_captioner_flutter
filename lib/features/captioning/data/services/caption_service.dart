@@ -66,14 +66,20 @@ class CaptionService {
   Future<String> rewriteCaption(
     LlmConfig config,
     String currentCaption,
-    String instructions,
-  ) {
+    String instructions, {
+    CancelToken? cancelToken,
+  }) {
     if (config.providerType == LlmProviderType.localMlx) {
       throw ApiException(
         'Caption rewrite requires a remote (API) provider; local MLX is vision-only.',
       );
     }
-    return _getRemoteRewrite(config, currentCaption, instructions);
+    return _getRemoteRewrite(
+      config,
+      currentCaption,
+      instructions,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Asks the model to repair malformed JSON emitted by another (vision) model
@@ -88,13 +94,19 @@ class CaptionService {
     LlmConfig config,
     String brokenOutput, {
     int? maxTokens,
+    CancelToken? cancelToken,
   }) {
     if (config.providerType == LlmProviderType.localMlx) {
       throw ApiException(
         'JSON repair requires a remote (API) provider; local MLX is vision-only.',
       );
     }
-    return _getRemoteRepair(config, brokenOutput, maxTokens: maxTokens);
+    return _getRemoteRepair(
+      config,
+      brokenOutput,
+      maxTokens: maxTokens,
+      cancelToken: cancelToken,
+    );
   }
 
   /// Generic text-only caption transform driven entirely by [userPrompt]
@@ -103,21 +115,28 @@ class CaptionService {
   Future<String> transformCaption(
     LlmConfig config,
     String sourceText,
-    String userPrompt,
-  ) {
+    String userPrompt, {
+    CancelToken? cancelToken,
+  }) {
     if (config.providerType == LlmProviderType.localMlx) {
       throw ApiException(
         'Caption transform requires a remote (API) provider; local MLX is vision-only.',
       );
     }
-    return _getRemoteTransform(config, sourceText, userPrompt);
+    return _getRemoteTransform(
+      config,
+      sourceText,
+      userPrompt,
+      cancelToken: cancelToken,
+    );
   }
 
   Future<String> _getRemoteTransform(
     LlmConfig config,
     String sourceText,
-    String userPrompt,
-  ) async {
+    String userPrompt, {
+    CancelToken? cancelToken,
+  }) async {
     if (config.url == null || config.apiKey == null) {
       throw ApiException('URL and API Key are required for remote providers.');
     }
@@ -147,7 +166,7 @@ class CaptionService {
 
     final String url = buildUrl(config.url!);
 
-    final http.Response response = await _httpClient.post(
+    final http.Response response = await _postOrCancel(
       Uri.parse(url),
       headers: <String, String>{
         'Content-Type': 'application/json',
@@ -155,6 +174,7 @@ class CaptionService {
         'Accept': 'application/json',
       },
       body: jsonEncode(request.toJson()),
+      cancelToken: cancelToken,
     );
 
     if (response.statusCode == 200) {
@@ -318,8 +338,9 @@ class CaptionService {
   Future<String> _getRemoteRewrite(
     LlmConfig config,
     String currentCaption,
-    String instructions,
-  ) async {
+    String instructions, {
+    CancelToken? cancelToken,
+  }) async {
     if (config.url == null || config.apiKey == null) {
       throw ApiException('URL and API Key are required for remote providers.');
     }
@@ -365,7 +386,7 @@ class CaptionService {
 
     final String url = buildUrl(config.url!);
 
-    final http.Response response = await _httpClient.post(
+    final http.Response response = await _postOrCancel(
       Uri.parse(url),
       headers: <String, String>{
         'Content-Type': 'application/json',
@@ -373,6 +394,7 @@ class CaptionService {
         'Accept': 'application/json',
       },
       body: jsonEncode(request.toJson()),
+      cancelToken: cancelToken,
     );
 
     if (response.statusCode == 200) {
@@ -390,6 +412,7 @@ class CaptionService {
     LlmConfig config,
     String brokenOutput, {
     int? maxTokens,
+    CancelToken? cancelToken,
   }) async {
     if (config.url == null || config.apiKey == null) {
       throw ApiException('URL and API Key are required for remote providers.');
@@ -430,7 +453,7 @@ class CaptionService {
 
     final String url = buildUrl(config.url!);
 
-    final http.Response response = await _httpClient.post(
+    final http.Response response = await _postOrCancel(
       Uri.parse(url),
       headers: <String, String>{
         'Content-Type': 'application/json',
@@ -438,6 +461,7 @@ class CaptionService {
         'Accept': 'application/json',
       },
       body: jsonEncode(request.toJson()),
+      cancelToken: cancelToken,
     );
 
     if (response.statusCode == 200) {
@@ -527,6 +551,11 @@ class CaptionService {
     required String body,
     CancelToken? cancelToken,
   }) {
+    // Short-circuit an already-cancelled token: never fire the request at
+    // all instead of racing a call that is doomed to be discarded.
+    if (cancelToken != null && cancelToken.isCancelled) {
+      throw const CancellationException('Remote caption cancelled.');
+    }
     final Future<http.Response> request = _httpClient.post(
       url,
       headers: headers,

@@ -71,22 +71,23 @@ class MockLlmCaptionRepository extends _i1.Mock
   _i3.Future<_i4.Either<_i5.Failure, String>> rewriteCaption(
     _i6.LlmConfig? config,
     String? currentCaption,
-    String? instructions,
-  ) =>
+    String? instructions, {
+    _i8.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#rewriteCaption, [
-              config,
-              currentCaption,
-              instructions,
-            ]),
+            Invocation.method(
+              #rewriteCaption,
+              [config, currentCaption, instructions],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i3.Future<_i4.Either<_i5.Failure, String>>.value(
               _i9.dummyValue<_i4.Either<_i5.Failure, String>>(
                 this,
-                Invocation.method(#rewriteCaption, [
-                  config,
-                  currentCaption,
-                  instructions,
-                ]),
+                Invocation.method(
+                  #rewriteCaption,
+                  [config, currentCaption, instructions],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )
@@ -96,22 +97,23 @@ class MockLlmCaptionRepository extends _i1.Mock
   _i3.Future<_i4.Either<_i5.Failure, String>> transformCaption(
     _i6.LlmConfig? config,
     String? sourceText,
-    String? userPrompt,
-  ) =>
+    String? userPrompt, {
+    _i8.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#transformCaption, [
-              config,
-              sourceText,
-              userPrompt,
-            ]),
+            Invocation.method(
+              #transformCaption,
+              [config, sourceText, userPrompt],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i3.Future<_i4.Either<_i5.Failure, String>>.value(
               _i9.dummyValue<_i4.Either<_i5.Failure, String>>(
                 this,
-                Invocation.method(#transformCaption, [
-                  config,
-                  sourceText,
-                  userPrompt,
-                ]),
+                Invocation.method(
+                  #transformCaption,
+                  [config, sourceText, userPrompt],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )

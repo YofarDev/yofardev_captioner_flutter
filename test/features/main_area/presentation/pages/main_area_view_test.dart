@@ -203,8 +203,9 @@ class _StubCaptioningRepository implements ICaptioningRepository {
     AppImage image,
     String sourceCategory,
     String targetCategory,
-    String userPrompt,
-  ) async {
+    String userPrompt, {
+    CancelToken? cancelToken,
+  }) async {
     return Right<Failure, AppImage>(image);
   }
 }

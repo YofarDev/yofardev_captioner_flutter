@@ -70,7 +70,12 @@ class CaptioningRepository implements ICaptioningRepository {
   }) async {
     final String currentCaption = image.captions[category]?.text ?? '';
     final Either<Failure, String> rewriteResult = await _llmCaptionRepository
-        .rewriteCaption(config, currentCaption, instructions);
+        .rewriteCaption(
+          config,
+          currentCaption,
+          instructions,
+          cancelToken: cancelToken,
+        );
     // Never bang-unwrap a Left (see captionImage).
     final String? rewrittenOrFailure = rewriteResult.getRight().toNullable();
     if (rewrittenOrFailure == null) {
@@ -133,11 +138,17 @@ class CaptioningRepository implements ICaptioningRepository {
     AppImage image,
     String sourceCategory,
     String targetCategory,
-    String userPrompt,
-  ) async {
+    String userPrompt, {
+    CancelToken? cancelToken,
+  }) async {
     final String sourceText = image.captions[sourceCategory]?.text ?? '';
     final Either<Failure, String> transformResult = await _llmCaptionRepository
-        .transformCaption(config, sourceText, userPrompt);
+        .transformCaption(
+          config,
+          sourceText,
+          userPrompt,
+          cancelToken: cancelToken,
+        );
     // Never bang-unwrap a Left (see captionImage).
     final String? transformedOrNull = transformResult.getRight().toNullable();
     if (transformedOrNull == null) {

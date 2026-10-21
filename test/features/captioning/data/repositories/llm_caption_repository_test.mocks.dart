@@ -69,22 +69,23 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
   _i3.Future<String> rewriteCaption(
     _i4.LlmConfig? config,
     String? currentCaption,
-    String? instructions,
-  ) =>
+    String? instructions, {
+    _i6.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#rewriteCaption, [
-              config,
-              currentCaption,
-              instructions,
-            ]),
+            Invocation.method(
+              #rewriteCaption,
+              [config, currentCaption, instructions],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i3.Future<String>.value(
               _i7.dummyValue<String>(
                 this,
-                Invocation.method(#rewriteCaption, [
-                  config,
-                  currentCaption,
-                  instructions,
-                ]),
+                Invocation.method(
+                  #rewriteCaption,
+                  [config, currentCaption, instructions],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )
@@ -95,12 +96,13 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
     _i4.LlmConfig? config,
     String? brokenOutput, {
     int? maxTokens,
+    _i6.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #repairJson,
               [config, brokenOutput],
-              {#maxTokens: maxTokens},
+              {#maxTokens: maxTokens, #cancelToken: cancelToken},
             ),
             returnValue: _i3.Future<String>.value(
               _i7.dummyValue<String>(
@@ -108,7 +110,7 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
                 Invocation.method(
                   #repairJson,
                   [config, brokenOutput],
-                  {#maxTokens: maxTokens},
+                  {#maxTokens: maxTokens, #cancelToken: cancelToken},
                 ),
               ),
             ),
@@ -119,22 +121,23 @@ class MockCaptionService extends _i1.Mock implements _i2.CaptionService {
   _i3.Future<String> transformCaption(
     _i4.LlmConfig? config,
     String? sourceText,
-    String? userPrompt,
-  ) =>
+    String? userPrompt, {
+    _i6.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#transformCaption, [
-              config,
-              sourceText,
-              userPrompt,
-            ]),
+            Invocation.method(
+              #transformCaption,
+              [config, sourceText, userPrompt],
+              {#cancelToken: cancelToken},
+            ),
             returnValue: _i3.Future<String>.value(
               _i7.dummyValue<String>(
                 this,
-                Invocation.method(#transformCaption, [
-                  config,
-                  sourceText,
-                  userPrompt,
-                ]),
+                Invocation.method(
+                  #transformCaption,
+                  [config, sourceText, userPrompt],
+                  {#cancelToken: cancelToken},
+                ),
               ),
             ),
           )

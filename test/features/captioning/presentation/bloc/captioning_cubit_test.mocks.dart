@@ -103,27 +103,30 @@ class MockCaptioningRepository extends _i1.Mock
     _i6.AppImage? image,
     String? sourceCategory,
     String? targetCategory,
-    String? userPrompt,
-  ) =>
+    String? userPrompt, {
+    _i8.CancelToken? cancelToken,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#transformCaption, [
-              config,
-              image,
-              sourceCategory,
-              targetCategory,
-              userPrompt,
-            ]),
+            Invocation.method(
+              #transformCaption,
+              [config, image, sourceCategory, targetCategory, userPrompt],
+              {#cancelToken: cancelToken},
+            ),
             returnValue:
                 _i3.Future<_i4.Either<_i5.Failure, _i6.AppImage>>.value(
                   _i9.dummyValue<_i4.Either<_i5.Failure, _i6.AppImage>>(
                     this,
-                    Invocation.method(#transformCaption, [
-                      config,
-                      image,
-                      sourceCategory,
-                      targetCategory,
-                      userPrompt,
-                    ]),
+                    Invocation.method(
+                      #transformCaption,
+                      [
+                        config,
+                        image,
+                        sourceCategory,
+                        targetCategory,
+                        userPrompt,
+                      ],
+                      {#cancelToken: cancelToken},
+                    ),
                   ),
                 ),
           )

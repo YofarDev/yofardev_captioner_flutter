@@ -9,6 +9,7 @@ import 'package:mockito/mockito.dart';
 import 'package:yofardev_captioner/core/di/service_locator.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/core/utils/process_runner.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/image_resizer.dart';
@@ -696,6 +697,119 @@ void main() {
           ),
         );
       });
+    });
+
+    // ─── text-only call cancellation ───────────────────────────────
+
+    group('text-only call cancellation', () {
+      test(
+        'transformCaption with a cancelled token never hits the client',
+        () async {
+          final CancelToken token = CancelToken()..cancel();
+          when(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).thenAnswer((_) async => http.Response('{}', 200));
+
+          final LlmConfig remoteConfig = LlmConfig(
+            name: 'openai',
+            model: 'gpt-4',
+            apiKey: 'key',
+            url: 'https://api.openai.com/v1',
+            providerType: LlmProviderType.remote,
+          );
+
+          await expectLater(
+            service.transformCaption(
+              remoteConfig,
+              'source text',
+              'prompt',
+              cancelToken: token,
+            ),
+            throwsA(isA<CancellationException>()),
+          );
+          verifyNever(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          );
+        },
+      );
+
+      test('repairJson with a cancelled token never hits the client', () async {
+        final CancelToken token = CancelToken()..cancel();
+        when(
+          mockHttpClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        ).thenAnswer((_) async => http.Response('{}', 200));
+
+        final LlmConfig remoteConfig = LlmConfig(
+          name: 'openai',
+          model: 'gpt-4',
+          apiKey: 'key',
+          url: 'https://api.openai.com/v1',
+          providerType: LlmProviderType.remote,
+        );
+
+        await expectLater(
+          service.repairJson(remoteConfig, '{broken', cancelToken: token),
+          throwsA(isA<CancellationException>()),
+        );
+        verifyNever(
+          mockHttpClient.post(
+            any,
+            headers: anyNamed('headers'),
+            body: anyNamed('body'),
+          ),
+        );
+      });
+
+      test(
+        'rewriteCaption with a cancelled token never hits the client',
+        () async {
+          final CancelToken token = CancelToken()..cancel();
+          when(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          ).thenAnswer((_) async => http.Response('{}', 200));
+
+          final LlmConfig remoteConfig = LlmConfig(
+            name: 'openai',
+            model: 'gpt-4',
+            apiKey: 'key',
+            url: 'https://api.openai.com/v1',
+            providerType: LlmProviderType.remote,
+          );
+
+          await expectLater(
+            service.rewriteCaption(
+              remoteConfig,
+              'caption',
+              'instructions',
+              cancelToken: token,
+            ),
+            throwsA(isA<CancellationException>()),
+          );
+          verifyNever(
+            mockHttpClient.post(
+              any,
+              headers: anyNamed('headers'),
+              body: anyNamed('body'),
+            ),
+          );
+        },
+      );
     });
 
     // ─── ApiException ──────────────────────────────────────────────

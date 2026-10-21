@@ -34,6 +34,7 @@ abstract class ICaptioningRepository {
     AppImage image,
     String sourceCategory,
     String targetCategory,
-    String userPrompt,
-  );
+    String userPrompt, {
+    CancelToken? cancelToken,
+  });
 }

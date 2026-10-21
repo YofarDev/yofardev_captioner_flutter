@@ -45,14 +45,16 @@ class LlmCaptionRepository {
   Future<Either<Failure, String>> rewriteCaption(
     LlmConfig config,
     String currentCaption,
-    String instructions,
-  ) async {
+    String instructions, {
+    CancelToken? cancelToken,
+  }) async {
     try {
       return Right<Failure, String>(
         await _captionService.rewriteCaption(
           config,
           currentCaption,
           instructions,
+          cancelToken: cancelToken,
         ),
       );
     } on CancellationException {
@@ -73,11 +75,17 @@ class LlmCaptionRepository {
   Future<Either<Failure, String>> transformCaption(
     LlmConfig config,
     String sourceText,
-    String userPrompt,
-  ) async {
+    String userPrompt, {
+    CancelToken? cancelToken,
+  }) async {
     try {
       return Right<Failure, String>(
-        await _captionService.transformCaption(config, sourceText, userPrompt),
+        await _captionService.transformCaption(
+          config,
+          sourceText,
+          userPrompt,
+          cancelToken: cancelToken,
+        ),
       );
     } on CancellationException {
       rethrow;

@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:get_it/get_it.dart';
 import 'package:logging/logging.dart';
 import 'package:macos_secure_bookmarks/macos_secure_bookmarks.dart';
 import 'package:path/path.dart' as p;
@@ -33,6 +32,8 @@ class AppFileUtils implements CaptionFileStore {
     : _cacheService = cacheService ?? const CacheService();
 
   final CacheService _cacheService;
+
+  static final Logger _logger = Logger('AppFileUtils');
 
   @override
   Future<
@@ -351,7 +352,7 @@ class AppFileUtils implements CaptionFileStore {
     if (db == null) {
       // Captions were not loaded for this folder; renaming entries would
       // silently drop them. Log and skip the db rewrite.
-      GetIt.I<Logger>().severe(
+      _logger.severe(
         'updateDbForRename: db.json unreadable in $folderPath: '
         '${dbResult.getLeft().toNullable()}',
       );
@@ -428,8 +429,10 @@ class AppFileUtils implements CaptionFileStore {
         bytes: zipBytes,
       );
       if (outputFile == null) {
-        return const Right<Failure, void>(null);
+        _logger.fine('exportAsArchive: user cancelled the save dialog');
       }
+      // file_picker v13 writes `bytes` to the chosen path itself; the
+      // returned Uri is informational.
       return const Right<Failure, void>(null);
     } catch (e, st) {
       return Left<Failure, void>(
@@ -487,12 +490,6 @@ class AppFileUtils implements CaptionFileStore {
     if (await txtFile.exists()) {
       await txtFile.delete();
     }
-  }
-
-  Future<void> saveCaptionToFile(AppImage image) async {
-    // Captions are now saved in db.json, no need to write .txt files
-    // final String txtPath = p.setExtension(image.image.path, '.txt');
-    // await File(txtPath).writeAsString(image.caption);
   }
 
   Future<Directory> _managePersistentPermission(String folderPath) async {

@@ -231,15 +231,6 @@ class MockAppFileUtils extends _i1.Mock implements _i3.AppFileUtils {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> saveCaptionToFile(_i2.AppImage? image) =>
-      (super.noSuchMethod(
-            Invocation.method(#saveCaptionToFile, [image]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
   _i4.Future<_i2.AppImage> duplicateImage(_i2.AppImage? originalImage) =>
       (super.noSuchMethod(
             Invocation.method(#duplicateImage, [originalImage]),

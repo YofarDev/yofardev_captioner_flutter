@@ -231,7 +231,7 @@ class CaptioningCubit extends Cubit<CaptioningState> {
           status: CaptioningStatus.success,
           processedImages: totalImagesCount,
           totalImages: totalImagesCount,
-          error: '',
+          clearError: true,
           setCurrentlyCaptioningImage: true,
         ),
       );

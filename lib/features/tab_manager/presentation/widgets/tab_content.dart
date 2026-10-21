@@ -26,11 +26,7 @@ class TabContent extends StatefulWidget {
   State<TabContent> createState() => TabContentState();
 }
 
-class TabContentState extends State<TabContent>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
+class TabContentState extends State<TabContent> {
   late final CaptionSessionService _session;
   late final ImageListCubit _imageListCubit;
   late final CaptioningCubit _captioningCubit;
@@ -66,12 +62,8 @@ class TabContentState extends State<TabContent>
     super.dispose();
   }
 
-  /// Expose the ImageListCubit for external access.
-  ImageListCubit get imageListCubit => _imageListCubit;
-
   @override
   Widget build(BuildContext context) {
-    super.build(context);
     return MultiBlocProvider(
       providers: <SingleChildWidget>[
         BlocProvider<ImageListCubit>.value(value: _imageListCubit),

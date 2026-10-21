@@ -30,7 +30,6 @@ typedef StructuredRunProgress = ({
   int totalImages,
   bool isCancelling,
   String? stepLabel,
-  String? currentlyProcessingImage,
   String? error,
 });
 

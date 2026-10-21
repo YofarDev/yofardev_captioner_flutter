@@ -201,7 +201,6 @@ class _StructuredAwareCaptionControls extends StatelessWidget {
         totalImages: s.totalImages,
         isCancelling: s.isCancelling,
         stepLabel: s.stepLabel,
-        currentlyProcessingImage: s.currentlyProcessingImage,
         error: s.error,
       ),
       builder: (BuildContext context, StructuredRunProgress progress) =>

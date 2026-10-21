@@ -193,34 +193,34 @@ class SamBboxService {
     if (vlmBbox == null) return true;
     return computeIou(samBbox, vlmBbox) >= _samIouThreshold;
   }
+}
 
-  /// Intersection-over-union of two [y1, x1, y2, x2] bboxes in 0-1000
-  /// normalized coordinates. Returns 0 for null or malformed input.
-  double computeIou(List<int>? a, List<int>? b) {
-    if (a == null || b == null || a.length != 4 || b.length != 4) {
-      return 0.0;
-    }
-    final double ay1 = a[0].toDouble();
-    final double ax1 = a[1].toDouble();
-    final double ay2 = a[2].toDouble();
-    final double ax2 = a[3].toDouble();
-    final double by1 = b[0].toDouble();
-    final double bx1 = b[1].toDouble();
-    final double by2 = b[2].toDouble();
-    final double bx2 = b[3].toDouble();
-    final double interY1 = max(ay1, by1);
-    final double interX1 = max(ax1, bx1);
-    final double interY2 = min(ay2, by2);
-    final double interX2 = min(ax2, bx2);
-    final double interH = (interY2 - interY1).clamp(0.0, double.infinity);
-    final double interW = (interX2 - interX1).clamp(0.0, double.infinity);
-    final double inter = interH * interW;
-    final double areaA = (ay2 - ay1) * (ax2 - ax1);
-    final double areaB = (by2 - by1) * (bx2 - bx1);
-    final double union = areaA + areaB - inter;
-    if (union <= 0) return 0.0;
-    return inter / union;
+/// Intersection-over-union of two [y1, x1, y2, x2] bboxes in 0-1000
+/// normalized coordinates. Returns 0 for null or malformed input.
+double computeIou(List<int>? a, List<int>? b) {
+  if (a == null || b == null || a.length != 4 || b.length != 4) {
+    return 0.0;
   }
+  final double ay1 = a[0].toDouble();
+  final double ax1 = a[1].toDouble();
+  final double ay2 = a[2].toDouble();
+  final double ax2 = a[3].toDouble();
+  final double by1 = b[0].toDouble();
+  final double bx1 = b[1].toDouble();
+  final double by2 = b[2].toDouble();
+  final double bx2 = b[3].toDouble();
+  final double interY1 = max(ay1, by1);
+  final double interX1 = max(ax1, bx1);
+  final double interY2 = min(ay2, by2);
+  final double interX2 = min(ax2, bx2);
+  final double interH = (interY2 - interY1).clamp(0.0, double.infinity);
+  final double interW = (interX2 - interX1).clamp(0.0, double.infinity);
+  final double inter = interH * interW;
+  final double areaA = (ay2 - ay1) * (ax2 - ax1);
+  final double areaB = (by2 - by1) * (bx2 - bx1);
+  final double union = areaA + areaB - inter;
+  if (union <= 0) return 0.0;
+  return inter / union;
 }
 
 /// Internal helper for greedy bbox matching.

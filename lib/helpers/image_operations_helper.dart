@@ -198,12 +198,12 @@ class ImageOperationsHelper {
 
       codec.dispose();
       image.dispose();
-      _logger.warning(
+      _logger.info(
         'Converted to PNG using Flutter codec: ${pngBytes.length} bytes',
       );
     }
 
-    _logger.warning('Passing to crop screen: ${pngBytes.length} bytes');
+    _logger.info('Passing to crop screen: ${pngBytes.length} bytes');
 
     final CropImage? result = await Navigator.push(
       context,

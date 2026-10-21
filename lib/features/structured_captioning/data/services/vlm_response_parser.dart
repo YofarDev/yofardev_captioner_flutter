@@ -17,7 +17,6 @@ import 'sam_bbox_service.dart';
 /// interpretation of responses here.
 class VlmResponseParser {
   final Logger _logger = locator<Logger>();
-  final SamBboxService _samBboxService = SamBboxService();
 
   /// Hard cap on the number of elements the enumerate pass may emit.
   /// Enforced both in the prompt and by the pre-enrich validation gate.
@@ -433,7 +432,7 @@ class VlmResponseParser {
       final VlmObject obj = analysis.objects[i];
       for (final int k in kept) {
         final VlmObject existing = analysis.objects[k];
-        final double iou = _samBboxService.computeIou(obj.bbox, existing.bbox);
+        final double iou = computeIou(obj.bbox, existing.bbox);
         if (iou > 0.90 &&
             normalizedNameSimilarity(obj.name, existing.name) > 0.50) {
           isDuplicate = true;

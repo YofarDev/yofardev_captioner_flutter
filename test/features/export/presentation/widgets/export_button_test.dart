@@ -15,8 +15,8 @@ import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_l
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
 
 /// In-memory [CaptionFileStore]: no filesystem, no database — just enough
-// ported from test/features/captioning/presentation/bloc/captioning_cubit_test.dart
 /// for the session service to construct and adopt state.
+// ported from test/features/captioning/presentation/bloc/captioning_cubit_test.dart
 class _FakeFileStore implements CaptionFileStore {
   final List<CaptionDatabase> writtenDbs = <CaptionDatabase>[];
 
@@ -152,9 +152,9 @@ void main() {
     // The category dialog opened, pre-selecting the active category.
     expect(find.text('Export as Archive'), findsWidgets);
     expect(find.text('Select caption category to export:'), findsOneWidget);
-    // The dropdown only renders its selected item ('default') as text until
-    // a menu item is chosen, so assert the full category list on the
-    // DropdownButton's items themselves.
+    // The full category list is asserted on DropdownButton.items values —
+    // stable regardless of overlay behavior; the selected category
+    // additionally materializes as text.
     await tester.tap(find.byType(DropdownButton<String>));
     await tester.pumpAndSettle();
     expect(find.text('default'), findsWidgets);

@@ -10,8 +10,8 @@ import '../../../../core/utils/cancel_token.dart';
 import '../services/caption_service.dart';
 
 /// LLM-backed caption operations (low-level: one call, one caption string).
-/// Never throws across the boundary (except
-/// [CancellationException], which is control flow, not failure).
+/// Never throws across the boundary (except [CancellationException], which
+/// is control flow, not failure).
 class LlmCaptionRepository {
   final CaptionService _captionService;
   LlmCaptionRepository({CaptionService? captionService})

@@ -63,6 +63,26 @@ const Color destructive = Color(0xFFC9544A);
 /// Success / confirmation accent.
 const Color success = Color(0xFF6F9E57);
 
+// Editor highlights / overlays ──────────────────────────────────────────────
+
+/// Match-highlight background for the search-in-caption editor.
+const Color searchHighlightBg = Color(0xFF66BB6A);
+
+/// Bright end of the destructive gradient on the batch stop button.
+const Color destructiveBright = Color(0xFFE5484D);
+
+/// Deep end of the destructive gradient on the batch stop button.
+const Color destructiveDeep = Color(0xFFB32217);
+
+/// Drop shadow used by floating overlays (black @ 40%).
+const Color overlayShadow = Color(0x66000000);
+
+/// Scrollbar thumb on the dark shell (white @ 20%).
+const Color scrollbarThumb = Color(0x33FFFFFF);
+
+/// Opaque black canvas fill (thumbnail letterboxing).
+const Color canvasBlack = Color(0xFF000000);
+
 // Controls — derived tokens consumed by AppButton, tabs, etc ─────────────────
 
 // Buttons

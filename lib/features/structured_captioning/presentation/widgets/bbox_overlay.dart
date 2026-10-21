@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../../../core/utils/image_header_parser.dart';
+import '../utils/bbox_utils.dart';
 
 /// Displays an image with bounding box overlays from an Ideogram4 JSON caption.
 ///
@@ -122,7 +123,7 @@ class _BboxOverlayImageState extends State<BboxOverlayImage> {
     return elements.asMap().entries.map((MapEntry<int, BboxElement> entry) {
       final int index = entry.key;
       final BboxElement el = entry.value;
-      final Color color = _boxColors[index % _boxColors.length];
+      final Color color = kBboxColors[index % kBboxColors.length];
 
       // Convert 0-1000 normalized [y1, x1, y2, x2] to pixel offsets
       // within the painted rect.
@@ -140,17 +141,6 @@ class _BboxOverlayImageState extends State<BboxOverlayImage> {
       );
     }).toList();
   }
-
-  static const List<Color> _boxColors = <Color>[
-    Color(0xFF26A69A), // teal
-    Color(0xFFFFCA28), // amber
-    Color(0xFFEC407A), // pink
-    Color(0xFF42A5F5), // light blue
-    Color(0xFFFFA726), // orange
-    Color(0xFF9CCC65), // lime
-    Color(0xFFAB47BC), // purple
-    Color(0xFF26C6DA), // cyan
-  ];
 }
 
 /// A single colored bbox overlay with label.

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
 import '../../../../core/widgets/rive_animations.dart';
 
 /// Danger-style interrupt control. Squared stop glyph + danger glow,
@@ -74,12 +75,8 @@ class _StopButtonState extends State<StopButton>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: <Color>[
-                  const Color(
-                    0xFFE5484D,
-                  ).withAlpha(_hover && enabled ? 255 : 232),
-                  const Color(
-                    0xFFB32217,
-                  ).withAlpha(_hover && enabled ? 245 : 214),
+                  destructiveBright.withAlpha(_hover && enabled ? 255 : 232),
+                  destructiveDeep.withAlpha(_hover && enabled ? 245 : 214),
                 ],
               ),
               border: Border.all(
@@ -87,9 +84,9 @@ class _StopButtonState extends State<StopButton>
               ),
               boxShadow: <BoxShadow>[
                 BoxShadow(
-                  color: const Color(
-                    0xFFE5484D,
-                  ).withAlpha(_hover && enabled ? 130 : 72),
+                  color: destructiveBright.withAlpha(
+                    _hover && enabled ? 130 : 72,
+                  ),
                   blurRadius: _hover ? 22 : 12,
                   offset: const Offset(0, 4),
                 ),

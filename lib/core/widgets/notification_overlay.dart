@@ -115,7 +115,7 @@ class _NotificationWidgetState extends State<_NotificationWidget>
             border: Border.all(color: hairline),
             boxShadow: const <BoxShadow>[
               BoxShadow(
-                color: Color(0x66000000),
+                color: overlayShadow,
                 blurRadius: 12,
                 offset: Offset(0, 4),
               ),

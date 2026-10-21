@@ -144,7 +144,7 @@ ThemeData _buildTheme() {
       waitDuration: const Duration(milliseconds: 500),
     ),
     scrollbarTheme: const ScrollbarThemeData(
-      thumbColor: WidgetStatePropertyAll<Color>(Color(0x33FFFFFF)),
+      thumbColor: WidgetStatePropertyAll<Color>(scrollbarThumb),
       trackColor: WidgetStatePropertyAll<Color>(Colors.transparent),
       radius: Radius.circular(3),
       thickness: WidgetStatePropertyAll<double>(6),

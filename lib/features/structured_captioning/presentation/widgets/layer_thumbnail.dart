@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 /// Async thumbnail cropper with in-memory cache.
 ///
 /// Uses Flutter's native image decoder ([ui.instantiateImageCodec]) which
@@ -93,7 +95,7 @@ class _LayerThumbnailState extends State<LayerThumbnail> {
       final ui.Canvas canvas = ui.Canvas(recorder);
       canvas.drawRect(
         const Rect.fromLTWH(0, 0, 48, 48),
-        Paint()..color = const Color(0xFF000000),
+        Paint()..color = canvasBlack,
       );
       canvas.drawImageRect(
         fullImage,

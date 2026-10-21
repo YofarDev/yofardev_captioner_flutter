@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/constants/app_colors.dart';
+
 /// A TextEditingController that highlights search query matches in the text.
 class HighlightTextController extends TextEditingController {
   /// The search query to highlight. If empty, no highlighting is applied.
@@ -49,7 +51,7 @@ class HighlightTextController extends TextEditingController {
         TextSpan(
           text: text.substring(matchIndex, matchIndex + query.length),
           style: const TextStyle(
-            backgroundColor: Color(0xFF66BB6A), // Green highlight
+            backgroundColor: searchHighlightBg,
             color: Colors.white,
           ),
         ),

@@ -183,7 +183,7 @@ class _SVPickerPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
-        colors: <Color>[Color(0x00000000), Colors.black],
+        colors: <Color>[Colors.transparent, Colors.black],
       ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
 
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), blackPaint);

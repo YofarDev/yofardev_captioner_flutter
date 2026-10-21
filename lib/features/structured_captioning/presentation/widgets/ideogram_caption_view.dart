@@ -10,14 +10,6 @@ class IdeogramCaptionView extends StatelessWidget {
 
   final String jsonString;
 
-  /// Returns true if [text] looks like an Ideogram4 JSON caption.
-  static bool isIdeogramJson(String text) {
-    final String trimmed = text.trim();
-    return trimmed.startsWith('{') &&
-        trimmed.contains('"high_level_description"') &&
-        trimmed.contains('"compositional_deconstruction"');
-  }
-
   @override
   Widget build(BuildContext context) {
     try {

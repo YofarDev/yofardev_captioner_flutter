@@ -15,7 +15,6 @@ import '../../domain/models/apply_structured_overrides.dart';
 import '../bloc/structured_editor_cubit.dart';
 import '../widgets/editor_primitives.dart';
 import '../widgets/element_detail_section.dart';
-import '../widgets/ideogram_caption_view.dart';
 import '../widgets/interactive_bbox_canvas.dart';
 import '../widgets/layers_panel.dart';
 import '../widgets/style_editor_section.dart';
@@ -113,7 +112,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
       final AppImage candidate = displayed[candidateIndex];
       final String caption =
           candidate.captions[widget.activeCategory]?.text ?? '';
-      if (IdeogramCaptionView.isIdeogramJson(caption)) {
+      if (IdeogramCaption.isIdeogramJson(caption)) {
         target = candidate;
         break;
       }

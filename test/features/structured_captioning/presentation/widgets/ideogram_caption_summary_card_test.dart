@@ -17,27 +17,6 @@ void main() {
     ),
   );
 
-  group('IdeogramCaptionSummaryCard.isIdeogramJson (static)', () {
-    test('returns false for plain text', () {
-      expect(IdeogramCaptionSummaryCard.isIdeogramJson('hello'), isFalse);
-      expect(IdeogramCaptionSummaryCard.isIdeogramJson(''), isFalse);
-    });
-
-    test('returns false for JSON missing required keys', () {
-      expect(IdeogramCaptionSummaryCard.isIdeogramJson('{"foo": 1}'), isFalse);
-    });
-
-    test('returns true for JSON with both required keys', () {
-      const String json =
-          '{"high_level_description":"x","compositional_deconstruction":{}}';
-      expect(IdeogramCaptionSummaryCard.isIdeogramJson(json), isTrue);
-    });
-
-    test('returns false for malformed JSON', () {
-      expect(IdeogramCaptionSummaryCard.isIdeogramJson('{not json'), isFalse);
-    });
-  });
-
   group('IdeogramCaptionSummaryCard rendering', () {
     testWidgets(
       'renders high-level description, background, and element counts',

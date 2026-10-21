@@ -21,19 +21,6 @@ class IdeogramCaptionSummaryCard extends StatelessWidget {
   final File imageFile;
   final String activeCategory;
 
-  /// Checks whether a string is a valid Ideogram JSON caption.
-  static bool isIdeogramJson(String text) {
-    if (!text.trimLeft().startsWith('{')) return false;
-    try {
-      final Map<String, dynamic> data =
-          jsonDecode(text) as Map<String, dynamic>;
-      return data.containsKey('high_level_description') &&
-          data.containsKey('compositional_deconstruction');
-    } catch (_) {
-      return false;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final IdeogramCaption caption;

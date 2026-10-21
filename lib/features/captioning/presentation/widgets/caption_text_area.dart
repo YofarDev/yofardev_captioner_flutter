@@ -95,7 +95,7 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
               final String category = state.activeCategory ?? 'default';
               final String captionText =
                   currentImage.captions[category]?.text ?? '';
-              final bool isIdeogram = IdeogramCaptionSummaryCard.isIdeogramJson(
+              final bool isIdeogram = IdeogramCaption.isIdeogramJson(
                 captionText,
               );
               return Padding(

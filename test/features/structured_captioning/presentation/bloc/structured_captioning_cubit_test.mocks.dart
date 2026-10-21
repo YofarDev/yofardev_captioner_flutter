@@ -9,20 +9,21 @@ import 'dart:io' as _i9;
 
 import 'package:fpdart/fpdart.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:yofardev_captioner/core/errors/failure.dart' as _i7;
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i3;
 import 'package:yofardev_captioner/core/models/llm_config.dart' as _i8;
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart'
     as _i10;
+import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i11;
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart'
     as _i2;
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart'
     as _i4;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_bbox_service.dart'
-    as _i13;
+    as _i14;
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart'
-    as _i12;
+    as _i13;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -78,6 +79,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
     bool? vlmEmitsXyxy = true,
     String? guidance = '',
     _i4.StructuredMode? mode = _i4.StructuredMode.singleShot,
+    _i11.CancelToken? cancelToken,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
@@ -91,11 +93,12 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 #vlmEmitsXyxy: vlmEmitsXyxy,
                 #guidance: guidance,
                 #mode: mode,
+                #cancelToken: cancelToken,
               },
             ),
             returnValue:
                 _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>.value(
-                  _i11.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>(
+                  _i12.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramCaption>>(
                     this,
                     Invocation.method(
                       #generateStructuredCaption,
@@ -108,6 +111,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                         #vlmEmitsXyxy: vlmEmitsXyxy,
                         #guidance: guidance,
                         #mode: mode,
+                        #cancelToken: cancelToken,
                       },
                     ),
                   ),
@@ -178,7 +182,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
             }),
             returnValue:
                 _i5.Future<_i6.Either<_i7.Failure, _i3.IdeogramElement>>.value(
-                  _i11.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramElement>>(
+                  _i12.dummyValue<_i6.Either<_i7.Failure, _i3.IdeogramElement>>(
                     this,
                     Invocation.method(#recaptionElement, [], {
                       #config: config,
@@ -210,7 +214,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
                 _i5.Future<
                   _i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>
                 >.value(
-                  _i11.dummyValue<
+                  _i12.dummyValue<
                     _i6.Either<_i7.Failure, _i3.IdeogramStyleDescription>
                   >(
                     this,
@@ -242,7 +246,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
   String computeAspectRatio(int? width, int? height) =>
       (super.noSuchMethod(
             Invocation.method(#computeAspectRatio, [width, height]),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i12.dummyValue<String>(
               this,
               Invocation.method(#computeAspectRatio, [width, height]),
             ),
@@ -310,18 +314,18 @@ class MockStructuredCaptionRepository extends _i1.Mock
           as _i2.VlmAnalysis);
 
   @override
-  List<_i12.SamDetection> matchDetectionsToObjects(
-    List<_i12.SamDetection>? detections,
-    List<_i13.VlmObjectBboxPair>? vlmObjects,
+  List<_i13.SamDetection> matchDetectionsToObjects(
+    List<_i13.SamDetection>? detections,
+    List<_i14.VlmObjectBboxPair>? vlmObjects,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#matchDetectionsToObjects, [
               detections,
               vlmObjects,
             ]),
-            returnValue: <_i12.SamDetection>[],
+            returnValue: <_i13.SamDetection>[],
           )
-          as List<_i12.SamDetection>);
+          as List<_i13.SamDetection>);
 
   @override
   double computeIou(List<int>? a, List<int>? b) =>
@@ -343,7 +347,7 @@ class MockStructuredCaptionRepository extends _i1.Mock
   _i3.IdeogramCaption buildIdeogramCaption(
     List<String>? globalPalette,
     _i2.VlmAnalysis? analysis,
-    List<_i12.SamDetection>? detections,
+    List<_i13.SamDetection>? detections,
     Map<int, List<String>>? elementPalettes,
     _i10.StructuredBatchOverrides? overrides,
   ) =>

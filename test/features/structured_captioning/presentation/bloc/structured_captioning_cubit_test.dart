@@ -13,6 +13,7 @@ import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/captioning/domain/models/caption_options.dart';
 import 'package:yofardev_captioner/features/image_list/domain/models/image_list_state.dart';
 import 'package:yofardev_captioner/features/image_list/domain/services/caption_session_service.dart';
@@ -184,6 +185,7 @@ void main() {
           any,
           any,
           onProgress: anyNamed('onProgress'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       );
     });
@@ -214,6 +216,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
@@ -229,6 +232,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).called(1);
       expect(cubit.state.status, StructuredCaptioningStatus.success);
@@ -263,6 +267,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
@@ -278,6 +283,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).called(1);
       verifyNever(
@@ -285,6 +291,7 @@ void main() {
           any,
           argThat(equals(withCaption.image)),
           onProgress: anyNamed('onProgress'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       );
     });
@@ -312,6 +319,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
@@ -327,6 +335,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).called(1);
       verifyNever(
@@ -334,6 +343,7 @@ void main() {
           any,
           argThat(equals(edited.image)),
           onProgress: anyNamed('onProgress'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       );
     });
@@ -353,6 +363,7 @@ void main() {
           any,
           any,
           onProgress: anyNamed('onProgress'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       );
     });
@@ -372,6 +383,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenThrow(Exception('API down'));
 
@@ -406,6 +418,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
 
@@ -454,6 +467,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
           (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
@@ -471,6 +485,7 @@ void main() {
             argThat(equals(image1.image)),
             onProgress: anyNamed('onProgress'),
             guidance: 'NAME IT MIRA',
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
         verify(
@@ -479,6 +494,7 @@ void main() {
             argThat(equals(image2.image)),
             onProgress: anyNamed('onProgress'),
             guidance: 'NAME IT MIRA',
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
       },
@@ -508,6 +524,7 @@ void main() {
           vlmEmitsXyxy: anyNamed('vlmEmitsXyxy'),
           guidance: anyNamed('guidance'),
           mode: anyNamed('mode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((Invocation inv) async {
         calls++;
@@ -545,6 +562,74 @@ void main() {
       expect(calls, 2);
     });
 
+    test('close() aborts the in-flight VLM call immediately', () async {
+      final AppImage image1 = AppImage(
+        id: '1',
+        image: File('img1.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      final AppImage image2 = AppImage(
+        id: '2',
+        image: File('img2.jpg'),
+        captions: const <String, CaptionEntry>{},
+      );
+      late CancelToken passedToken;
+      when(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+          disableSam: anyNamed('disableSam'),
+          vlmEmitsXyxy: anyNamed('vlmEmitsXyxy'),
+          guidance: anyNamed('guidance'),
+          mode: anyNamed('mode'),
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).thenAnswer((Invocation inv) async {
+        passedToken = inv.namedArguments[#cancelToken] as CancelToken;
+        await passedToken.onCancel; // park like a real HTTP call
+        throw const CancellationException('VLM cancelled.');
+      });
+      seed(
+        ImageListState(
+          images: <AppImage>[image1, image2],
+          folderPath: '/folder',
+        ),
+      );
+      final StructuredCaptioningCubit closingCubit = StructuredCaptioningCubit(
+        session,
+        repository: mockRepository,
+      );
+
+      unawaited(
+        closingCubit.runStructuredCaptioner(
+          llm: llmConfig(),
+          option: CaptionOptions.all,
+        ),
+      );
+      await Future<void>.delayed(Duration.zero); // first call in flight
+      await closingCubit.close(); // cancels the token -> stub throws
+
+      await Future<void>.delayed(Duration.zero);
+      expect(passedToken.isCancelled, isTrue); // token reached the repository
+      verify(
+        mockRepository.generateStructuredCaption(
+          any,
+          any,
+          onProgress: anyNamed('onProgress'),
+          overrides: anyNamed('overrides'),
+          debugMode: anyNamed('debugMode'),
+          disableSam: anyNamed('disableSam'),
+          vlmEmitsXyxy: anyNamed('vlmEmitsXyxy'),
+          guidance: anyNamed('guidance'),
+          mode: anyNamed('mode'),
+          cancelToken: anyNamed('cancelToken'),
+        ),
+      ).called(1); // second image never started
+    });
+
     test('cancelStructuredCaptioning sets isCancelling', () {
       cubit.cancelStructuredCaptioning();
       expect(cubit.state.isCancelling, true);
@@ -579,6 +664,7 @@ void main() {
           onProgress: anyNamed('onProgress'),
           overrides: anyNamed('overrides'),
           debugMode: anyNamed('debugMode'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((Invocation inv) {
         capturedProgress =
@@ -638,6 +724,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
           (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
@@ -656,6 +743,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
         verifyNever(
@@ -665,6 +753,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         );
       },
@@ -692,6 +781,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
           (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
@@ -710,6 +800,7 @@ void main() {
             onProgress: anyNamed('onProgress'),
             overrides: anyNamed('overrides'),
             debugMode: anyNamed('debugMode'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
       },

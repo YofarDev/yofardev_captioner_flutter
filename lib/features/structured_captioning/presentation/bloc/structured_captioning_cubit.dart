@@ -11,6 +11,7 @@ import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/utils/cancel_token.dart';
 import '../../../captioning/captioning.dart';
 import '../../../image_list/image_list.dart';
 import '../../data/repositories/structured_caption_repository.dart';
@@ -27,16 +28,14 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
   final CaptionSessionService _session;
   final StructuredCaptionRepository _repository;
 
-  Completer<void>? _cancelCompleter;
+  CancelToken? _cancelToken;
 
-  /// Completes the cancel completer so a closing tab stops the run loop at
-  /// the next iteration boundary (in-flight VLM calls are not abortable yet —
-  /// see the follow-up note in docs/plans/2026-10-21-audit-remediation.md §0).
+  /// Cancels the run's token so a closing tab stops the loop at the next
+  /// iteration boundary. Cancelling aborts in-flight VLM HTTP calls and kills
+  /// the SAM subprocess.
   @override
   Future<void> close() {
-    if (!(_cancelCompleter?.isCompleted ?? true)) {
-      _cancelCompleter?.complete();
-    }
+    _cancelToken?.cancel();
     return super.close();
   }
 
@@ -51,7 +50,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     bool multiStage = false,
     bool scopeToFiltered = false,
   }) async {
-    _cancelCompleter = Completer<void>();
+    _cancelToken = CancelToken();
     emit(
       state.copyWith(
         status: StructuredCaptioningStatus.inProgress,
@@ -124,8 +123,8 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     for (final AppImage image in imagesToProcess) {
       if (isClosed) return;
       // Check cancellation.
-      if (_cancelCompleter?.isCompleted ?? false) {
-        _cancelCompleter = null;
+      if (_cancelToken?.isCancelled ?? false) {
+        _cancelToken = null;
         if (isClosed) return;
         emit(
           state.copyWith(
@@ -136,9 +135,13 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         return;
       }
 
-      // Delay between calls.
+      // Delay between calls, raced against cancellation so a stop request
+      // during the wait is honored immediately rather than after the delay.
       if (processed > 0 && llm.delay > 0) {
-        await Future<void>.delayed(Duration(milliseconds: llm.delay));
+        await Future.any<void>(<Future<void>>[
+          Future<void>.delayed(Duration(milliseconds: llm.delay)),
+          if (_cancelToken != null) _cancelToken!.onCancel,
+        ]);
       }
       if (isClosed) return;
 
@@ -163,6 +166,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
               mode: multiStage
                   ? StructuredMode.multiStage
                   : StructuredMode.singleShot,
+              cancelToken: _cancelToken,
             );
         final IdeogramCaption? result = generateResult.getRight().toNullable();
         if (result == null) {
@@ -198,6 +202,16 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
           clearError: true,
         );
         _session.updateImage(image: updatedImage);
+      } on CancellationException {
+        _cancelToken = null;
+        if (isClosed) return;
+        emit(
+          state.copyWith(
+            status: StructuredCaptioningStatus.initial,
+            error: 'Structured captioning cancelled',
+          ),
+        );
+        return;
       } catch (e) {
         if (isClosed) return;
         errors.add('Failed to caption ${image.image.path}: $e');
@@ -238,7 +252,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         ),
       );
     }
-    _cancelCompleter = null;
+    _cancelToken = null;
   }
 
   void _onStepProgress(String step) {
@@ -268,7 +282,7 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
 
   void cancelStructuredCaptioning() {
     if (isClosed) return;
-    _cancelCompleter?.complete();
+    _cancelToken?.cancel();
     emit(state.copyWith(isCancelling: true));
   }
 

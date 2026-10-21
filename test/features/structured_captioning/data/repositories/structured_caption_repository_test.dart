@@ -14,6 +14,7 @@ import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart';
+import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/repositories/structured_caption_repository.dart';
@@ -1891,7 +1892,13 @@ void main() {
         mockLoader.loadVisionAnalysisPrompt(),
       ).thenAnswer((_) async => 'PROMPT aspect={{aspect_ratio}}');
       when(
-        mockCaption.getCaption(any, any, any, maxTokens: 8192),
+        mockCaption.getCaption(
+          any,
+          any,
+          any,
+          maxTokens: 8192,
+          cancelToken: anyNamed('cancelToken'),
+        ),
       ).thenAnswer((_) async => vlmResponse);
     });
 
@@ -2045,6 +2052,41 @@ void main() {
         300,
       ]);
     });
+
+    test(
+      'generateStructuredCaption rethrows CancellationException, not Failure',
+      () async {
+        final CancelToken token = CancelToken();
+        when(mockColor.extractPalette(any)).thenAnswer((_) async => <String>[]);
+        when(
+          mockCaption.getCaption(
+            any,
+            any,
+            any,
+            maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
+          ),
+        ).thenAnswer((_) async {
+          await token
+              .onCancel; // park until cancelled, like a real in-flight call
+          throw const CancellationException('VLM cancelled.');
+        });
+
+        final Future<Either<Failure, IdeogramCaption>> result = repo
+            .generateStructuredCaption(
+              config,
+              File('img.png'),
+              onProgress: (_) {},
+              cancelToken: token,
+            );
+        await Future<void>.delayed(
+          Duration.zero,
+        ); // let the run reach the VLM call
+        token.cancel();
+
+        await expectLater(result, throwsA(isA<CancellationException>()));
+      },
+    );
   });
 
   // ===========================================================================
@@ -2122,6 +2164,7 @@ void main() {
             any,
             argThat(contains('ENUM')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((_) async => enumerateTwoBboxes);
         when(
@@ -2130,6 +2173,7 @@ void main() {
             any,
             argThat(contains('ENRICH')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((_) async => enrichRich);
 
@@ -2157,6 +2201,7 @@ void main() {
             any,
             argThat(contains('ENUM')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((_) async => enumerateOneBbox);
         when(
@@ -2165,6 +2210,7 @@ void main() {
             any,
             argThat(contains('ENRICH')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenThrow(Exception('enrich boom'));
 
@@ -2189,6 +2235,7 @@ void main() {
             any,
             argThat(contains('ENUM')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((_) async => enumerateNoBbox);
 
@@ -2208,6 +2255,7 @@ void main() {
             any,
             any,
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).called(1);
       },
@@ -2222,6 +2270,7 @@ void main() {
             any,
             argThat(contains('ENUM')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer((_) async => enumerateTwoBboxes);
         when(
@@ -2230,6 +2279,7 @@ void main() {
             any,
             argThat(contains('Mug')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
           (_) async => '{"desc":"rich mug description with ceramic glaze"}',
@@ -2240,6 +2290,7 @@ void main() {
             any,
             argThat(contains('Book')),
             maxTokens: anyNamed('maxTokens'),
+            cancelToken: anyNamed('cancelToken'),
           ),
         ).thenThrow(Exception('book enrich boom'));
 
@@ -2281,6 +2332,7 @@ void main() {
           any,
           argThat(contains('ENUM')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => enumerateFiveBboxes);
       when(
@@ -2289,6 +2341,7 @@ void main() {
           any,
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async {
         current++;
@@ -2326,6 +2379,7 @@ void main() {
           any,
           argThat(contains('ENUM')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => enumerateFiveBboxes);
       when(
@@ -2334,6 +2388,7 @@ void main() {
           any,
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async {
         current++;
@@ -2608,6 +2663,7 @@ void main() {
           any,
           argThat(contains('ENUM')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => enumerateFullCanvas);
       when(
@@ -2616,6 +2672,7 @@ void main() {
           any,
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -2648,6 +2705,7 @@ void main() {
           any,
           argThat(contains('ENUM')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => enumerateNearFullCanvas);
       when(
@@ -2656,6 +2714,7 @@ void main() {
           any,
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -2686,6 +2745,7 @@ void main() {
           any,
           argThat(contains('ENUM')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer((_) async => enumerateOneBbox);
       when(
@@ -2694,6 +2754,7 @@ void main() {
           any,
           argThat(contains('ENRICH')),
           maxTokens: anyNamed('maxTokens'),
+          cancelToken: anyNamed('cancelToken'),
         ),
       ).thenAnswer(
         (_) async =>

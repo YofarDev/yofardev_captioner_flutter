@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/utils/cancel_token.dart';
 import '../../../../core/utils/process_runner.dart';
 import 'sam_bbox_service.dart';
 
@@ -113,6 +114,7 @@ class SamProcessService {
     String imagePath,
     List<String> objectNames, {
     List<List<int>?>? vlmBboxes,
+    CancelToken? cancelToken,
   }) async {
     final String objectsJson = jsonEncode(objectNames);
 
@@ -133,7 +135,11 @@ class SamProcessService {
         args.addAll(<String>['--boxes', jsonEncode(vlmBboxes)]);
       }
 
-      final ProcessResult result = await _processRunner.run(python, args);
+      final ProcessResult result = await _processRunner.run(
+        python,
+        args,
+        cancelToken: cancelToken,
+      );
 
       if (result.exitCode != 0) {
         _logger.warning(

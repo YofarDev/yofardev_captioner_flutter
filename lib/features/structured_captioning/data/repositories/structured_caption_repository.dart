@@ -146,6 +146,7 @@ class StructuredCaptionRepository {
     bool vlmEmitsXyxy = true,
     String guidance = '',
     StructuredMode mode = StructuredMode.singleShot,
+    CancelToken? cancelToken,
   }) async {
     try {
       // Step 1: Global color palette.
@@ -168,6 +169,7 @@ class StructuredCaptionRepository {
           vlmEmitsXyxy: vlmEmitsXyxy,
           guidance: guidance,
           debugMode: debugMode,
+          cancelToken: cancelToken,
         );
       } else {
         vision = await _runVisionAnalysisSingleShot(
@@ -176,6 +178,7 @@ class StructuredCaptionRepository {
           onProgress: onProgress,
           vlmEmitsXyxy: vlmEmitsXyxy,
           guidance: guidance,
+          cancelToken: cancelToken,
         );
       }
       final VlmAnalysis analysis = vision.analysis;
@@ -192,6 +195,7 @@ class StructuredCaptionRepository {
           overrides: overrides,
           debugMode: debugMode,
           disableSam: disableSam,
+          cancelToken: cancelToken,
         ),
       );
     } on CancellationException {
@@ -217,6 +221,7 @@ class StructuredCaptionRepository {
     required void Function(String step) onProgress,
     required bool vlmEmitsXyxy,
     required String guidance,
+    CancelToken? cancelToken,
   }) async {
     onProgress('Analyzing image with VLM...');
     // `/no_think` prefix keeps reasoning models from burning the token budget
@@ -235,6 +240,7 @@ class StructuredCaptionRepository {
       // finish_reason="length" and throws a clear error if even this is
       // exceeded.
       maxTokens: 8192,
+      cancelToken: cancelToken,
     );
     // Strip any <think>...</think> the model emitted before its final answer.
     final String vlmCleaned = stripThinking(vlmRawResponse);
@@ -242,6 +248,7 @@ class StructuredCaptionRepository {
       vlmCleaned,
       config,
       vlmEmitsXyxy: vlmEmitsXyxy,
+      cancelToken: cancelToken,
     );
     return (rawPrompt: prompt, rawResponse: vlmRawResponse, analysis: analysis);
   }
@@ -278,6 +285,7 @@ class StructuredCaptionRepository {
     required bool vlmEmitsXyxy,
     required String guidance,
     bool debugMode = false,
+    CancelToken? cancelToken,
   }) async {
     // ── Pass 1: enumerate ───────────────────────────────────────────────
     onProgress('Enumerating objects (multi-stage VLM)...');
@@ -293,11 +301,13 @@ class StructuredCaptionRepository {
       imageFile,
       prompt,
       maxTokens: 8192,
+      cancelToken: cancelToken,
     );
     VlmAnalysis analysis = await _parseEnumerateResponse(
       rawResponse,
       config,
       vlmEmitsXyxy: vlmEmitsXyxy,
+      cancelToken: cancelToken,
     );
     bool didRetry = false;
     String? retryPrompt;
@@ -324,11 +334,13 @@ class StructuredCaptionRepository {
         imageFile,
         retryPrompt,
         maxTokens: 8192,
+        cancelToken: cancelToken,
       );
       final VlmAnalysis retryAnalysis = await _parseEnumerateResponse(
         retryRawResponse,
         config,
         vlmEmitsXyxy: vlmEmitsXyxy,
+        cancelToken: cancelToken,
       );
       // Use the retry output if it has objects, even if still imperfect.
       // The original analysis is kept as fallback only if retry is empty.
@@ -368,6 +380,7 @@ class StructuredCaptionRepository {
       imageFile,
       enrichableIndices.map((int i) => analysis.objects[i]).toList(),
       onProgress,
+      cancelToken: cancelToken,
     );
 
     // Merge enriched results back into the full object list.
@@ -414,10 +427,16 @@ class StructuredCaptionRepository {
     String raw,
     LlmConfig config, {
     bool vlmEmitsXyxy = true,
+    CancelToken? cancelToken,
   }) => _vlmResponseParser.parseEnumerateResponse(
     raw,
     parseWithRepair: (String raw, {bool vlmEmitsXyxy = true}) =>
-        _parseVlmResponseWithRepair(raw, config, vlmEmitsXyxy: vlmEmitsXyxy),
+        _parseVlmResponseWithRepair(
+          raw,
+          config,
+          vlmEmitsXyxy: vlmEmitsXyxy,
+          cancelToken: cancelToken,
+        ),
     vlmEmitsXyxy: vlmEmitsXyxy,
   );
 
@@ -539,8 +558,9 @@ class StructuredCaptionRepository {
     LlmConfig config,
     File imageFile,
     List<VlmObject> objects,
-    void Function(String step) onProgress,
-  ) async {
+    void Function(String step) onProgress, {
+    CancelToken? cancelToken,
+  }) async {
     final List<VlmObject> result = List<VlmObject>.from(objects);
     final int concurrency = _enrichConcurrencyFor(config);
     int done = 0;
@@ -549,7 +569,7 @@ class StructuredCaptionRepository {
       final List<int> chunk = <int>[for (int j = i; j < end; j++) j];
       final List<VlmObject?> outcomes = await Future.wait(<Future<VlmObject?>>[
         for (final int idx in chunk)
-          _enrichOne(config, imageFile, objects[idx]),
+          _enrichOne(config, imageFile, objects[idx], cancelToken: cancelToken),
       ]);
       for (int k = 0; k < chunk.length; k++) {
         final VlmObject? e = outcomes[k];
@@ -569,8 +589,9 @@ class StructuredCaptionRepository {
   Future<VlmObject?> _enrichOne(
     LlmConfig config,
     File imageFile,
-    VlmObject obj,
-  ) async {
+    VlmObject obj, {
+    CancelToken? cancelToken,
+  }) async {
     final List<int>? bbox = obj.bbox;
     if (bbox == null) {
       return null;
@@ -588,6 +609,7 @@ class StructuredCaptionRepository {
         config,
         File(tempPath),
         prompt,
+        cancelToken: cancelToken,
       );
       final VlmObject? parsed = _parseEnrichResponse(raw, obj);
       if (parsed == null) return null;
@@ -695,6 +717,7 @@ class StructuredCaptionRepository {
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
+    CancelToken? cancelToken,
   }) async {
     // Cheap structural health check before spending SAM + palette work on a
     // refusal / empty / degenerate output. Fatal issues abort the image
@@ -767,7 +790,10 @@ class StructuredCaptionRepository {
           imageFile.path,
           samNames,
           vlmBboxes: samBoxHints,
+          cancelToken: cancelToken,
         );
+      } on CancellationException {
+        rethrow;
       } catch (e) {
         _logger.warning('SAM detection failed, using VLM bboxes: $e');
       }
@@ -1436,6 +1462,7 @@ class StructuredCaptionRepository {
     String raw,
     LlmConfig config, {
     bool vlmEmitsXyxy = true,
+    CancelToken? cancelToken,
   }) async {
     try {
       return _parseVlmResponse(raw, vlmEmitsXyxy: vlmEmitsXyxy);
@@ -1448,11 +1475,14 @@ class StructuredCaptionRepository {
           config,
           raw,
           maxTokens: 8192,
+          cancelToken: cancelToken,
         );
         return _parseVlmResponse(
           stripThinking(repaired),
           vlmEmitsXyxy: vlmEmitsXyxy,
         );
+      } on CancellationException {
+        rethrow;
       } catch (repairError) {
         _logger.warning('JSON repair retry failed: $repairError');
         throw FormatException(

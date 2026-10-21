@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:logging/logging.dart';
 
 import '../../../../core/di/service_locator.dart';
+import '../../../../core/utils/cancel_token.dart';
 import '../models/vlm_analysis.dart';
 import '../utils/caption_hardening.dart';
 import 'sam_bbox_service.dart';
@@ -558,6 +559,8 @@ class VlmResponseParser {
         text: text ?? original.text,
         bbox: original.bbox,
       );
+    } on CancellationException {
+      rethrow;
     } catch (e) {
       // Deliberate soft-fail: one unparseable element must not abort the whole
       // run — the element keeps its un-enriched description and the run

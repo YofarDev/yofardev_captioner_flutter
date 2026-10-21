@@ -6,12 +6,11 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../image_list/image_list.dart';
-import '../../../image_operations/image_operations.dart';
 import '../../../llm_config/llm_config.dart';
-import '../../../structured_captioning/structured_captioning.dart';
 import '../../domain/models/batch_apply_template.dart';
 import '../../domain/models/caption_options.dart';
 import '../bloc/batch_apply/batch_json_apply_cubit.dart';
@@ -23,8 +22,44 @@ import 'caption_mode_selector.dart';
 import 'convert_captions_dialog.dart';
 import 'guidance_dialog.dart';
 
+/// Progress facts of a structured run, mirrored from StructuredCaptioningState
+/// by the composition root so captioning never imports structured_captioning.
+typedef StructuredRunProgress = ({
+  bool inProgress,
+  int processedImages,
+  int totalImages,
+  bool isCancelling,
+  String? stepLabel,
+  String? currentlyProcessingImage,
+});
+
+typedef RunStructuredCallback =
+    void Function({
+      required LlmConfig llm,
+      required CaptionOptions option,
+      StructuredBatchOverrides? overrides,
+      bool debugMode,
+      bool disableSam,
+      bool vlmEmitsXyxy,
+      bool multiStage,
+      bool scopeToFiltered,
+    });
+
+typedef CancelStructuredCallback = void Function();
+
 class CaptionControls extends StatefulWidget {
-  const CaptionControls({super.key});
+  const CaptionControls({
+    super.key,
+    required this.structuredProgress,
+    required this.onRunStructured,
+    required this.onCancelStructured,
+    required this.settingsButton,
+  });
+
+  final StructuredRunProgress structuredProgress;
+  final RunStructuredCallback onRunStructured;
+  final CancelStructuredCallback onCancelStructured;
+  final Widget settingsButton;
 
   @override
   State<CaptionControls> createState() => _CaptionControlsState();
@@ -54,7 +89,7 @@ class _CaptionControlsState extends State<CaptionControls> {
           children: <Widget>[
             Row(
               children: <Widget>[
-                const SettingsButton(),
+                widget.settingsButton,
                 const LlmConfigWidget(),
                 const SizedBox(width: 16),
                 Expanded(
@@ -237,38 +272,19 @@ class _CaptionControlsState extends State<CaptionControls> {
           final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
 
           if (ideogramMode) {
-            return BlocSelector<
-              StructuredCaptioningCubit,
-              StructuredCaptioningState,
-              (bool, int, int, bool, String?, String?)
-            >(
-              selector: (StructuredCaptioningState structuredState) => (
-                structuredState.status == StructuredCaptioningStatus.inProgress,
-                structuredState.processedImages,
-                structuredState.totalImages,
-                structuredState.isCancelling,
-                structuredState.stepLabel,
-                structuredState.error,
-              ),
-              builder:
-                  (
-                    BuildContext context,
-                    (bool, int, int, bool, String?, String?) progress,
-                  ) {
-                    return _buildRunRow(
-                      context: context,
-                      imageListState: imageListState,
-                      configState: configState,
-                      isInProgress: progress.$1,
-                      processedImages: progress.$2,
-                      totalImages: progress.$3,
-                      isCancelling: progress.$4,
-                      stepLabel: progress.$5,
-                      error: progress.$6,
-                      isIdeogram: true,
-                      imageCount: count,
-                    );
-                  },
+            final StructuredRunProgress progress = widget.structuredProgress;
+            return _buildRunRow(
+              context: context,
+              imageListState: imageListState,
+              configState: configState,
+              isInProgress: progress.inProgress,
+              processedImages: progress.processedImages,
+              totalImages: progress.totalImages,
+              isCancelling: progress.isCancelling,
+              stepLabel: progress.stepLabel,
+              error: null,
+              isIdeogram: true,
+              imageCount: count,
             );
           }
 
@@ -428,26 +444,22 @@ class _CaptionControlsState extends State<CaptionControls> {
                         return;
                       }
                       if (isIdeogram) {
-                        context
-                            .read<StructuredCaptioningCubit>()
-                            .runStructuredCaptioner(
-                              llm: llm,
-                              option: _selectedOption,
-                              overrides:
-                                  configState
-                                      .llmConfigs
-                                      .structuredBatchOverrides
-                                      .enabled
-                                  ? configState
-                                        .llmConfigs
-                                        .structuredBatchOverrides
-                                  : null,
-                              debugMode: configState.llmConfigs.debugMode,
-                              disableSam: configState.llmConfigs.disableSam,
-                              vlmEmitsXyxy: configState.llmConfigs.vlmEmitsXyxy,
-                              multiStage: configState.llmConfigs.multiStage,
-                              scopeToFiltered: scoped,
-                            );
+                        widget.onRunStructured(
+                          llm: llm,
+                          option: _selectedOption,
+                          overrides:
+                              configState
+                                  .llmConfigs
+                                  .structuredBatchOverrides
+                                  .enabled
+                              ? configState.llmConfigs.structuredBatchOverrides
+                              : null,
+                          debugMode: configState.llmConfigs.debugMode,
+                          disableSam: configState.llmConfigs.disableSam,
+                          vlmEmitsXyxy: configState.llmConfigs.vlmEmitsXyxy,
+                          multiStage: configState.llmConfigs.multiStage,
+                          scopeToFiltered: scoped,
+                        );
                       } else {
                         context.read<CaptioningCubit>().runCaptioner(
                           llm: llm,
@@ -511,9 +523,7 @@ class _CaptionControlsState extends State<CaptionControls> {
             isCancelling: isCancelling,
             onStop: () {
               if (isIdeogram) {
-                context
-                    .read<StructuredCaptioningCubit>()
-                    .cancelStructuredCaptioning();
+                widget.onCancelStructured();
               } else {
                 context.read<CaptioningCubit>().cancelCaptioning();
               }
@@ -524,9 +534,7 @@ class _CaptionControlsState extends State<CaptionControls> {
             isCancelling: isCancelling,
             onTap: () {
               if (isIdeogram) {
-                context
-                    .read<StructuredCaptioningCubit>()
-                    .cancelStructuredCaptioning();
+                widget.onCancelStructured();
               } else {
                 context.read<CaptioningCubit>().cancelCaptioning();
               }

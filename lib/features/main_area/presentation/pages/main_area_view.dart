@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/services/cache_service.dart';
 import '../../../../core/widgets/rive_animations.dart';
 import '../../../caption_search/caption_search.dart';
@@ -10,6 +12,7 @@ import '../../../captioning/captioning.dart';
 import '../../../export/export.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
+import '../../../structured_captioning/structured_captioning.dart';
 import '../../../tab_manager/tab_manager.dart';
 import 'current_image_view.dart';
 import 'search_and_replace_widget.dart';
@@ -38,7 +41,7 @@ class MainAreaView extends StatelessWidget {
                   searchAndReplace: SearchAndReplaceWidget(outlined: true),
                   captionFiles: CaptionFilesButton(outlined: true),
                   export: ExportButton(outlined: true),
-                  captionControls: CaptionControls(),
+                  captionControls: _StructuredAwareCaptionControls(),
                 ),
                 SizedBox(height: 16),
               ],
@@ -140,6 +143,61 @@ class _EmptyViewState extends State<_EmptyView> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Binds the structured-captioning cubit into [CaptionControls] via injected
+/// data/callbacks, keeping the captioning feature decoupled from
+/// structured_captioning (the edge lives here, in the composition root).
+class _StructuredAwareCaptionControls extends StatelessWidget {
+  const _StructuredAwareCaptionControls();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      StructuredCaptioningCubit,
+      StructuredCaptioningState,
+      StructuredRunProgress
+    >(
+      selector: (StructuredCaptioningState s) => (
+        inProgress: s.status == StructuredCaptioningStatus.inProgress,
+        processedImages: s.processedImages,
+        totalImages: s.totalImages,
+        isCancelling: s.isCancelling,
+        stepLabel: s.stepLabel,
+        currentlyProcessingImage: s.currentlyProcessingImage,
+      ),
+      builder: (BuildContext context, StructuredRunProgress progress) =>
+          CaptionControls(
+            structuredProgress: progress,
+            onRunStructured:
+                ({
+                  required LlmConfig llm,
+                  required CaptionOptions option,
+                  StructuredBatchOverrides? overrides,
+                  bool debugMode = false,
+                  bool disableSam = false,
+                  bool vlmEmitsXyxy = true,
+                  bool multiStage = false,
+                  bool scopeToFiltered = false,
+                }) => context
+                    .read<StructuredCaptioningCubit>()
+                    .runStructuredCaptioner(
+                      llm: llm,
+                      option: option,
+                      overrides: overrides,
+                      debugMode: debugMode,
+                      disableSam: disableSam,
+                      vlmEmitsXyxy: vlmEmitsXyxy,
+                      multiStage: multiStage,
+                      scopeToFiltered: scopeToFiltered,
+                    ),
+            onCancelStructured: () => context
+                .read<StructuredCaptioningCubit>()
+                .cancelStructuredCaptioning(),
+            settingsButton: const SettingsButton(),
+          ),
     );
   }
 }

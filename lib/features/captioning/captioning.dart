@@ -15,5 +15,10 @@ export 'presentation/bloc/batch_apply/batch_json_apply_state.dart'
     show BatchJsonApplyState;
 export 'presentation/bloc/captioning_cubit.dart'
     show CaptioningCubit, CaptioningState;
-export 'presentation/widgets/caption_controls.dart' show CaptionControls;
+export 'presentation/widgets/caption_controls.dart'
+    show
+        CancelStructuredCallback,
+        CaptionControls,
+        RunStructuredCallback,
+        StructuredRunProgress;
 export 'presentation/widgets/caption_text_area.dart' show CaptionTextArea;

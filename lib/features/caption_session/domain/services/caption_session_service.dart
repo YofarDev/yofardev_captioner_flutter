@@ -198,6 +198,13 @@ class CaptionSessionService {
     caseSensitive: s.caseSensitive,
   );
 
+  /// The image the UI displays for [s]: the one matching
+  /// [ImageListState.currentImageId] when it survives the filter, else the
+  /// first filtered image, else null. Public so presentation build rules can
+  /// key on it without duplicating the filter logic.
+  AppImage? displayedImageFor(ImageListState s) =>
+      _currentDisplayedFor(s, filteredFor(s));
+
   int? _currentDisplayIndex(ImageListState s, List<AppImage> displayed) {
     final String? id = s.currentImageId;
     if (id == null) {

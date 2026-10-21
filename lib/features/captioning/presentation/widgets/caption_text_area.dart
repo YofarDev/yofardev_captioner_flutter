@@ -21,6 +21,15 @@ import 'highlight_text_controller.dart';
 import 'paste_json_dialog.dart';
 import 'rewrite_caption_dialog.dart';
 
+/// What the editor subtree renders from [ImageListState]: the displayed
+/// image (Equatable — caption edits to it count) and the active category.
+/// Writes to OTHER images (every batch-captioning tick) do not change this
+/// key, so they no longer rebuild the whole editor.
+(AppImage?, String?) _editorKey(
+  CaptionSessionService session,
+  ImageListState s,
+) => (session.displayedImageFor(s), s.activeCategory);
+
 /// Builds the Ideogram summary card shown in place of the caption text field
 /// when the caption is Ideogram JSON. Injected so captioning stays decoupled
 /// from structured_captioning.
@@ -88,6 +97,9 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
         .select<LlmConfigsCubit, StructuredBatchOverrides>(
           (LlmConfigsCubit c) => c.state.llmConfigs.structuredBatchOverrides,
         );
+    final CaptionSessionService session = context
+        .read<ImageListCubit>()
+        .session;
     return BlocListener<ImageListCubit, ImageListState>(
       listener: (BuildContext context, ImageListState state) {
         // Update highlight properties when search changes
@@ -107,6 +119,8 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
         }
       },
       child: BlocBuilder<ImageListCubit, ImageListState>(
+        buildWhen: (ImageListState previous, ImageListState current) =>
+            _editorKey(session, previous) != _editorKey(session, current),
         builder: (BuildContext context, ImageListState state) {
           final AppImage? currentImage = context
               .read<ImageListCubit>()

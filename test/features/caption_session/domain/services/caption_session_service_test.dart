@@ -361,6 +361,38 @@ void main() {
       seed(ImageListState(images: threeImages, currentImageId: 'b'));
       expect(session.current.currentDisplayedImage?.id, 'b');
     });
+
+    test('displayedImageFor prefers current, falls back to first filtered', () {
+      final AppImage a = makeImage(
+        id: 'a',
+        path: '/x/a.jpg',
+        captions: <String, CaptionEntry>{
+          'default': const CaptionEntry(text: 'a Cat sitting'),
+        },
+      );
+      final AppImage b = makeImage(
+        id: 'b',
+        path: '/x/b.jpg',
+        captions: <String, CaptionEntry>{
+          'default': const CaptionEntry(text: 'a Dog running'),
+        },
+      );
+      seed(
+        ImageListState(
+          images: <AppImage>[a, b],
+          currentImageId: 'a',
+          searchQuery: 'dog',
+          folderPath: '/f',
+        ),
+      );
+
+      // 'a' is current but filtered out — the UI shows the first match.
+      expect(session.displayedImageFor(session.state)?.id, 'b');
+      expect(
+        session.displayedImageFor(session.state.copyWith(searchQuery: ''))?.id,
+        'a',
+      );
+    });
   });
 
   group('CaptionSessionService search', () {

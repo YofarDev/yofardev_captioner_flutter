@@ -31,16 +31,22 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
       emit(state.copyWith(clearError: true));
     }
     await _session.onFolderPicked(folderPath, force: true);
+    if (isClosed) return;
     final Either<Failure, void> result = await _imageOperationsHelper
         .renameAllFiles(folderPath);
+    if (isClosed) return;
     result.fold(
-      (Failure f) => emit(
-        state.copyWith(
-          status: ImageOperationsStatus.failure,
-          error: failureMessage(f),
-        ),
-      ),
+      (Failure f) {
+        if (isClosed) return;
+        emit(
+          state.copyWith(
+            status: ImageOperationsStatus.failure,
+            error: failureMessage(f),
+          ),
+        );
+      },
       (void _) async {
+        if (isClosed) return;
         await _session.onFolderPicked(folderPath, force: true);
       },
     );
@@ -58,6 +64,7 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
       emit(state.copyWith(clearError: true));
     }
     await _session.onFolderPicked(_session.state.folderPath!);
+    if (isClosed) return;
     // Use fresh state from cubit after reload, not stale captured list
     final Either<Failure, void> result = await _imageOperationsHelper
         .exportAsArchive(
@@ -65,15 +72,16 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
           _session.state.images,
           category,
         );
-    result.fold(
-      (Failure f) => emit(
+    if (isClosed) return;
+    result.fold((Failure f) {
+      if (isClosed) return;
+      emit(
         state.copyWith(
           status: ImageOperationsStatus.failure,
           error: failureMessage(f),
         ),
-      ),
-      (void _) {},
-    );
+      );
+    }, (void _) {});
   }
 
   void convertAllImages({required String format, required int quality}) async {
@@ -89,21 +97,29 @@ class ImageOperationsCubit extends Cubit<ImageOperationsState> {
           quality: quality,
           state: _session.state,
         )) {
+      if (isClosed) {
+        // Breaking cancels the subscription: the helper's async* generator
+        // stops at its next yield, so no further files are converted.
+        break;
+      }
       processedImages++;
       _session.replaceState(newState);
       emit(state.copyWith(progress: processedImages / totalImages));
     }
 
+    if (isClosed) return;
     await _session.saveChanges();
 
     emit(state.copyWith(status: ImageOperationsStatus.success));
     await Future<void>.delayed(const Duration(milliseconds: 500));
+    if (isClosed) return;
     _session.onFolderPicked(_session.state.folderPath!, force: true);
   }
 
   Future<void> cropCurrentImage(BuildContext context) async {
     final ImageListState? newState = await _imageOperationsHelper
         .cropCurrentImage(context, _session.state);
+    if (isClosed) return;
     if (newState != null) {
       _session.replaceState(newState);
       _session.getSingleImageSize();

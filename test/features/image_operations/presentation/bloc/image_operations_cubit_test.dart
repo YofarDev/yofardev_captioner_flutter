@@ -192,6 +192,48 @@ void main() {
       },
     );
 
+    test(
+      'convertAllImages stops consuming and does not throw after close',
+      () async {
+        // The loop reads _session.state.images once for the total — stub it with
+        // two images so the math matches the two stream events below.
+        when(mockSession.state).thenReturn(
+          ImageListState(
+            images: <AppImage>[
+              makeImage(id: '1', path: '/f/a.jpg'),
+              makeImage(id: '2', path: '/f/b.jpg'),
+            ],
+            folderPath: '/folder',
+          ),
+        );
+        final StreamController<ImageListState> controller =
+            StreamController<ImageListState>.broadcast();
+        when(
+          mockHelper.convertAllImages(
+            format: 'png',
+            quality: 90,
+            state: anyNamed('state'),
+          ),
+        ).thenAnswer((_) => controller.stream);
+
+        final ImageOperationsCubit cubit = ImageOperationsCubit(
+          mockSession,
+          helper: mockHelper,
+        );
+        // convertAllImages returns void (fire-and-forget); its async errors
+        // surface in the test zone.
+        cubit.convertAllImages(format: 'png', quality: 90);
+        controller.add(const ImageListState()); // first event consumed
+        await Future<void>.delayed(Duration.zero);
+        await cubit.close();
+        controller.add(const ImageListState()); // must be ignored after close
+        await Future<void>.delayed(Duration.zero);
+
+        expect(cubit.state.status, isNot(ImageOperationsStatus.success));
+        await controller.close();
+      },
+    );
+
     blocTest<ImageOperationsCubit, ImageOperationsState>(
       'cropCurrentImage emits nothing when helper returns null',
       setUp: () {

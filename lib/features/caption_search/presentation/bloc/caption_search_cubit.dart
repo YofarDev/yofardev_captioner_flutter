@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -14,12 +16,25 @@ part 'caption_search_state.dart';
 /// - Delegation to CaptionSessionService for actual search/replace operations
 class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// Creates a [CaptionSearchCubit] that depends on [CaptionSessionService].
-  CaptionSearchCubit({required CaptionSessionService session})
-    : _session = session,
-      super(CaptionSearchState(isCaseSensitive: session.state.caseSensitive));
+  CaptionSearchCubit({
+    required CaptionSessionService session,
+    this.searchDebounce = const Duration(milliseconds: 150),
+  }) : _session = session,
+       super(CaptionSearchState(isCaseSensitive: session.state.caseSensitive));
 
   /// The session used for search and replace operations.
   final CaptionSessionService _session;
+
+  /// Delay between the last keystroke and the session filter run.
+  /// [Duration.zero] forwards synchronously (tests).
+  final Duration searchDebounce;
+
+  Timer? _searchTimer;
+
+  void _cancelPendingSearch() {
+    _searchTimer?.cancel();
+    _searchTimer = null;
+  }
 
   /// Toggles the expanded state of the search bar.
   ///
@@ -28,6 +43,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   void toggleExpanded() {
     if (state.isExpanded) {
       // Collapsing - clear everything
+      _cancelPendingSearch();
       emit(const CaptionSearchState());
       _session.clearSearch();
     } else {
@@ -41,7 +57,16 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// Also updates the session to perform the actual filtering.
   void updateSearchQuery(String query) {
     emit(state.copyWith(searchQuery: query));
-    _session.updateSearchQuery(query);
+    _searchTimer?.cancel();
+    if (searchDebounce == Duration.zero) {
+      _session.updateSearchQuery(query);
+      return;
+    }
+    _searchTimer = Timer(searchDebounce, () {
+      _searchTimer = null;
+      if (isClosed) return;
+      _session.updateSearchQuery(query);
+    });
   }
 
   /// Toggles case sensitivity for the search.
@@ -54,6 +79,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// Clears the search query and resets the search.
   void clearSearch() {
     emit(state.copyWith(searchQuery: ''));
+    _cancelPendingSearch();
     _session.clearSearch();
   }
 
@@ -79,6 +105,7 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
   /// across all image captions, then collapses the search bar.
   Future<void> executeReplace() async {
     if (state.searchQuery.isEmpty) return;
+    _cancelPendingSearch();
 
     // Perform the replace operation
     _session.searchAndReplace(state.searchQuery, state.replaceText);
@@ -104,4 +131,10 @@ class CaptionSearchCubit extends Cubit<CaptionSearchState> {
 
   /// Returns the current case sensitivity setting.
   bool get isCaseSensitive => state.isCaseSensitive;
+
+  @override
+  Future<void> close() {
+    _cancelPendingSearch();
+    return super.close();
+  }
 }

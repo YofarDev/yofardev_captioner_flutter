@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -19,7 +20,10 @@ void main() {
     setUp(() {
       mockSession = MockCaptionSessionService();
       when(mockSession.state).thenReturn(const ImageListState());
-      cubit = CaptionSearchCubit(session: mockSession);
+      cubit = CaptionSearchCubit(
+        session: mockSession,
+        searchDebounce: Duration.zero,
+      );
     });
 
     tearDown(() {
@@ -64,6 +68,43 @@ void main() {
 
         expect(cubit.state.searchQuery, 'kitten');
         verify(mockSession.updateSearchQuery('kitten')).called(1);
+      });
+
+      test('debounces the session forward to the last query', () {
+        fakeAsync((FakeAsync async) {
+          final CaptionSearchCubit debounced = CaptionSearchCubit(
+            session: mockSession,
+          );
+          addTearDown(debounced.close);
+
+          debounced.toggleExpanded();
+          debounced.updateSearchQuery('k');
+          debounced.updateSearchQuery('ki');
+          debounced.updateSearchQuery('kit');
+
+          verifyNever(mockSession.updateSearchQuery(any));
+          async.elapse(const Duration(milliseconds: 150));
+          verify(mockSession.updateSearchQuery('kit')).called(1);
+          verifyNever(mockSession.updateSearchQuery('k'));
+          verifyNever(mockSession.updateSearchQuery('ki'));
+        });
+      });
+
+      test('clearSearch cancels the pending forward', () {
+        fakeAsync((FakeAsync async) {
+          final CaptionSearchCubit debounced = CaptionSearchCubit(
+            session: mockSession,
+          );
+          addTearDown(debounced.close);
+
+          debounced.toggleExpanded();
+          debounced.updateSearchQuery('kit');
+          debounced.clearSearch();
+
+          async.elapse(const Duration(milliseconds: 500));
+          verifyNever(mockSession.updateSearchQuery(any));
+          verify(mockSession.clearSearch()).called(1);
+        });
       });
     });
 

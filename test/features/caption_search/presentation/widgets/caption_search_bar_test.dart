@@ -34,7 +34,10 @@ void main() {
     when(
       mockImageListCubit.getAllUniqueMediums(),
     ).thenReturn(<String>{'photograph', 'oil painting'});
-    captionSearchCubit = CaptionSearchCubit(session: mockSession);
+    captionSearchCubit = CaptionSearchCubit(
+      session: mockSession,
+      searchDebounce: Duration.zero,
+    );
   });
 
   tearDown(() {

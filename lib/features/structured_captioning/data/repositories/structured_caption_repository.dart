@@ -22,6 +22,9 @@ import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
 import '../services/sam_bbox_service.dart';
 import '../services/sam_process_service.dart';
+// Aliased re-import so the repository's `computeSamBboxes` member can call the
+// same-named top-level function without shadowing ambiguity.
+import '../services/sam_process_service.dart' as sam_process;
 import '../services/structured_prompt_loader.dart';
 import '../services/vlm_response_parser.dart';
 import '../utils/caption_hardening.dart';
@@ -596,6 +599,9 @@ class StructuredCaptionRepository {
       }
       return parsed;
     } catch (e) {
+      // Deliberate soft-fail: one unparseable element must not abort the whole
+      // run — the element keeps its un-enriched description and the run
+      // continues. The failure is logged here, once, at the boundary.
       _logger.warning('Element enrich failed for "${obj.name}": $e');
       return null;
     } finally {
@@ -847,86 +853,18 @@ class StructuredCaptionRepository {
   /// `original element index → SAM-refined bbox` in `[y1, x1, y2, x2]`
   /// 0-1000 normalized coordinates.
   ///
-  /// Mirrors the SAM subset of [generateStructuredCaption]: each eligible
-  /// element's existing bbox is passed as a box prompt so SAM3 refines the
-  /// indicated region, and the existing [matchDetectionsToObjects] greedy
-  /// matcher decides which SAM detection wins each slot. Slots with no SAM
-  /// detection fall back to the original (VLM) bbox, so the caller always
-  /// gets a usable box for elements it asked about.
-  ///
-  /// Errors from the SAM subprocess are logged and an empty map is returned.
+  /// Delegates to the top-level `computeSamBboxes` in
+  /// `sam_process_service.dart`, passing this repository's injected
+  /// [SamProcessService.detectObjects] as the SAM entry point. Errors from
+  /// the SAM subprocess are logged there and an empty map is returned.
   Future<Map<int, List<int>>> computeSamBboxes({
     required File imageFile,
     required IdeogramCaption caption,
-  }) async {
-    final List<IdeogramElement> elements =
-        caption.compositionalDeconstruction.elements;
-
-    final List<int> eligibleIndices = <int>[];
-    final List<String> eligibleNames = <String>[];
-    final List<List<int>?> eligibleBboxes = <List<int>?>[];
-
-    for (int i = 0; i < elements.length; i++) {
-      final IdeogramElement el = elements[i];
-      if (el.bbox == null) continue;
-      final String name = _samPromptName(el);
-      if (name.isEmpty) continue;
-      if (isLikelyGroup(name, el.desc)) {
-        _logger.fine('Skipping SAM for group element: "$name"');
-        continue;
-      }
-      eligibleIndices.add(i);
-      eligibleNames.add(name);
-      eligibleBboxes.add(el.bbox);
-    }
-
-    if (eligibleIndices.isEmpty) {
-      return <int, List<int>>{};
-    }
-
-    final List<SamDetection> detections;
-    try {
-      detections = await _samProcessService.detectObjects(
-        imageFile.path,
-        eligibleNames,
-        vlmBboxes: eligibleBboxes,
-      );
-    } catch (e) {
-      _logger.warning('computeSamBboxes: SAM detection failed: $e');
-      return <int, List<int>>{};
-    }
-
-    // Match SAM detections back to the eligible subset.
-    final List<VlmObjectBboxPair> eligiblePairs = <VlmObjectBboxPair>[];
-    for (int j = 0; j < eligibleIndices.length; j++) {
-      eligiblePairs.add(
-        VlmObjectBboxPair(name: eligibleNames[j], bbox: eligibleBboxes[j]),
-      );
-    }
-    final List<SamDetection> matched = matchDetectionsToObjects(
-      detections,
-      eligiblePairs,
-    );
-
-    final Map<int, List<int>> result = <int, List<int>>{};
-    for (int j = 0; j < eligibleIndices.length; j++) {
-      final SamDetection det = matched[j];
-      if (det.bbox == null) continue;
-      result[eligibleIndices[j]] = det.bbox!;
-    }
-    return result;
-  }
-
-  /// Derives a SAM text-prompt name from an [IdeogramElement].
-  ///
-  /// [IdeogramElement] has no dedicated `name` field (the production pipeline
-  /// sources names from the VLM). For the comparison toggle we use the first
-  /// sentence of `desc`, trimmed. Empty string when nothing usable is there.
-  String _samPromptName(IdeogramElement el) {
-    final String s = el.desc.trim();
-    if (s.isEmpty) return '';
-    return s.split('.').first.trim();
-  }
+  }) => sam_process.computeSamBboxes(
+    imageFile: imageFile,
+    caption: caption,
+    detect: _samProcessService.detectObjects,
+  );
 
   /// Recaptions a single element via one VLM call.
   ///

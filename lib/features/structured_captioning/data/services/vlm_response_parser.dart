@@ -559,6 +559,9 @@ class VlmResponseParser {
         bbox: original.bbox,
       );
     } catch (e) {
+      // Deliberate soft-fail: one unparseable element must not abort the whole
+      // run — the element keeps its un-enriched description and the run
+      // continues. The failure is logged here, once, at the boundary.
       _logger.warning('Failed to parse enrich response: $e');
       return null;
     }

@@ -436,12 +436,12 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
           analysis.objects[s].bbox,
           analysis.objects[i].bbox,
         );
-        if (iou > 0.90 &&
+        if (iou > VlmResponseParser.duplicateIouThreshold &&
             normalizedNameSimilarity(
                   analysis.objects[s].name,
                   analysis.objects[i].name,
                 ) >
-                0.50) {
+                VlmResponseParser.duplicateNameSimilarityThreshold) {
           duplicates.add(i);
           break;
         }

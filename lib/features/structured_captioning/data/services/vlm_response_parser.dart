@@ -21,6 +21,12 @@ class VlmResponseParser {
   /// Enforced both in the prompt and by the pre-enrich validation gate.
   static const int multiStageElementCap = 30;
 
+  /// Shared quality-gate thresholds — the repository's quality report reads
+  /// these so the two files can never drift.
+  static const double duplicateIouThreshold = 0.90;
+  static const double duplicateNameSimilarityThreshold = 0.50;
+  static const double nearFullCanvasAreaRatio = 0.80;
+
   /// Parses the VLM response string into a [VlmAnalysis].
   ///
   /// Strips markdown code fences and handles common JSON formatting issues
@@ -406,7 +412,8 @@ class VlmResponseParser {
   }
 
   /// True when [bbox] covers more than 80 % of the full canvas.
-  bool isNearFullCanvasBbox(List<int>? bbox) => bboxAreaRatio(bbox) > 0.80;
+  bool isNearFullCanvasBbox(List<int>? bbox) =>
+      bboxAreaRatio(bbox) > nearFullCanvasAreaRatio;
 
   /// Simple name-similarity heuristic for duplicate detection: fraction of
   /// words in the shorter name that appear in the longer name.
@@ -432,8 +439,9 @@ class VlmResponseParser {
       for (final int k in kept) {
         final VlmObject existing = analysis.objects[k];
         final double iou = computeIou(obj.bbox, existing.bbox);
-        if (iou > 0.90 &&
-            normalizedNameSimilarity(obj.name, existing.name) > 0.50) {
+        if (iou > duplicateIouThreshold &&
+            normalizedNameSimilarity(obj.name, existing.name) >
+                duplicateNameSimilarityThreshold) {
           isDuplicate = true;
           break;
         }

@@ -46,7 +46,7 @@ class ArchiveExporter {
       );
       final String fileName = archiveFileName(folderPath, category);
 
-      // ponytail: build zip to temp file first; file_picker v12 saveFile
+      // ponytail: build zip to temp file first; file_picker v13 saveFile
       // requires bytes upfront and writes them itself (no path-only mode).
       final String tempPath = p.join(Directory.systemTemp.path, fileName);
       final ZipFileEncoder encoder = ZipFileEncoder();

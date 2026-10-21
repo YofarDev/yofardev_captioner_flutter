@@ -154,15 +154,6 @@ void main() {
     const Right<Failure, Map<int, List<int>>>(<int, List<int>>{}),
   );
 
-  provideDummy<Either<Failure, IdeogramElement>>(
-    Right<Failure, IdeogramElement>(
-      baseCaption().compositionalDeconstruction.elements.first,
-    ),
-  );
-  provideDummy<Either<Failure, IdeogramStyleDescription>>(
-    Right<Failure, IdeogramStyleDescription>(baseCaption().styleDescription),
-  );
-
   provideDummy<Either<Failure, Map<int, List<int>>>>(
     const Right<Failure, Map<int, List<int>>>(<int, List<int>>{}),
   );

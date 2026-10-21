@@ -26,8 +26,8 @@ import '../models/vlm_analysis.dart';
 import '../services/bbox_highlight_service.dart';
 import '../services/color_extraction_service.dart';
 import '../services/sam_bbox_service.dart';
-// Aliased re-import so the repository's `computeIou` member can call the
-// same-named top-level function without shadowing ambiguity.
+// Aliased import so `_buildQualityReport` can call the top-level
+// `computeIou` from `sam_bbox_service.dart` without shadowing ambiguity.
 import '../services/sam_bbox_service.dart' as bbox_math show computeIou;
 import '../services/sam_process_service.dart';
 // Aliased re-import so the repository's `computeSamBboxes` member can call the

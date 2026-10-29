@@ -4,6 +4,9 @@ import 'dart:math' as math;
 import 'package:equatable/equatable.dart';
 
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/moss_conversion.dart';
+import '../../../../core/models/moss_layout_caption.dart';
+import '../../../../core/models/structured_caption_document.dart';
 
 /// Parsed result of a search query containing both filter expressions
 /// and a plain text component.
@@ -46,12 +49,25 @@ sealed class FilterExpression extends Equatable {
   /// Returns `true` if the caption matches this filter's criteria.
   bool evaluate(FilterContext ctx);
 
-  /// Parses the caption as an [IdeogramCaption] if it is valid JSON,
-  /// otherwise returns `null`.
+  /// Parses the caption into an [IdeogramCaption] view if it is valid
+  /// structured JSON (Ideogram natively; MOSS layout projected through
+  /// [ideogramFromMoss]), otherwise returns `null`.
   static IdeogramCaption? tryParseCaption(String text) {
-    if (!IdeogramCaption.isIdeogramJson(text)) return null;
     try {
-      return IdeogramCaption.fromJson(jsonDecode(text) as Map<String, dynamic>);
+      switch (detectCaptionFormat(text)) {
+        case CaptionFormat.ideogram:
+          return IdeogramCaption.fromJson(
+            jsonDecode(text) as Map<String, dynamic>,
+          );
+        case CaptionFormat.moss:
+          return ideogramFromMoss(
+            MossLayoutCaption.fromJson(
+              jsonDecode(text) as Map<String, dynamic>,
+            ),
+          ).caption;
+        case CaptionFormat.plain:
+          return null;
+      }
     } catch (_) {
       return null;
     }
@@ -356,7 +372,7 @@ class ColorFilter extends FilterExpression {
   List<Object?> get props => <Object?>[hexColor];
 }
 
-/// Matches captions that are valid Ideogram JSON.
+/// Matches captions that are valid structured JSON (Ideogram or MOSS).
 ///
 /// Example: `:structured:`
 class IsStructuredFilter extends FilterExpression {
@@ -364,14 +380,14 @@ class IsStructuredFilter extends FilterExpression {
 
   @override
   bool evaluate(FilterContext ctx) {
-    return IdeogramCaption.isIdeogramJson(ctx.captionText);
+    return detectCaptionFormat(ctx.captionText) != CaptionFormat.plain;
   }
 
   @override
   List<Object?> get props => <Object?>[];
 }
 
-/// Matches captions that are plain text (not Ideogram JSON).
+/// Matches captions that are plain text (not structured JSON).
 ///
 /// Example: `:plain:`
 class IsPlainFilter extends FilterExpression {
@@ -380,11 +396,31 @@ class IsPlainFilter extends FilterExpression {
   @override
   bool evaluate(FilterContext ctx) {
     if (ctx.captionText.trim().isEmpty) return false;
-    return !IdeogramCaption.isIdeogramJson(ctx.captionText);
+    return detectCaptionFormat(ctx.captionText) == CaptionFormat.plain;
   }
 
   @override
   List<Object?> get props => <Object?>[];
+}
+
+/// Matches captions of a specific structured format.
+///
+/// Examples: `:format:ideogram:`, `:format:moss:`, `:format:plain:`
+class CaptionFormatFilter extends FilterExpression {
+  const CaptionFormatFilter({required this.format});
+
+  final CaptionFormat format;
+
+  @override
+  bool evaluate(FilterContext ctx) {
+    if (ctx.captionText.trim().isEmpty && format != CaptionFormat.plain) {
+      return false;
+    }
+    return detectCaptionFormat(ctx.captionText) == format;
+  }
+
+  @override
+  List<Object?> get props => <Object?>[format];
 }
 
 /// Matches images that have no caption at all.

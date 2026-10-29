@@ -1,8 +1,4 @@
-// Long JSON literals are concatenated without separators on purpose.
-// ignore_for_file: missing_whitespace_between_adjacent_strings
-
 import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
@@ -13,7 +9,9 @@ import 'package:yofardev_captioner/core/errors/failure.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/moss_layout_caption.dart';
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/captioning/data/services/caption_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/models/vlm_analysis.dart';
@@ -23,8 +21,10 @@ import 'package:yofardev_captioner/features/structured_captioning/data/services/
 import 'package:yofardev_captioner/features/structured_captioning/data/services/sam_process_service.dart';
 import 'package:yofardev_captioner/features/structured_captioning/data/services/structured_prompt_loader.dart';
 import 'package:yofardev_captioner/features/structured_captioning/domain/models/structured_mode.dart';
-
 import 'structured_caption_repository_test.mocks.dart';
+
+// Long JSON literals are concatenated without separators on purpose.
+// ignore_for_file: missing_whitespace_between_adjacent_strings
 
 @GenerateMocks(<Type>[
   CaptionService,
@@ -1213,11 +1213,14 @@ void main() {
       ).thenAnswer((_) async => <String>['#ELEM']);
 
       final List<String> steps = <String>[];
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: steps.add,
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: steps.add,
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       // Every pipeline phase announced.
       expect(steps, contains('Extracting color palette...'));
@@ -1283,12 +1286,15 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-        disableSam: true,
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                    disableSam: true,
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       verifyNever(
         mockSam.detectObjects(any, any, vlmBboxes: anyNamed('vlmBboxes')),
@@ -1306,11 +1312,14 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       // Palette failure is non-fatal — pipeline still produces a caption.
       expect(caption.styleDescription.colorPalette, isEmpty);
@@ -1326,11 +1335,14 @@ void main() {
         mockColor.extractPaletteFromRegion(any, any),
       ).thenAnswer((_) async => <String>[]);
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       // SAM failed → Cat element uses its VLM bbox [200,100,400,300].
       expect(caption.compositionalDeconstruction.elements[0].bbox, <int>[
@@ -1360,7 +1372,7 @@ void main() {
           throw const CancellationException('VLM cancelled.');
         });
 
-        final Future<Either<Failure, IdeogramCaption>> result = repo
+        final Future<Either<Failure, StructuredCaptionDocument>> result = repo
             .generateStructuredCaption(
               config,
               File('img.png'),
@@ -1465,13 +1477,16 @@ void main() {
           ),
         ).thenAnswer((_) async => enrichRich);
 
-        final IdeogramCaption caption = (await repo.generateStructuredCaption(
-          config,
-          File('img.png'),
-          onProgress: (_) {},
-          disableSam: true,
-          mode: StructuredMode.multiStage,
-        )).getRight().toNullable()!;
+        final IdeogramCaption caption =
+            ((await repo.generateStructuredCaption(
+                      config,
+                      File('img.png'),
+                      onProgress: (_) {},
+                      disableSam: true,
+                      mode: StructuredMode.multiStage,
+                    )).getRight().toNullable()!
+                    as IdeogramDocument)
+                .caption;
 
         final String json = caption.toJsonString();
         expect(json, contains('ceramic mug with glossy teal glaze'));
@@ -1502,13 +1517,16 @@ void main() {
           ),
         ).thenThrow(Exception('enrich boom'));
 
-        final IdeogramCaption caption = (await repo.generateStructuredCaption(
-          config,
-          File('img.png'),
-          onProgress: (_) {},
-          disableSam: true,
-          mode: StructuredMode.multiStage,
-        )).getRight().toNullable()!;
+        final IdeogramCaption caption =
+            ((await repo.generateStructuredCaption(
+                      config,
+                      File('img.png'),
+                      onProgress: (_) {},
+                      disableSam: true,
+                      mode: StructuredMode.multiStage,
+                    )).getRight().toNullable()!
+                    as IdeogramDocument)
+                .caption;
 
         expect(caption.toJsonString(), contains('terse mug'));
       },
@@ -1527,13 +1545,16 @@ void main() {
           ),
         ).thenAnswer((_) async => enumerateNoBbox);
 
-        final IdeogramCaption caption = (await repo.generateStructuredCaption(
-          config,
-          File('img.png'),
-          onProgress: (_) {},
-          disableSam: true,
-          mode: StructuredMode.multiStage,
-        )).getRight().toNullable()!;
+        final IdeogramCaption caption =
+            ((await repo.generateStructuredCaption(
+                      config,
+                      File('img.png'),
+                      onProgress: (_) {},
+                      disableSam: true,
+                      mode: StructuredMode.multiStage,
+                    )).getRight().toNullable()!
+                    as IdeogramDocument)
+                .caption;
 
         verifyNever(mockBbox.renderCroppedJpeg(any, any));
         expect(caption.toJsonString(), contains('bbox-less blob'));
@@ -1582,13 +1603,16 @@ void main() {
           ),
         ).thenThrow(Exception('book enrich boom'));
 
-        final IdeogramCaption caption = (await repo.generateStructuredCaption(
-          config,
-          File('img.png'),
-          onProgress: (_) {},
-          disableSam: true,
-          mode: StructuredMode.multiStage,
-        )).getRight().toNullable()!;
+        final IdeogramCaption caption =
+            ((await repo.generateStructuredCaption(
+                      config,
+                      File('img.png'),
+                      onProgress: (_) {},
+                      disableSam: true,
+                      mode: StructuredMode.multiStage,
+                    )).getRight().toNullable()!
+                    as IdeogramDocument)
+                .caption;
 
         final String json = caption.toJsonString();
         expect(json, contains('rich mug description with ceramic glaze'));
@@ -1781,13 +1805,16 @@ void main() {
             '{"desc":"a wooden table with four visible legs and a dark surface finish"}',
       );
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-        disableSam: true,
-        mode: StructuredMode.multiStage,
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                    disableSam: true,
+                    mode: StructuredMode.multiStage,
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse sofa'));
@@ -1823,13 +1850,16 @@ void main() {
             '{"desc":"a wooden chair with a curved backrest and four tapered legs"}',
       );
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-        disableSam: true,
-        mode: StructuredMode.multiStage,
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                    disableSam: true,
+                    mode: StructuredMode.multiStage,
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse floor'));
@@ -1863,16 +1893,140 @@ void main() {
             '{"desc":"This is the room with a large sofa and table in the scene"}',
       );
 
-      final IdeogramCaption caption = (await repo.generateStructuredCaption(
-        config,
-        File('img.png'),
-        onProgress: (_) {},
-        disableSam: true,
-        mode: StructuredMode.multiStage,
-      )).getRight().toNullable()!;
+      final IdeogramCaption caption =
+          ((await repo.generateStructuredCaption(
+                    config,
+                    File('img.png'),
+                    onProgress: (_) {},
+                    disableSam: true,
+                    mode: StructuredMode.multiStage,
+                  )).getRight().toNullable()!
+                  as IdeogramDocument)
+              .caption;
 
       final String json = caption.toJsonString();
       expect(json, contains('terse mug'));
+    });
+  });
+
+  // =========================================================================
+  // buildMossLayoutCaption — the MOSS counterpart of buildIdeogramCaption.
+  // =========================================================================
+
+  group('buildMossLayoutCaption', () {
+    late StructuredCaptionRepository repo;
+
+    setUp(() {
+      repo = StructuredCaptionRepository();
+    });
+
+    const VlmAnalysis analysis = VlmAnalysis(
+      highLevelDescription: 'A park scene',
+      style: VlmStyle(
+        medium: 'photograph',
+        aesthetics: 'serene, warm',
+        lighting: 'golden hour',
+        photoOrArt: 'DSLR, 50mm',
+      ),
+      background: 'clear blue sky',
+      objects: <VlmObject>[
+        VlmObject(name: 'Tree', desc: 'oak tree'),
+        VlmObject(name: 'Sign', desc: 'white sign', type: 'text', text: 'HI'),
+      ],
+    );
+
+    test('maps style fields into summary meta and folds background in', () {
+      final MossLayoutCaption caption = repo.buildMossLayoutCaption(
+        <String>['#87CEEB'],
+        analysis,
+        const <SamDetection>[],
+        const <int, List<String>>{},
+        null,
+        width: 1024,
+        height: 1024,
+      );
+
+      expect(caption.width, 1024);
+      expect(caption.height, 1024);
+      expect(caption.summary.caption, 'A park scene clear blue sky');
+      expect(caption.summary.meta, <String>[
+        'photograph',
+        'serene',
+        'warm',
+        'golden hour',
+        'DSLR, 50mm',
+      ]);
+      expect(caption.summary.palette, <String>['#87CEEB']);
+    });
+
+    test('builds items with labels, tags, pixel bboxes and palettes', () {
+      final List<SamDetection> detections = <SamDetection>[
+        const SamDetection(name: 'Tree', bbox: <int>[0, 0, 500, 500]),
+        const SamDetection(name: 'Sign', bbox: <int>[500, 500, 1000, 1000]),
+      ];
+      final MossLayoutCaption caption = repo.buildMossLayoutCaption(
+        <String>[],
+        analysis,
+        detections,
+        const <int, List<String>>{
+          0: <String>['#2D5016'],
+        },
+        null,
+        width: 1000,
+        height: 1000,
+      );
+
+      expect(caption.items, hasLength(2));
+      expect(caption.items[0].label, 'object');
+      expect(caption.items[0].caption, 'oak tree');
+      expect(caption.items[0].tags, <String>['Tree']);
+      expect(caption.items[0].bbox, <int>[0, 0, 500, 500]);
+      expect(caption.items[0].palette, <String>['#2D5016']);
+      expect(caption.items[1].label, 'text');
+      expect(caption.items[1].text, 'HI');
+      expect(caption.items[1].bbox, <int>[500, 500, 1000, 1000]);
+    });
+
+    test('drops objects without a bbox (MOSS requires one per item)', () {
+      const VlmAnalysis bboxLess = VlmAnalysis(
+        highLevelDescription: 'h',
+        style: VlmStyle(
+          medium: 'painting',
+          aesthetics: '',
+          lighting: '',
+          photoOrArt: '',
+        ),
+        background: '',
+        objects: <VlmObject>[VlmObject(name: 'Ghost', desc: 'no bbox')],
+      );
+      final MossLayoutCaption caption = repo.buildMossLayoutCaption(
+        <String>[],
+        bboxLess,
+        const <SamDetection>[],
+        const <int, List<String>>{},
+        null,
+        width: 512,
+        height: 512,
+      );
+      expect(caption.items, isEmpty);
+    });
+
+    test('applies background override into the summary caption', () {
+      const StructuredBatchOverrides overrides = StructuredBatchOverrides(
+        enabled: true,
+        overrideBackground: true,
+        background: 'stormy night',
+      );
+      final MossLayoutCaption caption = repo.buildMossLayoutCaption(
+        <String>[],
+        analysis,
+        const <SamDetection>[],
+        const <int, List<String>>{},
+        overrides,
+        width: 1024,
+        height: 1024,
+      );
+      expect(caption.summary.caption, 'A park scene stormy night');
     });
   });
 }

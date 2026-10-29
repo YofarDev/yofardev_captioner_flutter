@@ -45,7 +45,7 @@ void main() {
     prompts: const <String>['prompt one', 'prompt two'],
     selectedConfigId: 'a',
     selectedPrompt: 'prompt one',
-    ideogramJsonEnabled: true,
+    structuredCaptionFormat: 'ideogram',
   );
 
   group('LlmConfigService', () {
@@ -155,6 +155,38 @@ void main() {
         final Failure? failure = result.getLeft().toNullable();
         expect(failure, isA<FailureUnexpected>());
       });
+    });
+  });
+
+  group('structured format migration', () {
+    test('legacy ideogramJsonEnabled=true loads as ideogram format', () {
+      final LlmConfigs configs = LlmConfigs.fromJson(const <String, dynamic>{
+        'configs': <Object>[],
+        'prompts': <String>['p'],
+        'ideogramJsonEnabled': true,
+      });
+      expect(configs.structuredCaptionFormat, 'ideogram');
+      expect(configs.ideogramJsonEnabled, isTrue);
+    });
+
+    test('legacy ideogramJsonEnabled=false loads as off', () {
+      final LlmConfigs configs = LlmConfigs.fromJson(const <String, dynamic>{
+        'configs': <Object>[],
+        'prompts': <String>['p'],
+        'ideogramJsonEnabled': false,
+      });
+      expect(configs.structuredCaptionFormat, 'off');
+    });
+
+    test('explicit structuredCaptionFormat wins over the legacy flag', () {
+      final LlmConfigs configs = LlmConfigs.fromJson(const <String, dynamic>{
+        'configs': <Object>[],
+        'prompts': <String>['p'],
+        'ideogramJsonEnabled': true,
+        'structuredCaptionFormat': 'moss',
+      });
+      expect(configs.structuredCaptionFormat, 'moss');
+      expect(configs.ideogramJsonEnabled, isFalse);
     });
   });
 }

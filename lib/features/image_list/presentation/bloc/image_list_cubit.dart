@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/utils/extensions.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../data/repositories/app_file_utils.dart';
@@ -187,7 +188,8 @@ class ImageListCubit extends Cubit<ImageListState> {
   }
 
   /// Returns all unique medium values from structured captions across all
-  /// images.
+  /// images (both Ideogram and MOSS formats; MOSS captions are projected
+  /// through the Ideogram view, recovering medium from summary meta).
   Set<String> getAllUniqueMediums() {
     final Set<String> allMediums = <String>{};
     final String category = state.activeCategory ?? 'default';
@@ -195,9 +197,11 @@ class ImageListCubit extends Cubit<ImageListState> {
       final String captionText = image.captions[category]?.text ?? '';
       if (captionText.trimLeft().startsWith('{')) {
         try {
-          final IdeogramCaption parsed = IdeogramCaption.fromJson(
-            jsonDecode(captionText) as Map<String, dynamic>,
-          );
+          final IdeogramCaption parsed =
+              FilterExpression.tryParseCaption(captionText) ??
+              IdeogramCaption.fromJson(
+                jsonDecode(captionText) as Map<String, dynamic>,
+              );
           if (parsed.styleDescription.medium.isNotEmpty) {
             allMediums.add(parsed.styleDescription.medium);
           }
@@ -271,7 +275,8 @@ class ImageListCubit extends Cubit<ImageListState> {
     }
     for (final AppImage image in state.images) {
       final String text = image.captions[category]?.text ?? '';
-      if (IdeogramCaption.isIdeogramJson(text)) {
+      if (IdeogramCaption.isIdeogramJson(text) ||
+          MossLayoutCaption.isMossJson(text)) {
         return 'json';
       }
       if (text.isNotEmpty) {

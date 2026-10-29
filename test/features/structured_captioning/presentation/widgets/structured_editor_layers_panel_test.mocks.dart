@@ -11,10 +11,12 @@ import 'package:fpdart/fpdart.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i12;
 import 'package:yofardev_captioner/core/errors/failure.dart' as _i5;
-import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i6;
+import 'package:yofardev_captioner/core/models/ideogram_caption.dart' as _i13;
 import 'package:yofardev_captioner/core/models/llm_config.dart' as _i7;
 import 'package:yofardev_captioner/core/models/structured_batch_overrides.dart'
     as _i9;
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart'
+    as _i6;
 import 'package:yofardev_captioner/core/utils/cancel_token.dart' as _i11;
 import 'package:yofardev_captioner/features/structured_captioning/domain/models/structured_mode.dart'
     as _i10;
@@ -47,11 +49,12 @@ class MockIStructuredCaptionRepository extends _i1.Mock
   }
 
   @override
-  _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramCaption>>
+  _i3.Future<_i4.Either<_i5.Failure, _i6.StructuredCaptionDocument>>
   generateStructuredCaption(
     _i7.LlmConfig? config,
     _i8.File? imageFile, {
     required void Function(String)? onProgress,
+    _i6.CaptionFormat? format = _i6.CaptionFormat.ideogram,
     _i9.StructuredBatchOverrides? overrides,
     bool? debugMode = false,
     bool? disableSam = false,
@@ -66,6 +69,7 @@ class MockIStructuredCaptionRepository extends _i1.Mock
               [config, imageFile],
               {
                 #onProgress: onProgress,
+                #format: format,
                 #overrides: overrides,
                 #debugMode: debugMode,
                 #disableSam: disableSam,
@@ -76,14 +80,19 @@ class MockIStructuredCaptionRepository extends _i1.Mock
               },
             ),
             returnValue:
-                _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramCaption>>.value(
-                  _i12.dummyValue<_i4.Either<_i5.Failure, _i6.IdeogramCaption>>(
+                _i3.Future<
+                  _i4.Either<_i5.Failure, _i6.StructuredCaptionDocument>
+                >.value(
+                  _i12.dummyValue<
+                    _i4.Either<_i5.Failure, _i6.StructuredCaptionDocument>
+                  >(
                     this,
                     Invocation.method(
                       #generateStructuredCaption,
                       [config, imageFile],
                       {
                         #onProgress: onProgress,
+                        #format: format,
                         #overrides: overrides,
                         #debugMode: debugMode,
                         #disableSam: disableSam,
@@ -96,13 +105,15 @@ class MockIStructuredCaptionRepository extends _i1.Mock
                   ),
                 ),
           )
-          as _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramCaption>>);
+          as _i3.Future<
+            _i4.Either<_i5.Failure, _i6.StructuredCaptionDocument>
+          >);
 
   @override
-  _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramElement>> recaptionElement({
+  _i3.Future<_i4.Either<_i5.Failure, _i13.IdeogramElement>> recaptionElement({
     required _i7.LlmConfig? config,
     required _i8.File? imageFile,
-    required _i6.IdeogramCaption? currentCaption,
+    required _i13.IdeogramCaption? currentCaption,
     required int? elementIndex,
     String? instructions,
     bool? cropToBbox = false,
@@ -117,8 +128,10 @@ class MockIStructuredCaptionRepository extends _i1.Mock
               #cropToBbox: cropToBbox,
             }),
             returnValue:
-                _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramElement>>.value(
-                  _i12.dummyValue<_i4.Either<_i5.Failure, _i6.IdeogramElement>>(
+                _i3.Future<_i4.Either<_i5.Failure, _i13.IdeogramElement>>.value(
+                  _i12.dummyValue<
+                    _i4.Either<_i5.Failure, _i13.IdeogramElement>
+                  >(
                     this,
                     Invocation.method(#recaptionElement, [], {
                       #config: config,
@@ -131,14 +144,14 @@ class MockIStructuredCaptionRepository extends _i1.Mock
                   ),
                 ),
           )
-          as _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramElement>>);
+          as _i3.Future<_i4.Either<_i5.Failure, _i13.IdeogramElement>>);
 
   @override
-  _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramStyleDescription>>
+  _i3.Future<_i4.Either<_i5.Failure, _i13.IdeogramStyleDescription>>
   recaptionStyle({
     required _i7.LlmConfig? config,
     required _i8.File? imageFile,
-    required _i6.IdeogramCaption? currentCaption,
+    required _i13.IdeogramCaption? currentCaption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#recaptionStyle, [], {
@@ -148,10 +161,10 @@ class MockIStructuredCaptionRepository extends _i1.Mock
             }),
             returnValue:
                 _i3.Future<
-                  _i4.Either<_i5.Failure, _i6.IdeogramStyleDescription>
+                  _i4.Either<_i5.Failure, _i13.IdeogramStyleDescription>
                 >.value(
                   _i12.dummyValue<
-                    _i4.Either<_i5.Failure, _i6.IdeogramStyleDescription>
+                    _i4.Either<_i5.Failure, _i13.IdeogramStyleDescription>
                   >(
                     this,
                     Invocation.method(#recaptionStyle, [], {
@@ -162,12 +175,14 @@ class MockIStructuredCaptionRepository extends _i1.Mock
                   ),
                 ),
           )
-          as _i3.Future<_i4.Either<_i5.Failure, _i6.IdeogramStyleDescription>>);
+          as _i3.Future<
+            _i4.Either<_i5.Failure, _i13.IdeogramStyleDescription>
+          >);
 
   @override
   _i3.Future<_i4.Either<_i5.Failure, Map<int, List<int>>>> computeSamBboxes({
     required _i8.File? imageFile,
-    required _i6.IdeogramCaption? caption,
+    required _i13.IdeogramCaption? caption,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#computeSamBboxes, [], {

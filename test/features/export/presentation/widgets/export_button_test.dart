@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +11,9 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
+import 'package:yofardev_captioner/features/export/domain/moss_training_models.dart';
+import 'package:yofardev_captioner/features/export/domain/repositories/moss_training_export_repository.dart';
+import 'package:yofardev_captioner/features/export/presentation/bloc/moss_training_export_cubit.dart';
 import 'package:yofardev_captioner/features/export/presentation/widgets/export_button.dart';
 import 'package:yofardev_captioner/features/image_list/presentation/bloc/image_list_cubit.dart';
 import 'package:yofardev_captioner/features/image_operations/presentation/bloc/image_operations_cubit.dart';
@@ -138,8 +142,19 @@ void main() {
           BlocProvider<ImageListCubit>.value(value: imageListCubit),
           BlocProvider<ImageOperationsCubit>.value(value: imageOperationsCubit),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: Center(child: ExportButton())),
+        child: MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: MultiBlocProvider(
+                providers: <SingleChildWidget>[
+                  BlocProvider<MossTrainingExportCubit>.value(
+                    value: MossTrainingExportCubit(repository: _NoopRepo()),
+                  ),
+                ],
+                child: const ExportButton(),
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -165,4 +180,21 @@ void main() {
       <String>['default', 'booru'],
     );
   });
+}
+
+/// No-op repository — this test never reaches plan building.
+class _NoopRepo implements IMossTrainingExportRepository {
+  @override
+  Future<Either<Failure, MossTrainingExportPlan>> buildPlan({
+    required List<AppImage> images,
+    required String category,
+    required MossTrainingExportOptions options,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<Either<Failure, (MossTrainingExportResult, Uint8List)>> exportPlan({
+    required MossTrainingExportPlan plan,
+    void Function(int p, int t, String f)? onProgress,
+    bool Function()? isCancelled,
+  }) => throw UnimplementedError();
 }

@@ -18,6 +18,7 @@ import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_configs.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/llm_config/data/repositories/llm_config_service.dart';
 import 'package:yofardev_captioner/features/llm_config/llm_config.dart';
@@ -192,7 +193,7 @@ void main() {
   }) async {
     final CaptionSessionService session = _TestSession.make();
     final StructuredEditorCubit editorCubit = StructuredEditorCubit(
-      initialCaption: initialCaption,
+      initialDocument: IdeogramDocument(caption: initialCaption),
       imageFile: File('x.png'),
       activeCategory: 'default',
       session: session,

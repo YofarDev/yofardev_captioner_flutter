@@ -723,6 +723,102 @@ void main() {
       expect(store.writtenDbs, isEmpty);
     });
 
+    test(
+      'updateImageCaption targets image id + category and persists',
+      () async {
+        seed(
+          ImageListState(
+            images: <AppImage>[
+              makeImage(
+                id: 'a',
+                path: '/f/a.jpg',
+                captions: <String, CaptionEntry>{
+                  'default': const CaptionEntry(text: 'source'),
+                },
+              ),
+              makeImage(id: 'b', path: '/f/b.jpg'),
+            ],
+            currentImageId: 'b',
+            folderPath: '/f',
+          ),
+        );
+
+        final bool ok = await session.updateImageCaption(
+          imageId: 'a',
+          category: 'moss',
+          text: 'converted',
+          model: 'ideogram→moss',
+          sourceCategory: 'default',
+          expectedSourceText: 'source',
+        );
+
+        expect(ok, isTrue);
+        expect(
+          session.current.state.images
+              .firstWhere((AppImage i) => i.id == 'a')
+              .captions['moss']!
+              .text,
+          'converted',
+        );
+        expect(
+          session.current.state.images
+              .firstWhere((AppImage i) => i.id == 'a')
+              .captions['default']!
+              .text,
+          'source',
+        );
+        expect(store.writtenDbs, hasLength(1));
+      },
+    );
+
+    test(
+      'updateImageCaption refuses when the source caption changed mid-flight',
+      () async {
+        seed(
+          ImageListState(
+            images: <AppImage>[
+              makeImage(
+                id: 'a',
+                path: '/f/a.jpg',
+                captions: <String, CaptionEntry>{
+                  'default': const CaptionEntry(text: 'edited by user'),
+                },
+              ),
+            ],
+            currentImageId: 'a',
+            folderPath: '/f',
+          ),
+        );
+
+        final bool ok = await session.updateImageCaption(
+          imageId: 'a',
+          category: 'moss',
+          text: 'stale result',
+          sourceCategory: 'default',
+          expectedSourceText: 'source seen before the user edited',
+        );
+
+        expect(ok, isFalse);
+        expect(session.current.state.images.first.captions['moss'], isNull);
+        expect(store.writtenDbs, isEmpty);
+      },
+    );
+
+    test('updateImageCaption returns false for unknown image ids', () async {
+      seed(
+        ImageListState(
+          images: <AppImage>[makeImage(id: 'a', path: '/f/a.jpg')],
+          folderPath: '/f',
+        ),
+      );
+      final bool ok = await session.updateImageCaption(
+        imageId: 'missing',
+        category: 'default',
+        text: 'x',
+      );
+      expect(ok, isFalse);
+    });
+
     test('updateImage replaces image at correct index', () async {
       seed(
         ImageListState(

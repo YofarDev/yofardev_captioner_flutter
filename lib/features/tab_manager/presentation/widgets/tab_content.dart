@@ -6,6 +6,7 @@ import '../../../../core/di/service_locator.dart';
 import '../../../caption_search/caption_search.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../../captioning/captioning.dart';
+import '../../../export/export.dart';
 import '../../../image_list/image_list.dart';
 import '../../../image_operations/image_operations.dart';
 import '../../../structured_captioning/structured_captioning.dart';
@@ -34,6 +35,9 @@ class TabContentState extends State<TabContent> {
   late final ImageOperationsCubit _imageOperationsCubit;
   late final CaptionSearchCubit _captionSearchCubit;
   late final BatchJsonApplyCubit _batchJsonApplyCubit;
+  late final ConvertFormatCubit _convertFormatCubit;
+  late final RepairLegacyMossCubit _repairLegacyMossCubit;
+  late final MossTrainingExportCubit _mossTrainingExportCubit;
 
   @override
   void initState() {
@@ -49,12 +53,18 @@ class TabContentState extends State<TabContent> {
     _imageOperationsCubit = locator<ImageOperationsCubit>(param1: _session);
     _captionSearchCubit = locator<CaptionSearchCubit>(param1: _session);
     _batchJsonApplyCubit = locator<BatchJsonApplyCubit>(param1: _session);
+    _convertFormatCubit = locator<ConvertFormatCubit>(param1: _session);
+    _repairLegacyMossCubit = locator<RepairLegacyMossCubit>(param1: _session);
+    _mossTrainingExportCubit = locator<MossTrainingExportCubit>();
   }
 
   @override
   void dispose() {
     _captionSearchCubit.close();
     _batchJsonApplyCubit.close();
+    _convertFormatCubit.close();
+    _repairLegacyMossCubit.close();
+    _mossTrainingExportCubit.close();
     _imageOperationsCubit.close();
     _structuredCaptioningCubit.close();
     _captioningCubit.close();
@@ -74,6 +84,13 @@ class TabContentState extends State<TabContent> {
         BlocProvider<ImageOperationsCubit>.value(value: _imageOperationsCubit),
         BlocProvider<CaptionSearchCubit>.value(value: _captionSearchCubit),
         BlocProvider<BatchJsonApplyCubit>.value(value: _batchJsonApplyCubit),
+        BlocProvider<ConvertFormatCubit>.value(value: _convertFormatCubit),
+        BlocProvider<RepairLegacyMossCubit>.value(
+          value: _repairLegacyMossCubit,
+        ),
+        BlocProvider<MossTrainingExportCubit>.value(
+          value: _mossTrainingExportCubit,
+        ),
       ],
       child: widget.child,
     );

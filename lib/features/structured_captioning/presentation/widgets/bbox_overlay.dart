@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/utils/image_header_parser.dart';
 import '../utils/bbox_utils.dart';
 
@@ -225,11 +226,21 @@ class BboxElement {
   final double y2;
   final double x2;
 
-  /// Parses elements from an Ideogram4 JSON string.
+  /// Parses elements from an Ideogram4 JSON string, or from a MOSS layout
+  /// draft (absolute-pixel xyxy bboxes normalized against the canvas
+  /// width/height embedded in the JSON).
   static List<BboxElement> parse(String json) {
     try {
       final Map<String, dynamic> data =
           jsonDecode(json) as Map<String, dynamic>;
+      if (MossLayoutCaption.isNativeMossJson(json)) {
+        // Native centered yxyx coordinates are not draft boxes — drawing
+        // them through the top-left parser would render garbage overlays.
+        return <BboxElement>[];
+      }
+      if (MossLayoutCaption.isMossJson(json)) {
+        return _parseMoss(data);
+      }
       final Map<String, dynamic> decomp =
           data['compositional_deconstruction'] as Map<String, dynamic>;
       final List<dynamic> elements =
@@ -256,5 +267,26 @@ class BboxElement {
     } catch (_) {
       return <BboxElement>[];
     }
+  }
+
+  static List<BboxElement> _parseMoss(Map<String, dynamic> data) {
+    final MossLayoutCaption caption = MossLayoutCaption.fromJson(data);
+    final int width = caption.width <= 0 ? 1 : caption.width;
+    final int height = caption.height <= 0 ? 1 : caption.height;
+    return caption.items.where((MossItem item) => item.bbox != null).map((
+      MossItem item,
+    ) {
+      final List<int> bbox = item.bbox!;
+      final bool isText = item.label == 'text';
+      return BboxElement(
+        type: isText ? 'text' : 'obj',
+        label: isText ? (item.text ?? 'text') : null,
+        desc: item.caption,
+        y1: (bbox[1] / height * 1000).clamp(0, 1000).toDouble(),
+        x1: (bbox[0] / width * 1000).clamp(0, 1000).toDouble(),
+        y2: (bbox[3] / height * 1000).clamp(0, 1000).toDouble(),
+        x2: (bbox[2] / width * 1000).clamp(0, 1000).toDouble(),
+      );
+    }).toList();
   }
 }

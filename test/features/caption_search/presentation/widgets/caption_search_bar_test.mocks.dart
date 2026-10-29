@@ -239,6 +239,30 @@ class MockCaptionSessionService extends _i1.Mock
   );
 
   @override
+  _i3.Future<bool> updateImageCaption({
+    required String? imageId,
+    required String? category,
+    required String? text,
+    String? model,
+    String? sourceCategory,
+    String? expectedSourceText,
+    bool? markEdited = true,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateImageCaption, [], {
+              #imageId: imageId,
+              #category: category,
+              #text: text,
+              #model: model,
+              #sourceCategory: sourceCategory,
+              #expectedSourceText: expectedSourceText,
+              #markEdited: markEdited,
+            }),
+            returnValue: _i3.Future<bool>.value(false),
+          )
+          as _i3.Future<bool>);
+
+  @override
   _i3.Future<void> updateCaption({required String? caption}) =>
       (super.noSuchMethod(
             Invocation.method(#updateCaption, [], {#caption: caption}),
@@ -317,11 +341,13 @@ class MockCaptionSessionService extends _i1.Mock
   );
 
   @override
-  void addCategory(String? name, {String? format = 'txt'}) =>
-      super.noSuchMethod(
-        Invocation.method(#addCategory, [name], {#format: format}),
-        returnValueForMissingStub: null,
-      );
+  _i3.Future<void> addCategory(String? name, {String? format = 'txt'}) =>
+      (super.noSuchMethod(
+            Invocation.method(#addCategory, [name], {#format: format}),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
 
   @override
   void removeCategory(String? name) => super.noSuchMethod(

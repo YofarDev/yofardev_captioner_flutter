@@ -27,8 +27,21 @@ Feature-first BLoC/Cubit + Repository + get_it:
 
 - `lib/features/<name>/{data,domain,presentation}` — self-contained features: `image_list`, `captioning`, `structured_captioning`, `llm_config`, `image_operations`, `caption_search`, `tab_manager`, `export`, `main_area`, `agent_api`. `data` = repositories/models/services, `domain` = pure models, repository interfaces, and feature services (no Flutter/get_it/bloc imports), `presentation` = `pages/`, `widgets/`, and `bloc/` (cubits + states, part files for state separation).
 - Every feature exposes a public barrel `lib/features/<name>/<name>.dart` (domain types + public cubits/screens/widgets; never `data/` internals). Cross-feature imports may only target that barrel — enforced by `test/architecture_test.dart`, whose ratchet (`kKnownViolations` / `kKnownCycles`) may only shrink. Allowlist entries were narrowed to their exact surviving files in Phase 6 — never broaden a prefix; fix the violation or (only in an approved refactor phase) narrow further.
-- `lib/core/` — shared code only: `di/service_locator.dart` (DI registration), `models/` (cross-cutting models: AppImage, CaptionEntry/Data/Database, LlmConfig(s), IdeogramCaption, StructuredBatchOverrides), `constants/` (colors etc.), `errors/`, `services/`, `utils/`, `widgets/` (reusable by 3+ features), `presentation/pages/home_page.dart`.
+- `lib/core/` — shared code only: `di/service_locator.dart` (DI registration), `models/` (cross-cutting models: AppImage, CaptionEntry/Data/Database, LlmConfig(s), IdeogramCaption, MossLayoutCaption + moss_conversion, StructuredCaptionDocument format union, StructuredBatchOverrides), `constants/` (colors etc.), `errors/`, `services/`, `utils/`, `widgets/` (reusable by 3+ features), `presentation/pages/home_page.dart`.
 - `lib/helpers/` — helpers shared with tests.
+
+**Structured caption formats**: captions may be plain text, Ideogram4 JSON
+(`IdeogramCaption.isIdeogramJson`) or MOSS-Image layout JSON
+(`MossLayoutCaption.isMossJson`); `detectCaptionFormat` /
+`StructuredCaptionDocument` (core/models) is the discriminator. The stored
+form is always the compact JSON string in `CaptionEntry.text` — there is no
+dedicated field. `LlmConfigs.structuredCaptionFormat` ('off' | 'ideogram' |
+'moss') selects what the Run button generates; the structured editor works on
+an index-preserving Ideogram *view* internally and re-derives the MOSS JSON
+on save (per-item `label`/`tags` survive via the original layout kept in the
+cubit). Conversions between formats are pure functions in
+`core/models/moss_conversion.dart` (moss→ideogram drops `character` labels
+and bbox-less items — documented losses).
 
 Rules that matter when editing:
 
@@ -47,7 +60,7 @@ Rules that matter when editing:
 
 ## Agent API (sensitive area)
 
-`lib/features/agent_api/` embeds a local REST API (shelf; binds `127.0.0.1`, default port 8765, bearer-token auth; port+token discovery file `agent-api.json` under the app's Application Support dir) plus a stdio MCP server at `tool/captioner_mcp.dart`. Historical design notes: `git show 9ea7bbc~1:CLAUDE.md` (the last version before the file was folded into this one). Tests: `test/features/agent_api/`.
+`lib/features/agent_api/` embeds a local REST API (shelf; binds `127.0.0.1`, default port 8765, bearer-token auth; port+token discovery file `agent-api.json` under the app's Application Support dir) plus a stdio MCP server at `tool/captioner_mcp.dart`. Caption writes route through the open tab session when the folder is open (else direct serialized `db.json` read-modify-write); `POST /api/convert` (MCP: `convert_caption`) converts captions between the Ideogram and MOSS formats locally. Historical design notes: `git show 9ea7bbc~1:CLAUDE.md` (the last version before the file was folded into this one). Tests: `test/features/agent_api/`.
 
 **Never write a folder's `db.json` from outside the app while it runs** — the app rewrites the whole file from memory on every save, so external edits get clobbered. External writers must go through `POST /api/captions`.
 

@@ -11,6 +11,7 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/models/structured_caption_document.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
@@ -139,9 +140,8 @@ class _CaptionTextAreaState extends State<CaptionTextArea> {
               final String category = state.activeCategory ?? 'default';
               final String captionText =
                   currentImage.captions[category]?.text ?? '';
-              final bool isIdeogram = IdeogramCaption.isIdeogramJson(
-                captionText,
-              );
+              final bool isIdeogram =
+                  detectCaptionFormat(captionText) != CaptionFormat.plain;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 32),
                 child: Column(

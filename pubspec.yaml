@@ -22,9 +22,10 @@ dependencies:
   http: ^1.6.0
   uuid: ^4.5.2
   archive: ^4.0.7
+  crypto: ^3.0.3
   desktop_drop: ^0.8.4
   nested: ^1.0.0
-  macos_secure_bookmarks: ^0.2.1
+  macos_secure_bookmarks: ^0.3.0
   flutter_launcher_icons: ^0.14.4
   image: ^4.7.2
   path_provider: ^2.1.5

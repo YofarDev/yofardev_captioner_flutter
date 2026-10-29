@@ -1,3 +1,4 @@
+import '../../../../core/models/structured_caption_document.dart';
 import '../models/filter_query.dart';
 
 /// Parses a raw search query string into structured filter expressions
@@ -18,6 +19,7 @@ class FilterParser {
     'color',
     'structured',
     'plain',
+    'format',
     'nocaption',
     'dupbbox',
     'tag',
@@ -103,6 +105,27 @@ class FilterParser {
     if (_flagFilters.contains(name)) {
       final FilterExpression filter = _createFlagFilter(name);
       return _ParseResult(filter: filter, endIndex: nameEnd + 1);
+    }
+
+    // :format:ideogram: / :format:moss: / :format:plain:
+    if (name == 'format') {
+      final int argEnd = _indexOf(query, ':', nameEnd + 1);
+      if (argEnd == -1) return null;
+      final String arg = query
+          .substring(nameEnd + 1, argEnd)
+          .trim()
+          .toLowerCase();
+      final CaptionFormat? format = switch (arg) {
+        'ideogram' => CaptionFormat.ideogram,
+        'moss' => CaptionFormat.moss,
+        'plain' => CaptionFormat.plain,
+        _ => null,
+      };
+      if (format == null) return null;
+      return _ParseResult(
+        filter: CaptionFormatFilter(format: format),
+        endIndex: argEnd + 1,
+      );
     }
 
     // :has:type: — one argument

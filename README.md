@@ -38,7 +38,7 @@ The application uses a third-party API for generating captions automatically. Th
 - **View and Manage Images**: Select a folder and view images one by one.
 - **Edit Captions**: Add, edit, and save captions for each image. Captions are saved as `.txt` files.
 - **Automatic Captioning**: Use a third-party API to automatically generate captions for your images.
-- **Structured Captioning (Ideogram JSON)**: Generate detailed structured captions with object-level bounding boxes, style descriptions, color palettes, and compositional deconstruction — ideal for preparing LoRA style training datasets.
+- **Structured Captioning (Ideogram JSON / MOSS layout)**: Generate detailed structured captions with object-level bounding boxes, style descriptions, color palettes, and compositional deconstruction — ideal for preparing LoRA style training datasets. Two output formats are supported: **Ideogram 4** JSON and **MOSS-Image** layout JSON. MOSS captions are editable drafts (top-left absolute-pixel boxes against the exact source image dimensions) and can be compiled to the native centered `yxyx` prompt (with `bbox_coord_space: abs_centralized` / `bbox_format: yxyx` markers) for copying or training export. Conversion between formats is local (no LLM) and projects boxes onto the exact decoded image dimensions — never an invented or rounded frame. Legacy MOSS drafts written by older conversions (16-pixel-rounded canvas) can be audited and repaired via the **Repair** button: review each draft, then reconvert from the surviving Ideogram source or rescale boxes to the real frame into a new category.
 - **BBox Canvas Editor**: Visually inspect, move, resize, and add object bounding boxes on detected image layers.
 - **SAM3 Object Detection**: Apple Silicon–accelerated SAM3 refines bounding boxes for precise per-object color extraction.
 - **Color Palette Extraction**: K-means++ clustering extracts dominant colors per object region and globally.
@@ -75,7 +75,17 @@ The app supports multiple caption categories per image, allowing you to maintain
 When exporting images as an archive:
 1. Click **Export as Archive**
 2. Select which caption category to export
-3. The app will export images with `.txt` files containing captions from the selected category only
+3. The app will export images with caption sidecars from the selected category only — `.txt` for plain captions, `.json` for structured (Ideogram/MOSS) captions. This emits the *stored* drafts; it does not resize images or change caption geometry.
+
+### MOSS Training Dataset Export
+
+**Export as Archive → "MOSS training dataset…"** prepares actual training pairs instead of copying drafts:
+
+- Images are bucketed, uniformly scaled and centrally cropped with the exact arithmetic of the pinned AI Toolkit loader (profile `aitk-central-crop-v1`, resolution budget selectable, divisibility 16).
+- Every caption box follows the identical transform and is re-emitted as a native centered prompt (`.json` sidecar, one per image) compiled against the **final output pixels**.
+- `manifest.json` (at the archive root, outside `images/`) records per-image source/output dimensions, the transform, output hashes, dropped boxes, and suggested loader settings.
+- Set the trainer dataset config's `bucket_tolerance` to 16 so the prepared dimensions are a fixed point (a second loader pass yields scale 1 and crop offset 0). Rebuild latent/text caches after preparing, and do not enable random flips or geometry augmentation — caption boxes are absolute pixels.
+- One resolution per dataset: don't mix resolutions or expect the app's preparation to cover arbitrary multi-resolution training; that requires per-resolution paired data or a trainer that transforms caption coordinates together with images.
 
 ### Migration from Single Captions
 

@@ -15,6 +15,25 @@ export 'presentation/bloc/batch_apply/batch_json_apply_state.dart'
     show BatchJsonApplyState;
 export 'presentation/bloc/captioning_cubit.dart'
     show CaptioningCubit, CaptioningState;
+export 'presentation/bloc/format_conversion/convert_format_cubit.dart'
+    show ConvertFormatCubit;
+export 'presentation/bloc/format_conversion/convert_format_state.dart'
+    show
+        ConvertFormatCompleted,
+        ConvertFormatError,
+        ConvertFormatInProgress,
+        ConvertFormatInitial,
+        ConvertFormatState;
+export 'presentation/bloc/legacy_moss_repair/legacy_moss_repair_cubit.dart'
+    show RepairLegacyMossCubit;
+export 'presentation/bloc/legacy_moss_repair/legacy_moss_repair_state.dart'
+    show
+        LegacyMossRepairCompleted,
+        LegacyMossRepairInProgress,
+        LegacyMossRepairInitial,
+        LegacyMossRepairPreview,
+        LegacyMossRepairState,
+        MossRepairCandidate;
 export 'presentation/widgets/caption_controls.dart'
     show
         CancelStructuredCallback,
@@ -22,3 +41,7 @@ export 'presentation/widgets/caption_controls.dart'
         RunStructuredCallback,
         StructuredRunProgress;
 export 'presentation/widgets/caption_text_area.dart' show CaptionTextArea;
+export 'presentation/widgets/convert_format_dialog.dart'
+    show ConvertFormatDialog;
+export 'presentation/widgets/legacy_moss_repair_dialog.dart'
+    show LegacyMossRepairDialog;

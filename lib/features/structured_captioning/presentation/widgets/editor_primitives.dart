@@ -114,10 +114,12 @@ class EditorTextField extends StatefulWidget {
     this.minLines,
     this.enabled = true,
     this.dense = false,
+    this.hint,
     super.key,
   });
 
   final String value;
+  final String? hint;
   final ValueChanged<String> onChanged;
   final int? maxLines;
   final int? minLines;
@@ -178,6 +180,8 @@ class _EditorTextFieldState extends State<EditorTextField> {
             ? const EdgeInsets.symmetric(horizontal: 10, vertical: 8)
             : const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         isDense: widget.dense,
+        hintText: widget.hint,
+        hintStyle: const TextStyle(fontSize: 12, color: textMuted),
       ),
       onChanged: widget.onChanged,
     );

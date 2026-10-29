@@ -164,4 +164,91 @@ void main() {
     expect(find.byType(StructuredEditorPage), findsOneWidget);
     expect(find.text('old'), findsWidgets);
   });
+
+  // Codex rev-2 finding 2: strict validation through the ACTUAL entry path —
+  // the page must refuse native prompts, unknown markers, and drafts without
+  // a canvas instead of coercing them through lenient defaults (1024²).
+  Future<void> pumpRefusalCase(WidgetTester tester, String captionJson) async {
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    registerDependencies(GetIt.instance);
+    final File png = await writeTempPng(tester);
+    final CaptionSessionService session = CaptionSessionService(
+      fileStore: _FakeCaptionFileStore(),
+      filterEngine: _FakeCaptionFilterEngine(),
+    );
+    final ImageListCubit imageListCubit = ImageListCubit(session: session);
+    addTearDown(imageListCubit.close);
+    final LlmConfigsCubit llmConfigsCubit = LlmConfigsCubit(
+      llmConfigService: LlmConfigService(),
+    );
+    addTearDown(llmConfigsCubit.close);
+    tester.view.physicalSize = const Size(1600, 1000);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MultiBlocProvider(
+        providers: <SingleChildWidget>[
+          BlocProvider<ImageListCubit>.value(value: imageListCubit),
+          BlocProvider<LlmConfigsCubit>.value(value: llmConfigsCubit),
+        ],
+        child: MaterialApp(
+          home: StructuredEditorPage(
+            imageFile: png,
+            captionJson: captionJson,
+            activeCategory: 'default',
+            imageListCubit: imageListCubit,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  testWidgets('native centered prompt is refused, not opened as a draft', (
+    WidgetTester tester,
+  ) async {
+    await pumpRefusalCase(
+      tester,
+      '{"bbox_coord_space":"abs_centralized", "bbox_format":"yxyx", '
+      '"summary":{"caption":"compiled"}, '
+      '"items":[{"label":"object","caption":"c","bbox":[-416,-384,-288,384]}]}',
+    );
+    expect(find.textContaining('coordinate markers'), findsOneWidget);
+    // The editor cubit was never constructed: no seeded description anywhere.
+    expect(find.text('compiled'), findsNothing);
+  });
+
+  testWidgets('unknown marker combination is refused', (
+    WidgetTester tester,
+  ) async {
+    await pumpRefusalCase(
+      tester,
+      '{"bbox_coord_space":"weird","bbox_format":"xyxy", "width":512, '
+      '"height":512, "summary":{"caption":"mystery"}, "items":[]}',
+    );
+    expect(find.textContaining('coordinate markers'), findsOneWidget);
+  });
+
+  testWidgets('draft without canvas is refused instead of defaulting to 1024', (
+    WidgetTester tester,
+  ) async {
+    await pumpRefusalCase(
+      tester,
+      '{"summary":{"caption":"no canvas"}, "items":[]}',
+    );
+    expect(find.textContaining('canvas dimensions'), findsOneWidget);
+    expect(find.textContaining('no canvas'), findsNothing);
+  });
+
+  testWidgets('malformed draft fields are refused', (
+    WidgetTester tester,
+  ) async {
+    await pumpRefusalCase(
+      tester,
+      '{"width":512, "height":512, "summary":{"caption":"fractional"}, '
+      '"items":[{"label":"object","caption":"c","bbox":[1.5,2,3,4]}]}',
+    );
+    expect(find.textContaining('malformed'), findsOneWidget);
+  });
 }

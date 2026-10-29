@@ -12,6 +12,7 @@ import 'package:yofardev_captioner/core/models/app_image.dart';
 import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/core/services/cache_service.dart';
 import 'package:yofardev_captioner/features/agent_api/data/services/agent_api_service.dart';
 import 'package:yofardev_captioner/features/caption_search/caption_search.dart';
@@ -195,8 +196,10 @@ void main() {
 
       final StructuredEditorCubit cubit = container<StructuredEditorCubit>(
         param1: (
-          initialCaption: IdeogramCaption.fromJson(
-            jsonDecode(json) as Map<String, dynamic>,
+          initialDocument: IdeogramDocument(
+            caption: IdeogramCaption.fromJson(
+              jsonDecode(json) as Map<String, dynamic>,
+            ),
           ),
           imageFile: File('/tmp/x.png'),
           activeCategory: 'default',
@@ -293,6 +296,27 @@ void main() {
       const ImageListState state = ImageListState();
       expect(state.images, isEmpty);
       expect(const ImageListState(), equals(state));
+    });
+  });
+
+  group('ConvertFormatCubit registration', () {
+    test('factory builds a cubit from the session', () {
+      final GetIt container = GetIt.instance;
+      registerDependencies(container);
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+
+      final CaptionSessionService session = CaptionSessionService(
+        fileStore: _FakeCaptionFileStore(),
+        filterEngine: _FakeCaptionFilterEngine(),
+      );
+
+      final ConvertFormatCubit cubit = container<ConvertFormatCubit>(
+        param1: session,
+      );
+      addTearDown(cubit.close);
+
+      expect(cubit, isA<ConvertFormatCubit>());
+      expect(cubit.state, isA<ConvertFormatInitial>());
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,8 @@ import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/moss_layout_caption.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/domain/services/layer_title_store.dart';
@@ -190,7 +193,7 @@ void main() {
         ),
       );
       cubit = StructuredEditorCubit(
-        initialCaption: baseCaption(),
+        initialDocument: IdeogramDocument(caption: baseCaption()),
         imageFile: File('img.png'),
         activeCategory: 'default',
         session: session,
@@ -403,7 +406,7 @@ void main() {
           2: 'bg',
         });
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: baseCaption(),
+          initialDocument: IdeogramDocument(caption: baseCaption()),
           imageFile: File('seeded.png'),
           activeCategory: 'default',
           session: session,
@@ -537,7 +540,9 @@ void main() {
 
       StructuredEditorCubit buildCubit({required bool withBbox}) {
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: withSelection(withBbox: withBbox),
+          initialDocument: IdeogramDocument(
+            caption: withSelection(withBbox: withBbox),
+          ),
           imageFile: File('img.png'),
           activeCategory: 'default',
           session: session,
@@ -549,7 +554,7 @@ void main() {
 
       test('no-ops when no element is selected', () async {
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: baseCaption(),
+          initialDocument: IdeogramDocument(caption: baseCaption()),
           imageFile: File('img.png'),
           activeCategory: 'default',
           session: session,
@@ -796,7 +801,7 @@ void main() {
 
       StructuredEditorCubit buildCubit() {
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: baseCaption(),
+          initialDocument: IdeogramDocument(caption: baseCaption()),
           imageFile: File('img.png'),
           activeCategory: 'default',
           session: session,
@@ -980,7 +985,7 @@ void main() {
 
       StructuredEditorCubit buildCubit() {
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: captionWithBboxes(),
+          initialDocument: IdeogramDocument(caption: captionWithBboxes()),
           imageFile: File('img.png'),
           activeCategory: 'default',
           session: session,
@@ -1204,23 +1209,25 @@ void main() {
         );
 
         final StructuredEditorCubit c = StructuredEditorCubit(
-          initialCaption: const IdeogramCaption(
-            highLevelDescription: 'hld',
-            styleDescription: IdeogramStyleDescription(
-              aesthetics: 'a',
-              lighting: 'l',
-              medium: 'photograph',
-              colorPalette: <String>['#000000'],
-            ),
-            compositionalDeconstruction: IdeogramCompositionalDeconstruction(
-              background: 'bg',
-              elements: <IdeogramElement>[
-                IdeogramElement(
-                  type: 'obj',
-                  desc: 'cat',
-                  bbox: <int>[100, 100, 200, 200],
-                ),
-              ],
+          initialDocument: const IdeogramDocument(
+            caption: IdeogramCaption(
+              highLevelDescription: 'hld',
+              styleDescription: IdeogramStyleDescription(
+                aesthetics: 'a',
+                lighting: 'l',
+                medium: 'photograph',
+                colorPalette: <String>['#000000'],
+              ),
+              compositionalDeconstruction: IdeogramCompositionalDeconstruction(
+                background: 'bg',
+                elements: <IdeogramElement>[
+                  IdeogramElement(
+                    type: 'obj',
+                    desc: 'cat',
+                    bbox: <int>[100, 100, 200, 200],
+                  ),
+                ],
+              ),
             ),
           ),
           imageFile: File('img.png'),
@@ -1242,6 +1249,318 @@ void main() {
         await c.flushSave();
         await c.close();
       });
+    });
+  });
+
+  group('MOSS editor round-trip', () {
+    late StructuredEditorCubit mossCubit;
+    late _FakeFileStore mossStore;
+    late CaptionSessionService mossSession;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      mossStore = _FakeFileStore();
+      mossSession = CaptionSessionService(
+        fileStore: mossStore,
+        filterEngine: _PassthroughFilterEngine(),
+      );
+      mossSession.adopt(
+        ImageListState(
+          images: <AppImage>[
+            AppImage(
+              id: 'img',
+              image: File('img.png'),
+              captions: const <String, CaptionEntry>{},
+            ),
+          ],
+          folderPath: '/tmp',
+          currentImageId: 'img',
+        ),
+      );
+      const MossLayoutCaption moss = MossLayoutCaption(
+        width: 1024,
+        height: 1024,
+        summary: MossSummary(
+          caption: 'A scene.',
+          meta: <String>['painting'],
+          canvas: 'single',
+        ),
+        items: <MossItem>[
+          MossItem(
+            label: 'character',
+            caption: 'a standing figure',
+            bbox: <int>[0, 0, 512, 512],
+            tags: <String>['Figure'],
+          ),
+          MossItem(
+            label: 'text',
+            caption: 'green title',
+            text: 'HI',
+            bbox: <int>[512, 512, 1024, 1024],
+          ),
+        ],
+      );
+      mossCubit = StructuredEditorCubit(
+        initialDocument: const MossDocument(caption: moss),
+        imageFile: File('img.png'),
+        activeCategory: 'default',
+        session: mossSession,
+        repository: MockIStructuredCaptionRepository(),
+      );
+    });
+
+    tearDown(() async {
+      await mossCubit.flushSave();
+      await mossCubit.close();
+    });
+
+    test('initial state is the index-preserving ideogram view', () {
+      expect(mossCubit.state.isMoss, isTrue);
+      expect(
+        mossCubit.state.caption.compositionalDeconstruction.elements,
+        hasLength(2),
+      );
+      // pixel [0,0,512,512] on a 1024 canvas -> normalized [0,0,500,500].
+      expect(
+        mossCubit.state.caption.compositionalDeconstruction.elements[0].bbox,
+        <int>[0, 0, 500, 500],
+      );
+      expect(mossCubit.state.mossMeta, <String>['painting']);
+      expect(mossCubit.state.mossCanvas, 'single');
+    });
+
+    test('edits serialize back to MOSS preserving label and tags', () async {
+      mossCubit.selectElement(0);
+      mossCubit.updateElementDesc('now waving');
+      await mossCubit.flushSave();
+
+      expect(mossStore.writtenCaptions, hasLength(1));
+      final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+        jsonDecode(mossStore.writtenCaptions.first) as Map<String, dynamic>,
+      );
+      // character label survives the view round-trip.
+      expect(saved.items[0].label, 'character');
+      expect(saved.items[0].tags, <String>['Figure']);
+      expect(saved.items[0].caption, 'now waving');
+      expect(saved.items[1].label, 'text');
+      expect(saved.items[1].text, 'HI');
+      expect(saved.summary.meta, <String>['painting']);
+      expect(saved.summary.canvas, 'single');
+    });
+
+    test('summary meta and canvas edits persist', () async {
+      mossCubit.updateMossMeta(<String>['collage']);
+      mossCubit.updateMossCanvas('collage');
+      await mossCubit.flushSave();
+
+      final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+        jsonDecode(mossStore.writtenCaptions.first) as Map<String, dynamic>,
+      );
+      expect(saved.summary.meta, <String>['collage']);
+      expect(saved.summary.canvas, 'collage');
+    });
+
+    test(
+      'description-only save on a 1864×1864 draft preserves boxes exactly',
+      () async {
+        // Rebuild the session/cubit at a non-grid canvas with an odd box.
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        final _FakeFileStore store = _FakeFileStore();
+        final CaptionSessionService session = CaptionSessionService(
+          fileStore: store,
+          filterEngine: _PassthroughFilterEngine(),
+        );
+        session.adopt(
+          ImageListState(
+            images: <AppImage>[
+              AppImage(
+                id: 'img',
+                image: File('img.png'),
+                captions: const <String, CaptionEntry>{},
+              ),
+            ],
+            folderPath: '/tmp',
+            currentImageId: 'img',
+          ),
+        );
+        const MossLayoutCaption moss = MossLayoutCaption(
+          width: 1864,
+          height: 1864,
+          summary: MossSummary(caption: 'A scene.'),
+          items: <MossItem>[
+            MossItem(caption: 'odd box', bbox: <int>[123, 456, 789, 1011]),
+          ],
+        );
+        final StructuredEditorCubit cubit = StructuredEditorCubit(
+          initialDocument: const MossDocument(caption: moss),
+          imageFile: File('img.png'),
+          activeCategory: 'default',
+          session: session,
+          repository: MockIStructuredCaptionRepository(),
+        );
+        cubit.selectElement(0);
+        cubit.updateElementDesc('description only');
+        await cubit.flushSave();
+        final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+          jsonDecode(store.writtenCaptions.first) as Map<String, dynamic>,
+        );
+        // Exact pixels, no normalized round-trip drift.
+        expect(saved.items.single.bbox, <int>[123, 456, 789, 1011]);
+        expect(saved.items.single.caption, 'description only');
+        // A second save must not accumulate rounding.
+        cubit.updateElementDesc('description only 2');
+        await cubit.flushSave();
+        final MossLayoutCaption saved2 = MossLayoutCaption.fromJson(
+          jsonDecode(store.writtenCaptions.last) as Map<String, dynamic>,
+        );
+        expect(saved2.items.single.bbox, <int>[123, 456, 789, 1011]);
+        await cubit.close();
+      },
+    );
+
+    test('metadata follows its item through duplicate/remove/move', () async {
+      // items: [character+tags, text]. Duplicate 0, then remove the
+      // original, then move — tags must stay with the character item.
+      mossCubit.duplicateElement(0);
+      mossCubit.removeElement(0);
+      mossCubit.moveElement(0, 1);
+      await mossCubit.flushSave();
+      final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+        jsonDecode(mossStore.writtenCaptions.last) as Map<String, dynamic>,
+      );
+      final MossItem character = saved.items.singleWhere(
+        (MossItem i) => i.label == 'character',
+      );
+      expect(character.tags, <String>['Figure']);
+      expect(character.caption, 'a standing figure');
+    });
+
+    test(
+      'raw MOSS replacement serializes its own content and metadata',
+      () async {
+        mossCubit.replaceDocument(
+          const MossDocument(
+            caption: MossLayoutCaption(
+              width: 512,
+              height: 512,
+              summary: MossSummary(caption: 'Replaced.'),
+              items: <MossItem>[
+                MossItem(
+                  label: 'character',
+                  caption: 'new person',
+                  bbox: <int>[10, 10, 100, 100],
+                  tags: <String>['fresh'],
+                ),
+              ],
+            ),
+          ),
+        );
+        mossCubit.selectElement(0);
+        mossCubit.updateElementDesc('renamed');
+        await mossCubit.flushSave();
+        final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+          jsonDecode(mossStore.writtenCaptions.last) as Map<String, dynamic>,
+        );
+        expect(saved.width, 512);
+        expect(saved.items.single.label, 'character');
+        expect(saved.items.single.tags, <String>['fresh']);
+        expect(saved.items.single.bbox, <int>[10, 10, 100, 100]);
+        expect(saved.items.single.caption, 'renamed');
+      },
+    );
+
+    test(
+      'replaceDocument REFUSES a native MOSS prompt without changing state',
+      () {
+        // Codex review finding 2: native prompts entered the editor and were
+        // misread as top-left drafts (and reserialization rewrote their
+        // markers). The cubit must refuse them outright.
+        final MossLayoutCaption before = MossLayoutCaption.fromJson(
+          jsonDecode(mossCubit.previewStoredJson()) as Map<String, dynamic>,
+        );
+        const MossLayoutCaption native = MossLayoutCaption(
+          width: 1024,
+          height: 1024,
+          bboxCoordSpace: 'abs_centralized',
+          bboxFormat: 'yxyx',
+          summary: MossSummary(caption: 'compiled'),
+          items: <MossItem>[
+            MossItem(caption: 'c', bbox: <int>[-100, -100, 100, 100]),
+          ],
+        );
+        mossCubit.replaceDocument(const MossDocument(caption: native));
+        expect(mossCubit.state.status, StructuredEditorStatus.error);
+        expect(mossCubit.state.error, contains('Native centered layout'));
+        // Working state untouched.
+        expect(mossCubit.state.caption.highLevelDescription, 'A scene.');
+        expect(mossCubit.previewStoredJson(), before.toJsonString());
+      },
+    );
+
+    test(
+      'frame change without rescale keeps pixels AND re-derives the view',
+      () async {
+        // Codex review finding 11: canvas edits updated the stored frame but
+        // not the normalized view, so rendered and saved geometry diverged.
+        final MossLayoutCaption initial = MossLayoutCaption.fromJson(
+          jsonDecode(mossCubit.previewStoredJson()) as Map<String, dynamic>,
+        );
+        final List<int> boxBefore = initial.items.first.bbox!;
+        mossCubit.updateMossSize(width: 512, height: 512);
+        await mossCubit.flushSave();
+
+        final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+          jsonDecode(mossStore.writtenCaptions.last) as Map<String, dynamic>,
+        );
+        // Stored box keeps its exact pixels (frame moves around it).
+        expect(saved.items.first.bbox, boxBefore);
+        // The normalized VIEW was re-derived: pixel 512 on the old 1024 frame
+        // is normalized 500; on the new 512 frame it is 1000.
+        expect(
+          mossCubit.state.caption.compositionalDeconstruction.elements[0].bbox,
+          <int>[0, 0, 1000, 1000],
+        );
+      },
+    );
+
+    test(
+      'frame change WITH rescale scales stored boxes and view together',
+      () async {
+        mossCubit.updateMossSize(width: 512, height: 512, rescaleBoxes: true);
+        await mossCubit.flushSave();
+        final MossLayoutCaption saved = MossLayoutCaption.fromJson(
+          jsonDecode(mossStore.writtenCaptions.last) as Map<String, dynamic>,
+        );
+        // [0,0,512,512] on 1024² → [0,0,256,256] on 512².
+        expect(saved.items.first.bbox, <int>[0, 0, 256, 256]);
+        // View normalized: 256/512 → 500.
+        expect(
+          mossCubit.state.caption.compositionalDeconstruction.elements[0].bbox,
+          <int>[0, 0, 500, 500],
+        );
+      },
+    );
+
+    test('non-positive frame dimensions are rejected with an error', () {
+      mossCubit.updateMossSize(width: 0);
+      expect(mossCubit.state.status, StructuredEditorStatus.error);
+      expect(mossCubit.state.error, contains('positive'));
+    });
+
+    test('replaceDocument accepts a MOSS JSON edit', () {
+      mossCubit.replaceDocument(
+        const MossDocument(
+          caption: MossLayoutCaption(
+            width: 512,
+            height: 512,
+            summary: MossSummary(caption: 'Replaced.'),
+            items: <MossItem>[],
+          ),
+        ),
+      );
+      expect(mossCubit.state.isMoss, isTrue);
+      expect(mossCubit.state.caption.highLevelDescription, 'Replaced.');
+      expect(mossCubit.state.mossWidth, 512);
     });
   });
 }

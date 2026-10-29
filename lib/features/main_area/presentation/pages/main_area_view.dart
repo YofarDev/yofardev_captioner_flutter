@@ -55,7 +55,7 @@ class MainAreaView extends StatelessWidget {
                           required String jsonString,
                           required File imageFile,
                           required String activeCategory,
-                        }) => IdeogramCaptionSummaryCard(
+                        }) => StructuredCaptionSummaryCard(
                           jsonString: jsonString,
                           imageFile: imageFile,
                           activeCategory: activeCategory,
@@ -227,6 +227,7 @@ class _StructuredAwareCaptionControls extends StatelessWidget {
                 ({
                   required LlmConfig llm,
                   required CaptionOptions option,
+                  required String format,
                   StructuredBatchOverrides? overrides,
                   bool debugMode = false,
                   bool disableSam = false,
@@ -238,6 +239,7 @@ class _StructuredAwareCaptionControls extends StatelessWidget {
                     .runStructuredCaptioner(
                       llm: llm,
                       option: option,
+                      format: format,
                       overrides: overrides,
                       debugMode: debugMode,
                       disableSam: disableSam,

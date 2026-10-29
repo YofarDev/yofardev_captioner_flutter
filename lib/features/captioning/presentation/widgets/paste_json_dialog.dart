@@ -38,7 +38,7 @@ class _PasteJsonDialogState extends State<PasteJsonDialog> {
   }
 
   void _validate(String value) {
-    setState(() => _result = parseIdeogramCaptionJson(value));
+    setState(() => _result = parseStructuredCaptionJson(value));
   }
 
   Future<void> _apply() async {
@@ -75,8 +75,9 @@ class _PasteJsonDialogState extends State<PasteJsonDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             const Text(
-              'Paste a raw Ideogram caption JSON. It will be validated and '
-              'applied to the current image in the active category.',
+              'Paste a raw structured caption JSON (Ideogram or MOSS '
+              'layout). It will be validated and applied to the current '
+              'image in the active category.',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.white54,

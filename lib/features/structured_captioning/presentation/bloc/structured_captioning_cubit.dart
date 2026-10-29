@@ -11,7 +11,9 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/models/structured_caption_document.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../../captioning/captioning.dart';
@@ -41,10 +43,12 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
     return super.close();
   }
 
-  /// Runs the structured captioning pipeline on selected images.
+  /// Runs the structured captioning pipeline on selected images. [format]
+  /// picks the stored JSON structure ('ideogram' or 'moss').
   Future<void> runStructuredCaptioner({
     required LlmConfig llm,
     required CaptionOptions option,
+    String format = 'ideogram',
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
@@ -83,10 +87,15 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
         imagesToProcess = <AppImage>[currentImage];
       case CaptionOptions.missing:
         final String category = _session.state.activeCategory ?? 'default';
+        final bool moss = format == 'moss';
         imagesToProcess = baseImages.where((AppImage image) {
           final String text = image.captions[category]?.text ?? '';
-          return text.isEmpty ||
-              !IdeogramCaption.isIdeogramJson(text) ||
+          if (text.isEmpty) return true;
+          if (moss) {
+            return !MossLayoutCaption.isMossJson(text) ||
+                MossLayoutCaption.hasEmptySummaryCaption(text);
+          }
+          return !IdeogramCaption.isIdeogramJson(text) ||
               IdeogramCaption.hasEmptyHighLevelDescription(text);
         }).toList();
       case CaptionOptions.all:
@@ -155,11 +164,14 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
       );
 
       try {
-        final Either<Failure, IdeogramCaption> generateResult =
+        final Either<Failure, StructuredCaptionDocument> generateResult =
             await _repository.generateStructuredCaption(
               llm,
               image.image,
               onProgress: _onStepProgress,
+              format: format == 'moss'
+                  ? CaptionFormat.moss
+                  : CaptionFormat.ideogram,
               overrides: overrides,
               debugMode: debugMode,
               disableSam: disableSam,
@@ -170,7 +182,9 @@ class StructuredCaptioningCubit extends Cubit<StructuredCaptioningState> {
                   : StructuredMode.singleShot,
               cancelToken: _cancelToken,
             );
-        final IdeogramCaption? result = generateResult.getRight().toNullable();
+        final StructuredCaptionDocument? result = generateResult
+            .getRight()
+            .toNullable();
         if (result == null) {
           final Failure f = generateResult.getLeft().toNullable()!;
           final String message = failureMessage(f);

@@ -7,6 +7,7 @@ import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/notification_overlay.dart';
@@ -18,11 +19,15 @@ import '../../domain/models/caption_options.dart';
 import '../bloc/batch_apply/batch_json_apply_cubit.dart';
 import '../bloc/batch_apply/batch_json_apply_state.dart';
 import '../bloc/captioning_cubit.dart';
+import '../bloc/format_conversion/convert_format_cubit.dart';
+import '../bloc/legacy_moss_repair/legacy_moss_repair_cubit.dart';
 import 'batch_json_apply_dialog.dart';
 import 'batch_progress_panel.dart';
 import 'caption_mode_selector.dart';
 import 'convert_captions_dialog.dart';
+import 'convert_format_dialog.dart';
 import 'guidance_dialog.dart';
+import 'legacy_moss_repair_dialog.dart';
 
 /// Progress facts of a structured run, mirrored from StructuredCaptioningState
 /// by the composition root so captioning never imports structured_captioning.
@@ -39,6 +44,7 @@ typedef RunStructuredCallback =
     void Function({
       required LlmConfig llm,
       required CaptionOptions option,
+      required String format,
       StructuredBatchOverrides? overrides,
       bool debugMode,
       bool disableSam,
@@ -85,12 +91,12 @@ class _CaptionControlsState extends State<CaptionControls> {
 
         return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
           builder: (BuildContext context, LlmConfigsState configState) {
-            final bool ideogramMode =
-                configState.llmConfigs.ideogramJsonEnabled;
+            final String structuredFormat =
+                configState.llmConfigs.structuredCaptionFormat;
             final String category = imageState.activeCategory ?? 'default';
             final int missingCount = imageState.images
                 .where(
-                  (AppImage img) => _isMissing(img, category, ideogramMode),
+                  (AppImage img) => _isMissing(img, category, structuredFormat),
                 )
                 .length;
 
@@ -127,14 +133,19 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
-  bool _isMissing(AppImage img, String category, bool ideogramMode) {
+  /// A caption counts as "missing" in structured mode when it is empty, uses
+  /// the wrong format, or is a valid-but-empty structured caption.
+  bool _isMissing(AppImage img, String category, String structuredFormat) {
     final String text = img.captions[category]?.text ?? '';
-    if (ideogramMode) {
-      return text.isEmpty ||
-          !IdeogramCaption.isIdeogramJson(text) ||
-          IdeogramCaption.hasEmptyHighLevelDescription(text);
+    if (structuredFormat == 'off') {
+      return text.isEmpty;
     }
-    return text.isEmpty;
+    if (text.isEmpty) return true;
+    return structuredFormat == 'moss'
+        ? !MossLayoutCaption.isMossJson(text) ||
+              MossLayoutCaption.hasEmptySummaryCaption(text)
+        : !IdeogramCaption.isIdeogramJson(text) ||
+              IdeogramCaption.hasEmptyHighLevelDescription(text);
   }
 
   Widget _buildScopeToFilteredCheckbox(ImageListState imageState) {
@@ -146,14 +157,14 @@ class _CaptionControlsState extends State<CaptionControls> {
     final List<AppImage> filtered = cubit.filteredImages;
     final int scopeCount;
     if (_selectedOption == CaptionOptions.missing) {
-      final bool ideogramMode = context
+      final String structuredFormat = context
           .read<LlmConfigsCubit>()
           .state
           .llmConfigs
-          .ideogramJsonEnabled;
+          .structuredCaptionFormat;
       final String category = imageState.activeCategory ?? 'default';
       scopeCount = filtered
-          .where((AppImage img) => _isMissing(img, category, ideogramMode))
+          .where((AppImage img) => _isMissing(img, category, structuredFormat))
           .length;
     } else {
       scopeCount = filtered.length;
@@ -276,68 +287,73 @@ class _CaptionControlsState extends State<CaptionControls> {
     );
   }
 
-  Widget _buildRunButton({
-    required int count,
-  }) => BlocBuilder<ImageListCubit, ImageListState>(
-    builder: (BuildContext context, ImageListState imageListState) {
-      return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
-        builder: (BuildContext context, LlmConfigsState configState) {
-          final bool ideogramMode = configState.llmConfigs.ideogramJsonEnabled;
+  Widget _buildRunButton({required int count}) =>
+      BlocBuilder<ImageListCubit, ImageListState>(
+        builder: (BuildContext context, ImageListState imageListState) {
+          return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
+            builder: (BuildContext context, LlmConfigsState configState) {
+              final bool structuredMode =
+                  configState.llmConfigs.structuredCaptionEnabled;
+              final bool mossMode =
+                  configState.llmConfigs.structuredCaptionFormat == 'moss';
 
-          if (ideogramMode) {
-            final StructuredRunProgress progress = widget.structuredProgress;
-            return _buildRunRow(
-              context: context,
-              imageListState: imageListState,
-              configState: configState,
-              isInProgress: progress.inProgress,
-              processedImages: progress.processedImages,
-              totalImages: progress.totalImages,
-              isCancelling: progress.isCancelling,
-              stepLabel: progress.stepLabel,
-              error: progress.error,
-              isIdeogram: true,
-              imageCount: count,
-            );
-          }
+              if (structuredMode) {
+                final StructuredRunProgress progress =
+                    widget.structuredProgress;
+                return _buildRunRow(
+                  context: context,
+                  imageListState: imageListState,
+                  configState: configState,
+                  isInProgress: progress.inProgress,
+                  processedImages: progress.processedImages,
+                  totalImages: progress.totalImages,
+                  isCancelling: progress.isCancelling,
+                  stepLabel: progress.stepLabel,
+                  error: progress.error,
+                  isIdeogram: true,
+                  runLabel: mossMode ? '▶  MOSS Run' : '▶  JSON Run',
+                  imageCount: count,
+                );
+              }
 
-          return BlocSelector<
-            CaptioningCubit,
-            CaptioningState,
-            (bool, int, int, bool, String?, String?)
-          >(
-            selector: (CaptioningState captioningState) => (
-              captioningState.status == CaptioningStatus.inProgress,
-              captioningState.processedImages,
-              captioningState.totalImages,
-              captioningState.isCancelling,
-              null,
-              captioningState.error,
-            ),
-            builder:
-                (
-                  BuildContext context,
-                  (bool, int, int, bool, String?, String?) progress,
-                ) {
-                  return _buildRunRow(
-                    context: context,
-                    imageListState: imageListState,
-                    configState: configState,
-                    isInProgress: progress.$1,
-                    processedImages: progress.$2,
-                    totalImages: progress.$3,
-                    isCancelling: progress.$4,
-                    stepLabel: progress.$5,
-                    error: progress.$6,
-                    isIdeogram: false,
-                    imageCount: count,
-                  );
-                },
+              return BlocSelector<
+                CaptioningCubit,
+                CaptioningState,
+                (bool, int, int, bool, String?, String?)
+              >(
+                selector: (CaptioningState captioningState) => (
+                  captioningState.status == CaptioningStatus.inProgress,
+                  captioningState.processedImages,
+                  captioningState.totalImages,
+                  captioningState.isCancelling,
+                  null,
+                  captioningState.error,
+                ),
+                builder:
+                    (
+                      BuildContext context,
+                      (bool, int, int, bool, String?, String?) progress,
+                    ) {
+                      return _buildRunRow(
+                        context: context,
+                        imageListState: imageListState,
+                        configState: configState,
+                        isInProgress: progress.$1,
+                        processedImages: progress.$2,
+                        totalImages: progress.$3,
+                        isCancelling: progress.$4,
+                        stepLabel: progress.$5,
+                        error: progress.$6,
+                        isIdeogram: false,
+                        runLabel: '▶  Run',
+                        imageCount: count,
+                      );
+                    },
+              );
+            },
           );
         },
       );
-    },
-  );
 
   Widget _buildGuidanceToggle(
     BuildContext context,
@@ -405,6 +421,7 @@ class _CaptionControlsState extends State<CaptionControls> {
     required String? stepLabel,
     required String? error,
     required bool isIdeogram,
+    required String runLabel,
     required int imageCount,
   }) {
     final Color accentColor = isIdeogram
@@ -429,17 +446,17 @@ class _CaptionControlsState extends State<CaptionControls> {
         GestureDetector(
           onSecondaryTap: () {
             if (!isInProgress) {
-              context.read<LlmConfigsCubit>().setIdeogramJsonEnabled(
-                !isIdeogram,
-              );
+              context.read<LlmConfigsCubit>().cycleStructuredCaptionFormat();
             }
           },
           child: Tooltip(
             message: isIdeogram
-                ? 'Run AI structured captioning (right-click to toggle mode)'
-                : 'Run AI caption generation (right-click to toggle mode)',
+                ? 'Run AI structured captioning (right-click to cycle '
+                      'off / Ideogram / MOSS)'
+                : 'Run AI caption generation (right-click to cycle '
+                      'off / Ideogram / MOSS)',
             child: AppButton(
-              text: isIdeogram ? "▶  JSON Run" : "▶  Run",
+              text: runLabel,
               isLoading: isInProgress,
               backgroundColor: accentColor,
               onTap:
@@ -460,6 +477,8 @@ class _CaptionControlsState extends State<CaptionControls> {
                         widget.onRunStructured(
                           llm: llm,
                           option: _selectedOption,
+                          format:
+                              configState.llmConfigs.structuredCaptionFormat,
                           overrides:
                               configState
                                   .llmConfigs
@@ -524,9 +543,62 @@ class _CaptionControlsState extends State<CaptionControls> {
             ),
           ),
         ],
-        if (isIdeogram) const SizedBox(width: 8),
-        if (isIdeogram)
+        if (isIdeogram) ...<Widget>[
+          const SizedBox(width: 8),
+          Tooltip(
+            message:
+                'Convert structured captions between Ideogram and MOSS '
+                'JSON (local, no LLM)',
+            child: AppButton(
+              text: 'Format',
+              iconData: Icons.swap_horiz,
+              isOutline: true,
+              backgroundColor: lightPink,
+              foregroundColor: lightPink,
+              onTap: !isInProgress
+                  ? () => showDialog<void>(
+                      context: context,
+                      builder: (BuildContext _) => MultiBlocProvider(
+                        providers: <BlocProvider<dynamic>>[
+                          BlocProvider<ConvertFormatCubit>.value(
+                            value: context.read<ConvertFormatCubit>(),
+                          ),
+                        ],
+                        child: const ConvertFormatDialog(),
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message:
+                'Audit and repair legacy MOSS drafts whose canvas was '
+                '16-pixel-rounded instead of matching the image',
+            child: AppButton(
+              text: 'Repair',
+              iconData: Icons.build_circle_outlined,
+              isOutline: true,
+              backgroundColor: lightPink,
+              foregroundColor: lightPink,
+              onTap: !isInProgress
+                  ? () => showDialog<void>(
+                      context: context,
+                      builder: (BuildContext _) => MultiBlocProvider(
+                        providers: <BlocProvider<dynamic>>[
+                          BlocProvider<RepairLegacyMossCubit>.value(
+                            value: context.read<RepairLegacyMossCubit>(),
+                          ),
+                        ],
+                        child: const LegacyMossRepairDialog(),
+                      ),
+                    )
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 8),
           _buildBatchApplyButton(context, configState, imageCount),
+        ],
         if (isInProgress) ...<Widget>[
           BatchProgressPanel(
             isIdeogram: isIdeogram,

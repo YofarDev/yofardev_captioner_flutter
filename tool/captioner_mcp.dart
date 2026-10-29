@@ -204,6 +204,56 @@ List<Map<String, dynamic>> _toolDefinitions() => <Map<String, dynamic>>[
     ),
   },
   <String, dynamic>{
+    'name': 'convert_caption',
+    'description':
+        'Convert structured captions between the Ideogram and MOSS JSON '
+        'formats locally (deterministic — no image analysis, no LLM). '
+        '"category" is the SOURCE category: the Ideogram captions may live '
+        'in any category, not just "default" — check list_images first. '
+        'Converts one image (pass "filename") or every convertible caption '
+        'of the category; results overwrite in place, or land in '
+        '"targetCategory" when given (created if missing — an empty target '
+        'category is fine, it gets filled).',
+    'inputSchema': _schema(
+      <String, dynamic>{
+        'folder': <String, dynamic>{
+          'type': 'string',
+          'description': 'Absolute path of the image folder.',
+        },
+        'filename': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Image filename within the folder. Omit to convert the whole '
+              'category.',
+        },
+        'category': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Source caption category (defaults to "default"). Valid '
+              'values come back in the error on a wrong pick.',
+        },
+        'target': <String, dynamic>{
+          'type': 'string',
+          'enum': <String>['moss', 'ideogram'],
+          'description': 'Format to convert the captions into.',
+        },
+        'targetCategory': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Write the converted captions to this category instead of '
+              'overwriting the source (created when missing).',
+        },
+        'model': <String, dynamic>{
+          'type': 'string',
+          'description':
+              'Name recorded as the caption author (defaults to the '
+              'conversion direction, e.g. "ideogram→moss").',
+        },
+      },
+      required: <String>['folder', 'target'],
+    ),
+  },
+  <String, dynamic>{
     'name': 'refresh_folder',
     'description':
         'Force the app to re-scan a folder so images added or '
@@ -256,27 +306,50 @@ Future<_ToolResult> _callTool(String name, Map<String, dynamic> args) async {
         '/api/folders/refresh',
         body: <String, dynamic>{'folder': folder},
       );
-    case 'write_caption':
-      final String? folder = args['folder'] as String?;
-      final String? filename = args['filename'] as String?;
-      final String? text = args['text'] as String?;
-      if (folder == null || filename == null || text == null) {
-        return const _ToolResult.error(
-          '"folder", "filename" and "text" are required',
-        );
+    case 'convert_caption':
+      {
+        final String? folder = args['folder'] as String?;
+        final String? target = args['target'] as String?;
+        if (folder == null || folder.isEmpty || target == null) {
+          return const _ToolResult.error('"folder" and "target" are required');
+        }
+        final Map<String, dynamic> body = <String, dynamic>{
+          'folder': folder,
+          'target': target,
+        };
+        final String? filename = args['filename'] as String?;
+        if (filename != null) body['filename'] = filename;
+        final String? category = args['category'] as String?;
+        if (category != null) body['category'] = category;
+        final String? targetCategory = args['targetCategory'] as String?;
+        if (targetCategory != null) body['targetCategory'] = targetCategory;
+        final String? model = args['model'] as String?;
+        if (model != null) body['model'] = model;
+        return await _api('POST', '/api/convert', body: body);
       }
-      final Map<String, dynamic> body = <String, dynamic>{
-        'folder': folder,
-        'filename': filename,
-        'text': text,
-      };
-      final String? category = args['category'] as String?;
-      if (category != null) body['category'] = category;
-      final String? model = args['model'] as String?;
-      if (model != null) body['model'] = model;
-      final dynamic tags = args['tags'];
-      if (tags is List) body['tags'] = tags.whereType<String>().toList();
-      return await _api('POST', '/api/captions', body: body);
+    case 'write_caption':
+      {
+        final String? folder = args['folder'] as String?;
+        final String? filename = args['filename'] as String?;
+        final String? text = args['text'] as String?;
+        if (folder == null || filename == null || text == null) {
+          return const _ToolResult.error(
+            '"folder", "filename" and "text" are required',
+          );
+        }
+        final Map<String, dynamic> body = <String, dynamic>{
+          'folder': folder,
+          'filename': filename,
+          'text': text,
+        };
+        final String? category = args['category'] as String?;
+        if (category != null) body['category'] = category;
+        final String? model = args['model'] as String?;
+        if (model != null) body['model'] = model;
+        final dynamic tags = args['tags'];
+        if (tags is List) body['tags'] = tags.whereType<String>().toList();
+        return await _api('POST', '/api/captions', body: body);
+      }
     default:
       return _ToolResult.error('Unknown tool "$name"');
   }

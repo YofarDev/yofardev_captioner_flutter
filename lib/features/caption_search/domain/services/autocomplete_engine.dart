@@ -63,6 +63,7 @@ class AutocompleteEngine {
     'elements': 'Element count (N, >N, >=N)',
     'dupbbox': 'Duplicate bounding boxes',
     'structured': 'Is structured JSON caption',
+    'format': 'Match caption format (ideogram / moss / plain)',
     'plain': 'Is plain text caption',
     'nocaption': 'Has no caption',
     'notag': 'Has no tags',

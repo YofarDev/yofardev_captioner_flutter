@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/features/caption_session/domain/models/filter_query.dart';
 
 void main() {
@@ -448,6 +449,92 @@ void main() {
         filter.evaluate(
           const FilterContext(captionText: '', tags: <String>['landscape']),
         ),
+        isTrue,
+      );
+    });
+  });
+
+  group('MOSS captions through the ideogram projection', () {
+    const String mossJson =
+        '{"width":1000,"height":1000,"bbox_coord_space":"abs",'
+        '"bbox_format":"xyxy","summary":{"meta":["painting","moody"],'
+        '"caption":"A scene."},"items":[{"label":"text","caption":"t", '
+        '"text":"HI","bbox":[0,0,500,500]},'
+        '{"label":"object","caption":"o",'
+        '"bbox":[500,500,1000,1000]}]}';
+
+    test('tryParseCaption projects MOSS into an Ideogram view', () {
+      final IdeogramCaption? caption = FilterExpression.tryParseCaption(
+        mossJson,
+      );
+      expect(caption, isNotNull);
+      expect(caption!.highLevelDescription, 'A scene.');
+      expect(caption.styleDescription.medium, 'painting');
+      expect(caption.compositionalDeconstruction.elements, hasLength(2));
+      expect(caption.compositionalDeconstruction.elements[0].type, 'text');
+      expect(caption.compositionalDeconstruction.elements[0].bbox, <int>[
+        0,
+        0,
+        500,
+        500,
+      ]);
+    });
+
+    test('structured filters match MOSS captions', () {
+      expect(
+        const HasTypeFilter(elementType: 'text').evaluate(ctx(mossJson)),
+        isTrue,
+      );
+      expect(const HasBboxFilter().evaluate(ctx(mossJson)), isTrue);
+      expect(
+        const MediumFilter(medium: 'painting').evaluate(ctx(mossJson)),
+        isTrue,
+      );
+      expect(
+        const ElementCountFilter(
+          count: 2,
+          operator: '=',
+        ).evaluate(ctx(mossJson)),
+        isTrue,
+      );
+      expect(
+        const DescriptionFilter(pattern: 'scene').evaluate(ctx(mossJson)),
+        isTrue,
+      );
+    });
+
+    test('IsStructuredFilter matches MOSS; IsPlainFilter does not', () {
+      expect(const IsStructuredFilter().evaluate(ctx(mossJson)), isTrue);
+      expect(const IsPlainFilter().evaluate(ctx(mossJson)), isFalse);
+    });
+
+    test('CaptionFormatFilter distinguishes ideogram / moss / plain', () {
+      const String ideogramJson =
+          '{"high_level_description":"h","style_description":{},'
+          '"compositional_deconstruction":{"background":"",'
+          '"elements":[]}}';
+      expect(
+        const CaptionFormatFilter(
+          format: CaptionFormat.moss,
+        ).evaluate(ctx(mossJson)),
+        isTrue,
+      );
+      expect(
+        const CaptionFormatFilter(
+          format: CaptionFormat.ideogram,
+        ).evaluate(ctx(mossJson)),
+        isFalse,
+      );
+      expect(
+        const CaptionFormatFilter(
+          format: CaptionFormat.ideogram,
+        ).evaluate(ctx(ideogramJson)),
+        isTrue,
+      );
+      expect(
+        const CaptionFormatFilter(
+          format: CaptionFormat.plain,
+        ).evaluate(ctx('just text')),
         isTrue,
       );
     });

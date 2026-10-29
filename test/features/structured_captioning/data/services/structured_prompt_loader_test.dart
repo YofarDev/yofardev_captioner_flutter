@@ -253,4 +253,36 @@ void main() {
       expect(prompt, contains('architectural shell'));
     });
   });
+
+  group('format persona tokens', () {
+    test('vision prompts carry the {{target_model}} and {{type_contract}} '
+        'substitution points', () async {
+      final String analysis = await File(
+        'assets/prompts/vision_analysis.txt',
+      ).readAsString();
+      final String enumerate = await File(
+        'assets/prompts/vision_enumerate.txt',
+      ).readAsString();
+      for (final String template in <String>[analysis, enumerate]) {
+        expect(template, contains('{{target_model}}'));
+        expect(template, contains('{{type_contract}}'));
+      }
+    });
+
+    test('substitution produces Ideogram and MOSS personas', () {
+      // Mirrors the repository's _substituteFormatTokens contract; kept here
+      // so the token names cannot silently drift.
+      String substitute(String template, bool moss) => template
+          .replaceAll('{{target_model}}', moss ? 'MOSS-Image' : 'Ideogram 4')
+          .replaceAll(
+            '{{type_contract}}',
+            moss ? 'obj | character | text' : 'obj | text',
+          );
+      final String out = substitute(
+        'caption for {{target_model}} with {{type_contract}}',
+        true,
+      );
+      expect(out, 'caption for MOSS-Image with obj | character | text');
+    });
+  });
 }

@@ -15,6 +15,7 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_entry.dart';
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 
 /// Builds the ZIP archive export (images + per-category caption sidecars)
 /// and hands it to the platform save dialog. file_picker v13 writes the
@@ -58,7 +59,9 @@ class ArchiveExporter {
 
         final CaptionEntry? captionEntry = image.captions[category];
         if (captionEntry != null && captionEntry.text.isNotEmpty) {
-          final bool isJson = IdeogramCaption.isIdeogramJson(captionEntry.text);
+          final bool isJson =
+              IdeogramCaption.isIdeogramJson(captionEntry.text) ||
+              MossLayoutCaption.isMossJson(captionEntry.text);
           final List<int> captionBytes = utf8.encode(captionEntry.text);
           final ArchiveFile archiveFile = ArchiveFile(
             p.setExtension(

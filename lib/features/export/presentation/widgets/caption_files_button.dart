@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
@@ -35,7 +36,10 @@ class CaptionFilesButton extends StatelessWidget {
     if (stored != null) return stored;
     for (final AppImage image in state.images) {
       final String text = image.captions[category]?.text ?? '';
-      if (IdeogramCaption.isIdeogramJson(text)) return 'json';
+      if (IdeogramCaption.isIdeogramJson(text) ||
+          MossLayoutCaption.isMossJson(text)) {
+        return 'json';
+      }
       if (text.isNotEmpty) return 'txt';
     }
     return 'txt';

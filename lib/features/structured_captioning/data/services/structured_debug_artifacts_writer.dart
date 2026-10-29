@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 import 'package:logging/logging.dart';
 
-import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/structured_caption_document.dart';
 import '../../domain/models/multi_stage_quality_report.dart';
 import '../models/vlm_analysis.dart';
 import 'sam_process_service.dart';
@@ -52,7 +52,7 @@ class StructuredDebugArtifactsWriter {
     required String vlmRawResponse,
     required List<VlmObject> vlmObjects,
     required List<SamDetection> detections,
-    required IdeogramCaption caption,
+    required StructuredCaptionDocument caption,
   }) async {
     final String stem = imageFile.path.replaceAll(RegExp(r'\.[^.]+$'), '');
     final Directory debugDir = Directory('${imageFile.parent.path}/debug');

@@ -15,7 +15,11 @@ import '../../../../core/errors/failure.dart';
 import '../../../../core/models/ideogram_caption.dart';
 import '../../../../core/models/llm_config.dart';
 import '../../../../core/models/llm_provider_type.dart';
+import '../../../../core/models/moss_conversion.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/models/structured_caption_document.dart';
+import '../../../../core/services/image_dimension_resolver.dart';
 import '../../../../core/utils/cancel_token.dart';
 import '../../../../core/utils/image_header_parser.dart';
 import '../../../captioning/data/services/caption_service.dart';
@@ -53,6 +57,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   final VlmResponseParser _vlmResponseParser;
   final SamBboxService _samBboxService;
   final StructuredDebugArtifactsWriter _debugArtifactsWriter;
+  final ImageDimensionLookup _dimensionLookup;
 
   StructuredCaptionRepository({
     CaptionService? captionService,
@@ -63,6 +68,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     VlmResponseParser? vlmResponseParser,
     SamBboxService? samBboxService,
     StructuredDebugArtifactsWriter? debugArtifactsWriter,
+    ImageDimensionLookup? dimensionLookup,
   }) : _captionService = captionService ?? CaptionService(),
        _samProcessService = samProcessService ?? SamProcessService(),
        _colorExtractionService =
@@ -72,18 +78,23 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
        _vlmResponseParser = vlmResponseParser ?? VlmResponseParser(),
        _samBboxService = samBboxService ?? SamBboxService(),
        _debugArtifactsWriter =
-           debugArtifactsWriter ?? const StructuredDebugArtifactsWriter();
+           debugArtifactsWriter ?? const StructuredDebugArtifactsWriter(),
+       _dimensionLookup = dimensionLookup ?? defaultDimensionLookup;
 
-  /// Runs the full pipeline on a single image.
+  /// Runs the full pipeline on a single image and returns the caption in
+  /// [format]'s JSON structure (Ideogram or MOSS layout — the shared VLM/SAM
+  /// pipeline is identical, only the final build step and prompt persona
+  /// differ).
   ///
   /// [onProgress] emits step descriptions for UI progress tracking.
   /// [debugMode] saves prompt, raw VLM response, bbox overlay and final
   /// caption alongside the image in a debug/ subfolder.
   @override
-  Future<Either<Failure, IdeogramCaption>> generateStructuredCaption(
+  Future<Either<Failure, StructuredCaptionDocument>> generateStructuredCaption(
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
+    CaptionFormat format = CaptionFormat.ideogram,
     StructuredBatchOverrides? overrides,
     bool debugMode = false,
     bool disableSam = false,
@@ -110,6 +121,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
           config,
           imageFile,
           onProgress: onProgress,
+          format: format,
           vlmEmitsXyxy: vlmEmitsXyxy,
           guidance: guidance,
           debugMode: debugMode,
@@ -120,6 +132,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
           config,
           imageFile,
           onProgress: onProgress,
+          format: format,
           vlmEmitsXyxy: vlmEmitsXyxy,
           guidance: guidance,
           cancelToken: cancelToken,
@@ -127,10 +140,11 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       }
       final VlmAnalysis analysis = vision.analysis;
 
-      return Right<Failure, IdeogramCaption>(
+      return Right<Failure, StructuredCaptionDocument>(
         await _finalizeCaption(
           config: config,
           imageFile: imageFile,
+          format: format,
           analysis: analysis,
           globalPalette: globalPalette,
           vlmRawPrompt: vision.rawPrompt,
@@ -145,7 +159,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     } on CancellationException {
       rethrow;
     } catch (e, st) {
-      return Left<Failure, IdeogramCaption>(
+      return Left<Failure, StructuredCaptionDocument>(
         mapExceptionToFailure(
           e,
           stackTrace: st,
@@ -163,6 +177,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
+    required CaptionFormat format,
     required bool vlmEmitsXyxy,
     required String guidance,
     CancelToken? cancelToken,
@@ -171,7 +186,12 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     // `/no_think` prefix keeps reasoning models from burning the token budget
     // on an internal <think> block; harmless for models that don't recognize it.
     final String prompt = injectNoThink(
-      await _buildVisionPrompt(imageFile, guidance, vlmEmitsXyxy: vlmEmitsXyxy),
+      await _buildVisionPrompt(
+        imageFile,
+        guidance,
+        format: format,
+        vlmEmitsXyxy: vlmEmitsXyxy,
+      ),
     );
     final String vlmRawResponse = await _captionService.getCaption(
       config,
@@ -229,6 +249,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     LlmConfig config,
     File imageFile, {
     required void Function(String step) onProgress,
+    required CaptionFormat format,
     required bool vlmEmitsXyxy,
     required String guidance,
     bool debugMode = false,
@@ -240,6 +261,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       await _buildEnumeratePrompt(
         imageFile,
         guidance,
+        format: format,
         vlmEmitsXyxy: vlmEmitsXyxy,
       ),
     );
@@ -273,6 +295,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
         await _buildEnumeratePrompt(
           imageFile,
           '$guidance\n\n## PREVIOUS ATTEMPT DEFECTS — fix these issues:\nYour previous output had these structural problems:\n- ${defects.join("\n- ")}\nPlease fix ALL of the above issues in your new output. Prioritize broad coverage over filling the element cap.',
+          format: format,
           vlmEmitsXyxy: vlmEmitsXyxy,
         ),
       );
@@ -444,12 +467,13 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   Future<String> _buildEnumeratePrompt(
     File imageFile,
     String guidance, {
+    required CaptionFormat format,
     bool vlmEmitsXyxy = true,
   }) async {
     final String template = await _promptLoader.loadVisionEnumeratePrompt();
     final String aspectRatio = await _aspectRatioOfFile(imageFile);
     final String bboxOrder = vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
-    String prompt = template
+    String prompt = _substituteFormatTokens(template, format)
         .replaceAll('{{aspect_ratio}}', aspectRatio)
         .replaceAll('{{bbox_order}}', bboxOrder)
         .replaceAll('{{element_cap}}', _multiStageElementCap.toString());
@@ -634,10 +658,11 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       _vlmResponseParser.parseEnrichResponse(raw, original);
 
   /// Shared tail for both vision paths: health check → SAM → element
-  /// palettes → build Ideogram JSON → optional debug artifacts.
-  Future<IdeogramCaption> _finalizeCaption({
+  /// palettes → build the format-specific JSON → optional debug artifacts.
+  Future<StructuredCaptionDocument> _finalizeCaption({
     required LlmConfig config,
     required File imageFile,
+    required CaptionFormat format,
     required VlmAnalysis analysis,
     required List<String> globalPalette,
     required String vlmRawPrompt,
@@ -775,8 +800,40 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
       }
     }
 
-    // Step 6: Build final Ideogram4 JSON.
+    // Step 6: Build the format-specific JSON.
     onProgress('Building structured caption...');
+    if (format == CaptionFormat.moss) {
+      final ImageDimensions? dims = await _dimensionsOfFile(imageFile);
+      if (dims == null) {
+        // Surfaced as a Failure by the caller's exception mapping — MOSS
+        // generation must not fall back to an invented 1024×1024 canvas.
+        throw StateError(
+          'image dimensions could not be read; refusing to generate a MOSS '
+          'layout on an invented canvas',
+        );
+      }
+      final MossLayoutCaption caption = buildMossLayoutCaption(
+        globalPalette,
+        analysis,
+        matched,
+        elementPalettes,
+        overrides,
+        width: dims.width,
+        height: dims.height,
+      );
+      if (debugMode) {
+        onProgress('Saving debug artifacts...');
+        await _debugArtifactsWriter.save(
+          imageFile: imageFile,
+          prompt: vlmRawPrompt,
+          vlmRawResponse: vlmRawResponse,
+          vlmObjects: analysis.objects,
+          detections: matched,
+          caption: MossDocument(caption: caption),
+        );
+      }
+      return MossDocument(caption: caption);
+    }
     final IdeogramCaption caption = buildIdeogramCaption(
       globalPalette,
       analysis,
@@ -794,12 +851,18 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
         vlmRawResponse: vlmRawResponse,
         vlmObjects: analysis.objects,
         detections: matched,
-        caption: caption,
+        caption: IdeogramDocument(caption: caption),
       );
     }
 
-    return caption;
+    return IdeogramDocument(caption: caption);
   }
+
+  /// Resolves the image's exact decoded dimensions (header fast path, full
+  /// decode fallback with EXIF baked). Returns null when unreadable — MOSS
+  /// generation fails visibly instead of assuming 1024×1024.
+  Future<ImageDimensions?> _dimensionsOfFile(File imageFile) =>
+      _dimensionLookup(imageFile);
 
   /// Runs SAM3 detection for the elements of [caption] that have a bbox and
   /// are not likely-group elements. Returns a sparse map of
@@ -1059,6 +1122,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
   Future<String> _buildVisionPrompt(
     File imageFile,
     String guidance, {
+    required CaptionFormat format,
     bool vlmEmitsXyxy = true,
   }) async {
     final String template = await _promptLoader.loadVisionAnalysisPrompt();
@@ -1067,7 +1131,7 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
     // Ideogram4 JSON is always yxyx — the normalizer reinterprets the response
     // using the same flag, so asking + interpreting must agree here.
     final String bboxOrder = vlmEmitsXyxy ? 'x1, y1, x2, y2' : 'y1, x1, y2, x2';
-    String prompt = template
+    String prompt = _substituteFormatTokens(template, format)
         .replaceAll('{{aspect_ratio}}', aspectRatio)
         .replaceAll('{{bbox_order}}', bboxOrder);
     if (guidance.trim().isNotEmpty) {
@@ -1081,6 +1145,23 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
           'USER GUIDANCE:\n$guidance';
     }
     return prompt;
+  }
+
+  /// Substitutes the format-persona tokens shared by both vision prompts.
+  /// Ideogram keeps its established contract; MOSS adds the `character`
+  /// label with an inline definition (the prompt templates are otherwise
+  /// identical — both formats share the whole observe-only pipeline).
+  String _substituteFormatTokens(String template, CaptionFormat format) {
+    final String targetModel = format == CaptionFormat.moss
+        ? 'MOSS-Image'
+        : 'Ideogram 4';
+    final String typeContract = format == CaptionFormat.moss
+        ? 'obj | character | text — character = a person, animal or '
+              'anthropomorphic being; obj = every other physical object'
+        : 'obj | text';
+    return template
+        .replaceAll('{{target_model}}', targetModel)
+        .replaceAll('{{type_contract}}', typeContract);
   }
 
   /// Computes a clean `W:H` aspect-ratio string for [imageFile], snapped to a
@@ -1327,6 +1408,104 @@ class StructuredCaptionRepository implements IStructuredCaptionRepository {
         background: effectiveBackground,
         elements: elements,
       ),
+    );
+  }
+
+  /// Builds the final [MossLayoutCaption] from pipeline data — the MOSS
+  /// counterpart of [buildIdeogramCaption], sharing the same override
+  /// resolution. Style fields become flat `summary.meta` tags; the
+  /// VLM `name` is preserved as the item's `tags` entry. Elements without a
+  /// bbox are dropped (every MOSS item requires one).
+  @visibleForTesting
+  MossLayoutCaption buildMossLayoutCaption(
+    List<String> globalPalette,
+    VlmAnalysis analysis,
+    List<SamDetection> detections,
+    Map<int, List<String>> elementPalettes,
+    StructuredBatchOverrides? overrides, {
+    required int width,
+    required int height,
+  }) {
+    final IdeogramCaption ideogramView = buildIdeogramCaption(
+      globalPalette,
+      analysis,
+      detections,
+      elementPalettes,
+      null,
+    );
+
+    // Same override resolution as buildIdeogramCaption, expressed on the
+    // fields that land in summary.
+    final String effectiveBackground =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.overrideBackground &&
+            overrides.background != null
+        ? overrides.background!
+        : analysis.background;
+    final String? effectiveStyleDetail =
+        overrides != null &&
+            overrides.enabled &&
+            overrides.styleMode != null &&
+            overrides.styleDetail != null
+        ? overrides.styleDetail
+        : (ideogramView.styleDescription.medium == 'photograph'
+              ? ideogramView.styleDescription.photo
+              : ideogramView.styleDescription.artStyle);
+
+    final IdeogramStyleDescription style = ideogramView.styleDescription;
+    final String summaryCaption = effectiveBackground.isEmpty
+        ? ideogramView.highLevelDescription
+        : '${ideogramView.highLevelDescription} $effectiveBackground';
+
+    final List<MossItem> items = <MossItem>[];
+    for (int i = 0; i < analysis.objects.length; i++) {
+      final VlmObject obj = analysis.objects[i];
+      final SamDetection? det = i < detections.length ? detections[i] : null;
+      final List<int>? bbox = det?.bbox ?? obj.bbox;
+      if (bbox == null) {
+        continue;
+      }
+      final List<int>? pixelBbox = normalizedToPixelBbox(
+        bbox,
+        width: width,
+        height: height,
+      );
+      if (pixelBbox == null) {
+        continue;
+      }
+      final bool isText = obj.type == 'text';
+      items.add(
+        MossItem(
+          label: isText
+              ? 'text'
+              : (obj.type == 'character' ? 'character' : 'object'),
+          caption: obj.desc,
+          text: isText ? (obj.text ?? '') : null,
+          bbox: pixelBbox,
+          tags: <String>[obj.name],
+          palette: elementPalettes[i] ?? const <String>[],
+        ),
+      );
+    }
+
+    return MossLayoutCaption(
+      width: width,
+      height: height,
+      summary: MossSummary(
+        caption: summaryCaption,
+        meta: <String>[
+          style.medium,
+          ...style.aesthetics
+              .split(',')
+              .map((String s) => s.trim())
+              .where((String s) => s.isNotEmpty),
+          if (style.lighting.isNotEmpty) style.lighting,
+          if (effectiveStyleDetail?.isNotEmpty == true) effectiveStyleDetail!,
+        ],
+        palette: globalPalette,
+      ),
+      items: items,
     );
   }
 }

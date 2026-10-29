@@ -11,7 +11,10 @@ import '../../../../core/di/service_locator.dart';
 import '../../../../core/models/app_image.dart';
 import '../../../../core/models/apply_structured_overrides.dart';
 import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/moss_format.dart';
+import '../../../../core/models/moss_layout_caption.dart';
 import '../../../../core/models/structured_batch_overrides.dart';
+import '../../../../core/models/structured_caption_document.dart';
 import '../../../caption_session/caption_session.dart';
 import '../../../image_list/image_list.dart';
 import '../../../llm_config/llm_config.dart';
@@ -20,6 +23,7 @@ import '../widgets/editor_primitives.dart';
 import '../widgets/element_detail_section.dart';
 import '../widgets/interactive_bbox_canvas.dart';
 import '../widgets/layers_panel.dart';
+import '../widgets/moss_summary_section.dart';
 import '../widgets/style_editor_section.dart';
 
 class StructuredEditorPage extends StatelessWidget {
@@ -116,7 +120,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
       final AppImage candidate = displayed[candidateIndex];
       final String caption =
           candidate.captions[widget.activeCategory]?.text ?? '';
-      if (IdeogramCaption.isIdeogramJson(caption)) {
+      if (detectCaptionFormat(caption) != CaptionFormat.plain) {
         target = candidate;
         break;
       }
@@ -144,6 +148,87 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
 
   @override
   Widget build(BuildContext context) {
+    // STRICT draft validation before any lenient coercion: native prompts,
+    // unknown marker combinations, missing canvases, and malformed fields
+    // are refused visibly instead of entering the editor with guessed
+    // defaults (Codex rev-2 finding 2).
+    final String? refusal = _strictDraftRefusal(_captionJson);
+    if (refusal != null) {
+      return _refusalScaffold(refusal);
+    }
+    final StructuredCaptionDocument? document =
+        StructuredCaptionDocument.tryParse(_captionJson);
+    return _editorFor(
+      document ??
+          IdeogramDocument(
+            caption: IdeogramCaption.fromJson(
+              jsonDecode(_captionJson) as Map<String, dynamic>,
+            ),
+          ),
+    );
+  }
+
+  /// Returns a user-facing refusal reason when [text] is MOSS JSON that
+  /// fails strict draft parsing (native prompts, unknown markers, missing
+  /// canvas, malformed fields). Ideogram and plain captions pass through.
+  String? _strictDraftRefusal(String text) {
+    final CaptionFormat format = detectCaptionFormat(text);
+    if (format != CaptionFormat.moss) {
+      return null;
+    }
+    final ({MossLayoutCaption? caption, List<MossFormatDiagnostic> diagnostics})
+    parsed = parseMossDraft(text);
+    if (parsed.caption != null) {
+      return null;
+    }
+    final MossFormatDiagnostic first = parsed.diagnostics.first;
+    return switch (first.code) {
+      MossDiagnosticCodes.nativeMarkersInDraftPath ||
+      MossDiagnosticCodes.unsupportedMarkers =>
+        'This caption uses MOSS coordinate markers that are not an editable '
+            'top-left draft '
+            '(${first.message}). The stored text was left unchanged.',
+      MossDiagnosticCodes.missingCanvasSize =>
+        'This MOSS draft declares no valid canvas dimensions. '
+            'The stored text was left unchanged.',
+      _ =>
+        'This MOSS draft is malformed: ${first.message} '
+            'The stored text was left unchanged.',
+    };
+  }
+
+  Widget _refusalScaffold(String reason) {
+    return Scaffold(
+      backgroundColor: panelRaised,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const Icon(Icons.lock_outline, color: amberWarn, size: 32),
+              const SizedBox(height: 12),
+              Text(
+                reason,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: textPrimary, fontSize: 14),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Convert or repair this caption to a top-left draft to edit '
+                'it here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: textSecondary, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the editor scaffold for a real draft document.
+  Widget _editorFor(StructuredCaptionDocument document) {
     return BlocProvider<StructuredEditorCubit>(
       key: ValueKey<String>(_imageId),
       create: (BuildContext context) {
@@ -152,9 +237,7 @@ class _StructuredEditorScopeState extends State<_StructuredEditorScope> {
         // so the scope's own context cannot read it).
         final StructuredEditorCubit cubit = locator<StructuredEditorCubit>(
           param1: (
-            initialCaption: IdeogramCaption.fromJson(
-              jsonDecode(_captionJson) as Map<String, dynamic>,
-            ),
+            initialDocument: document,
             imageFile: _imageFile,
             activeCategory: widget.activeCategory,
             session: widget.imageListCubit.session,
@@ -433,7 +516,9 @@ class _RightPanel extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              const EditorSectionHeader('Description'),
+              EditorSectionHeader(
+                state.isMoss ? 'Summary caption' : 'Description',
+              ),
               const SizedBox(height: 10),
               EditorTextField(
                 value: state.caption.highLevelDescription,
@@ -442,19 +527,27 @@ class _RightPanel extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              const EditorSectionHeader('Style'),
-              const SizedBox(height: 10),
-              const StyleEditorSection(),
-              const SizedBox(height: 20),
-
-              const EditorSectionHeader('Background'),
-              const SizedBox(height: 10),
-              EditorTextField(
-                value: state.caption.compositionalDeconstruction.background,
-                maxLines: 4,
-                onChanged: cubit.updateBackground,
-              ),
-              const SizedBox(height: 20),
+              // Ideogram gets style + background sections; MOSS folds both
+              // into summary (meta tags / canvas / palette) and the caption.
+              if (state.isMoss) ...<Widget>[
+                const EditorSectionHeader('MOSS Summary'),
+                const SizedBox(height: 10),
+                const MossSummarySection(),
+                const SizedBox(height: 20),
+              ] else ...<Widget>[
+                const EditorSectionHeader('Style'),
+                const SizedBox(height: 10),
+                const StyleEditorSection(),
+                const SizedBox(height: 20),
+                const EditorSectionHeader('Background'),
+                const SizedBox(height: 10),
+                EditorTextField(
+                  value: state.caption.compositionalDeconstruction.background,
+                  maxLines: 4,
+                  onChanged: cubit.updateBackground,
+                ),
+                const SizedBox(height: 20),
+              ],
 
               // Selected element detail
               if (state.isElementSelected) ...<Widget>[
@@ -514,25 +607,65 @@ class _JsonViewerState extends State<_JsonViewer> {
   }
 
   void _apply(BuildContext context) {
-    try {
-      final Map<String, dynamic> decoded =
-          jsonDecode(_controller.text) as Map<String, dynamic>;
-      final IdeogramCaption caption = IdeogramCaption.fromJson(decoded);
-      context.read<StructuredEditorCubit>().replaceCaption(caption);
+    // Raw MOSS replacements go through the STRICT draft parser: native
+    // prompts, unknown markers, missing canvases, and malformed fields are
+    // refused here instead of entering the editor via lenient coercion.
+    final CaptionFormat rawFormat = detectCaptionFormat(_controller.text);
+    if (rawFormat == CaptionFormat.moss) {
+      final ({
+        MossLayoutCaption? caption,
+        List<MossFormatDiagnostic> diagnostics,
+      })
+      strict = parseMossDraft(_controller.text);
+      if (strict.caption == null) {
+        setState(() {
+          _parseError = 'Rejected: ${strict.diagnostics.first.message}';
+        });
+        _logger.warning(
+          'Raw MOSS replacement failed strict validation: '
+          '${strict.diagnostics.first}',
+        );
+        return;
+      }
+    }
+    final StructuredCaptionDocument? document =
+        StructuredCaptionDocument.tryParse(_controller.text);
+    if (document != null) {
+      context.read<StructuredEditorCubit>().replaceDocument(document);
       setState(() {
         _editing = false;
         _parseError = null;
       });
+      return;
+    }
+    try {
+      jsonDecode(_controller.text) as Map<String, dynamic>;
     } on FormatException catch (e) {
       // The offset in e.message is actionable for a power user fixing JSON.
       setState(() => _parseError = 'Invalid JSON: ${e.message}');
-    } catch (e) {
-      _logger.warning('Caption JSON did not match the Ideogram schema: $e');
-      setState(
-        () => _parseError =
-            'Invalid caption: the JSON does not match the Ideogram schema.',
-      );
+    } catch (_) {
+      setState(() => _parseError = 'Invalid JSON.');
     }
+    _logger.warning('Caption JSON did not match a structured schema');
+    setState(
+      () => _parseError =
+          'Invalid caption: the JSON matches neither the Ideogram nor the '
+          'MOSS schema.',
+    );
+  }
+
+  /// Re-derives the current MOSS JSON from the working state (the cubit
+  /// persists through the same path, so this matches what a save writes).
+  static String _mossPrettyJson(
+    BuildContext context,
+    StructuredEditorState state,
+  ) {
+    final String stored = context
+        .read<StructuredEditorCubit>()
+        .previewStoredJson();
+    return const JsonEncoder.withIndent(
+      '  ',
+    ).convert(jsonDecode(stored) as Map<String, dynamic>);
   }
 
   @override
@@ -543,9 +676,11 @@ class _JsonViewerState extends State<_JsonViewer> {
         );
     return BlocBuilder<StructuredEditorCubit, StructuredEditorState>(
       builder: (BuildContext context, StructuredEditorState state) {
-        final String raw = const JsonEncoder.withIndent(
-          '  ',
-        ).convert(state.caption.toJson());
+        final String raw = state.isMoss
+            ? _mossPrettyJson(context, state)
+            : const JsonEncoder.withIndent(
+                '  ',
+              ).convert(state.caption.toJson());
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -622,11 +757,16 @@ class _JsonViewerState extends State<_JsonViewer> {
                     ],
                     InkWell(
                       onTap: () {
-                        final IdeogramCaption copyCaption =
-                            applyStructuredOverrides(state.caption, overrides);
+                        final Map<String, dynamic> copyJson = state.isMoss
+                            ? jsonDecode(_mossPrettyJson(context, state))
+                                  as Map<String, dynamic>
+                            : applyStructuredOverrides(
+                                state.caption,
+                                overrides,
+                              ).toJson();
                         final String copyText = const JsonEncoder.withIndent(
                           '  ',
-                        ).convert(copyCaption.toJson());
+                        ).convert(copyJson);
                         Clipboard.setData(ClipboardData(text: copyText));
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

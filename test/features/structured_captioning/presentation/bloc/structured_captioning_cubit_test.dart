@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
@@ -16,12 +15,12 @@ import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
 import 'package:yofardev_captioner/core/models/llm_config.dart';
 import 'package:yofardev_captioner/core/models/llm_provider_type.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/core/utils/cancel_token.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/captioning/domain/models/caption_options.dart';
 import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_captioning_cubit.dart';
-
 import 'structured_captioning_cubit_test.mocks.dart';
 
 @GenerateMocks(<Type>[IStructuredCaptionRepository])
@@ -134,8 +133,10 @@ void main() {
     ),
   );
 
-  provideDummy<Either<Failure, IdeogramCaption>>(
-    Right<Failure, IdeogramCaption>(fakeCaption()),
+  provideDummy<Either<Failure, StructuredCaptionDocument>>(
+    Right<Failure, StructuredCaptionDocument>(
+      IdeogramDocument(caption: fakeCaption()),
+    ),
   );
 
   LlmConfig llmConfig() => LlmConfig(
@@ -226,7 +227,11 @@ void main() {
           debugMode: anyNamed('debugMode'),
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
+      ).thenAnswer(
+        (_) async => Right<Failure, StructuredCaptionDocument>(
+          IdeogramDocument(caption: fakeCaption()),
+        ),
+      );
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -277,7 +282,11 @@ void main() {
           debugMode: anyNamed('debugMode'),
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
+      ).thenAnswer(
+        (_) async => Right<Failure, StructuredCaptionDocument>(
+          IdeogramDocument(caption: fakeCaption()),
+        ),
+      );
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -329,7 +338,11 @@ void main() {
           debugMode: anyNamed('debugMode'),
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
+      ).thenAnswer(
+        (_) async => Right<Failure, StructuredCaptionDocument>(
+          IdeogramDocument(caption: fakeCaption()),
+        ),
+      );
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -432,7 +445,11 @@ void main() {
           debugMode: anyNamed('debugMode'),
           cancelToken: anyNamed('cancelToken'),
         ),
-      ).thenAnswer((_) async => Right<Failure, IdeogramCaption>(fakeCaption()));
+      ).thenAnswer(
+        (_) async => Right<Failure, StructuredCaptionDocument>(
+          IdeogramDocument(caption: fakeCaption()),
+        ),
+      );
 
       await cubit.runStructuredCaptioner(
         llm: llmConfig(),
@@ -482,7 +499,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+          (_) async => Right<Failure, StructuredCaptionDocument>(
+            IdeogramDocument(caption: fakeCaption()),
+          ),
         );
 
         await cubit.runStructuredCaptioner(
@@ -547,7 +566,9 @@ void main() {
           (inv.namedArguments[const Symbol('onProgress')]
               as void Function(String))('extracting palette');
         }
-        return Right<Failure, IdeogramCaption>(fakeCaption());
+        return Right<Failure, StructuredCaptionDocument>(
+          IdeogramDocument(caption: fakeCaption()),
+        );
       });
       seed(
         ImageListState(
@@ -681,8 +702,10 @@ void main() {
       ).thenAnswer((Invocation inv) {
         capturedProgress =
             inv.namedArguments[#onProgress] as void Function(String);
-        return Future<Either<Failure, IdeogramCaption>>.value(
-          Right<Failure, IdeogramCaption>(fakeCaption()),
+        return Future<Either<Failure, StructuredCaptionDocument>>.value(
+          Right<Failure, StructuredCaptionDocument>(
+            IdeogramDocument(caption: fakeCaption()),
+          ),
         );
       });
 
@@ -739,7 +762,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+          (_) async => Right<Failure, StructuredCaptionDocument>(
+            IdeogramDocument(caption: fakeCaption()),
+          ),
         );
 
         await cubit.runStructuredCaptioner(
@@ -796,7 +821,9 @@ void main() {
             cancelToken: anyNamed('cancelToken'),
           ),
         ).thenAnswer(
-          (_) async => Right<Failure, IdeogramCaption>(fakeCaption()),
+          (_) async => Right<Failure, StructuredCaptionDocument>(
+            IdeogramDocument(caption: fakeCaption()),
+          ),
         );
 
         await cubit.runStructuredCaptioner(

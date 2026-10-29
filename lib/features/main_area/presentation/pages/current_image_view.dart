@@ -9,7 +9,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_constants.dart';
 import '../../../../core/models/app_image.dart';
-import '../../../../core/models/ideogram_caption.dart';
+import '../../../../core/models/structured_caption_document.dart';
 import '../../../../core/utils/image_utils.dart';
 import '../../../../core/widgets/notification_overlay.dart';
 import '../../../caption_session/caption_session.dart';
@@ -110,7 +110,8 @@ class CurrentImageView extends StatelessWidget {
                             'default';
                         final String caption =
                             currentImage.captions[category]?.text ?? '';
-                        if (IdeogramCaption.isIdeogramJson(caption) &&
+                        if (detectCaptionFormat(caption) !=
+                                CaptionFormat.plain &&
                             BboxElement.parse(caption).isNotEmpty) {
                           return BboxOverlayImage(
                             imageFile: currentImage.image,

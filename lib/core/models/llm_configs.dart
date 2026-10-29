@@ -15,8 +15,16 @@ class LlmConfigs extends Equatable {
   final String? selectedConfigId;
   final String? selectedPrompt;
 
-  /// When true, the Run button uses the Ideogram4 structured JSON pipeline.
-  final bool ideogramJsonEnabled;
+  /// Which structured caption format the Run button produces.
+  /// `'off'`, `'ideogram'` or `'moss'`.
+  final String structuredCaptionFormat;
+
+  /// Legacy flag view of [structuredCaptionFormat]: true exactly when the
+  /// Ideogram structured pipeline is active.
+  bool get ideogramJsonEnabled => structuredCaptionFormat == 'ideogram';
+
+  /// True when any structured format is selected.
+  bool get structuredCaptionEnabled => structuredCaptionFormat != 'off';
 
   /// When true, structured captioning saves prompt, VLM response, and bbox
   /// images alongside each image for debugging.
@@ -45,7 +53,7 @@ class LlmConfigs extends Equatable {
     required this.prompts,
     this.selectedConfigId,
     this.selectedPrompt,
-    this.ideogramJsonEnabled = false,
+    this.structuredCaptionFormat = 'off',
     this.debugMode = false,
     this.disableSam = false,
     this.vlmEmitsXyxy = true,
@@ -59,7 +67,7 @@ class LlmConfigs extends Equatable {
       prompts = const <String>[defaultPrompt1, defaultPrompt2],
       selectedConfigId = null,
       selectedPrompt = defaultPrompt1,
-      ideogramJsonEnabled = false,
+      structuredCaptionFormat = 'off',
       debugMode = false,
       disableSam = false,
       vlmEmitsXyxy = true,
@@ -72,7 +80,7 @@ class LlmConfigs extends Equatable {
     prompts,
     selectedConfigId,
     selectedPrompt,
-    ideogramJsonEnabled,
+    structuredCaptionFormat,
     debugMode,
     disableSam,
     vlmEmitsXyxy,
@@ -86,7 +94,7 @@ class LlmConfigs extends Equatable {
     String? selectedConfigId,
     String? selectedPrompt,
     bool forceSelectedConfigId = false,
-    bool? ideogramJsonEnabled,
+    String? structuredCaptionFormat,
     bool? debugMode,
     bool? disableSam,
     bool? vlmEmitsXyxy,
@@ -100,7 +108,8 @@ class LlmConfigs extends Equatable {
           ? selectedConfigId
           : selectedConfigId ?? this.selectedConfigId,
       selectedPrompt: selectedPrompt ?? this.selectedPrompt,
-      ideogramJsonEnabled: ideogramJsonEnabled ?? this.ideogramJsonEnabled,
+      structuredCaptionFormat:
+          structuredCaptionFormat ?? this.structuredCaptionFormat,
       debugMode: debugMode ?? this.debugMode,
       disableSam: disableSam ?? this.disableSam,
       vlmEmitsXyxy: vlmEmitsXyxy ?? this.vlmEmitsXyxy,
@@ -121,7 +130,12 @@ class LlmConfigs extends Equatable {
           : <String>[json['prompt'] as String],
       selectedConfigId: json['selectedConfigId'] as String?,
       selectedPrompt: json['selectedPrompt'] as String?,
-      ideogramJsonEnabled: json['ideogramJsonEnabled'] as bool? ?? false,
+      structuredCaptionFormat:
+          json['structuredCaptionFormat'] as String? ??
+          // Migration: the pre-MOSS single bool flag.
+          ((json['ideogramJsonEnabled'] as bool? ?? false)
+              ? 'ideogram'
+              : 'off'),
       debugMode: json['debugMode'] as bool? ?? false,
       disableSam: json['disableSam'] as bool? ?? false,
       vlmEmitsXyxy: json['vlmEmitsXyxy'] as bool? ?? true,
@@ -138,7 +152,7 @@ class LlmConfigs extends Equatable {
       'prompts': prompts,
       'selectedConfigId': selectedConfigId,
       'selectedPrompt': selectedPrompt,
-      'ideogramJsonEnabled': ideogramJsonEnabled,
+      'structuredCaptionFormat': structuredCaptionFormat,
       'debugMode': debugMode,
       'disableSam': disableSam,
       'vlmEmitsXyxy': vlmEmitsXyxy,

@@ -256,14 +256,31 @@ class LlmConfigsCubit extends Cubit<LlmConfigsState> {
     _persist();
   }
 
-  /// Toggles the Ideogram JSON structured captioning mode.
-  void setIdeogramJsonEnabled(bool enabled) {
+  /// Sets the structured caption format ('off' | 'ideogram' | 'moss').
+  void setStructuredCaptionFormat(String format) {
     emit(
       state.copyWith(
-        llmConfigs: state.llmConfigs.copyWith(ideogramJsonEnabled: enabled),
+        llmConfigs: state.llmConfigs.copyWith(structuredCaptionFormat: format),
       ),
     );
     _persist();
+  }
+
+  /// Cycles off → ideogram → moss → off (run-button right-click).
+  void cycleStructuredCaptionFormat() {
+    final String current = state.llmConfigs.structuredCaptionFormat;
+    final String next = switch (current) {
+      'off' => 'ideogram',
+      'ideogram' => 'moss',
+      _ => 'off',
+    };
+    setStructuredCaptionFormat(next);
+  }
+
+  /// Legacy bool toggle kept for the settings hero switch: toggles between
+  /// 'off' and 'ideogram'.
+  void setIdeogramJsonEnabled(bool enabled) {
+    setStructuredCaptionFormat(enabled ? 'ideogram' : 'off');
   }
 
   /// Toggles debug artifact saving for structured captioning.

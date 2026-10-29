@@ -16,6 +16,7 @@ import 'package:yofardev_captioner/core/models/caption_data.dart';
 import 'package:yofardev_captioner/core/models/caption_database.dart';
 import 'package:yofardev_captioner/core/models/caption_entry.dart';
 import 'package:yofardev_captioner/core/models/ideogram_caption.dart';
+import 'package:yofardev_captioner/core/models/structured_caption_document.dart';
 import 'package:yofardev_captioner/features/caption_session/caption_session.dart';
 import 'package:yofardev_captioner/features/structured_captioning/domain/repositories/structured_caption_repository.dart';
 import 'package:yofardev_captioner/features/structured_captioning/presentation/bloc/structured_editor_cubit.dart';
@@ -85,7 +86,7 @@ void main() {
       currentImageId: 'shot',
     );
     final StructuredEditorCubit editorCubit = StructuredEditorCubit(
-      initialCaption: caption,
+      initialDocument: const IdeogramDocument(caption: caption),
       imageFile: File('/tmp/shot.png'),
       activeCategory: 'default',
       session: session,

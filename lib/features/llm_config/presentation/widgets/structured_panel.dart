@@ -17,7 +17,9 @@ class StructuredPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<LlmConfigsCubit, LlmConfigsState>(
       builder: (BuildContext context, LlmConfigsState state) {
-        final bool ideogramOn = state.llmConfigs.ideogramJsonEnabled;
+        final String structuredFormat =
+            state.llmConfigs.structuredCaptionFormat;
+        final bool structuredOn = state.llmConfigs.structuredCaptionEnabled;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
@@ -25,12 +27,12 @@ class StructuredPanel extends StatelessWidget {
             const _PipelineIntro(),
             const SizedBox(height: 20),
             _MasterHeroCard(
-              enabled: ideogramOn,
-              onChanged: (bool v) =>
-                  context.read<LlmConfigsCubit>().setIdeogramJsonEnabled(v),
+              format: structuredFormat,
+              onChanged: (String v) =>
+                  context.read<LlmConfigsCubit>().setStructuredCaptionFormat(v),
             ),
             const SizedBox(height: 16),
-            if (!ideogramOn) ...<Widget>[
+            if (!structuredOn) ...<Widget>[
               const _LockedTeaser(),
             ] else ...<Widget>[
               _ToggleCard(
@@ -143,13 +145,14 @@ class _PipelineIntro extends StatelessWidget {
 }
 
 class _MasterHeroCard extends StatelessWidget {
-  final bool enabled;
-  final ValueChanged<bool> onChanged;
+  final String format;
+  final ValueChanged<String> onChanged;
 
-  const _MasterHeroCard({required this.enabled, required this.onChanged});
+  const _MasterHeroCard({required this.format, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
+    final bool enabled = format != 'off';
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -180,7 +183,7 @@ class _MasterHeroCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 const Text(
-                  'Ideogram JSON Caption',
+                  'Structured JSON Caption',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 16,
@@ -189,19 +192,65 @@ class _MasterHeroCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  enabled
-                      ? 'Structured pipeline active'
-                      : 'Structured pipeline inactive',
+                  switch (format) {
+                    'ideogram' => 'Ideogram 4 layout JSON',
+                    'moss' => 'MOSS-Image layout JSON',
+                    _ => 'Structured pipeline inactive',
+                  },
                   style: TextStyle(
                     color: enabled ? lightPink : textMuted,
                     fontSize: 12,
                     letterSpacing: 0.2,
                   ),
                 ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: 340,
+                  child: SegmentedButton<String>(
+                    segments: const <ButtonSegment<String>>[
+                      ButtonSegment<String>(
+                        value: 'off',
+                        label: Text('Off'),
+                        icon: Icon(Icons.close, size: 16),
+                      ),
+                      ButtonSegment<String>(
+                        value: 'ideogram',
+                        label: Text('Ideogram'),
+                        icon: Icon(Icons.grid_on, size: 16),
+                      ),
+                      ButtonSegment<String>(
+                        value: 'moss',
+                        label: Text('MOSS'),
+                        icon: Icon(Icons.auto_awesome_mosaic, size: 16),
+                      ),
+                    ],
+                    selected: <String>{format},
+                    onSelectionChanged: (Set<String> selection) =>
+                        onChanged(selection.first),
+                    showSelectedIcon: false,
+                    style: ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      side: const WidgetStatePropertyAll<BorderSide>(
+                        BorderSide(color: hairline),
+                      ),
+                      backgroundColor: WidgetStateProperty.resolveWith(
+                        (Set<WidgetState> states) =>
+                            states.contains(WidgetState.selected)
+                            ? lightPink.withValues(alpha: 0.25)
+                            : null,
+                      ),
+                      foregroundColor: WidgetStateProperty.resolveWith(
+                        (Set<WidgetState> states) =>
+                            states.contains(WidgetState.selected)
+                            ? lightPink
+                            : textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          _PinkSwitch(value: enabled, onChanged: onChanged),
         ],
       ),
     );
@@ -234,7 +283,7 @@ class _LockedTeaser extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text(
-            'Enable Ideogram JSON Caption above to configure the pipeline.',
+            'Enable a structured JSON format above to configure the pipeline.',
             textAlign: TextAlign.center,
             style: TextStyle(color: textMuted, fontSize: 12.5, height: 1.5),
           ),

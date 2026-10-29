@@ -20,5 +20,5 @@ export 'presentation/pages/structured_editor_page.dart'
     show StructuredEditorPage;
 export 'presentation/widgets/bbox_overlay.dart'
     show BboxElement, BboxOverlayImage;
-export 'presentation/widgets/ideogram_caption_summary_card.dart'
-    show IdeogramCaptionSummaryCard;
+export 'presentation/widgets/structured_caption_summary_card.dart'
+    show StructuredCaptionSummaryCard;

@@ -10,6 +10,11 @@ class StructuredEditorState extends Equatable {
     required this.caption,
     required this.imageFile,
     required this.activeCategory,
+    this.format = CaptionFormat.ideogram,
+    this.mossMeta = const <String>[],
+    this.mossCanvas,
+    this.mossWidth = 1024,
+    this.mossHeight = 1024,
     this.selectedElementIndex,
     this.hiddenElementIndices = const <int>{},
     this.lockedIndices = const <int>{},
@@ -24,8 +29,25 @@ class StructuredEditorState extends Equatable {
     this.showBboxText = false,
   });
 
-  /// The mutable working copy of the caption.
+  /// The mutable working copy of the caption. For MOSS captions this is the
+  /// index-preserving Ideogram **view** — all element editing (canvas, layers,
+  /// recaption) runs on it and the MOSS JSON is re-derived at save time.
   final IdeogramCaption caption;
+
+  /// Which structured format this caption serializes to.
+  final CaptionFormat format;
+
+  /// MOSS-only: editable `summary.meta` tag list. Empty for Ideogram.
+  final List<String> mossMeta;
+
+  /// MOSS-only: `summary.canvas` value, when set.
+  final String? mossCanvas;
+
+  /// MOSS-only: canvas dimensions (positive multiples of 16).
+  final int mossWidth;
+  final int mossHeight;
+
+  bool get isMoss => format == CaptionFormat.moss;
 
   /// The image file for display and bbox thumbnail cropping.
   final File imageFile;
@@ -89,6 +111,12 @@ class StructuredEditorState extends Equatable {
     IdeogramCaption? caption,
     File? imageFile,
     String? activeCategory,
+    CaptionFormat? format,
+    List<String>? mossMeta,
+    String? mossCanvas,
+    bool clearMossCanvas = false,
+    int? mossWidth,
+    int? mossHeight,
     int? selectedElementIndex,
     bool clearSelection = false,
     Set<int>? hiddenElementIndices,
@@ -111,6 +139,11 @@ class StructuredEditorState extends Equatable {
       caption: caption ?? this.caption,
       imageFile: imageFile ?? this.imageFile,
       activeCategory: activeCategory ?? this.activeCategory,
+      format: format ?? this.format,
+      mossMeta: mossMeta ?? this.mossMeta,
+      mossCanvas: clearMossCanvas ? null : (mossCanvas ?? this.mossCanvas),
+      mossWidth: mossWidth ?? this.mossWidth,
+      mossHeight: mossHeight ?? this.mossHeight,
       selectedElementIndex: clearSelection
           ? null
           : (selectedElementIndex ?? this.selectedElementIndex),
@@ -141,6 +174,11 @@ class StructuredEditorState extends Equatable {
     caption,
     imageFile,
     activeCategory,
+    format,
+    mossMeta,
+    mossCanvas,
+    mossWidth,
+    mossHeight,
     selectedElementIndex,
     hiddenElementIndices,
     lockedIndices,

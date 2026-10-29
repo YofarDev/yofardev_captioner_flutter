@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fpdart/fpdart.dart';
 import 'package:logging/logging.dart';
@@ -14,6 +15,9 @@ import '../../../../core/models/app_image.dart';
 import '../../../../core/models/caption_data.dart';
 import '../../../../core/models/caption_database.dart';
 import '../../../../core/models/caption_entry.dart';
+import '../../../../core/models/moss_format.dart';
+import '../../../../core/models/structured_caption_document.dart';
+import '../../../../core/services/moss_conversion_service.dart';
 import '../../../caption_session/caption_session.dart';
 
 /// Caption write paths for the Agent API: through a live tab session when the
@@ -24,7 +28,14 @@ import '../../../caption_session/caption_session.dart';
 /// clobbered. All writes are serialized so concurrent requests can't
 /// interleave read-modify-write cycles.
 class AgentCaptionWriteService {
+  AgentCaptionWriteService({MossConversionService? conversionService})
+    : _conversionService = conversionService ?? MossConversionService();
+
   final Logger _logger = Logger('AgentCaptionWriteService');
+
+  /// Stateless shared conversion implementation (exact source dimensions,
+  /// structured diagnostics) — the same one the UI batch dialog uses.
+  final MossConversionService _conversionService;
 
   /// Serializes caption writes so concurrent requests can't interleave
   /// read-modify-write cycles on db.json.
@@ -177,6 +188,256 @@ class AgentCaptionWriteService {
       for (final String tag in extra)
         if (!current.contains(tag)) tag,
     ];
+  }
+
+  // ---------------------------------------------------------------------------
+  // Format conversion (Ideogram <-> MOSS), local and deterministic.
+  // ---------------------------------------------------------------------------
+
+  /// Converts structured captions in [category] through the live tab session.
+  /// A null [filename] converts every convertible caption in the category;
+  /// results land in [targetCategory] when given (created if missing),
+  /// otherwise in place.
+  Future<Response> convertViaSession(
+    CaptionSessionService session, {
+    String? filename,
+    required String category,
+    required String target,
+    String? targetCategory,
+    String? model,
+  }) async {
+    final ImageListState state = session.current.state;
+    if (!state.categories.contains(category)) {
+      return jsonResponse(400, <String, dynamic>{
+        'error': 'unknown category "$category"',
+        'categories': state.categories,
+      });
+    }
+
+    final String destination = targetCategory ?? category;
+    if (destination != category && !state.categories.contains(destination)) {
+      session.addCategory(destination, format: 'json');
+    }
+
+    final List<AppImage> targets = <AppImage>[];
+    final bool single = filename != null;
+    if (single) {
+      AppImage? match;
+      for (final AppImage image in state.images) {
+        if (p.basename(image.image.path) == filename) {
+          match = image;
+          break;
+        }
+      }
+      if (match == null) {
+        return jsonResponse(404, <String, dynamic>{
+          'error':
+              'image not loaded in the open tab — POST /api/folders/refresh '
+              'first, then retry',
+          'filename': filename,
+        });
+      }
+      targets.add(match);
+    } else {
+      targets.addAll(state.images);
+    }
+
+    final List<Map<String, dynamic>> results = <Map<String, dynamic>>[];
+    int converted = 0;
+    int skipped = 0;
+    for (final AppImage image in targets) {
+      final String text = image.captions[category]?.text ?? '';
+      final ({String? text, String? reason}) outcome = await _convertText(
+        text,
+        target: target,
+        imageFile: image.image,
+      );
+      final Map<String, dynamic> entry = <String, dynamic>{
+        'filename': p.basename(image.image.path),
+      };
+      if (outcome.text == null) {
+        skipped++;
+        entry['status'] = 'skipped';
+        entry['reason'] = outcome.reason;
+      } else {
+        final AppImage updated = image.copyWith(
+          captions: <String, CaptionEntry>{
+            ...image.captions,
+            destination: CaptionEntry(
+              text: outcome.text!,
+              model: model ?? _conversionModelTag(target),
+              isEdited: true,
+              timestamp: DateTime.now(),
+            ),
+          },
+          lastModified: DateTime.now(),
+        );
+        await session.updateImage(image: updated);
+        converted++;
+        entry['status'] = 'converted';
+        entry['category'] = destination;
+        if (single) {
+          entry['text'] = outcome.text;
+        }
+      }
+      results.add(entry);
+    }
+
+    return jsonResponse(200, <String, dynamic>{
+      'ok': true,
+      'mode': 'live',
+      'target': target,
+      'converted': converted,
+      'skipped': skipped,
+      'results': results,
+    });
+  }
+
+  /// Disk-path twin of [convertViaSession] for folders not open in a tab:
+  /// direct read-modify-write of `db.json` under the serialized write lock.
+  Future<Response> convertViaFile(
+    String folder, {
+    String? filename,
+    required String category,
+    required String target,
+    String? targetCategory,
+    String? model,
+  }) async {
+    final CaptionFileStore fileUtils = locator<CaptionFileStore>();
+    final Either<Failure, CaptionDatabase> dbResult = await fileUtils.readDb(
+      folder,
+    );
+    final CaptionDatabase? db = dbResult.getRight().toNullable();
+    if (db == null) {
+      final Failure f = dbResult.getLeft().toNullable()!;
+      _logger.severe('POST /api/convert: db.json unreadable: $f');
+      return jsonResponse(500, <String, dynamic>{
+        'error': 'database could not be read',
+        'folder': folder,
+        'detail': failureMessage(f),
+      });
+    }
+    if (!db.categories.contains(category)) {
+      return jsonResponse(400, <String, dynamic>{
+        'error': 'unknown category "$category"',
+        'categories': db.categories,
+      });
+    }
+
+    final String destination = targetCategory ?? category;
+    if (destination != category && !db.categories.contains(destination)) {
+      db.categories.add(destination);
+      db.categoryFormats[destination] = 'json';
+    }
+
+    final List<CaptionData> targets = <CaptionData>[];
+    final bool single = filename != null;
+    if (single) {
+      CaptionData? match;
+      for (final CaptionData data in db.images) {
+        if (data.filename == filename) {
+          match = data;
+          break;
+        }
+      }
+      if (match == null) {
+        return jsonResponse(404, <String, dynamic>{
+          'error': 'image not found in db.json',
+          'filename': filename,
+        });
+      }
+      targets.add(match);
+    } else {
+      targets.addAll(db.images);
+    }
+
+    final List<Map<String, dynamic>> results = <Map<String, dynamic>>[];
+    int converted = 0;
+    int skipped = 0;
+    for (final CaptionData data in targets) {
+      final String text = data.captions[category]?.text ?? '';
+      final ({String? text, String? reason}) outcome = await _convertText(
+        text,
+        target: target,
+        imageFile: File(p.join(folder, data.filename)),
+      );
+      final Map<String, dynamic> entry = <String, dynamic>{
+        'filename': data.filename,
+      };
+      if (outcome.text == null) {
+        skipped++;
+        entry['status'] = 'skipped';
+        entry['reason'] = outcome.reason;
+      } else {
+        final CaptionData updated = CaptionData(
+          id: data.id,
+          filename: data.filename,
+          captions: <String, CaptionEntry>{
+            ...data.captions,
+            destination: CaptionEntry(
+              text: outcome.text!,
+              model: model ?? _conversionModelTag(target),
+              isEdited: true,
+              timestamp: DateTime.now(),
+            ),
+          },
+          lastModified: DateTime.now(),
+          tags: data.tags,
+        );
+        db.images[db.images.indexOf(data)] = updated;
+        converted++;
+        entry['status'] = 'converted';
+        entry['category'] = destination;
+        if (single) {
+          entry['text'] = outcome.text;
+        }
+      }
+      results.add(entry);
+    }
+
+    await fileUtils.writeDb(folder, db);
+    return jsonResponse(200, <String, dynamic>{
+      'ok': true,
+      'mode': 'file',
+      'target': target,
+      'converted': converted,
+      'skipped': skipped,
+      'results': results,
+    });
+  }
+
+  String _conversionModelTag(String target) =>
+      target == 'moss' ? 'ideogram→moss' : 'moss→ideogram';
+
+  /// Converts one caption string between formats through the shared
+  /// [MossConversionService] (exact source dimensions, structured
+  /// diagnostics). Returns `(text: null, reason: ...)` for anything that is
+  /// not a caption in the source format, is already in the target format,
+  /// or fails conversion.
+  Future<({String? text, String? reason})> _convertText(
+    String text, {
+    required String target,
+    required File imageFile,
+  }) async {
+    final MossConversionOutcome outcome = await _conversionService.convert(
+      text: text,
+      target: target == 'moss' ? CaptionFormat.moss : CaptionFormat.ideogram,
+      imageFile: imageFile,
+    );
+    if (outcome.success) {
+      return (text: outcome.text, reason: null);
+    }
+    final String reason =
+        outcome.skippedReason ??
+        outcome.diagnostics
+            .map((MossFormatDiagnostic d) => d.message)
+            .join('; ');
+    if (outcome.fatal) {
+      _logger.warning(
+        'convert failed for ${p.basename(imageFile.path)}: $reason',
+      );
+    }
+    return (text: null, reason: reason);
   }
 
   /// Canonical image JSON for the agent API. The disk listing path has no

@@ -120,6 +120,7 @@ class AgentApiService {
       ..get('/api/folders', _handleFolders)
       ..get('/api/images', _handleImages)
       ..post('/api/captions', _handlePostCaption)
+      ..post('/api/convert', _handleConvert)
       ..post('/api/folders/refresh', _handleRefreshFolder);
 
     return const Pipeline()
@@ -367,6 +368,74 @@ class AgentApiService {
         text: text,
         model: model,
         extraTags: extraTags,
+      );
+    });
+  }
+
+  /// Local, deterministic conversion of structured captions between the
+  /// Ideogram and MOSS JSON formats — no image analysis, no LLM. Body:
+  /// `{folder, filename?, category?, target: "moss"|"ideogram",
+  /// targetCategory?, model?}`. Without `filename` every convertible caption
+  /// in the category is converted.
+  Future<Response> _handleConvert(Request request) {
+    return _writeService.serializeWrites(() async {
+      Map<String, dynamic> body;
+      try {
+        body = await _readJsonBody(request);
+      } on FormatException {
+        return _jsonResponse(400, <String, dynamic>{
+          'error': 'invalid JSON body',
+        });
+      }
+
+      final String? folder = body['folder'] as String?;
+      final String? target = body['target'] as String?;
+      if (folder == null || folder.isEmpty) {
+        return _jsonResponse(400, <String, dynamic>{
+          'error': '"folder" is required',
+        });
+      }
+      if (target == null || (target != 'moss' && target != 'ideogram')) {
+        return _jsonResponse(400, <String, dynamic>{
+          'error': '"target" must be "moss" or "ideogram"',
+        });
+      }
+
+      final String normalizedFolder = p.normalize(folder);
+      if (!await Directory(normalizedFolder).exists()) {
+        return _jsonResponse(404, <String, dynamic>{
+          'error': 'folder not found',
+          'folder': normalizedFolder,
+        });
+      }
+
+      final String? filename = body['filename'] as String?;
+      if (filename != null && filename.isEmpty) {
+        return _jsonResponse(400, <String, dynamic>{
+          'error':
+              '"filename" must not be empty — omit it to convert the '
+              'whole category',
+        });
+      }
+
+      final CaptionSessionService? session = _openSessionFor(normalizedFolder);
+      if (session != null) {
+        return await _writeService.convertViaSession(
+          session,
+          filename: filename,
+          category: (body['category'] as String?) ?? 'default',
+          target: target,
+          targetCategory: body['targetCategory'] as String?,
+          model: body['model'] as String?,
+        );
+      }
+      return await _writeService.convertViaFile(
+        normalizedFolder,
+        filename: filename,
+        category: (body['category'] as String?) ?? 'default',
+        target: target,
+        targetCategory: body['targetCategory'] as String?,
+        model: body['model'] as String?,
       );
     });
   }

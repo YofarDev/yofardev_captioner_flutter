@@ -8,6 +8,9 @@ import '../../features/captioning/captioning.dart';
 import '../../features/captioning/data/repositories/captioning_repository.dart';
 import '../../features/captioning/data/repositories/llm_caption_repository.dart';
 import '../../features/captioning/data/services/caption_service.dart';
+import '../../features/export/data/repositories/moss_training_exporter.dart';
+import '../../features/export/domain/repositories/moss_training_export_repository.dart';
+import '../../features/export/presentation/bloc/moss_training_export_cubit.dart';
 import '../../features/image_list/data/repositories/app_file_utils.dart';
 import '../../features/image_list/image_list.dart';
 import '../../features/image_operations/image_operations.dart';
@@ -16,6 +19,7 @@ import '../../features/llm_config/domain/repositories/llm_config_repository.dart
 import '../../features/structured_captioning/data/repositories/structured_caption_repository.dart';
 import '../../features/structured_captioning/structured_captioning.dart';
 import '../services/cache_service.dart';
+import '../services/moss_conversion_service.dart';
 
 final GetIt locator = GetIt.instance;
 
@@ -84,6 +88,12 @@ void registerDependencies(GetIt container) {
 
   container.registerLazySingleton<Logger>(() => Logger('App'));
 
+  // Shared Ideogram↔MOSS conversion used by the UI batch dialog and the
+  // Agent API alike (exact dimensions, structured diagnostics).
+  container.registerLazySingleton<MossConversionService>(
+    () => MossConversionService(),
+  );
+
   // Tab-scoped cubits: one fresh instance per caption session, resolved by
   // tab_content.dart via locator<Type>(param1: session).
   container.registerFactoryParam<ImageListCubit, CaptionSessionService, void>(
@@ -111,7 +121,7 @@ void registerDependencies(GetIt container) {
     void
   >(
     (StructuredEditorParams p, _) => StructuredEditorCubit(
-      initialCaption: p.initialCaption,
+      initialDocument: p.initialDocument,
       imageFile: p.imageFile,
       activeCategory: p.activeCategory,
       session: p.session,
@@ -132,4 +142,20 @@ void registerDependencies(GetIt container) {
       .registerFactoryParam<BatchJsonApplyCubit, CaptionSessionService, void>(
         (CaptionSessionService session, _) => BatchJsonApplyCubit(session),
       );
+  container
+      .registerFactoryParam<ConvertFormatCubit, CaptionSessionService, void>(
+        (CaptionSessionService session, _) => ConvertFormatCubit(session),
+      );
+  container
+      .registerFactoryParam<RepairLegacyMossCubit, CaptionSessionService, void>(
+        (CaptionSessionService session, _) => RepairLegacyMossCubit(session),
+      );
+  container.registerLazySingleton<IMossTrainingExportRepository>(
+    () => MossTrainingExporter(),
+  );
+  container.registerFactory<MossTrainingExportCubit>(
+    () => MossTrainingExportCubit(
+      repository: container<IMossTrainingExportRepository>(),
+    ),
+  );
 }

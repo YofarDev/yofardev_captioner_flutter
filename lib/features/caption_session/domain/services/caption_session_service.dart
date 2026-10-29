@@ -635,6 +635,56 @@ class CaptionSessionService {
     );
   }
 
+  /// Writes one caption keyed by [imageId] + [category] against the
+  /// session's *current* state (not a stale snapshot), then persists the db.
+  ///
+  /// When [expectedSourceText] is given and the image's current text in
+  /// [sourceCategory] no longer matches it (a concurrent edit landed while
+  /// asynchronous work was in flight), the write is refused and false is
+  /// returned — callers surface that as a skipped/failed job instead of
+  /// clobbering an unrelated edit.
+  Future<bool> updateImageCaption({
+    required String imageId,
+    required String category,
+    required String text,
+    String? model,
+    String? sourceCategory,
+    String? expectedSourceText,
+    bool markEdited = true,
+  }) async {
+    final int index = _state.images.indexWhere((AppImage i) => i.id == imageId);
+    if (index == -1) {
+      return false;
+    }
+    final AppImage image = _state.images[index];
+    if (expectedSourceText != null) {
+      final String currentSource =
+          image.captions[sourceCategory ?? category]?.text ?? '';
+      if (currentSource != expectedSourceText) {
+        return false;
+      }
+    }
+    final CaptionEntry? existing = image.captions[category];
+    final AppImage updated = image.copyWith(
+      captions: <String, CaptionEntry>{
+        ...image.captions,
+        category: CaptionEntry(
+          text: text,
+          model: text.isEmpty ? null : (model ?? existing?.model),
+          timestamp: text.isEmpty ? null : DateTime.now(),
+          isEdited: markEdited,
+        ),
+      },
+      lastModified: DateTime.now(),
+      clearError: true,
+    );
+    final List<AppImage> updatedImages = List<AppImage>.from(_state.images);
+    updatedImages[index] = updated;
+    _update(_state.copyWith(images: updatedImages));
+    await _saveDb();
+    return true;
+  }
+
   Future<void> updateCaption({required String caption}) async {
     final AppImage? originalImage = _currentDisplayedImage;
     if (originalImage == null) {
@@ -803,7 +853,7 @@ class CaptionSessionService {
   // Categories
   // ---------------------------------------------------------------------------
 
-  void addCategory(String name, {String format = 'txt'}) async {
+  Future<void> addCategory(String name, {String format = 'txt'}) async {
     if (_state.categories.contains(name)) {
       return;
     }
